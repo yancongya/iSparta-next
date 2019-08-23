@@ -13,13 +13,13 @@
 </template>
 
 <script>
-import mainUpload from './mainUpload/mainUpload.vue'
-import projectlist from './projectList/projectList.vue'
-import globalSetting from './globalSetting/globalSetting.vue'
-import sortBar from './sortBar/sortBar.vue'
-import setting from './setting/setting.vue'
-import { f as fsOperate } from './drag/file.js'
-import * as d from './drag/drag.js'
+import mainUpload from '../components/mainUpload/mainUpload.vue'
+import projectlist from '../components/projectList/projectList.vue'
+import globalSetting from '../components/globalSetting/globalSetting.vue'
+import sortBar from '../components/sortBar/sortBar.vue'
+import setting from '../components/setting/setting.vue'
+import { f as fsOperate } from '../components/drag/file.js'
+import * as d from '../components/drag/drag.js'
 export default {
   name: 'landing-page',
   components: {

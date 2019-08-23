@@ -20,7 +20,7 @@
     </div>
     <div class="ui-border-b mod-output">
       <el-form label-width="">
-        <el-form-item  :label="$t('outputName')"class="suffix">
+        <el-form-item  :label="$t('outputName')" class="suffix">
           <el-input v-model="outputName" size="mini" placeholder="output-ispt"></el-input>
         </el-form-item>
         <p>{{ $t("outputFormat") }}</p>

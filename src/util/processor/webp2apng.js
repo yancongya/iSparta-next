@@ -1,8 +1,8 @@
 import fs from 'fs-extra'
 import path from 'path'
 import action from './action'
-import apngCompress from './apngCompress'
-import PNGs2apng from './PNGs2apng'
+// import apngCompress from './apngCompress'
+import PNGs2apng from './pngs2apng'
 
 export default function (item, store) {
   store.dispatch('editProcess', {

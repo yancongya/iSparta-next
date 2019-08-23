@@ -1,9 +1,9 @@
 <template>
 <section class="mod-list">
   <template v-for="(project,index) in projectList">
-    <div class="item" @click="!$event.metaKey && itemClick(project.basic,index)" @click.meta="multiSelect(index)" v-bind:class="{active:project.isSelected}" v-if="sortType.indexOf(project.basic.type) != -1" :data-index="index" :key="project.id" @contextmenu="itemRightClick(project.basic,index)">
+    <div class="item" @click.exact="!$event.metaKey && itemClick(project.basic,index)" @click.meta="multiSelect(index)" v-bind:class="{active:project.isSelected}" v-if="sortType.indexOf(project.basic.type) != -1" :data-index="index" :key="project.id" @contextmenu="itemRightClick(project.basic,index)">
       <div class="thumb">
-        <img :src="project.basic.fileList | fileLink " />
+        <img :src="'file://'+project.basic.fileList[0]" />
       </div>
       <div class="info">
         <div class="input">
@@ -131,12 +131,9 @@ export default {
       switch (schedule) {
         case -1:
           return 100
-          break
         default:
           return schedule * 100
-          break
       }
-      return schedule * 100
     },
     // 按下command多选
     multiSelect (index) {
