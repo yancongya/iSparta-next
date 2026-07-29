@@ -1,7 +1,5 @@
 <template>
 <section class="globalsetting">
-  <!-- Form -->
-  <el-button type="text" @click="showDialog"><i class="el-icon-setting"></i></el-button>
   <el-dialog :title="$t('defaultSetting')" :visible.sync="dialogFormVisible" v-on:open="resetVarible" :modal="true" :modal-append-to-body="true" :append-to-body="true" width="540px" :close-on-click-modal="false">
     <el-form>
       <el-form-item :label="$t('language')" label-width="formLabelWidth">
@@ -48,6 +46,9 @@ export default {
     }
   },
   mounted(){
+    this.$root.eventBus.$on('openGlobalSetting', () => {
+      this.showDialog()
+    })
   },
   methods: {
     floydBlur(){

@@ -8,6 +8,7 @@ const fs = require("fs-extra");
 const storage = require('electron-localstorage');
 const os = require("os");
 const path = require("path");
+const _ = require("lodash");
 // 【bug fix】修复初次使用时读取缓存错误的问题
 let storagePath = "";
 if (process.env.NODE_ENV == "development") {
@@ -20,7 +21,18 @@ if (!fs.existsSync(storagePath)) {
   fs.ensureFileSync(storagePath)
 
 }
-if (fs.readFileSync(storagePath)) {
+// 【bug fix】仅当内容非合法 JSON 时才重置为 "{}"，避免每次启动清空已持久化数据
+let __rawStorage = fs.readFileSync(storagePath, "utf-8").trim()
+let __validStorage = false
+if (__rawStorage) {
+  try {
+    JSON.parse(__rawStorage)
+    __validStorage = true
+  } catch (e) {
+    __validStorage = false
+  }
+}
+if (!__validStorage) {
   fs.writeFileSync(storagePath, "{}", "utf-8")
 }
 
@@ -31,9 +43,9 @@ Vue.use(Vuex)
 const defaultState = {
   language: 'zh-cn',
   options: {
-    'frameRate': 20,
+    'frameRate': 25,
     'loop': 0,
-    'outputSuffix': 'iSpt',
+    'outputSuffix': '',
     'outputName': '',
     'outputFormat': ['APNG'],
     'floyd': {
@@ -67,6 +79,11 @@ var state = {
   locked: false
 }
 
+const persistItems = _.debounce(function () {
+  var payload = JSON.stringify(state.items)
+  storage.setItem('iSparta-item', payload)
+}, 200)
+
 
 //init globalSetting
 var globalSetting = window.storage.getItem('globalSetting');
@@ -75,6 +92,26 @@ if (!globalSetting) {
 
   let tempSetting = defaultState;
   window.storage.setItem('globalSetting', JSON.stringify(tempSetting))
+} else {
+  // 迁移：全局默认帧率无独立编辑入口，同步为最新出厂默认值
+  try {
+    let parsed = JSON.parse(globalSetting)
+    let changed = false
+    if (parsed && parsed.options) {
+      if (parsed.options.frameRate !== defaultState.options.frameRate) {
+        parsed.options.frameRate = defaultState.options.frameRate
+        changed = true
+      }
+      // 仅当仍为旧出厂后缀 iSpt 时迁移为空，保留用户自定义后缀
+      if (parsed.options.outputSuffix === 'iSpt') {
+        parsed.options.outputSuffix = ''
+        changed = true
+      }
+    }
+    if (changed) {
+      window.storage.setItem('globalSetting', JSON.stringify(parsed))
+    }
+  } catch (e) { /* globalSetting 非法时忽略，后续逻辑会重建 */ }
 }
 // get localstorage data
 var localData = window.storage.getItem('iSparta-item')
@@ -112,7 +149,7 @@ const mutations = {
       item.isSelected = false
     })
     state.items.push(itemData)
-    storage.setItem('iSparta-item', JSON.stringify(state.items))
+    persistItems()
   },
   [types.ITEMS_REMOVE](state) {
     if (state.locked) {
@@ -125,7 +162,7 @@ const mutations = {
     if (state.items.length > 1) {
       state.items[0].isSelected = true
     }
-    storage.setItem('iSparta-item', JSON.stringify(state.items))
+    persistItems()
   },
   [types.ALL_REMOVE](state) {
     if (state.locked) {
@@ -133,7 +170,7 @@ const mutations = {
     }
 
     state.items = []
-    storage.setItem('iSparta-item', JSON.stringify(state.items))
+    persistItems()
   },
   [types.ITEMS_EDIT_BASIC](state, keyValue) {
     if (state.locked) {
@@ -142,7 +179,7 @@ const mutations = {
     var selectedItem = _.filter(state.items, { isSelected: true })
     var selectedBasic = selectedItem[0].basic
     _.extend(selectedBasic, keyValue)
-    storage.setItem('iSparta-item', JSON.stringify(state.items))
+    persistItems()
   },
   [types.ITEMS_EDIT_OPTIONS](state, keyValue) {
     if (state.locked) {
@@ -151,7 +188,7 @@ const mutations = {
     var selectedItem = _.filter(state.items, { isSelected: true })
     var selectedOption = selectedItem[0].options
     _.extend(selectedOption, keyValue)
-    storage.setItem('iSparta-item', JSON.stringify(state.items))
+    persistItems()
     // var new = _.merge(selectedOption,keyValue)
     // console.log(keyValue)
   },
@@ -162,7 +199,7 @@ const mutations = {
     _.each(state.items, function (item) {
       _.extend(item.options, keyValue)
     })
-    storage.setItem('iSparta-item', JSON.stringify(state.items))
+    persistItems()
   },
   [types.ITEMS_EDIT_PROCESS](state, keyValue) {
     var selectedItem = _.filter(state.items, { isSelected: true })
@@ -181,21 +218,21 @@ const mutations = {
       item.isSelected = false
     })
     state.items[index].isSelected = true
-    storage.setItem('iSparta-item', JSON.stringify(state.items))
+    persistItems()
   },
   [types.SET_SELECTED](state, index) {
     if (state.locked) {
       return false
     }
     state.items[index].isSelected = true
-    storage.setItem('iSparta-item', JSON.stringify(state.items))
+    persistItems()
   },
   [types.MULTI_SELECT](state, index) {
     if (state.locked) {
       return false
     }
     state.items[index].isSelected = !state.items[index].isSelected
-    storage.setItem('iSparta-item', JSON.stringify(state.items))
+    persistItems()
   },
   [types.ALL_SELECTED](state) {
     if (state.locked) {
@@ -204,7 +241,16 @@ const mutations = {
     _.each(state.items, function (item) {
       item.isSelected = true
     })
-    storage.setItem('iSparta-item', JSON.stringify(state.items))
+    persistItems()
+  },
+  [types.NONE_SELECTED](state) {
+    if (state.locked) {
+      return false
+    }
+    _.each(state.items, function (item) {
+      item.isSelected = false
+    })
+    persistItems()
   },
   [types.SET_LOCK](state, boolean) {
     state.locked = boolean
@@ -249,6 +295,9 @@ const actions = {
   },
   allSelect(context) {
     context.commit('ALL_SELECTED')
+  },
+  noneSelect(context) {
+    context.commit('NONE_SELECTED')
   },
   setLock(context, boolean) {
     context.commit('SET_LOCK', boolean)

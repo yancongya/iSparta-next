@@ -13,6 +13,28 @@ const reg = {
 // 记录每次操作的文件
 var recordPng = []
 
+// 按 PNG chunk 结构扫描 acTL 判定 APNG（acTL 必在 IDAT 之前，位置不固定）
+function isApngBuffer (buffer) {
+  const PNG_SIG = 8
+  if (buffer.length < PNG_SIG + 8) {
+    return false
+  }
+  let offset = PNG_SIG
+  while (offset + 8 <= buffer.length) {
+    const length = buffer.readUInt32BE(offset)
+    const type = buffer.toString('ascii', offset + 4, offset + 8)
+    if (type === 'acTL') {
+      return true
+    }
+    if (type === 'IDAT' || type === 'IEND') {
+      return false
+    }
+    offset += 12 + length
+  }
+  return false
+}
+
+
 // 文件深度
 var maxDeep = 5
 var deep
@@ -56,8 +78,7 @@ class actionFiles {
       if (reg[i].test(files)) {
         if (i == 'PNGs') {
           var buffer = fs.readFileSync(files)
-          var byte = buffer.slice(33, 41).toString('ascii')
-          if (byte.match('acTL')) {
+          if (isApngBuffer(buffer)) {
             this.writeBasic('APNG', pathname, [files])
           } else {
             recordPng.push(files)
@@ -75,11 +96,19 @@ class actionFiles {
     let globalSetting = JSON.parse(window.storage.getItem('globalSetting'))
     temp.basic = {}
     temp.options = globalSetting.options
-    //去除文件名空格
-    temp.options.outputName = path.basename(fileList[0]).split('.')[0].replace(/[ ]/g,"") + '_'+globalSetting.options.outputSuffix
     temp.basic.type = format
-    temp.basic.inputPath = address + '/' + path.basename(fileList[0]).split('.')[0]
-    temp.basic.outputPath = address
+    if (format === 'PNGs') {
+      // 序列帧：输出到帧文件夹的同级目录，文件名用帧文件夹名 + _apng
+      let folderName = path.basename(address)
+      temp.options.outputName = folderName.replace(/[ ]/g, '') + '_apng'
+      temp.basic.inputPath = address
+      temp.basic.outputPath = path.dirname(address)
+    } else {
+      //去除文件名空格
+      temp.options.outputName = path.basename(fileList[0]).split('.')[0].replace(/[ ]/g, '') + '_' + globalSetting.options.outputSuffix
+      temp.basic.inputPath = address + '/' + path.basename(fileList[0]).split('.')[0]
+      temp.basic.outputPath = address
+    }
     temp.basic.fileList = fileList
     items.push(temp)
   }

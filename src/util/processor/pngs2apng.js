@@ -14,25 +14,29 @@ export default function (item, store, locale) {
   var tmpDir = item.basic.tmpDir
   var numLen = item.basic.fileList.length.toString().split('').length
   fs.ensureDirSync(tmpDir)
-  var firstPNG = ''
-  item.basic.fileList.forEach((file, index) => {
-    fs.copySync(file, path.join(tmpDir, 'apng' + action.pad(index + 1, numLen) + '.png'))
-    if (item.options.delays && item.options.delays[index]){
-      fs.writeFileSync(path.join(tmpDir, 'apng' + action.pad(index + 1, numLen) + '.txt'), "delay=" + item.options.delays[index]*1000+"/1000")
+  var firstPNG = 'apng' + action.pad(1, numLen) + '.png'
+
+  var copyTasks = item.basic.fileList.map((file, index) => {
+    var target = path.join(tmpDir, 'apng' + action.pad(index + 1, numLen) + '.png')
+    var p = fs.copy(file, target)
+    if (item.options.delays && item.options.delays[index]) {
+      var txtFile = path.join(tmpDir, 'apng' + action.pad(index + 1, numLen) + '.txt')
+      p = p.then(() => fs.writeFile(txtFile, "delay=" + item.options.delays[index] * 1000 + "/1000"))
     }
-    if (index == 0) {
-      firstPNG = 'apng' + action.pad(index + 1, numLen) + '.png'
-    }
+    return p
   })
-  
+
+  return Promise.all(copyTasks).then(() => {
 	// apngasm
-  return action.exec(action.bin('apngasm'), [
-    path.join(item.basic.tmpOutputDir, item.options.outputName + '.png'),
-    path.join(tmpDir, firstPNG),
-    '1 ' + item.options.frameRate,
-    '-l' + item.options.loop,
-    '-kc '
-  ], item, store, locale).then(() => {
+    return action.exec(action.bin('apngasm'), [
+      path.join(item.basic.tmpOutputDir, item.options.outputName + '.png'),
+      path.join(tmpDir, firstPNG),
+      '1',
+      String(item.options.frameRate),
+      '-l' + item.options.loop,
+      '-kc'
+    ], item, store, locale)
+  }).then(() => {
 		// reset fileList
     item.basic.fileList = [
       path.join(item.basic.tmpOutputDir, item.options.outputName + '.png')

@@ -20,8 +20,8 @@ export default function (item, store, locale) {
   item.basic.fileList[0] = tmpFile
 
   var fileName = path.basename(item.basic.fileList[0])
-  return action.exec('cd ' + path.dirname(item.basic.fileList[0]) + ' && ' + action.bin('apng2gif'), [
+  return action.exec(action.bin('apng2gif'), [
     fileName,
     item.options.outputName + '.gif'
-  ], item, store, locale)
+  ], item, store, locale, { cwd: path.dirname(item.basic.fileList[0]) })
 }

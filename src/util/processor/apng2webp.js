@@ -1,8 +1,6 @@
 import fs from 'fs-extra'
 import path from 'path'
 import action from './action'
-import apngCompress from './apngCompress'
-import TYPE 		from '../../store/enum/type'
 
 export default function (item, store, locale) {
   store.dispatch('editProcess', {
@@ -12,7 +10,7 @@ export default function (item, store, locale) {
   })
 
   var tmpDir = item.basic.tmpDir
-  	return action.exec(action.bin('apngdis'), [
+  return action.exec(action.bin('apngdis'), [
     item.basic.fileList[0]
   ], item, store, locale).then(() => {
     var data = fs.readFileSync(path.join(tmpDir, 'apngframe_metadata.json'), {encoding: 'utf-8'})
@@ -21,12 +19,12 @@ export default function (item, store, locale) {
     var promises = frames.map(function (frame) {
       var png_frame_file = path.join(tmpDir, frame['src'])
       var webp_frame_file = path.join(tmpDir, frame['src'] + '.webp')
-      return action.exec(action.bin('cwebp'), [
-        //item.basic.type == TYPE.PNGs ? '-q 100' : '-q ' + item.options.quality.value,
-        item.options.quality.checked ? '-q ' + item.options.quality.value : '' ,
-        png_frame_file,
-        '-o ' + webp_frame_file
-      ], item, store, locale).then(() => {
+      var cwebpArgs = []
+      if (item.options.quality.checked) {
+        cwebpArgs.push('-q', String(item.options.quality.value))
+      }
+      cwebpArgs.push(png_frame_file, '-o', webp_frame_file)
+      return action.exec(action.bin('cwebp'), cwebpArgs, item, store, locale).then(() => {
         var delay = Math.round((frame['delay_num']) / (frame['delay_den']) * 1000)
         if (delay === 0) { // The specs say zero is allowed, but should be treated as 10 ms.
           delay = 10
@@ -39,19 +37,28 @@ export default function (item, store, locale) {
         } else {
           throw new Error("Webp can't handle this blend operation")
         }
-        var webpmux_arg = ' -frame "' + path.basename(webp_frame_file) + '" +' + delay + '+' + frame['x'] + '+' + frame['y'] + '+' + frame['dispose_op'] + blend_mode
-        return webpmux_arg
+        return [
+          '-frame',
+          path.basename(webp_frame_file),
+          '+' + delay + '+' + frame['x'] + '+' + frame['y'] + '+' + frame['dispose_op'] + blend_mode
+        ]
       })
     })
 
-    return Promise.all(promises).then(function (args) {
-      return Promise.resolve(args.join(' '))
+    return Promise.all(promises).then(function (frameArgs) {
+      return _flatten(frameArgs)
     })
-  }).then((args) => {
-    return action.exec('cd ' + tmpDir + ' && ' + action.bin('webpmux'), [
-      args,
-      '-loop ' + item.options.loop,
-      '-o ' + path.join(item.basic.tmpOutputDir, item.options.outputName + '.webp')
-    ], item, store, locale)
+  }).then((frameArgs) => {
+    return action.exec(action.bin('webpmux'), [
+      ...frameArgs,
+      '-loop', String(item.options.loop),
+      '-o', path.join(item.basic.tmpOutputDir, item.options.outputName + '.webp')
+    ], item, store, locale, { cwd: tmpDir })
   })
+}
+
+function _flatten (arrays) {
+  return arrays.reduce(function (acc, cur) {
+    return acc.concat(cur)
+  }, [])
 }

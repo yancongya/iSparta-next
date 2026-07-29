@@ -44,18 +44,7 @@ class rightMenu {
         store.dispatch('remove')
       }
     }))
-    // menu.append(new MenuItem({
-    //   type: 'separator'
-    // }))
-    // menu.append(new MenuItem({
-    //   label: '开始执行',
-    //   click () {
-    //     processor(store).then(() => {})
-    //   }
-    // }))
-    // setTimeout(function(){
-    menu.popup(remote.getCurrentWindow())
-    // },10)
+    menu.popup({ window: remote.getCurrentWindow() })
   }
 }
 

@@ -2,8 +2,7 @@
 
 import { app, protocol, BrowserWindow, ipcMain,dialog } from 'electron'
 import {
-  createProtocol,
-  installVueDevtools
+  createProtocol
 } from 'vue-cli-plugin-electron-builder/lib'
 const isDevelopment = process.env.NODE_ENV !== 'production'
 const path = require("path");
@@ -28,6 +27,8 @@ function createWindow () {
     show: false,
     webPreferences: {
       nodeIntegration: true,
+      contextIsolation: false,
+      enableRemoteModule: true,
       webSecurity: false
     } })
   
@@ -106,22 +107,24 @@ if (isDevelopment) {
 }
 
 ipcMain.on('change-item-fold', function (event, path, order) {
-
-  dialog.showOpenDialog({
+  dialog.showOpenDialog(win, {
     defaultPath: path,
     properties: ['openDirectory']
-  }, function (files) {
-    if (files) event.sender.send('change-item-fold', files, order)
+  }).then(function (result) {
+    if (!result.canceled && result.filePaths.length) {
+      event.sender.send('change-item-fold', result.filePaths, order)
+    }
   })
 })
 // 监听输出到目录的操作
 ipcMain.on('change-multiItem-fold', function (event, path) {
-  
-  dialog.showOpenDialog({
+  dialog.showOpenDialog(win, {
     defaultPath: path,
     properties: ['openDirectory']
-  }, function (files) {
-    if (files) event.sender.send('change-multiItem-fold', files)
+  }).then(function (result) {
+    if (!result.canceled && result.filePaths.length) {
+      event.sender.send('change-multiItem-fold', result.filePaths)
+    }
   })
 })
 // 监听获取应用目录的操作

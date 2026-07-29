@@ -1,9 +1,12 @@
 <template>
 <section class="mod-list">
   <template v-for="(project,index) in projectList">
-    <div class="item" @click.exact="!$event.metaKey && itemClick(project.basic,index)" @click.meta="multiSelect(index)" v-bind:class="{active:project.isSelected}" v-if="sortType.indexOf(project.basic.type) != -1" :data-index="index" :key="project.id" @contextmenu="itemRightClick(project.basic,index)">
+    <div class="item" v-bind:class="{active:project.isSelected}" :data-index="index" :key="project.id" @contextmenu="itemRightClick(project.basic,index)">
+      <div class="check" @click.stop="toggleSelect(index)">
+        <el-checkbox :value="project.isSelected" style="pointer-events:none"></el-checkbox>
+      </div>
       <div class="thumb">
-        <img :src="'file://'+project.basic.fileList[0]" />
+        <img :src="thumbFor(project.basic.fileList[0])" />
       </div>
       <div class="info">
         <div class="input">
@@ -34,11 +37,6 @@ const fs = require('fs')
 const _ = require('lodash')
 const rightMenu = require('./menu')
 
-// 读取图片类型
-import typeData from '../../store/enum/type'
-const imgType = _.values(typeData).join(',')
-// console.log(imgType)
-
 const ipc = require('electron').ipcRenderer
 const {dialog} = require('electron').remote
 import DelayDialog from  '../delayDialog/index.vue'
@@ -49,23 +47,13 @@ export default {
   },
   data () {
     return {
-      // projectList: []
-      sortType: imgType,
       dialogFormVisible:false,
-      delayProject:null
+      delayProject:null,
+      thumbCache: {}
     }
   },
 
   created () {
-    // 与筛选组件通信
-    this.$root.eventBus.$on('sortList', value => {
-      // console.log(value)
-      if (value == 'ALL') {
-        this.sortType = imgType
-      } else {
-        this.sortType = value
-      }
-    })
     // 回应修改输出目录的操作
     ipc.on('change-item-fold', (event, path, order) => {
       
@@ -98,18 +86,7 @@ export default {
       return data
     },
     projectList () {
-      var data = this.$store.getters.getterItems
-      let hasSelected=false;
-      for(let i=0;i<data.length;i++){
-        if(data[i].isSelected){
-          hasSelected=true;
-          break;
-        }
-      }
-      if(!hasSelected&&data[0]){
-        data[0].isSelected=true;
-      }
-      return data
+      return this.$store.getters.getterItems
     },
     isLocked () {
       var data = this.$store.getters.getterLocked
@@ -117,6 +94,36 @@ export default {
     }
   },
   methods: {
+    // 生成降采样缩略图，避免长列表直接加载全尺寸原图导致的内存占用
+    thumbFor (filePath) {
+      if (!filePath) { return '' }
+      var cached = this.thumbCache[filePath]
+      if (cached) { return cached }
+      var placeholder = 'file://' + filePath
+      var self = this
+      var size = 120
+      var img = new Image()
+      img.onload = function () {
+        try {
+          var canvas = document.createElement('canvas')
+          canvas.width = size
+          canvas.height = size
+          var ctx = canvas.getContext('2d')
+          var scale = Math.min(size / img.width, size / img.height)
+          var w = Math.max(1, Math.round(img.width * scale))
+          var h = Math.max(1, Math.round(img.height * scale))
+          ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h)
+          self.$set(self.thumbCache, filePath, canvas.toDataURL('image/png'))
+        } catch (e) {
+          self.$set(self.thumbCache, filePath, placeholder)
+        }
+      }
+      img.onerror = function () {
+        self.$set(self.thumbCache, filePath, placeholder)
+      }
+      img.src = placeholder
+      return placeholder
+    },
     // 映射标签样式
     getLabel (label) {
       var labelMap = {
@@ -159,18 +166,12 @@ export default {
           return schedule * 100
       }
     },
-    // 按下command多选
-    multiSelect (index) {
-      // console.log("multi")
-      if (this.selectedList.length == 1 && this.selectedIndex == index) {
-        // 过滤掉多选只有一项的情况
+    // 勾选/取消勾选单个项目
+    toggleSelect (index) {
+      if (this.isLocked) {
         return false
       }
       this.$store.dispatch('multiSelect', index)
-    },
-    itemClick (project, index) {
-      // console.log("single")
-      this.$store.dispatch('singleSelect', index)
     },
     itemRightClick (currentItem, index) {
       // console.log(rightMenu)
@@ -195,9 +196,9 @@ export default {
       ipc.send('change-item-fold', outputPath, index)
     },
     openFolder(){
-      dialog.showOpenDialog({ properties: [ 'openFile', 'openDirectory', 'multiSelections' ]}, (res) => {
-        this.muFileList = res
-        if(!this.muFileList){return false;}
+      dialog.showOpenDialog({ properties: [ 'openFile', 'openDirectory', 'multiSelections' ]}).then((result) => {
+        if (result.canceled || !result.filePaths.length) { return false }
+        this.muFileList = result.filePaths
         fsOperate.readerFiles(this.muFileList).then((ars) => {
           var Obj = {}
           for (var i in ars) {

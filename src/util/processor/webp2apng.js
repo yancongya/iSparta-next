@@ -1,19 +1,16 @@
 import fs from 'fs-extra'
 import path from 'path'
 import action from './action'
-// import apngCompress from './apngCompress'
 import PNGs2apng from './pngs2apng'
 
-export default function (item, store) {
+export default function (item, store, locale) {
   store.dispatch('editProcess', {
     index: item.index,
-    text: locale.analysing+'...',
+    text: locale.analysing + '...',
     schedule: 0.4
   })
 
   var tmpDir = item.basic.tmpDir
-  var webpDir = path.join(item.basic.tmpDir, 'webp')
-
   var webpDir = path.join(tmpDir, 'webp')
   var tmpFile = path.join(item.basic.tmpOutputDir, item.options.outputName + '.webp')
   fs.ensureDirSync(tmpDir)
@@ -23,43 +20,37 @@ export default function (item, store) {
   }
 
   item.basic.fileList[0] = tmpFile
-  var getframeFunc = []
 
-  var isStop = false
   return new Promise(function (resolve, reject) {
-    getframe(item, 1, (frames) => {
+    getframe(item, store, locale, 1, (frames) => {
       var dwebpFunc = []
       for (let i = 1; i <= frames; i++) {
         dwebpFunc.push(action.exec(action.bin('dwebp'), [
           path.join(webpDir, i + '.webp'),
-          '-o ' + path.join(webpDir, i + '.png')
+          '-o', path.join(webpDir, i + '.png')
         ], item, store, locale).then(() => {
           item.basic.fileList[i - 1] = path.join(webpDir, i + '.png')
           return item.basic.fileList[i]
         }))
       }
       Promise.all(dwebpFunc).then(() => {
-        PNGs2apng(item).then(() => {
+        PNGs2apng(item, store, locale).then(() => {
           resolve()
-        })
-      })
-
-			// action.exec(action.bin('dwebp'),[
-			// ]
+        }).catch(reject)
+      }).catch(reject)
     })
   })
 }
-function getframe (item, frame, callback) {
+
+function getframe (item, store, locale, frame, callback) {
   var webpDir = path.join(item.basic.tmpDir, 'webp')
   fs.ensureDirSync(webpDir)
-  var isStop = false
-	// webpmux get wrong size image, so this feature not support yet.
   action.exec(action.bin('webpmux'), [
-  		'-get frame ' + frame,
+    '-get', 'frame', String(frame),
     item.basic.fileList[0],
-    '-o ' + path.join(webpDir, frame + '.webp')
+    '-o', path.join(webpDir, frame + '.webp')
   ], item, store, locale).then(() => {
-    getframe(item, frame + 1, callback)
+    getframe(item, store, locale, frame + 1, callback)
   }).catch(() => {
     if ((typeof callback) === 'function') {
       callback(frame - 1)

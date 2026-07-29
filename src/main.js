@@ -7,6 +7,7 @@ import 'element-ui/lib/theme-chalk/index.css'
 import 'normalize.css/normalize.css'
 import AsyncComputed from 'vue-async-computed'
 import VueI18n from 'vue-i18n'
+import _ from 'lodash'
 // const storage = require('electron-localstorage');
 
 Vue.config.productionTip = false
@@ -31,7 +32,7 @@ const i18n = new VueI18n({
   }
 })
 Vue.filter('basePath', function (value) {
-  // console.warn(process.env);
+  if (!value || typeof value !== 'string') { return '' }
   var basePath = '../' + _.compact(_.takeRight(value.split('/'), 3)).join('/')
   return basePath
 })

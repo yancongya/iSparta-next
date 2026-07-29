@@ -27,6 +27,9 @@ module.exports = {
     "multiText":"目前為多選狀態，使用各自的配置輸出",
     "batchStart":"批量開始",
     "outputTofolder":"輸出到目錄",
+    "inputItems":"輸入的項目",
+    "selectAll":"全選",
+    "selectAtLeastOne":"請選中至少一個項目以輸出",
     //progress
     "startConvert":"開始轉換",
     "convertSuccess":"生成成功",
