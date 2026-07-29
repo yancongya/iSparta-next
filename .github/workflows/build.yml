@@ -1,0 +1,61 @@
+name: Build Multi-Platform
+
+on:
+  push:
+    branches: [master]
+    tags: ['v*']
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build (${{ matrix.platform }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-13
+            platform: mac
+            flag: --mac
+          - os: windows-latest
+            platform: win
+            flag: --win
+          - os: ubuntu-latest
+            platform: linux
+            flag: --linux
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '16'
+
+      # electron-chromedriver(spectron 传递依赖)在部分平台会下载失败并中断安装，
+      # 故跳过所有安装脚本，随后单独安装 electron 运行时二进制
+      - name: Install dependencies
+        run: npm install --ignore-scripts --no-audit --no-fund
+
+      - name: Install electron binary
+        run: node node_modules/electron/install.js
+
+      - name: Build ${{ matrix.platform }}
+        run: npx vue-cli-service electron:build ${{ matrix.flag }} --publish never
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: isparta-${{ matrix.platform }}
+          if-no-files-found: error
+          retention-days: 7
+          path: |
+            dist_electron/*.dmg
+            dist_electron/*.zip
+            dist_electron/*.tar.gz
+            dist_electron/*.exe
+            dist_electron/*.AppImage
+            dist_electron/*.blockmap
