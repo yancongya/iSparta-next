@@ -35,5 +35,8 @@ export const SET_SELECTED = 'SET_SELECTED'
 // 设置全选
 export const ALL_SELECTED = 'ALL_SELECTED'
 
+// 取消全选
+export const NONE_SELECTED = 'NONE_SELECTED'
+
 // 设置锁定
 export const SET_LOCK = 'SET_LOCK'

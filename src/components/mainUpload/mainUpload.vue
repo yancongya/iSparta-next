@@ -43,9 +43,9 @@ export default {
       return false
     },
     upFile (filsList) {
-      dialog.showOpenDialog({ properties: [ 'openFile', 'openDirectory', 'multiSelections' ]}, (res) => {
-        this.muFileList = res
-        if(!this.muFileList){return false;}
+      dialog.showOpenDialog({ properties: [ 'openFile', 'openDirectory', 'multiSelections' ]}).then((result) => {
+        if (result.canceled || !result.filePaths.length) { return false }
+        this.muFileList = result.filePaths
         fsOperate.readerFiles(this.muFileList).then((ars) => {
           var Obj = {}
           for (var i in ars) {

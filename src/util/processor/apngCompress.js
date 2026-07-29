@@ -25,7 +25,8 @@ export default function (item, isLossless, store, locale) {
   } else {
     return action.exec(action.bin('apngquant'), [
       item.basic.fileList[0],
-      '--output ' + path.join(item.basic.tmpOutputDir, item.options.outputName + '-quant.png'),
+      '--output',
+      path.join(item.basic.tmpOutputDir, item.options.outputName + '-quant.png'),
       '--force',
       item.options.floyd.checked ? ('--floyd=' + item.options.floyd.value) : '',
       item.options.quality.checked ? ('--quality=0-' + item.options.quality.value) : ''

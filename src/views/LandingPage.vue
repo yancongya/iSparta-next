@@ -50,18 +50,6 @@ export default {
     }
   }
 }
-
-// 统计代码
-var _mtac = {'performanceMonitor': 1, 'senseQuery': 1};
-(function () {
-  var mta = document.createElement('script')
-  mta.src = 'http://pingjs.qq.com/h5/stats.js?v2.0.4'
-  mta.setAttribute('name', 'MTAH5')
-  mta.setAttribute('sid', '500593887')
-  mta.setAttribute('cid', '500593896')
-  var s = document.getElementsByTagName('script')[0]
-  s.parentNode.insertBefore(mta, s)
-})()
 </script>
 
 <style lang="scss">
@@ -77,7 +65,7 @@ var _mtac = {'performanceMonitor': 1, 'senseQuery': 1};
   position:fixed;
   left:70%;
   top:0;
-  bottom:0;
+  bottom:40px;
   right:0;
   overflow:auto;
 }

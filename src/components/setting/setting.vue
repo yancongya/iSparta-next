@@ -1,7 +1,10 @@
 <template>
-<section class="mod-setting" v-if="curtSetting">
+<section class="mod-setting">
   <h3 class="ui-border-t">{{ $t("outputConfig") }}</h3>
-  <section class="mod-multi" v-if="curtSetting.length">
+  <section class="mod-empty" v-if="!curtSetting">
+    <p>{{ $t("selectAtLeastOne") }}</p>
+  </section>
+  <section class="mod-multi" v-else-if="curtSetting.length">
     <p>{{ $t("multiText") }}</p>
     <el-button type="primary" v-on:click="start('')" :disabled="isStarted">&ensp;{{ $t("batchStart") }}&ensp;</el-button>
     <el-button type="primary" v-on:click="changeOutput" :disabled="isStarted">{{ $t("outputTofolder") }}</el-button>
@@ -44,6 +47,7 @@
     <el-button type="primary" v-on:click="start('')" :disabled="isStarted">&emsp;{{ $t("start") }}&emsp;</el-button>
   </section>
   <section class="mod-toolbox">
+    <i class="el-icon-setting" v-on:click="openGlobalSetting()"></i>
     <i class="el-icon-delete" v-on:click="onDeleteAll()"></i>
   </section>
 </section>
@@ -84,6 +88,9 @@ export default {
       }
     },
     isStarted () {
+      if (!this.selectedList.length) {
+        return false
+      }
       var schedule = this.selectedList[0].process.schedule
       if (schedule > 0 && schedule < 1) {
         return true
@@ -92,6 +99,9 @@ export default {
       }
     },
     showFrame () {
+      if (!this.selectedList.length) {
+        return false
+      }
       if (this.selectedList[0].basic.type == 'PNGs') {
         return true
       } else {
@@ -99,6 +109,9 @@ export default {
       }
     },
     formatStatic () {
+      if (!this.selectedList.length) {
+        return ['APNG', 'GIF', 'WEBP']
+      }
       if (this.selectedList[0].basic.type == 'GIF') {
         return ['APNG', 'WEBP']
       } else {
@@ -205,11 +218,17 @@ export default {
       }
       setTimeout(() => {
         this.$store.dispatch('setLock', true)
-        processor(this.$store, sameOutputPath,locale).then()
+        processor(this.$store, sameOutputPath, locale).catch((err) => {
+          console.warn('convert error:', err)
+          this.$store.dispatch('setLock', false)
+        })
       }, 20)
     },
     onDeleteAll:function(){
-      this.$store.dispatch('removeAll')
+      this.$store.dispatch('remove')
+    },
+    openGlobalSetting:function(){
+      this.$root.eventBus.$emit('openGlobalSetting')
     }
   },
   watch: {

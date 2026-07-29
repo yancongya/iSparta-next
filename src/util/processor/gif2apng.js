@@ -23,10 +23,10 @@ export default function (item, store, locale) {
   item.basic.fileList[0] = tmpFile
   // console.log(1)
   var fileName = path.basename(item.basic.fileList[0])
-  return action.exec('cd ' + path.dirname(item.basic.fileList[0]) + ' && ' + action.bin('gif2apng'), [
+  return action.exec(action.bin('gif2apng'), [
     fileName,
     item.options.outputName + '.png'
-  ], item, store, locale).then(() => {
+  ], item, store, locale, { cwd: path.dirname(item.basic.fileList[0]) }).then(() => {
     item.basic.fileList = [
       path.join(item.basic.tmpOutputDir, item.options.outputName + '.png')
     ]

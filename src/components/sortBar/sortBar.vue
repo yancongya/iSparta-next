@@ -1,39 +1,44 @@
 <template>
   <section class="mod-bar">
-    <el-tag
-      v-for="tag in sortTags"
-      size="small"
-      :type="tag.type"
-      @click.native="handleSort(tag)"
-      :key="tag.id"
-    >
-      {{ tag.name }}
-    </el-tag>
+    <span class="bar-label">{{ $t('inputItems') }}<span v-if="itemCount" class="bar-count">（{{ itemCount }}）</span></span>
+    <el-checkbox
+      class="bar-selectall"
+      :value="allChecked"
+      :indeterminate="indeterminate"
+      @change="toggleAll"
+    >{{ $t('selectAll') }}</el-checkbox>
   </section>
 </template>
 
 <script>
   export default {
-    data () {
-      return {
-        sortTags: [
-          {name: 'ALL', type: '', pre: ''},
-          {name: 'PNGs', type: 'gray', pre: 'primary'},
-          {name: 'APNG', type: 'gray', pre: 'success'},
-          {name: 'GIF', type: 'gray', pre: 'warning'}
-          // {name: 'WEBP', type: 'gray', pre: 'warning'}
-        ]
+    computed: {
+      items () {
+        return this.$store.getters.getterItems
+      },
+      itemCount () {
+        return this.items.length
+      },
+      selectedCount () {
+        return this.$store.getters.getterSelected.length
+      },
+      allChecked () {
+        return this.itemCount > 0 && this.selectedCount === this.itemCount
+      },
+      indeterminate () {
+        return this.selectedCount > 0 && this.selectedCount < this.itemCount
       }
     },
     methods: {
-      handleSort (tag) {
-        // console.log(this.$root)
-        this.sortTags.forEach(function (ele) {
-          ele.type = 'gray'
-        })
-        // tag.isActive = true
-        tag.type = tag.pre
-        this.$root.eventBus.$emit('sortList', tag.name)
+      toggleAll () {
+        if (this.$store.getters.getterLocked) {
+          return false
+        }
+        if (this.allChecked) {
+          this.$store.dispatch('noneSelect')
+        } else {
+          this.$store.dispatch('allSelect')
+        }
       }
     }
   }
@@ -49,19 +54,21 @@
   line-height:40px;
   border:1px solid #E4E4E4;
   background:#F2F2F2;
-  padding:0 10px;
+  padding:0 15px;
   display: flex;
   align-items: center;
-  .el-tag{
-    margin:0 5px;
-    cursor:pointer;
+  box-sizing: border-box;
+  z-index: 100;
+  .bar-label{
+    font-size:13px;
+    color:#5a5a5a;
   }
-  .el-tag--gray{
-    background:transparent;
-    border-color:transparent;
-    &:hover{
-      border-color: rgba(71,86,105,.2);
-    }
+  .bar-count{
+    color:#999;
+  }
+  .bar-selectall{
+    margin-left:auto;
+    margin-right:0;
   }
 }
 </style>

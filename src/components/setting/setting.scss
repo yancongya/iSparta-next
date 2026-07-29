@@ -108,14 +108,20 @@ input[type="number"] {
   }
   .mod-toolbox{
     position: absolute;
-    right:35px;
+    right:16px;
     bottom:12px;
-    .el-icon-delete{
+    display:flex;
+    align-items:center;
+    i{
       color: #409EFF;
+      font-size:16px;
       &:hover{
         opacity: .8;
         cursor: pointer;
       }
+    }
+    .el-icon-setting{
+      margin-right:16px;
     }
   }
 }
@@ -126,4 +132,11 @@ input[type="number"] {
   text-align:center;
   padding:0 50px;
   
+}
+.mod-empty{
+  color:#8794a5;
+  font-size:14px;
+  text-align:center;
+  padding:60px 40px;
+  line-height:1.8;
 }

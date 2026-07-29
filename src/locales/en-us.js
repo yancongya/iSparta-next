@@ -27,6 +27,9 @@ module.exports = {
     "multiText":"multi-selected state, using their own configuration output",
     "batchStart":"Batch start",
     "outputTofolder":"Output to folder",
+    "inputItems":"Input items",
+    "selectAll":"Select all",
+    "selectAtLeastOne":"Please select at least one item to export",
     //progress
     "startConvert":"Start Coverting",
     "convertSuccess":"Success",
