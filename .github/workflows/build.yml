@@ -16,9 +16,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: macos-13
-            platform: mac
-            flag: --mac
           - os: windows-latest
             platform: win
             flag: --win
@@ -89,7 +86,7 @@ jobs:
       - name: List release files
         run: ls -lh dist
 
-      # 仅上传三个平台构建产物，不打包/上传任何源码
+      # 仅上传 CI 构建的 win/linux 产物；mac 由本地构建后手动补传到同一 Release
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
