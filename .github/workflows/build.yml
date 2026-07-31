@@ -6,6 +6,9 @@ on:
     tags: ['v*']
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     name: Build (${{ matrix.platform }})
@@ -31,11 +34,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '16'
+          cache: 'npm'
 
       # electron-chromedriver(spectron 传递依赖)在部分平台会下载失败并中断安装，
       # 故跳过所有安装脚本，随后单独安装 electron 运行时二进制
       - name: Install dependencies
-        run: npm install --ignore-scripts --no-audit --no-fund
+        run: npm ci --ignore-scripts --no-audit --no-fund
 
       - name: Install electron binary
         run: node node_modules/electron/install.js
@@ -46,16 +50,51 @@ jobs:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      # 只收集最终安装包/压缩包，剔除 blockmap、yml 等更新元数据
+      - name: Collect build outputs
+        shell: bash
+        run: |
+          mkdir -p release
+          shopt -s nullglob
+          for f in \
+            dist_electron/*.dmg \
+            dist_electron/*.zip \
+            dist_electron/*.tar.gz \
+            dist_electron/*.exe \
+            dist_electron/*.AppImage; do
+            cp "$f" release/
+          done
+          ls -lh release
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: isparta-${{ matrix.platform }}
           if-no-files-found: error
           retention-days: 7
-          path: |
-            dist_electron/*.dmg
-            dist_electron/*.zip
-            dist_electron/*.tar.gz
-            dist_electron/*.exe
-            dist_electron/*.AppImage
-            dist_electron/*.blockmap
+          path: release/*
+
+  release:
+    name: Publish Release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: List release files
+        run: ls -lh dist
+
+      # 仅上传三个平台构建产物，不打包/上传任何源码
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          fail_on_unmatched_files: true
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
