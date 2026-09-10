@@ -1,27 +1,27 @@
 <template>
 <section class="mod-list">
   <template v-for="(project,index) in projectList">
-    <div class="item" v-bind:class="{active:project.isSelected}" :data-index="index" :key="project.id" @contextmenu="itemRightClick(project.basic,index)">
+    <div class="item" v-bind:class="{active:project.isSelected}" :data-index="index" :key="'item-' + index + '-' + (project.basic && project.basic.type)" @contextmenu="itemRightClick(project.basic,index)">
       <div class="check" @click.stop="toggleSelect(index)">
-        <el-checkbox :value="project.isSelected" style="pointer-events:none"></el-checkbox>
+        <el-checkbox :value="!!project.isSelected" style="pointer-events:none"></el-checkbox>
       </div>
       <div class="thumb">
-        <img :src="thumbFor(project.basic.fileList[0])" />
+        <img :src="thumbFor(project.basic && project.basic.fileList && project.basic.fileList[0])" />
       </div>
       <div class="info">
         <div class="input">
-          <el-tag :type="getLabel(project.basic.type)" size="mini">{{ project.basic.type }}</el-tag>
-          <p class="inputPath" :title="'输入目录：'+project.basic.inputPath">{{ project.basic.inputPath | basePath }}</p>
-          <i class="el-icon-setting" v-if="project.basic.type=='PNGs'" @click="onDelaySetting(project)"></i>
+          <el-tag :type="getLabel(project.basic && project.basic.type)" size="mini">{{ project.basic && project.basic.type }}</el-tag>
+          <p class="inputPath" :title="'输入目录：'+(project.basic && project.basic.inputPath)">{{ (project.basic && project.basic.inputPath) | basePath }}</p>
+          <i class="el-icon-setting" v-if="project.basic && project.basic.type=='PNGs'" @click="onDelaySetting(project)"></i>
         </div>
         <div class="output">
           <i class="el-icon-edit"></i>
-          <p class="outputPath" @click="changeFold(project.basic.outputPath,index)" :title="'输出目录：'+project.basic.outputPath">{{ project.basic.outputPath | basePath }}</p>
+          <p class="outputPath" @click="changeFold(project.basic && project.basic.outputPath,index)" :title="'输出目录：'+(project.basic && project.basic.outputPath)">{{ (project.basic && project.basic.outputPath) | basePath }}</p>
         </div>
       </div>
-      <div class="status" :class="processStatus(project.process.schedule)" ><i class="el-icon-loading" v-if="project.process.schedule > 0 && project.process.schedule < 1"></i>{{ project.process.text }}</div>
-      <div class="progress" :class="{fail:isFail(project.process.schedule)}" >
-        <span class="precent" :class="{ani:isStarted(project.process.schedule)}" :style="{width: processPrecent(project.process.schedule) + '%' }"></span>
+      <div class="status" :class="processStatus(project.process && project.process.schedule)" ><i class="el-icon-loading" v-if="project.process && project.process.schedule > 0 && project.process.schedule < 1"></i>{{ project.process && project.process.text }}</div>
+      <div class="progress" :class="{fail:isFail(project.process && project.process.schedule)}" >
+        <span class="precent" :class="{ani:isStarted(project.process && project.process.schedule)}" :style="{width: processPrecent(project.process && project.process.schedule) + '%' }"></span>
       </div>
     </div>
   </template>
@@ -159,6 +159,9 @@ export default {
     },
     processPrecent (schedule) {
       // console.log(schedule);
+      if (schedule === undefined || schedule === null || isNaN(schedule)) {
+        return 0
+      }
       switch (schedule) {
         case -1:
           return 100
