@@ -12,7 +12,7 @@ function bindMenuClicked () {
     const payload = msg.payload || {}
     switch (msg.action) {
       case 'openOriginal': {
-        const srcPath = String(payload.inputPath || '').replace(/\/[^\/]*$/, '')
+        const srcPath = String(payload.inputPath || '').replace(/[\\/][^\\/]*$/, '')
         ipc.invoke('shell:showItemInFolder', srcPath)
         break
       }

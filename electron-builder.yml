@@ -1,13 +1,17 @@
 appId: io.github.isparta
 asar: false
+# 使用本地已安装的 Electron，避免打包时再下载 zip
+electronDist: ./node_modules/electron/dist
+electronVersion: 28.3.3
 publish:
   - provider: github
 win:
+  # 无签名环境：跳过 rcedit / codesign 下载
+  signAndEditExecutable: false
   target:
     - target: zip
       arch:
         - x64
-        - ia32
   icon: ./public/icons/icon.ico
 mac:
   target:
@@ -22,3 +26,4 @@ linux:
       arch:
         - x64
   icon: ./public/icons
+
