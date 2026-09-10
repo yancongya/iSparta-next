@@ -1,0 +1,43 @@
+/* iSparta-next design tokens — 复用 image-compression 工具台气质 */
+:root {
+  --is-brand: #4a6cf7;
+  --is-brand-hover: #3a5be8;
+  --is-accent: #7c9bff;
+  --is-success: #28a745;
+  --is-danger: #dc3545;
+  --is-warning: #f0ad4e;
+
+  --is-bg: #121212;
+  --is-bg-elevated: #1a1a1a;
+  --is-panel: #1e1e1e;
+  --is-card: #242424;
+  --is-card-hover: #2a2a2a;
+  --is-border: rgba(255, 255, 255, 0.08);
+  --is-border-strong: rgba(255, 255, 255, 0.14);
+
+  --is-text: #f3f4f6;
+  --is-text-secondary: rgba(255, 255, 255, 0.62);
+  --is-text-muted: rgba(255, 255, 255, 0.38);
+
+  --is-radius: 12px;
+  --is-radius-sm: 8px;
+  --is-radius-xs: 6px;
+
+  --is-space-1: 4px;
+  --is-space-2: 8px;
+  --is-space-3: 12px;
+  --is-space-4: 16px;
+  --is-space-5: 20px;
+  --is-space-6: 24px;
+  --is-space-8: 32px;
+
+  --is-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.25);
+  --is-shadow-md: 0 8px 24px rgba(0, 0, 0, 0.35);
+
+  --is-font: "Segoe UI", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --is-mono: "Cascadia Code", "SF Mono", Consolas, monospace;
+
+  --is-topbar-h: 48px;
+  --is-bottombar-h: 44px;
+  --is-sidebar-w: 320px;
+}
