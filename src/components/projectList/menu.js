@@ -1,5 +1,5 @@
 // 右键菜单：主进程 popup，渲染进程执行动作（Phase1 去 remote）
-const ipc = require('electron').ipcRenderer
+import { ipc } from '../../util/node-env'
 
 let storeRef = null
 let bound = false
@@ -7,7 +7,7 @@ let bound = false
 function bindMenuClicked () {
   if (bound) { return }
   bound = true
-  ipc.on('menu:clicked', (event, msg) => {
+  ipc.on('menu:clicked', (msg) => {
     if (!msg || msg.menuId !== 'project-item') { return }
     const payload = msg.payload || {}
     switch (msg.action) {

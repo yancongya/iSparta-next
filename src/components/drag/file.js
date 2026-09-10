@@ -1,7 +1,6 @@
 // 依赖库
-const fs = require('fs-extra')
-const path = require('path')
-const _ = require('lodash')
+import { fs, path } from '../../util/node-env'
+import _ from 'lodash'
 // 正则匹配
 const reg = {
   'PNGs': /.*\.png$/i,
@@ -15,14 +14,37 @@ var recordPng = []
 
 // 按 PNG chunk 结构扫描 acTL 判定 APNG（acTL 必在 IDAT 之前，位置不固定）
 function isApngBuffer (buffer) {
+  if (!buffer || typeof buffer.length !== 'number') {
+    return false
+  }
   const PNG_SIG = 8
   if (buffer.length < PNG_SIG + 8) {
     return false
   }
+  const readUInt32BE = (buf, offset) => {
+    if (typeof buf.readUInt32BE === 'function') {
+      return buf.readUInt32BE(offset)
+    }
+    return ((buf[offset] << 24) | (buf[offset + 1] << 16) | (buf[offset + 2] << 8) | buf[offset + 3]) >>> 0
+  }
+  const ascii = (buf, start, end) => {
+    if (typeof buf.toString === 'function' && !ArrayBuffer.isView(buf) === false && buf instanceof Uint8Array) {
+      return String.fromCharCode.apply(null, Array.from(buf.subarray(start, end)))
+    }
+    if (typeof buf.toString === 'function') {
+      return buf.toString('ascii', start, end)
+    }
+    return ''
+  }
   let offset = PNG_SIG
   while (offset + 8 <= buffer.length) {
-    const length = buffer.readUInt32BE(offset)
-    const type = buffer.toString('ascii', offset + 4, offset + 8)
+    const length = readUInt32BE(buffer, offset)
+    let type = ''
+    if (typeof buffer.toString === 'function' && !(buffer instanceof Uint8Array)) {
+      type = buffer.toString('ascii', offset + 4, offset + 8)
+    } else {
+      type = String.fromCharCode(buffer[offset + 4], buffer[offset + 5], buffer[offset + 6], buffer[offset + 7])
+    }
     if (type === 'acTL') {
       return true
     }

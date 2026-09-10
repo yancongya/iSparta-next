@@ -21,7 +21,7 @@
 import { f as fsOperate } from '../drag/file.js'
 import * as d from '../drag/drag.js'
 
-const ipc = require('electron').ipcRenderer
+import { ipc } from '../../util/node-env'
 
 export default {
   data () {

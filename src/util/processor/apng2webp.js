@@ -1,5 +1,4 @@
-import fs from 'fs-extra'
-import path from 'path'
+import { fs, path } from '../node-env'
 import action from './action'
 
 export default function (item, store, locale) {

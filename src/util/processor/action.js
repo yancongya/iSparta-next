@@ -1,12 +1,11 @@
-import os from 'os'
-import path from 'path'
-import Process from 'child_process'
 import _ from 'lodash'
+import { ipc, path, os, getProcessBridge, getChildProcess } from '../node-env'
 
-const ipc = require('electron').ipcRenderer
+const Process = getChildProcess()
+const procEnv = getProcessBridge()
 ipc.send('get-app-path')
 var basePath = ''
-ipc.on('got-app-path', function(event, path) {
+ipc.on('got-app-path', function(path) {
   basePath = path
 })
 
@@ -50,8 +49,8 @@ export default class Action {
   static bin(exec) {
     var pf = getOsInfo()
     var baseDir
-    if (process.env.NODE_ENV == 'development') {
-      baseDir = path.join(process.cwd(), '/public/bin/', pf)
+    if (procEnv.env.NODE_ENV == 'development') {
+      baseDir = path.join(procEnv.cwd(), '/public/bin/', pf)
     } else {
       baseDir = path.join(basePath, '/bin/', pf)
     }

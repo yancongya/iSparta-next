@@ -32,12 +32,10 @@
 </section>
 </template>
 <script>
-const path = require('path')
-const fs = require('fs')
-const _ = require('lodash')
+import { path, fs, ipc } from '../../util/node-env'
+import _ from 'lodash'
 const rightMenu = require('./menu')
 
-const ipc = require('electron').ipcRenderer
 import DelayDialog from  '../delayDialog/index.vue'
 import { f as fsOperate } from '../drag/file.js'
 export default {
@@ -54,7 +52,7 @@ export default {
 
   created () {
     // 回应修改输出目录的操作
-    ipc.on('change-item-fold', (event, path, order) => {
+    ipc.on('change-item-fold', (path, order) => {
       
       if(path[0]){
         this.$store.dispatch('editBasic', {

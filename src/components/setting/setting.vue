@@ -54,7 +54,7 @@
 </template>
 <script>
 import processor from '../../util/processor'
-const ipc = require('electron').ipcRenderer
+import { ipc } from '../../util/node-env'
 export default {
   data () {
     return {
@@ -63,7 +63,7 @@ export default {
   },
   created () {
     // 回应输出到目录的操作
-    ipc.on('change-multiItem-fold', (event, path) => {
+    ipc.on('change-multiItem-fold', (path) => {
       // console.log(this.$store,path[0]);
       this.start(path[0])
       // processor().then(() => {})
