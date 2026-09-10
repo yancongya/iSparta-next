@@ -38,7 +38,6 @@ const _ = require('lodash')
 const rightMenu = require('./menu')
 
 const ipc = require('electron').ipcRenderer
-const {dialog} = require('electron').remote
 import DelayDialog from  '../delayDialog/index.vue'
 import { f as fsOperate } from '../drag/file.js'
 export default {
@@ -199,8 +198,10 @@ export default {
       ipc.send('change-item-fold', outputPath, index)
     },
     openFolder(){
-      dialog.showOpenDialog({ properties: [ 'openFile', 'openDirectory', 'multiSelections' ]}).then((result) => {
-        if (result.canceled || !result.filePaths.length) { return false }
+      ipc.invoke('dialog:openFiles', {
+        properties: [ 'openFile', 'openDirectory', 'multiSelections' ]
+      }).then((result) => {
+        if (!result || result.canceled || !result.filePaths.length) { return false }
         this.muFileList = result.filePaths
         fsOperate.readerFiles(this.muFileList).then((ars) => {
           var Obj = {}

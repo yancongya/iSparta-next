@@ -1,6 +1,6 @@
 'use strict'
 
-import { app, protocol, BrowserWindow, ipcMain,dialog } from 'electron'
+import { app, protocol, BrowserWindow, ipcMain, dialog, shell, Menu } from 'electron'
 import {
   createProtocol
 } from 'vue-cli-plugin-electron-builder/lib'
@@ -28,7 +28,7 @@ function createWindow () {
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
-      enableRemoteModule: true,
+      enableRemoteModule: false,
       webSecurity: false
     } })
   
@@ -130,4 +130,63 @@ ipcMain.on('change-multiItem-fold', function (event, path) {
 // 监听获取应用目录的操作
 ipcMain.on('get-app-path', function (event) {
   event.sender.send('got-app-path', app.getAppPath())
+})
+
+// Phase1: replace electron.remote with IPC
+
+ipcMain.handle('dialog:openFiles', async (event, options = {}) => {
+  const result = await dialog.showOpenDialog(win, {
+    defaultPath: options.defaultPath,
+    properties: options.properties || ['openFile', 'openDirectory', 'multiSelections']
+  })
+  return { canceled: result.canceled, filePaths: result.filePaths }
+})
+
+ipcMain.handle('dialog:openDirectory', async (event, options = {}) => {
+  const result = await dialog.showOpenDialog(win, {
+    defaultPath: options.defaultPath,
+    properties: ['openDirectory']
+  })
+  return { canceled: result.canceled, filePaths: result.filePaths }
+})
+
+ipcMain.handle('shell:showItemInFolder', async (event, fullPath) => {
+  if (typeof fullPath === 'string' && fullPath) {
+    shell.showItemInFolder(fullPath)
+  }
+})
+
+const menuTemplates = {
+  'project-item': (payload) => {
+    const items = []
+    if (!payload.isMultiItems) {
+      items.push(
+        { id: 'openOriginal', label: payload.locale.openOriginal },
+        { id: 'openDist', label: payload.locale.openDist },
+        { id: 'changeDist', label: payload.locale.changeDist },
+        { type: 'separator' }
+      )
+    }
+    items.push({ id: 'delItem', label: payload.locale.delItem })
+    return items
+  }
+}
+
+ipcMain.on('menu:popup', (event, { menuId, x, y, payload }) => {
+  const build = menuTemplates[menuId]
+  if (!build) { return }
+  const template = build(payload || {}).map((item) => {
+    if (item.type === 'separator') { return item }
+    return Object.assign({}, item, {
+      click: () => {
+        event.sender.send('menu:clicked', {
+          menuId,
+          action: item.id,
+          payload
+        })
+      }
+    })
+  })
+  const menu = Menu.buildFromTemplate(template)
+  menu.popup({ window: BrowserWindow.fromWebContents(event.sender) || win, x, y })
 })

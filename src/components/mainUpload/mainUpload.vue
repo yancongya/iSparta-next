@@ -21,7 +21,7 @@
 import { f as fsOperate } from '../drag/file.js'
 import * as d from '../drag/drag.js'
 
-const {dialog} = require('electron').remote
+const ipc = require('electron').ipcRenderer
 
 export default {
   data () {
@@ -43,8 +43,10 @@ export default {
       return false
     },
     upFile (filsList) {
-      dialog.showOpenDialog({ properties: [ 'openFile', 'openDirectory', 'multiSelections' ]}).then((result) => {
-        if (result.canceled || !result.filePaths.length) { return false }
+      ipc.invoke('dialog:openFiles', {
+        properties: [ 'openFile', 'openDirectory', 'multiSelections' ]
+      }).then((result) => {
+        if (!result || result.canceled || !result.filePaths.length) { return false }
         this.muFileList = result.filePaths
         fsOperate.readerFiles(this.muFileList).then((ars) => {
           var Obj = {}
