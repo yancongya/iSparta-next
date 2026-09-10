@@ -41,6 +41,12 @@ export default {
               // var tempars = []
         var Obj = {}
         for (var i in ars) {
+          // 数字自然排序：修复 file_10 排在 file_2 前导致帧错乱
+          ars[i].basic.fileList.sort((a, b) => {
+            const _a = a.replace(/(\d+)/g, (e) => '0'.repeat(8 - Math.min(e.length, 8)) + e)
+            const _b = b.replace(/(\d+)/g, (e) => '0'.repeat(8 - Math.min(e.length, 8)) + e)
+            return _a > _b ? 1 : -1
+          })
           Obj.basic = ars[i].basic
           Obj.options = ars[i].options
           this.$store.dispatch('add', Obj)
