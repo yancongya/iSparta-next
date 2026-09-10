@@ -23,3 +23,22 @@ yarn-error.log*
 #Electron-builder output
 /dist_electron
 test
+
+# local dev helpers (worktree)
+.dev-pid
+.npm-pid
+dev.log
+dev.err
+dev.status
+npm-install.log
+npm-install.err
+npm-install.status
+electron-install.log
+electron-install.err
+electron-install.status
+run-dev.cmd
+run-npm-install.cmd
+run-clean-install.cmd
+run-electron-install.cmd
+.npmrc
+.worktrees/
