@@ -5,9 +5,7 @@ import gif2apng 	from './gif2apng'
 import PNGs2apng 	from './pngs2apng'
 import webp2apng 	from './webp2apng'
 import Action 		from './action'
-import fs 			from 'fs-extra'
-import path 		from 'path'
-import os 			from 'os'
+import { fs, path, os } 	from '../node-env'
 import TYPE 		from '../../store/enum/type'
 
 function stat (label) {

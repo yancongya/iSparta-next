@@ -1,4 +1,4 @@
-const path = require('path')
+import { path } from '../../util/node-env'
 var foldPath = []
 export default {
   drag () {

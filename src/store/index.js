@@ -4,14 +4,11 @@ import Vuex from 'vuex'
 import modules from './modules'
 
 import * as types from './mutation-types'
-const fs = require("fs-extra");
-const storage = require('electron-localstorage');
-const os = require("os");
-const path = require("path");
+import { fs, storage, os, path, getProcessBridge } from '../util/node-env'
 const _ = require("lodash");
 // 【bug fix】修复初次使用时读取缓存错误的问题
 let storagePath = "";
-if (process.env.NODE_ENV == "development") {
+if (getProcessBridge().env.NODE_ENV == "development") {
 
   storagePath = path.join(os.tmpdir(), 'iSparta/localstorage-dev.json');
 } else {

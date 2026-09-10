@@ -26,10 +26,12 @@ function createWindow () {
     title:"iSparta-next",
     show: false,
     webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false,
+      nodeIntegration: false,
+      contextIsolation: true,
+      sandbox: false,
       enableRemoteModule: false,
-      webSecurity: false
+      webSecurity: false,
+      preload: path.join(__dirname, 'preload.js')
     } })
   
   if (process.env.WEBPACK_DEV_SERVER_URL) {

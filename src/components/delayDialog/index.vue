@@ -24,15 +24,14 @@
   </el-dialog>
 </template>
 <script>
-const path = require('path')
-const fs = require('fs')
-const _ = require('lodash')
+import { path, fs } from '../../util/node-env'
+import _ from 'lodash'
 
 // 读取图片类型
 import typeData from '../../store/enum/type'
 const imgType = _.values(typeData).join(',')
 
-const ipc = require('electron').ipcRenderer
+
 import { f as fsOperate } from '../drag/file.js'
 export default {
   props:{

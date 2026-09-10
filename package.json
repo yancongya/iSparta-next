@@ -33,7 +33,7 @@
     "@vue/cli-plugin-eslint": "^4.5.19",
     "@vue/cli-service": "^4.5.19",
     "babel-eslint": "^10.1.0",
-    "electron": "^13.6.9",
+    "electron": "^28.3.3",
     "eslint": "^6.8.0",
     "eslint-plugin-vue": "^6.2.2",
     "sass": "^1.32.13",

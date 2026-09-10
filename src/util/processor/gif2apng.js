@@ -1,6 +1,5 @@
-import path from 'path'
+import { path, fs } from '../node-env'
 import action from './action'
-import fs from 'fs-extra'
 import apngCompress from './apngCompress'
 
 export default function (item, store, locale) {

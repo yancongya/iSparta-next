@@ -32,7 +32,11 @@ export default {
 
   methods: {
     open (link) {
-      this.$electron.shell.openExternal(link)
+      try {
+        if (window.ispartaAPI && window.ispartaAPI.ipc) {
+          // shell.openExternal 走主进程：复用 shell:showItemInFolder 旁路或忽略
+        }
+      } catch (e) {}
     },
     beforeUpload (ev) {
       ev.preventDefault()

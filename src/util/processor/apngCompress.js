@@ -1,6 +1,5 @@
-import path from 'path'
+import { path, fs } from '../node-env'
 import action from './action'
-import fs from 'fs-extra'
 
 export default function (item, isLossless, store, locale) {
   store.dispatch('editProcess', {
