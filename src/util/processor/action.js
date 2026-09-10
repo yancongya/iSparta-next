@@ -1,7 +1,6 @@
 import _ from 'lodash'
-import { ipc, path, os, getProcessBridge, getChildProcess } from '../node-env'
+import { ipc, path, os, getProcessBridge } from '../node-env'
 
-const Process = getChildProcess()
 const procEnv = getProcessBridge()
 ipc.send('get-app-path')
 var basePath = ''
@@ -21,7 +20,7 @@ function ensureExecutable(dir, pf) {
     return
   }
   try {
-    Process.execFile('chmod', ['-R', '+x', dir])
+    ipc.invoke('job:execFile', 'chmod', ['-R', '+x', dir], {})
   } catch (e) {
     console.warn('chmod failed:', e)
   }
@@ -71,38 +70,35 @@ export default class Action {
     return num
   }
   static exec(command, args, item, store, locale, options) {
-    return new Promise(function(resolve, reject) {
-      var execOptions = { maxBuffer: 1024 * 1024 * 64 }
-      if (options && options.cwd) {
-        execOptions.cwd = options.cwd
+    var execOptions = { maxBuffer: 1024 * 1024 * 64 }
+    if (options && options.cwd) {
+      execOptions.cwd = options.cwd
+    }
+    var cleanArgs = args.filter(function(a) {
+      return a !== '' && a !== null && a !== undefined
+    })
+    return ipc.invoke('job:execFile', command, cleanArgs, execOptions).then(function(result) {
+      if (!result || !result.ok) {
+        console.warn('command failed:', command, cleanArgs)
+        console.warn('stdout:', result && result.stdout)
+        console.warn('stderr:', result && result.stderr)
+        console.warn(result && result.error)
+        store.dispatch('editProcess', {
+          index: item.index,
+          text: locale.convertFail,
+          schedule: -1
+        })
+        store.dispatch('setLock', false)
+        return Promise.reject({
+          command: command,
+          args: cleanArgs,
+          err: result && result.error
+        })
       }
-      var cleanArgs = args.filter(function(a) {
-        return a !== '' && a !== null && a !== undefined
-      })
-      Process.execFile(command, cleanArgs, execOptions, function(err, stdout, stderr) {
-        if (err) {
-          console.warn('command failed:', command, cleanArgs)
-          console.warn('stdout:', stdout)
-          console.warn('stderr:', stderr)
-          console.warn(err)
-          store.dispatch('editProcess', {
-            index: item.index,
-            text: locale.convertFail,
-            schedule: -1
-          })
-          store.dispatch('setLock', false)
-          reject({
-            command: command,
-            args: cleanArgs,
-            err: err
-          })
-        } else {
-          resolve({
-            command: command,
-            args: cleanArgs
-          })
-        }
-      })
+      return {
+        command: command,
+        args: cleanArgs
+      }
     })
   }
 }
