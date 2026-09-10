@@ -6,6 +6,9 @@ import {
 } from 'vue-cli-plugin-electron-builder/lib'
 const isDevelopment = process.env.NODE_ENV !== 'production'
 const path = require("path");
+const fsp = require('fs');
+const childProcess = require('child_process');
+const os = require('os');
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
 
@@ -28,7 +31,7 @@ function createWindow () {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      sandbox: false,
+      sandbox: false, // fs 已主进程化；下一步可在全量冒烟后改 true
       enableRemoteModule: false,
       webSecurity: false,
       preload: path.join(__dirname, 'preload.js')
@@ -161,6 +164,143 @@ ipcMain.handle('shell:showItemInFolder', async (event, fullPath) => {
   if (typeof fullPath === 'string' && fullPath) {
     shell.showItemInFolder(fullPath)
   }
+})
+
+// --- Phase3/4: Node fs / path / os / execFile 均在主进程 ---
+function ensureDir (dir) {
+  if (!dir) { return }
+  fsp.mkdirSync(dir, { recursive: true })
+}
+
+ipcMain.on('fs:existsSync', (event, p) => {
+  try { event.returnValue = fsp.existsSync(p) } catch (e) { event.returnValue = false }
+})
+ipcMain.on('fs:readdirSync', (event, p) => {
+  try { event.returnValue = fsp.readdirSync(p) } catch (e) { event.returnValue = [] }
+})
+ipcMain.on('fs:lstatSync', (event, p) => {
+  try {
+    const st = fsp.lstatSync(p)
+    event.returnValue = { isDirectory: st.isDirectory(), isFile: st.isFile() }
+  } catch (e) {
+    event.returnValue = null
+  }
+})
+ipcMain.on('fs:readFileSync', (event, p, enc) => {
+  try {
+    const buf = fsp.readFileSync(p, enc)
+    if (!enc && buf) {
+      event.returnValue = { type: 'bytes', data: Array.from(buf) }
+    } else {
+      event.returnValue = { type: 'text', data: buf }
+    }
+  } catch (e) {
+    event.returnValue = { type: 'error', error: String(e && e.message || e) }
+  }
+})
+ipcMain.on('fs:writeFileSync', (event, p, data, enc) => {
+  try {
+    ensureDir(path.dirname(p))
+    if (data && data.type === 'bytes' && Array.isArray(data.data)) {
+      fsp.writeFileSync(p, Buffer.from(data.data), enc)
+    } else {
+      fsp.writeFileSync(p, data, enc)
+    }
+    event.returnValue = true
+  } catch (e) {
+    event.returnValue = false
+  }
+})
+ipcMain.on('fs:ensureFileSync', (event, p) => {
+  try {
+    ensureDir(path.dirname(p))
+    if (!fsp.existsSync(p)) { fsp.writeFileSync(p, '', 'utf8') }
+    event.returnValue = true
+  } catch (e) {
+    event.returnValue = false
+  }
+})
+ipcMain.on('fs:ensureDirSync', (event, p) => {
+  try { ensureDir(p); event.returnValue = true } catch (e) { event.returnValue = false }
+})
+ipcMain.on('fs:copySync', (event, a, b) => {
+  try {
+    ensureDir(path.dirname(b))
+    fsp.copyFileSync(a, b)
+    event.returnValue = true
+  } catch (e) {
+    event.returnValue = false
+  }
+})
+ipcMain.on('fs:removeSync', (event, p) => {
+  try {
+    fsp.rmSync(p, { recursive: true, force: true })
+    event.returnValue = true
+  } catch (e) {
+    event.returnValue = true
+  }
+})
+ipcMain.on('path:join', (event, parts) => {
+  event.returnValue = path.join(...(parts || []))
+})
+ipcMain.on('path:dirname', (event, p) => {
+  event.returnValue = path.dirname(p)
+})
+ipcMain.on('path:basename', (event, p, ext) => {
+  event.returnValue = path.basename(p, ext)
+})
+ipcMain.on('path:sep', (event) => {
+  event.returnValue = path.sep
+})
+ipcMain.on('os:tmpdir', (event) => {
+  event.returnValue = os.tmpdir()
+})
+ipcMain.on('os:cpus', (event) => {
+  const cpus = os.cpus()
+  event.returnValue = { length: cpus.length }
+})
+ipcMain.on('process:cwd', (event) => {
+  event.returnValue = process.cwd()
+})
+ipcMain.on('process:nodeEnv', (event) => {
+  event.returnValue = process.env.NODE_ENV
+})
+ipcMain.on('job:execFileSync', (event, command, args, options) => {
+  try {
+    const opts = Object.assign({ maxBuffer: 1024 * 1024 * 64 }, options || {})
+    const stdout = childProcess.execFileSync(command, args || [], opts)
+    event.returnValue = { ok: true, stdout: stdout ? stdout.toString() : '' }
+  } catch (e) {
+    event.returnValue = {
+      ok: false,
+      error: String(e && e.message || e),
+      stdout: e && e.stdout ? e.stdout.toString() : '',
+      stderr: e && e.stderr ? e.stderr.toString() : ''
+    }
+  }
+})
+ipcMain.handle('fs:copy', async (event, a, b) => {
+  ensureDir(path.dirname(b))
+  fsp.copyFileSync(a, b)
+})
+ipcMain.handle('fs:writeFile', async (event, p, data) => {
+  ensureDir(path.dirname(p))
+  fsp.writeFileSync(p, data)
+})
+ipcMain.handle('fs:remove', async (event, p) => {
+  try { fsp.rmSync(p, { recursive: true, force: true }) } catch (e) { /* ignore */ }
+})
+ipcMain.handle('job:execFile', async (event, command, args, options) => {
+  return new Promise((resolve) => {
+    const opts = Object.assign({ maxBuffer: 1024 * 1024 * 64 }, options || {})
+    childProcess.execFile(command, args || [], opts, (err, stdout, stderr) => {
+      if (err) {
+        resolve({ ok: false, error: String(err.message || err), stdout: String(stdout || ''), stderr: String(stderr || '') })
+      } else {
+        resolve({ ok: true, stdout: String(stdout || ''), stderr: String(stderr || '') })
+      }
+    })
+  })
 })
 
 const menuTemplates = {
