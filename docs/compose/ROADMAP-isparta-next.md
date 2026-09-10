@@ -3,12 +3,13 @@
 | # | 阶段 | 目标 | 状态 |
 | --- | --- | --- | --- |
 | P1 | 去 remote / IPC | 对话框、右键菜单走 ipcMain，禁用 remote | **done** `feat/electron-ipc-phase1` |
-| P2 | Electron 28 + isolation | 升主版本，contextIsolation，preload 白名单 | **done** `feat/electron-upgrade`（待人工验收合 master） |
+| P2 | Electron 28 + isolation | 升主版本，contextIsolation，preload 白名单 | **done** `feat/electron-upgrade` |
 | P2b | 收尾 | 完整冒烟 → 合入 master | **open** 依赖人工测试 |
-| P3 | sandbox + preload 收紧 | `sandbox:true`；fs/转换能力主进程化前置 | **open** |
-| P4 | 转换迁主进程 | 扫描/编码不在 renderer；长任务不卡 UI | **open** |
-| P5 | 打包与发布 | build:windows 可用、CI/release | **open** |
-| P6 | 产品 backlog | #50 全选、#47 大 GIF、#54 残影、#48 队列 | **open** |
+| P3 | sandbox + preload 收紧 | `sandbox:true`；fs/exec 主进程 IPC | **code done** 待冒烟 |
+| P4 | 转换迁主进程 | fs/path/os/execFile 已主进程；整段 processor 仍 renderer | **partial** |
+| P5 | 打包与发布 | `build:windows` zip 成功（本地 electronDist、免签名） | **code done** 待装包验证 |
+| P6 | 产品 backlog | Windows 打开原目录已修；#50/#47/#54/#48 待测 | **partial** |
+| UI | 前端重设计 | `feat/frontend-redesign`：主题/折叠/胶片/粘贴导入 | **in progress** |
 
 ## 分支策略
 
