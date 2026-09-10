@@ -129,11 +129,17 @@ if (localData) {
       }
     }
     if (!isError) {
+      item.process = item.process || {}
       item.process.text = ''
       item.process.schedule = 0;
+      item.isSelected = !!item.isSelected
       items.push(item);
     }
   })
+  // 恢复后至少选中一条，避免右侧一直提示「请选中至少一个」
+  if (items.length && !_.some(items, { isSelected: true })) {
+    items[0].isSelected = true
+  }
   state.items = items
 }
 // 只有这里才能才state的值

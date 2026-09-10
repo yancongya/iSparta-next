@@ -27,7 +27,7 @@
           <el-input v-model="outputName" size="mini" placeholder="output-ispt"></el-input>
         </el-form-item>
         <p>{{ $t("outputFormat") }}</p>
-        <el-checkbox-group v-model="formatList" :min="1">
+        <el-checkbox-group v-model="formatList">
           <el-checkbox v-for="format in formatStatic" :label="format" :key="format">{{format}}</el-checkbox>
         </el-checkbox-group>
       </el-form>
@@ -44,7 +44,7 @@
         </el-form-item>
       </el-form>
     </div>
-    <el-button type="primary" v-on:click="start('')" :disabled="isStarted">&emsp;{{ $t("start") }}&emsp;</el-button>
+    <el-button type="primary" v-on:click="start('')" :disabled="isStarted || !canStart">&emsp;{{ $t("start") }}&emsp;</el-button>
   </section>
   <section class="mod-toolbox">
     <i class="el-icon-setting" v-on:click="openGlobalSetting()"></i>
@@ -97,6 +97,14 @@ export default {
       } else {
         return false
       }
+    },
+    // 至少勾选一种输出格式才能开始
+    canStart () {
+      if (this.selectedList.length !== 1) {
+        return true
+      }
+      var fmt = this.curtSetting && this.curtSetting.outputFormat
+      return !!(fmt && fmt.length)
     },
     showFrame () {
       if (!this.selectedList.length) {
@@ -154,7 +162,7 @@ export default {
     formatList: {
       get () {
         // console.warn(this.curtSetting.outputFormat)
-        return this.curtSetting.outputFormat
+        return (this.curtSetting && this.curtSetting.outputFormat) || []
       },
       set (value) {
         this.$store.dispatch('editOptions', {
