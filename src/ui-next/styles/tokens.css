@@ -1,43 +1,68 @@
-/* iSparta-next design tokens — 复用 image-compression 工具台气质 */
-:root {
-  --is-brand: #4a6cf7;
-  --is-brand-hover: #3a5be8;
-  --is-accent: #7c9bff;
-  --is-success: #28a745;
-  --is-danger: #dc3545;
-  --is-warning: #f0ad4e;
+/* iSparta-next tokens — 双主题，工具台/印刷车间气质，避免通用蓝紫 SaaS 风 */
+:root,
+.is-theme-dark {
+  --is-accent: #c8f542;
+  --is-accent-dim: rgba(200, 245, 66, 0.18);
+  --is-accent-soft: rgba(200, 245, 66, 0.08);
+  --is-hot: #ff6b35;
+  --is-ok: #3ddc97;
+  --is-warn: #ffc857;
+  --is-bad: #ff5c5c;
 
-  --is-bg: #121212;
-  --is-bg-elevated: #1a1a1a;
-  --is-panel: #1e1e1e;
-  --is-card: #242424;
-  --is-card-hover: #2a2a2a;
-  --is-border: rgba(255, 255, 255, 0.08);
-  --is-border-strong: rgba(255, 255, 255, 0.14);
+  --is-bg: #0c0f0e;
+  --is-bg-grid: rgba(200, 245, 66, 0.04);
+  --is-panel: #141816;
+  --is-card: #1a201c;
+  --is-card-hi: #222a24;
+  --is-border: rgba(232, 240, 230, 0.08);
+  --is-border-hi: rgba(200, 245, 66, 0.35);
 
-  --is-text: #f3f4f6;
-  --is-text-secondary: rgba(255, 255, 255, 0.62);
-  --is-text-muted: rgba(255, 255, 255, 0.38);
+  --is-text: #eef3ec;
+  --is-text-2: rgba(238, 243, 236, 0.62);
+  --is-text-3: rgba(238, 243, 236, 0.36);
 
-  --is-radius: 12px;
-  --is-radius-sm: 8px;
-  --is-radius-xs: 6px;
+  --is-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+  --is-glow: 0 0 0 1px rgba(200, 245, 66, 0.25), 0 8px 28px rgba(200, 245, 66, 0.12);
 
-  --is-space-1: 4px;
-  --is-space-2: 8px;
-  --is-space-3: 12px;
-  --is-space-4: 16px;
-  --is-space-5: 20px;
-  --is-space-6: 24px;
-  --is-space-8: 32px;
+  --is-font: "Segoe UI Variable Text", "Segoe UI", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --is-mono: "Cascadia Mono", "SF Mono", Consolas, "Courier New", monospace;
 
-  --is-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.25);
-  --is-shadow-md: 0 8px 24px rgba(0, 0, 0, 0.35);
+  --is-r: 14px;
+  --is-r-sm: 10px;
+  --is-r-xs: 6px;
+}
 
-  --is-font: "Segoe UI", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
-  --is-mono: "Cascadia Code", "SF Mono", Consolas, monospace;
+.is-theme-light {
+  --is-accent: #c2410c;
+  --is-accent-dim: rgba(194, 65, 12, 0.14);
+  --is-accent-soft: rgba(194, 65, 12, 0.07);
+  --is-hot: #ea580c;
+  --is-ok: #15803d;
+  --is-warn: #b45309;
+  --is-bad: #b91c1c;
 
-  --is-topbar-h: 48px;
-  --is-bottombar-h: 44px;
-  --is-sidebar-w: 320px;
+  --is-bg: #f3efe6;
+  --is-bg-grid: rgba(28, 25, 23, 0.05);
+  --is-panel: #ebe6db;
+  --is-card: #fffdf8;
+  --is-card-hi: #f7f3ea;
+  --is-border: rgba(28, 25, 23, 0.1);
+  --is-border-hi: rgba(194, 65, 12, 0.4);
+
+  --is-text: #1c1917;
+  --is-text-2: rgba(28, 25, 23, 0.62);
+  --is-text-3: rgba(28, 25, 23, 0.38);
+
+  --is-shadow: 0 10px 30px rgba(28, 25, 23, 0.08);
+  --is-glow: 0 0 0 1px rgba(194, 65, 12, 0.2), 0 8px 24px rgba(194, 65, 12, 0.1);
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  margin: 0;
+  background: var(--is-bg);
+  color: var(--is-text);
+  font-family: var(--is-font);
 }
