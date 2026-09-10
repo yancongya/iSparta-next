@@ -1,6 +1,8 @@
 {
   "name": "isparta",
   "title": "iSparta-next",
+  "description": "APNG/WebP/GIF sequence converter — iSparta-next",
+  "author": "yancongya",
   "version": "3.2.1",
   "private": true,
   "repository": {
