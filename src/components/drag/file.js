@@ -161,6 +161,26 @@ export const f = {
       }
 
       operateFiles.writePngBasic(recordPng)
+      // 目录里同时存在 PNG 序列与单张 APNG（常见为旧导出产物）时，只保留序列任务
+      var pngsDirs = []
+      items.forEach(function (item) {
+        if (item.basic && item.basic.type === 'PNGs' && item.basic.fileList && item.basic.fileList[0]) {
+          pngsDirs.push(path.dirname(item.basic.fileList[0]))
+        }
+      })
+      if (pngsDirs.length) {
+        items = items.filter(function (item) {
+          if (!item.basic || item.basic.type !== 'APNG' || !item.basic.fileList || !item.basic.fileList[0]) {
+            return true
+          }
+          var apngDir = path.dirname(item.basic.fileList[0])
+          return !pngsDirs.some(function (d) {
+            return apngDir === d ||
+              apngDir.indexOf(d + path.sep) === 0 ||
+              d.indexOf(apngDir + path.sep) === 0
+          })
+        })
+      }
       resolve(items)
     })
   },

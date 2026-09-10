@@ -23,7 +23,7 @@ function createWindow () {
     width: 820,
     height: 800, 
     icon:path.join(__static,"icons/icon.icns"),
-    title:"iSparta",
+    title:"iSparta-next",
     show: false,
     webPreferences: {
       nodeIntegration: true,

@@ -3,7 +3,7 @@ feature: electron-ipc-phase1
 status: delivered
 updated: 2026-09-10
 branch: feat/electron-ipc-phase1
-commits: 57a8295..9f38dd5
+commits: 57a8295..6ee16eb
 ---
 
 # Electron IPC Phase 1：移除 remote
@@ -14,7 +14,7 @@ commits: 57a8295..9f38dd5
 
 **Verification** — `vue-cli-service electron:serve` 在 worktree 下编译成功并拉起 Electron（PASS）。代码审查 5/5 验收项 PASS，无 critical。T5 交互链路需人工点一遍（见下）。
 
-**Journey log** — fork 网络限制导致无法再 fork，改为独立仓库 `iSparta-next`；Windows PATH/PATHEXT 异常曾导致 npm postinstall 失败；Electron 拒绝 `NODE_OPTIONS=--openssl-legacy-provider`，需在 spawn 时清空。
+**Journey log** — fork 网络限制导致无法再 fork，改为独立仓库 `iSparta-next`；Windows PATH/PATHEXT 异常曾导致 npm postinstall 失败；Electron 拒绝 `NODE_OPTIONS=--openssl-legacy-provider`，需在 spawn 时清空。人工反馈：打开目录时 APNG+PNGs 双任务为误报场景，同树只保留 PNGs；窗口标题改为 `iSparta-next` 以便区分旧 dev。
 
 ## [S1] Problem
 
@@ -55,3 +55,5 @@ iSparta 基于 Electron 13，渲染进程直接 `require('electron').remote` 使
 - [x] T3: 改造右键菜单为 menu:popup + menu:clicked — acceptance: 四动作经 menu:clicked；menu.js 无 remote (covers: S2; depends: T1)
 - [x] T4: 全库扫描确认 remote 零引用 — acceptance: `src/` 无 live remote；enableRemoteModule false (covers: S2; depends: T2, T3)
 - [ ] T5: 人工冒烟：拖拽导入、打开目录、右键四项、改输出目录、一次转换 — acceptance: 链路可用且无 remote 报错 (covers: S2; depends: T4)
+- [x] T6: 打开目录去重 — acceptance: 同目录树同时有 APNG 成品与 PNG 序列时只保留 PNGs 一条 (covers: S2)
+- [x] T7: 窗口标题改为 iSparta-next — acceptance: BrowserWindow title 非默认 iSparta (covers: S2)
