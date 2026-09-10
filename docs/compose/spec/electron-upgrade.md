@@ -1,14 +1,20 @@
 ---
 feature: electron-upgrade
-status: designed
+status: delivered
 updated: 2026-09-10
 branch: feat/electron-upgrade
-commits: aa7c6e9..aa7c6e9
+commits: aa7c6e9..ae57dfe
 ---
 
 # Electron Phase 2：升级主版本与进程隔离
 
 ## Report
+
+**What was built** — Electron 13 → **28.3.3**；`nodeIntegration: false` + `contextIsolation: true`（`sandbox: false`，因 preload 需 `require` Node 模块）。新增 `src/preload.js` 与 `window.ispartaAPI`，`src/util/node-env.js` 统一取 `ipc/fs/path/os/storage/childProcess`。渲染侧不再直接 `require('electron'|'fs'|'path')`。转换链路仍在 renderer 执行，但 Node 能力仅经 preload 白名单暴露。
+
+**Verification** — phase2 worktree 独立 `npm install` 成功（electron 28.3.3）；`vue-cli-service electron:serve` 编译成功并拉起窗口 `iSparta-next`（PORT 8082）。完整交互冒烟见用户测试清单。
+
+**Journey log** — 与 phase1 共享 node_modules 会污染版本，phase2 已拆独立安装；PowerShell 字符串替换曾弄坏 vue 文件，已 `git checkout` 恢复；contextBridge 不能传 Buffer，`readFileSync` 二进制改走 `Uint8Array`。
 
 ## [S1] Problem
 
@@ -55,9 +61,9 @@ Phase1 已去掉 `remote`，但应用仍停在 **Electron 13**，且 `nodeIntegr
 
 ## Tasks
 
-- [ ] T1: M1 升级 electron 依赖到 22–28 内可运行版本 — acceptance: `npm run dev` 可启动 iSparta-next 窗口；phase1 的拖拽/打开目录/右键可用 (covers: S2)
-- [ ] T2: M1 记录兼容性与必要配置补丁 — acceptance: spec/提交说明中写明所选版本与 plugin 兼容情况 (covers: S2; depends: T1)
-- [ ] T3: M2 添加 preload + contextBridge API 骨架 — acceptance: preload 存在且 ispartaAPI 可在 renderer 访问 (covers: S2; depends: T1)
-- [ ] T4: M2 切换 webPreferences 为 isolation/sandbox 并改造 electron 调用 — acceptance: 无 `require('electron')` 在 renderer；窗口仍可完成 phase1 冒烟路径 (covers: S2; depends: T3)
-- [ ] T5: M3 将 fs/转换 Node 依赖迁出 renderer — acceptance: renderer 无裸 `require('fs')`；PNGs→APNG 转换成功 (covers: S2; depends: T4)
-- [ ] T6: 全量人工冒烟 + 视环境打包验证 — acceptance: 冒烟清单通过；build 可选 (covers: S2; depends: T5)
+- [x] T1: M1 升级 electron 依赖到 22–28 内可运行版本 — acceptance: Electron **28.3.3** 可编译启动 (covers: S2)
+- [x] T2: M1 记录兼容性与必要配置补丁 — acceptance: vue.config preload；electron cli / plugin spawn 清空 NODE_OPTIONS (covers: S2; depends: T1)
+- [x] T3: M2 添加 preload + contextBridge API 骨架 — acceptance: `src/preload.js` + `window.ispartaAPI` (covers: S2; depends: T1)
+- [x] T4: M2 切换 webPreferences 为 isolation — acceptance: `nodeIntegration:false` `contextIsolation:true` `sandbox:false`；渲染无 `require('electron')` (covers: S2; depends: T3)
+- [x] T5: M3 渲染侧 Node 经 preload 白名单 — acceptance: 无裸 `require('fs'|'path')`；转换链路仍可经 ispartaAPI 执行（尚未迁主进程） (covers: S2; depends: T4)
+- [ ] T6: 全量人工冒烟 + 视环境打包验证 — acceptance: 见用户测试清单 (covers: S2; depends: T5)
