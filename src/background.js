@@ -46,7 +46,12 @@ function createWindow () {
   win.on('closed', () => {
     win = null
   })
+  // 页面 <title> 会覆盖窗口标题，固定为 iSparta-next 以便与旧版 dev 区分
+  win.on('page-title-updated', (event) => {
+    event.preventDefault()
+  })
   win.once('ready-to-show', () => {
+    win.setTitle('iSparta-next')
     win.show()
   })
 }

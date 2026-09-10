@@ -10,7 +10,7 @@ export default new Router({
       name: 'landing-page',
       component: LandingPage,
       meta:{
-        title:'iSparta'
+        title:'iSparta-next'
       }
     },
     {
