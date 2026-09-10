@@ -31,7 +31,7 @@ function createWindow () {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      sandbox: false, // fs 已主进程化；下一步可在全量冒烟后改 true
+      sandbox: true,
       enableRemoteModule: false,
       webSecurity: false,
       preload: path.join(__dirname, 'preload.js')
