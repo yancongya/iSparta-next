@@ -71,12 +71,19 @@
             type="button"
             class="ib-tab"
             :class="{ 'ib-tab--on': index === selected }"
-            @click="selected = index"
+            @click="selectTab(index)"
           >
             <i class="ib-tab__pip" :data-t="typeOf(item)"></i>
             <span>{{ shortName(item) }}</span>
           </button>
           <button type="button" class="ib-tab ib-tab--add" @click="onPick">＋</button>
+          <button
+            v-if="items.length"
+            type="button"
+            class="ib-tab ib-tab--del"
+            title="删除当前任务"
+            @click="removeCurrent"
+          >✕</button>
         </nav>
 
         <div class="ib-top__right">
@@ -178,6 +185,9 @@
               <span class="ib-go__pulse" aria-hidden="true"></span>
               {{ busy ? 'PRESS RUNNING…' : 'START PRESS' }}
             </button>
+            <div class="ib-prog" v-if="busy || progress > 0">
+              <div class="ib-prog__bar" :style="{ width: progress + '%' }"></div>
+            </div>
             <p class="ib-side__note">至少勾选一种格式才能启动</p>
           </div>
         </aside>
@@ -242,6 +252,14 @@ export default {
     },
     themeTitle () {
       return this.theme === 'dark' ? '切换到亮色' : '切换到暗色'
+    },
+    progress () {
+      const p = this.current && this.current.process
+      if (!p) { return 0 }
+      if (p.schedule === 1) { return 100 }
+      if (p.schedule === -1) { return 100 }
+      if (p.schedule > 0 && p.schedule < 1) { return Math.round(p.schedule * 100) }
+      return 0
     }
   },
   watch: {
@@ -254,6 +272,9 @@ export default {
         this.selected = Math.max(0, this.items.length - 1)
       }
       this.syncFromItem()
+    },
+    'current.process.schedule' () {
+      this.syncBusy()
     }
   },
   created () {
@@ -292,17 +313,34 @@ export default {
     pathOf (item) {
       return (item && item.basic && item.basic.inputPath) || '—'
     },
+    selectTab (index) {
+      this.selected = index
+      this.$store.dispatch('singleSelect', index)
+      this.syncFromItem()
+      this.loadThumbs()
+    },
+    removeCurrent () {
+      if (!this.current) { return }
+      this.$store.dispatch('singleSelect', this.selected)
+      this.$store.dispatch('remove')
+      this.selected = Math.max(0, Math.min(this.selected, this.items.length - 1))
+    },
+    syncBusy () {
+      const p = this.current && this.current.process
+      this.busy = !!(p && p.schedule > 0 && p.schedule < 1)
+    },
     syncFromItem () {
       const o = this.current && this.current.options
       if (!o) {
         this.formats = []
+        this.syncBusy()
         return
       }
       this.formats = (o.outputFormat || []).slice()
       this.fps = o.frameRate || 25
       this.loop = o.loop || 0
       this.outputName = o.outputName || ''
-      this.busy = !!(this.current.process && this.current.process.schedule > 0 && this.current.process.schedule < 1)
+      this.syncBusy()
     },
     toggleFormat (f) {
       const i = this.formats.indexOf(f)
@@ -668,6 +706,11 @@ export default {
   &--add {
     padding: 7px 12px;
     color: var(--is-accent);
+  }
+
+  &--del {
+    padding: 7px 12px;
+    color: var(--is-bad);
   }
 
   &__pip {
@@ -1082,6 +1125,20 @@ export default {
   &:hover {
     color: var(--is-accent);
     border-color: var(--is-border-hi);
+  }
+}
+
+.ib-prog {
+  margin-top: 10px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--is-border);
+  overflow: hidden;
+
+  &__bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--is-accent), var(--is-hot));
+    transition: width 0.25s ease;
   }
 }
 
