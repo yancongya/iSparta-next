@@ -17,7 +17,14 @@ Vue.use(VueI18n)
 Vue.use(AsyncComputed)
 Vue.use(ElementUI)
 
-let globalSetting = window.storage.getItem('globalSetting');
+let globalSetting = null
+try {
+  if (window.storage && window.storage.getItem) {
+    globalSetting = window.storage.getItem('globalSetting')
+  }
+} catch (e) {
+  console.error('storage init failed', e)
+}
 let defaultLanguage = 'zh-cn';
 if (globalSetting) {
   var setting = JSON.parse(globalSetting);

@@ -7,54 +7,34 @@ function api () {
   return null
 }
 
-export function getIpc () {
-  const a = api()
-  if (a) { return a.ipc }
-  const { ipcRenderer } = require('electron')
-  return {
-    invoke: (c, ...args) => ipcRenderer.invoke(c, ...args),
-    send: (c, ...args) => ipcRenderer.send(c, ...args),
-    on: (c, cb) => ipcRenderer.on(c, (e, ...args) => cb(...args))
-  }
-}
-
 export function getFs () {
   const a = api()
   if (a) { return a.fs }
-  return require('fs-extra')
+  throw new Error('ispartaAPI.fs missing: preload not loaded?')
 }
 
 export function getPath () {
   const a = api()
   if (a) { return a.path }
-  return require('path')
+  throw new Error('ispartaAPI.path missing: preload not loaded?')
 }
 
 export function getOs () {
   const a = api()
   if (a) { return a.os }
-  return require('os')
+  throw new Error('ispartaAPI.os missing: preload not loaded?')
 }
 
 export function getStorage () {
   const a = api()
   if (a) { return a.storage }
-  return require('electron-localstorage')
+  throw new Error('ispartaAPI.storage missing: preload not loaded?')
 }
 
-export function getProcessBridge () {
+export function getIpc () {
   const a = api()
-  if (a && a.process) { return a.process }
-  return {
-    cwd: () => process.cwd(),
-    env: { NODE_ENV: process.env.NODE_ENV }
-  }
-}
-
-export function getChildProcess () {
-  const a = api()
-  if (a && a.childProcess) { return a.childProcess }
-  return require('child_process')
+  if (a) { return a.ipc }
+  throw new Error('ispartaAPI.ipc missing: preload not loaded?')
 }
 
 export const ipc = {
@@ -89,4 +69,16 @@ export const storage = {
   setStoragePath: (...a) => getStorage().setStoragePath(...a),
   getItem: (...a) => getStorage().getItem(...a),
   setItem: (...a) => getStorage().setItem(...a)
+}
+
+export function getProcessBridge () {
+  const a = api()
+  if (a && a.process) { return a.process }
+  throw new Error('ispartaAPI.process missing: preload not loaded?')
+}
+
+export function getChildProcess () {
+  const a = api()
+  if (a && a.childProcess) { return a.childProcess }
+  throw new Error('ispartaAPI.childProcess missing: preload not loaded?')
 }
