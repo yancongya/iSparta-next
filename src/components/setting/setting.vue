@@ -48,43 +48,42 @@
       <p>{{ $t("outputTo") }}</p>
       <el-form label-width="">
         <el-form-item>
-          <div class="path-modes">
+          <div class="path-modes" @click.stop>
             <button
               type="button"
               class="path-mode"
               :class="{ 'path-mode--on': outputToMode === 'output' }"
-              @click="setOutputToMode('output')"
+              @click.stop.prevent="setOutputToMode('output')"
             >{{ $t("outputToOutput") }}</button>
             <button
               type="button"
               class="path-mode"
               :class="{ 'path-mode--on': outputToMode === 'beside' }"
-              @click="setOutputToMode('beside')"
+              @click.stop.prevent="setOutputToMode('beside')"
             >{{ $t("outputToBeside") }}</button>
             <button
               type="button"
               class="path-mode"
               :class="{ 'path-mode--on': outputToMode === 'custom' }"
-              @click="setOutputToMode('custom')"
+              @click.stop.prevent="setOutputToMode('custom')"
             >{{ $t("outputToCustom") }}</button>
           </div>
         </el-form-item>
         <el-form-item>
-          <div class="path-custom-row">
-            <input
-              class="path-preview"
-              type="text"
-              readonly
-              :value="outputPathPreview"
-              :title="outputPathPreview"
-            />
-            <button
-              type="button"
-              class="path-pick"
+          <el-input
+            size="mini"
+            readonly
+            :value="outputPathPreview"
+            :title="outputPathPreview"
+            class="path-input"
+          >
+            <i
+              slot="suffix"
+              class="el-input__icon el-icon-folder-opened path-icon"
+              @click.stop.prevent="pickOutputDir"
               title="选择输出目录"
-              @click="pickOutputDir"
-            >📁</button>
-          </div>
+            ></i>
+          </el-input>
         </el-form-item>
         <el-form-item :label="$t('outputToTemplate')">
           <el-input v-model="outputToTemplate" size="mini" :placeholder="'{srcPath}/output'"></el-input>
@@ -412,29 +411,33 @@ export default {
       })
     },
     pushOutputTo (patch) {
-      const base = (this.curtSetting && this.curtSetting.outputTo) || {
+      if (this.selectedList.length !== 1) { return }
+      // 确保当前项为唯一选中
+      const idx = this.selectedIndex
+      if (idx >= 0) {
+        this.$store.dispatch('singleSelect', idx)
+      }
+      const item = this.selectedList[0]
+      const base = (item.options && item.options.outputTo) || {
         mode: 'output',
         customPath: '',
         template: ''
       }
       const next = Object.assign({}, base, patch)
       this.$store.dispatch('editOptions', { outputTo: next })
-      // 同步刷新当前任务 outputPath 预览
-      if (this.selectedList.length === 1) {
-        import('../../util/outputPath').then(({ resolveOutputPath }) => {
-          const item = this.selectedList[0]
-          const p = resolveOutputPath(item, Object.assign({}, item.options, { outputTo: next }))
-          this.$store.dispatch('editBasic', { outputPath: p })
-        })
-      }
+      const merged = Object.assign({}, item.options, { outputTo: next })
+      const p = resolveOutputPath(item, merged)
+      this.$store.dispatch('editBasic', { outputPath: p })
     },
     setOutputToMode (mode) {
-      // 单选且不可取消：始终写入一个 mode
+      // 单选且不可取消
       this.pushOutputTo({ mode: mode })
     },
     pickOutputDir () {
+      if (this.selectedList.length !== 1) { return }
+      const cur = (this.curtSetting && this.curtSetting.outputTo && this.curtSetting.outputTo.customPath) || ''
       ipc.invoke('dialog:openDirectory', {
-        defaultPath: (this.curtSetting && this.curtSetting.outputTo && this.curtSetting.outputTo.customPath) || ''
+        defaultPath: cur
       }).then((r) => {
         if (!r || r.canceled || !r.filePaths || !r.filePaths[0]) { return }
         this.pushOutputTo({ mode: 'custom', customPath: r.filePaths[0] })
