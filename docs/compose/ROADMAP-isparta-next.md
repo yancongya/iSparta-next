@@ -9,7 +9,8 @@
 | P4 | 转换迁主进程 | fs/path/os/execFile 已主进程；整段 processor 仍 renderer | **partial** |
 | P5 | 打包与发布 | `build:windows` zip 成功（本地 electronDist、免签名） | **code done** 待装包验证 |
 | P6 | 产品 backlog | Windows 打开原目录已修；#50/#47/#54/#48 待测 | **partial** |
-| UI | 前端重设计 | `feat/frontend-redesign`：主题/折叠/胶片/粘贴导入 | **in progress** |
+| UI | 前端重设计 | `feat/frontend-redesign`：两栏 + 主题 + 封面 1:1 悬停 + 统一弹窗 | **code done** 待全面冒烟 |
+| 功能 | 输出大小阈值 | 1MB 默认，警告/自动删/降质量重压 | **code done** `0d232bb` 待大文件冒烟 |
 
 ## 分支策略
 
