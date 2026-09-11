@@ -134,6 +134,15 @@ if (!globalSetting) {
           changed = true
         }
       }
+      // 【bug fix】outputTo 为后加项：老数据缺这个键时，_.extend 给 Vue 2 加的是
+      // 非响应式新属性，输出路径分段控件点击后会从 store 读回 undefined 被打回原值。
+      if (!parsed.options.outputTo) {
+        parsed.options.outputTo = _.cloneDeep(defaultState.options.outputTo)
+        changed = true
+      } else if (!parsed.options.outputTo.mode) {
+        parsed.options.outputTo.mode = defaultState.options.outputTo.mode
+        changed = true
+      }
     }
     if (changed) {
       window.storage.setItem('globalSetting', JSON.stringify(parsed))
@@ -160,6 +169,15 @@ if (localData) {
       item.process.text = ''
       item.process.schedule = 0;
       item.isSelected = !!item.isSelected
+      // 老数据里每条 item 的 options 是独立副本，同样按出厂默认补齐缺失键，
+      // 否则后续 _.extend 写入的是非响应式属性，界面不会跟着更新。
+      item.options = item.options || {}
+      if (!item.options.outputTo) {
+        item.options.outputTo = _.cloneDeep(defaultState.options.outputTo)
+      }
+      if (!item.options.sizeLimit) {
+        item.options.sizeLimit = _.cloneDeep(defaultState.options.sizeLimit)
+      }
       items.push(item);
     }
   })

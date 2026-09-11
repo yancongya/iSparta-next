@@ -46,7 +46,9 @@ function createWindow () {
   win = new BrowserWindow({
     minWidth: 820,
     minHeight: 800,
-    width: 820,
+    // 三栏结构（列表 + 工具条 + 输出设置）下 820 默认宽会让右侧表单很挤，
+    // 默认给到 1000；minWidth 仍是 820，小屏与手动收窄不受影响
+    width: 1000,
     height: 800, 
     icon:path.join(__static,"icons/icon.icns"),
     title:"iSparta-next",

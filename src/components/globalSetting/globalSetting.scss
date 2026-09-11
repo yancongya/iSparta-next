@@ -1,60 +1,60 @@
-.globalsetting{
-    .el-dialog__wrapper{
-          background: rgba(0,0,0,0.6)
-    }
-    .el-form-item__label{
-      width: 100px;
-    }
-    .el-dialog--small{
-      width: 510px;
-    }
-    .el-form-item__content {
-      line-height: 36px;
-      position: relative;
-      font-size: 14px;
-      width: 360px;
-      height: 36px;
-    display: inline-block;
-    i{
-      font-style: normal;
-    }
-      .el-input{
-        height: 36px;
-        width: 200px;
-        margin-right: 15px;
-      }
-      .el-input--mini .el-input__inner{
-        height: 36px;
+// ==========================================================================
+// 默认设置弹窗内容
+// 原文件里 .globalsetting 与 .el-dialog 两个块内容几乎完全重复，且后者是全局
+// 选择器、会泄漏污染「延时配置」弹窗；同时 .el-form-item__content 写死
+// height:36px 会裁掉英文长文案。组件自绘后统一收敛到这里。
+// ==========================================================================
 
-      }
-    }
+.globalsetting {
+  .gs-split {
+    height: 1px;
+    margin: var(--is-s-4) 0;
+    background: var(--is-divider);
+  }
+
+  .gs-hint {
+    width: 100%;
+    margin: var(--is-s-1) 0 0;
+    color: var(--is-text-3);
+    font-size: var(--is-fs-sm);
+    line-height: 1.6;
+  }
+
+  .hint {
+    color: var(--is-text-3);
+    font-size: var(--is-fs-sm);
+    font-style: normal;
+  }
+
+  .unit {
+    color: var(--is-text-2);
+    font-size: var(--is-fs-md);
+  }
+
+  .w-80 {
+    width: 80px;
+    flex: none;
+  }
+
+  // 标签列固定宽度，让数值控件纵向对齐
+  .is-form-item__label {
+    width: 112px;
+    flex-basis: 112px;
+  }
 }
-.el-dialog{
-  width:510px;
-  .el-form-item__label{
-      width: 100px;
-    }
-    .el-dialog--small{
-      width: 510px;
-    }
-    .el-form-item__content {
-      line-height: 36px;
-      position: relative;
-      font-size: 14px;
-      width: 360px;
-      height: 36px;
-    display: inline-block;
-    i{
-      font-style: normal;
-    }
-      .el-input{
-        height: 36px;
-        width: 200px;
-        margin-right: 15px;
-      }
-      .el-input--mini .el-input__inner{
-        height: 36px;
 
-      }
-    }
+// --------------------------------------------------------------------------
+// 默认设置里的路径区块：与输出设置共用 PathVars
+// 弹窗内不需要左侧标签占位，变量路径输入框直接铺满
+// --------------------------------------------------------------------------
+.gs-path {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--is-s-2);
+
+  .pv__label { display: none; }
+
+  &__vars { margin-top: 0; }
 }

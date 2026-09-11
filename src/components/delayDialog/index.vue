@@ -1,79 +1,118 @@
 <template>
-  <el-dialog :title="$t('delayTitle')" :visible="true"  :modal-append-to-body="true" :append-to-body="true" width="600px" :close-on-click-modal="false" @close="onClose" top="30px">
+  <is-dialog
+    :visible="true"
+    :title="$t('delayTitle')"
+    width="640px"
+    :close-on-click-modal="false"
+    @close="$emit('close')"
+  >
+    <!-- 预览区 -->
     <div class="frame-preview">
-      <div class="preview">
-        <img :src="mediaUrl(previewURL)" />
+      <div class="frame-preview__stage is-checker">
+        <img v-if="previewSrc" :src="previewSrc" alt="" />
+        <span v-else class="frame-preview__ph"><is-icon name="image" size="xl" /></span>
       </div>
-      <el-button type="primary" size="small" @click="onPreview">{{ $t('preview')}}</el-button>
-      
-    </div>
-    <div class="frame-list" v-if="delayProject">
-      <div class="frame" v-for="(item,index) in delayProject.basic.fileList"  :key="index">
-        <img :src="mediaUrl(delayProject.basic.fileList[index])" />
-        <el-input-number v-model="delays[index]" controls-position="right" size="mini" :step="0.01"></el-input-number>
-        <!-- <el-input  size="mini"   v-model="delays[index]"></el-input> -->
+      <div class="frame-preview__ctrl">
+        <is-button size="sm" :icon="playing ? 'stop' : 'play'" @click="togglePreview">
+          {{ playing ? $t('stop') : $t('preview') }}
+        </is-button>
+        <span class="frame-preview__meta">
+          {{ $t('frameIndex') }} {{ cursor + 1 }} / {{ total }}
+          <em v-if="totalDuration">· {{ totalDuration }}s</em>
+        </span>
       </div>
     </div>
+
+    <!-- 帧间隔列表 -->
+    <div v-if="delayProject" class="frame-list">
+      <div
+        v-for="(file, index) in delayProject.basic.fileList"
+        :key="'frame-' + index"
+        class="frame"
+        :class="{ 'is-current': index === cursor }"
+        @click="goto(index)"
+      >
+        <span class="frame__no">{{ index + 1 }}</span>
+        <img v-if="thumbMap[file]" :src="thumbMap[file]" loading="lazy" alt="" />
+        <is-input-number
+          v-model="delays[index]"
+          class="frame__in"
+          :min="0"
+          :step="0.01"
+          :precision="3"
+          size="sm"
+        />
+      </div>
+    </div>
+
+    <!-- 统一帧频 -->
     <div class="fps-setting">
-        <div class="label">{{ $t('fps')}}</div><el-input v-model="rate" size="mini"></el-input><el-button @click="onResetRate" size="mini">{{ $t('apply')}}</el-button>
-      </div>
-    <div slot="footer" class="dialog-footer">
-      <el-button @click="onCancel">{{ $t('cancel')}}</el-button>
-      <el-button type="primary" @click="onDelayConfirm">{{ $t('confrim')}}</el-button>
+      <span class="fps-setting__label">{{ $t('fps') }}</span>
+      <is-input v-model="rate" type="number" class="fps-setting__in" :min="0" :max="240" number />
+      <is-button size="sm" @click="onResetRate">{{ $t('apply') }}</is-button>
     </div>
-  </el-dialog>
+
+    <template #footer>
+      <is-button @click="$emit('close')">{{ $t('cancel') }}</is-button>
+      <is-button type="primary" @click="onDelayConfirm">{{ $t('confrim') }}</is-button>
+    </template>
+  </is-dialog>
 </template>
 <script>
-import { path, fs } from '../../util/node-env'
-import _ from 'lodash'
-
-// 读取图片类型
-import typeData from '../../store/enum/type'
-const imgType = _.values(typeData).join(',')
-
-
-import { f as fsOperate } from '../drag/file.js'
 export default {
-  props:{
-    project:{
-      type:Object,
-      default:null
+  props: {
+    project: {
+      type: Object,
+      default: null
     }
   },
   data () {
     return {
-      delayProject:null,
-      delays:[],
-      previewURL:"",
-      timer:null,
-      rate:0
+      delayProject: null,
+      delays: [],
+      cursor: 0,
+      timer: null,
+      playing: false,
+      rate: 0,
+      // 帧路径 → dataURL，避免每次重渲染都同步读盘
+      thumbMap: {}
     }
-  },
-
-  created () {
-    // 与筛选组件通信
-   
   },
   computed: {
-    
-  },
-  mounted(){
-    let project = JSON.parse(JSON.stringify(this.project));
-    let delays=[];
-    if(project.options.delays){
-      delays=project.options.delays;
+    total () {
+      return this.delays.length
+    },
+    previewSrc () {
+      if (!this.delayProject) { return '' }
+      var file = this.delayProject.basic.fileList[this.cursor]
+      return (file && this.thumbMap[file]) || ''
+    },
+    totalDuration () {
+      var sum = 0
+      for (var i = 0; i < this.delays.length; i++) {
+        sum += Number(this.delays[i]) || 0
+      }
+      return Math.round(sum * 1000) / 1000
     }
-    for(let i =0;i<project.basic.fileList.length;i++){
-      if(!delays[i]){
-        delays[i]=(1/project.options.frameRate).toFixed(3);
+  },
+  mounted () {
+    var project = JSON.parse(JSON.stringify(this.project))
+    var delays = project.options.delays ? project.options.delays.slice() : []
+    for (var i = 0; i < project.basic.fileList.length; i++) {
+      if (!delays[i]) {
+        delays[i] = Number((1 / project.options.frameRate).toFixed(3))
       }
     }
-    
-    this.delayProject=project;
-    // this.delayProject.options.delays=delays;
-    this.delays=delays;
-    this.previewURL=this.delayProject.basic.fileList[0]
-    this.rate = this.delayProject.options.frameRate;
+    this.delayProject = project
+    this.delays = delays
+    this.rate = project.options.frameRate
+    this.cursor = 0
+    // 首帧立即可见，其余按需补
+    this.ensureThumb(project.basic.fileList[0])
+    this.$nextTick(this.prefetch)
+  },
+  beforeDestroy () {
+    this.stopPreview()
   },
   methods: {
     mediaUrl (p) {
@@ -87,56 +126,79 @@ export default {
       } catch (e) { /* ignore */ }
       return ''
     },
-    
-    
-    onDelayConfirm(){
-      let project = this.project;
-      project.options.frameRate = this.delayProject.options.frameRate;
-      project.options.delays=this.delays;
-      this.$emit("close");
+    ensureThumb (file) {
+      if (!file || this.thumbMap[file] !== undefined) return
+      this.$set(this.thumbMap, file, this.mediaUrl(file))
     },
-    onCancel(){
-      this.$emit("close");
-    },
-    onClose(){
-      this.$emit("close");
-    },
-    async onPreview(){
-      window.clearTimeout(this.timer);
-      let fileList = this.delayProject.basic.fileList;
-      this.previewURL=fileList[0]
-      for(let i=0;i<fileList.length;i++){
-        let url="";
-        if(i==fileList.length-1){
-          url=fileList[0];
-        }else{
-          url=fileList[i+1];
+    // 分批预取缩略图，避免一次性同步读几百张原图把主线程堵死
+    prefetch () {
+      if (!this.delayProject) return
+      var files = this.delayProject.basic.fileList
+      var self = this
+      var i = 0
+      this._prefetchTimer = setInterval(function () {
+        var end = Math.min(i + 12, files.length)
+        for (; i < end; i++) self.ensureThumb(files[i])
+        if (i >= files.length) {
+          clearInterval(self._prefetchTimer)
+          self._prefetchTimer = null
         }
-        await this.showImage(url,this.delays[i]*1000)
+      }, 30)
+    },
+    goto (index) {
+      this.cursor = index
+      this.ensureThumb(this.delayProject.basic.fileList[index])
+    },
+    togglePreview () {
+      if (this.playing) this.stopPreview()
+      else this.startPreview()
+    },
+    startPreview () {
+      if (!this.delayProject || this.total < 2) return
+      this.playing = true
+      this.step()
+    },
+    // 预览循环可中断：关弹窗或再次点击即停
+    step () {
+      if (!this.playing) return
+      var files = this.delayProject.basic.fileList
+      var next = (this.cursor + 1) % files.length
+      var wait = Math.max(0, (Number(this.delays[this.cursor]) || 0) * 1000)
+      this.timer = window.setTimeout(() => {
+        if (!this.playing) return
+        this.cursor = next
+        this.ensureThumb(files[next])
+        this.step()
+      }, wait)
+    },
+    stopPreview () {
+      this.playing = false
+      if (this.timer) {
+        clearTimeout(this.timer)
+        this.timer = null
       }
     },
-    showImage(url,time){
-      return new Promise( (resolve, reject)=>{
-        this.timer = window.setTimeout(()=>{
-          this.previewURL=url;
-          resolve();
-        },time)
+    onDelayConfirm () {
+      this.stopPreview()
+      var project = this.project
+      project.options.frameRate = this.rate
+      project.options.delays = this.delays.map(function (d) {
+        return Number(d) || 0
       })
-      
+      this.$emit('close')
     },
-    onResetRate(){
-      this.delayProject.options.frameRate=this.rate;
-      let delays=[];
-      for(let i =0;i<this.delayProject.basic.fileList.length;i++){
-        delays[i]=(1/this.rate).toFixed(3);
+    onResetRate () {
+      this.delayProject.options.frameRate = this.rate
+      var delays = []
+      for (var i = 0; i < this.delayProject.basic.fileList.length; i++) {
+        delays[i] = Number((1 / this.rate).toFixed(3))
       }
-      this.delays = delays;
-
+      this.delays = delays
     }
   }
 }
 </script>
 
-<style lang="scss" src="./sass/index.scss">
-
+<style lang="scss">
+@import "./sass/index.scss";
 </style>

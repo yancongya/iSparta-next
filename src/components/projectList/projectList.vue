@@ -1,55 +1,145 @@
 <template>
-<section class="mod-list">
-  <template v-for="(project,index) in projectList">
-    <div class="item" v-bind:class="{active:project.isSelected}" :data-index="index" :key="'item-' + index + '-' + (project.basic && project.basic.type)" @contextmenu="itemRightClick(project.basic,index)">
-      <div class="check" @click.stop="toggleSelect(index)">
-        <el-checkbox :value="!!project.isSelected" style="pointer-events:none"></el-checkbox>
-      </div>
-      <div class="thumb">
-        <img
-          :src="thumbSrc(project, index)"
-          @mouseenter="startHover(index)"
-          @mouseleave="stopHover"
-        />
-      </div>
-      <div class="info">
-        <div class="input">
-          <el-tag :type="getLabel(project.basic && project.basic.type)" size="mini">{{ project.basic && project.basic.type }}</el-tag>
-          <p class="inputPath" :title="'输入目录：'+(project.basic && project.basic.inputPath)">{{ (project.basic && project.basic.inputPath) | basePath }}</p>
-          <i class="el-icon-setting" v-if="project.basic && project.basic.type=='PNGs'" @click="onDelaySetting(project)"></i>
+  <section class="mod-list" @click="onBlankClick">
+    <transition-group name="is-list" tag="div" class="mod-list__inner">
+      <div
+        v-for="(project, index) in projectList"
+        :key="itemKey(project, index)"
+        class="item"
+        :class="itemClass(project)"
+        :data-index="index"
+        @contextmenu="itemRightClick(project.basic, index)"
+        @click="onItemClick(index)"
+      >
+        <!-- 勾选：多选切换，阻止冒泡以免触发单选 -->
+        <div class="check" @click.stop>
+          <is-checkbox
+            :value="!!project.isSelected"
+            :disabled="isLocked"
+            :aria-label="$t('selectAll')"
+            @change="toggleSelect(index)"
+          />
         </div>
-        <div class="output">
-          <i class="el-icon-edit"></i>
-          <p class="outputPath" @click="changeFold(project.basic && project.basic.outputPath,index)" :title="'输出目录：'+(project.basic && project.basic.outputPath)">{{ (project.basic && project.basic.outputPath) | basePath }}</p>
+
+        <!-- 缩略图：悬停时逐帧播放 -->
+        <div class="thumb is-checker">
+          <img
+            v-if="thumbSrc(project, index)"
+            :src="thumbSrc(project, index)"
+            :alt="project.basic && project.basic.type"
+            loading="lazy"
+            @mouseenter="startHover(index)"
+            @mouseleave="stopHover"
+          />
+          <is-icon v-else name="image" class="thumb__ph" />
+          <span v-if="frameCount(project) > 1" class="thumb__badge">{{ frameCount(project) }}F</span>
+        </div>
+
+        <div class="info">
+          <!-- 第一行：类型标签 + 输出目录（点击切换，hover 高亮） -->
+          <div class="input">
+            <is-tag :tone="tagTone(project.basic && project.basic.type)">
+              {{ project.basic && project.basic.type }}
+            </is-tag>
+            <button
+              type="button"
+              class="outpath is-ellipsis"
+              v-tip="$t('tipChangeOutput') + '：' + outPathOf(project)"
+              @click.stop="changeFold(project.basic && project.basic.outputPath, index)"
+            >
+              <is-icon name="folder" size="xs" />
+              <span class="is-ellipsis">{{ outPathOf(project) | basePath }}</span>
+            </button>
+          </div>
+          <!-- 第二行：配置摘要。每项独立配色 + hover 反馈 + 完整设置说明 -->
+          <div class="summary">
+            <span class="sum sum--fps" v-tip="tipOf('fps', fpsTip(project))">
+              <is-icon name="zap" size="xs" />{{ frameRateOf(project) }} f/s
+            </span>
+            <span class="sum sum--loop" v-tip="tipOf('loop', loopTip(project))">
+              <is-icon name="refresh" size="xs" />{{ loopText(project) }}
+            </span>
+            <span class="sum sum--fmt" v-tip="tipOf('outputFormat', formatText(project))">
+              <is-icon name="layers" size="xs" />{{ formatText(project) }}
+            </span>
+            <span
+              v-if="sizeLimitOf(project)"
+              class="sum sum--limit"
+              v-tip="tipOf('sizeLimit', sizeLimitTip(project))"
+            >
+              <is-icon name="box" size="xs" />≤ {{ sizeLimitOf(project) }}
+            </span>
+          </div>
+          <!-- 第三行：准备输出的名字 + 变量路径 -->
+          <div class="summary summary--out">
+            <span class="sum sum--name is-ellipsis" v-tip="tipOf('outputName', outNameOf(project))">
+              <is-icon name="save" size="xs" /><span class="is-ellipsis">{{ outNameOf(project) || '—' }}</span>
+            </span>
+            <span class="sum sum--tpl is-ellipsis" v-tip="tipOf('pathVar', outTplOf(project))">
+              <is-icon name="sliders" size="xs" /><span class="is-ellipsis">{{ outTplOf(project) || '—' }}</span>
+            </span>
+          </div>
+        </div>
+
+        <!-- 右侧：延时设置（齿轮）在状态区左边 -->
+        <div class="side">
+          <button
+            v-if="project.basic && project.basic.type == 'PNGs'"
+            type="button"
+            class="iconbtn"
+            :title="$t('tipDelay')"
+            @click.stop="onDelaySetting(project)"
+          ><is-icon name="settings" size="sm" /></button>
+
+          <!-- 状态与四态进度：未处理时整块不出现，避免空图标与空槽位成噪音 -->
+          <div v-if="showMeta(project)" class="meta">
+            <span class="status" :class="'is-' + stateOf(project.process)">
+              <is-icon
+                :name="statusIcon(project.process)"
+                :spin="stateOf(project.process) === 'running'"
+                size="sm"
+              />
+              {{ project.process && project.process.text }}
+            </span>
+            <div class="progress" :class="'is-' + stateOf(project.process)">
+              <span
+                class="progress__fill"
+                :class="{ 'is-shimmer': stateOf(project.process) === 'running' }"
+                :style="{ width: processPrecent(project.process && project.process.schedule) + '%' }"
+              ></span>
+            </div>
+          </div>
         </div>
       </div>
-      <div class="status" :class="processStatus(project.process && project.process.schedule)" ><i class="el-icon-loading" v-if="project.process && project.process.schedule > 0 && project.process.schedule < 1"></i>{{ project.process && project.process.text }}</div>
-      <div class="progress" :class="{fail:isFail(project.process && project.process.schedule)}" >
-        <span class="precent" :class="{ani:isStarted(project.process && project.process.schedule)}" :style="{width: processPrecent(project.process && project.process.schedule) + '%' }"></span>
-      </div>
-    </div>
-  </template>
-  <dialay-dialog v-if="dialogFormVisible" :project="delayProject" @close="dialogFormVisible=false"></dialay-dialog>
-  <div class="open-folder" v-on:click="openFolder">
-    打开目录...
-  </div>
-</section>
+    </transition-group>
+
+    <dialay-dialog
+      v-if="dialogFormVisible"
+      :project="delayProject"
+      @close="dialogFormVisible = false"
+    ></dialay-dialog>
+
+    <button type="button" class="open-folder" :disabled="isLocked" @click="openFolder">
+      <is-icon name="folder-plus" size="sm" />
+      {{ $t('openFolder') }}
+    </button>
+  </section>
 </template>
 <script>
-import { path, fs, ipc } from '../../util/node-env'
-import _ from 'lodash'
-const rightMenu = require('./menu')
-
-import DelayDialog from  '../delayDialog/index.vue'
+import { ipc } from '../../util/node-env'
+import rightMenu from './menu'
+import DelayDialog from '../delayDialog/index.vue'
 import { f as fsOperate } from '../drag/file.js'
+import { naturalSort } from '../../util/sort'
+import notice from '../../ui-next/notice'
+
 export default {
-  components:{
-    'dialay-dialog':DelayDialog
+  components: {
+    'dialay-dialog': DelayDialog
   },
   data () {
     return {
-      dialogFormVisible:false,
-      delayProject:null,
+      dialogFormVisible: false,
+      delayProject: null,
       thumbCache: {},
       hoverIdx: -1,
       hoverFrame: 0,
@@ -60,21 +150,11 @@ export default {
   created () {
     // 回应修改输出目录的操作
     ipc.on('change-item-fold', (path, order) => {
-      
-      if(path[0]){
+      if (path[0]) {
         this.$store.dispatch('editBasic', {
           outputPath: path[0]
         })
       }
-      
-    })
-    // 回应CTRL+A全选操作
-    ipc.on('selectAll', () => {
-      this.$store.dispatch('allSelect')
-    })
-    // 回应CTRL+Backspace删除操作
-    ipc.on('delItem', () => {
-      this.$store.dispatch('remove')
     })
   },
   beforeDestroy () {
@@ -82,25 +162,126 @@ export default {
   },
   computed: {
     selectedList () {
-      var data = this.$store.getters.getterSelected
-      return data
+      return this.$store.getters.getterSelected
     },
     isMultiItems () {
       return this.selectedList.length > 1
-    },
-    selectedIndex () {
-      var data = this.$store.getters.getterSelectedIndex
-      return data
     },
     projectList () {
       return this.$store.getters.getterItems
     },
     isLocked () {
-      var data = this.$store.getters.getterLocked
-      return data
+      return this.$store.getters.getterLocked
     }
   },
   methods: {
+    // 用输入路径做 key：删除中间项时其余项身份不变，FLIP 位移才正确
+    itemKey (project, index) {
+      var basic = project && project.basic
+      if (basic && basic.inputPath) {
+        return basic.inputPath + '|' + (basic.type || '')
+      }
+      return 'item-' + index
+    },
+    itemClass (project) {
+      return {
+        active: !!project.isSelected,
+        'is-running': this.stateOf(project.process) === 'running',
+        'is-fail': this.stateOf(project.process) === 'fail'
+      }
+    },
+    frameCount (project) {
+      var list = project && project.basic && project.basic.fileList
+      return list ? list.length : 0
+    },
+    // ---------- 摘要项的完整说明气泡 ----------
+    tipOf (labelKey, value) {
+      return this.$t(labelKey) + '：' + (value || '—')
+    },
+    fpsTip (project) {
+      var v = project && project.options && project.options.frameRate
+      return v ? v + ' ' + this.$t('fpsUnit') : ''
+    },
+    loopTip (project) {
+      var s = project && project.options && project.options.loop
+      if (s === undefined || s === null || s === '') { return '' }
+      // 0 次的语义要说清楚，否则行内那个 ∞ 看不懂
+      return Number(s) === 0 ? this.$t('loopInfinite') : s + ' ' + this.$t('times')
+    },
+    sizeLimitTip (project) {
+      var shown = this.sizeLimitOf(project)
+      if (!shown) { return '' }
+      var s = project.options.sizeLimit
+      var extra = []
+      if (s.autoQuality !== false) { extra.push(this.$t('sizeLimitAutoQuality')) }
+      if (s.autoDelete) { extra.push(this.$t('sizeLimitAutoDelete')) }
+      return shown + (extra.length ? ' · ' + extra.join(' / ') : '')
+    },
+    // ---------- 第二/三行摘要取值 ----------
+    outPathOf (project) {
+      return (project && project.basic && project.basic.outputPath) || ''
+    },
+    outNameOf (project) {
+      return (project && project.options && project.options.outputName) || ''
+    },
+    // 变量路径：模板为空时回退为当前 mode 的语义写法，行内仍有信息量
+    outTplOf (project) {
+      var o = project && project.options && project.options.outputTo
+      if (o && o.template && o.template.trim()) { return o.template.trim() }
+      var mode = o && o.mode
+      if (mode === 'beside') { return '{parent}' }
+      return '{srcPath}/output'
+    },
+    // 大小阈值：未启用返回空，行内不显示（避免噪音）
+    sizeLimitOf (project) {
+      var s = project && project.options && project.options.sizeLimit
+      if (!s || !s.enabled) { return '' }
+      var bytes = Number(s.maxBytes)
+      if (!isFinite(bytes) || bytes <= 0) {
+        var mb = Number(s.maxMB)
+        bytes = (isFinite(mb) && mb > 0) ? mb * 1024 * 1024 : 0
+      }
+      if (bytes <= 0) { return '' }
+      var unit = s.unit || 'MB'
+      var v = unit === 'KB' ? bytes / 1024 : bytes / (1024 * 1024)
+      return (Math.round(v * 100) / 100) + unit
+    },
+    frameRateOf (project) {
+      var v = project && project.options && project.options.frameRate
+      return v ? v : '—'
+    },
+    loopText (project) {
+      var v = project && project.options && project.options.loop
+      // 0 次代表无限循环
+      if (v === undefined || v === null || v === '') return '—'
+      return Number(v) === 0 ? '∞' : v + '×'
+    },
+    formatText (project) {
+      var fmt = project && project.options && project.options.outputFormat
+      if (!fmt || !fmt.length) return this.$t('noFormat')
+      return fmt.join('+')
+    },
+    // schedule: 0/undefined 待处理，(0,1) 进行中，1 成功，-1 失败
+    stateOf (process) {
+      var s = process && process.schedule
+      if (s === 1) return 'done'
+      if (s === -1) return 'fail'
+      if (s > 0 && s < 1) return 'running'
+      return 'pending'
+    },
+    statusIcon (process) {
+      switch (this.stateOf(process)) {
+        case 'done': return 'check-circle'
+        case 'fail': return 'x-circle'
+        case 'running': return 'loader'
+        default: return 'clock'
+      }
+    },
+    // 待处理且无文案时不占位，让列表安静下来
+    showMeta (project) {
+      var state = this.stateOf(project.process)
+      return state !== 'pending' || !!(project.process && project.process.text)
+    },
     thumbSrc (project, index) {
       var list = project && project.basic && project.basic.fileList
       if (!list || !list.length) { return '' }
@@ -117,8 +298,9 @@ export default {
       var project = this.projectList[index]
       var list = project && project.basic && project.basic.fileList
       if (!list || list.length < 2) { return }
-      this.hoverTimer = setInterval(() => {
-        this.hoverFrame += 1
+      var self = this
+      this.hoverTimer = setInterval(function () {
+        self.hoverFrame += 1
       }, 120)
     },
     stopHover () {
@@ -133,8 +315,7 @@ export default {
     thumbFor (filePath) {
       if (!filePath) { return '' }
       var cached = this.thumbCache[filePath]
-      if (cached) { return cached }
-      var self = this
+      if (cached !== undefined) { return cached }
       try {
         var api = window.ispartaAPI && window.ispartaAPI.fs
         if (api && api.readDataUrl) {
@@ -145,45 +326,20 @@ export default {
           }
         }
       } catch (e) { /* fallthrough */ }
-      var fallback = ''
-      this.$set(this.thumbCache, filePath, fallback)
-      return fallback
+      this.$set(this.thumbCache, filePath, '')
+      return ''
     },
-    // 映射标签样式
-    getLabel (label) {
-      var labelMap = {
-        'PNGs': 'primary',
-        'APNG': 'success',
-        'GIF': 'warning'
+    // 映射标签色板
+    tagTone (label) {
+      var toneMap = {
+        PNGs: 'accent',
+        APNG: 'ok',
+        GIF: 'warn',
+        WEBP: 'cool'
       }
-      // console.log(label)
-      return labelMap[label]
-    },
-    isStarted (schedule) {
-      if (schedule > 0 && schedule < 1) {
-        return true
-      } else {
-        return false
-      }
-    },
-    processStatus (schedule) {
-      if (schedule == 1) {
-        return 'success'
-      } else if (schedule == -1) {
-        return 'fail'
-      } else {
-        return ''
-      }
-    },
-    isFail (schedule) {
-      if (schedule == -1) {
-        return true
-      } else {
-        return false
-      }
+      return toneMap[label] || 'plain'
     },
     processPrecent (schedule) {
-      // console.log(schedule);
       if (schedule === undefined || schedule === null || isNaN(schedule)) {
         return 0
       }
@@ -194,7 +350,23 @@ export default {
           return schedule * 100
       }
     },
-    // 勾选/取消勾选单个项目
+    // 点击条目空白处 = 单选（勾选框负责多选）
+    onItemClick (index) {
+      if (this.isLocked) return
+      var project = this.projectList[index]
+      if (project && !project.isSelected) {
+        this.$store.dispatch('singleSelect', index)
+      }
+    },
+    // 点击列表空白处 = 取消全部选中
+    onBlankClick (e) {
+      if (this.isLocked || !this.projectList.length) return
+      var t = e.target
+      if (!t || !t.closest) return
+      // 条目与底部按钮有自己的交互，不算空白
+      if (t.closest('.item') || t.closest('.open-folder')) return
+      this.$store.dispatch('noneSelect')
+    },
     toggleSelect (index) {
       if (this.isLocked) {
         return false
@@ -202,20 +374,12 @@ export default {
       this.$store.dispatch('multiSelect', index)
     },
     itemRightClick (currentItem, index) {
-      // console.log(rightMenu)
-      var locale =this.$i18n.messages[this.$i18n.locale]
-      // console.log(locale);
+      var locale = this.$i18n.messages[this.$i18n.locale]
       this.$store.dispatch('setSelected', index)
-      // console.log(this.isMultiItems)
-      if (this.isMultiItems) {
-        window.setTimeout(() => {
-          rightMenu.default.init(this.$store, currentItem, index, true ,locale)
-        }, 10)
-      } else {
-        window.setTimeout(() => {
-          rightMenu.default.init(this.$store, currentItem, index, false ,locale)
-        }, 10)
-      }
+      // 让 store 先完成选中态更新，再取当前选中数量构建菜单
+      window.setTimeout(() => {
+        rightMenu.init(this.$store, currentItem, index, this.isMultiItems, locale)
+      }, 10)
     },
     changeFold (outputPath, index) {
       if (this.isLocked) {
@@ -223,31 +387,32 @@ export default {
       }
       ipc.send('change-item-fold', outputPath, index)
     },
-    openFolder(){
+    openFolder () {
+      if (this.isLocked) return
       ipc.invoke('dialog:openFiles', {
-        properties: [ 'openFile', 'openDirectory', 'multiSelections' ]
+        properties: ['openFile', 'openDirectory', 'multiSelections']
       }).then((result) => {
         if (!result || result.canceled || !result.filePaths.length) { return false }
-        this.muFileList = result.filePaths
-        fsOperate.readerFiles(this.muFileList).then((ars) => {
-          var Obj = {}
-          for (var i in ars) {
-            // 数字自然排序：修复 file_10 排在 file_2 前导致帧错乱
-            ars[i].basic.fileList.sort((a, b) => {
-              const _a = a.replace(/(\d+)/g, (e) => '0'.repeat(8 - Math.min(e.length, 8)) + e)
-              const _b = b.replace(/(\d+)/g, (e) => '0'.repeat(8 - Math.min(e.length, 8)) + e)
-              return _a > _b ? 1 : -1
-            })
-            Obj.basic = ars[i].basic
-            Obj.options = ars[i].options
-            this.$store.dispatch('add', Obj)
-          }
-        })
+        return this.importPaths(result.filePaths)
+      }).catch((e) => {
+        console.error(e)
+        notice.error(this.$t('noticeOpenFailed'), e && e.message)
       })
     },
-    onDelaySetting(project){
-      this.delayProject=project;
-      this.dialogFormVisible=true; 
+    importPaths (list) {
+      return fsOperate.readerFiles(list).then((ars) => {
+        for (var i in ars) {
+          ars[i].basic.fileList.sort(naturalSort)
+          this.$store.dispatch('add', {
+            basic: ars[i].basic,
+            options: ars[i].options
+          })
+        }
+      })
+    },
+    onDelaySetting (project) {
+      this.delayProject = project
+      this.dialogFormVisible = true
     }
   }
 }

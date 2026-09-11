@@ -1,189 +1,524 @@
-// 去除input的筛选样式
-input[type="number"]::-webkit-outer-spin-button,
-input[type="number"]::-webkit-inner-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
-}
-input[type="number"] {
-    -moz-appearance: textfield;
-}
+// ==========================================================================
+// 输出设置面板
+// 原先此文件后半段全是给 Element 默认皮肤打的补丁（.el-form-item / .el-input /
+// .el-button / .el-checkbox / .el-tag 等），组件自绘后一并删除。
+// ==========================================================================
 
-.ui-border-t{
-    border-top:1px solid var(--is-border, #2E3D4F);
-}
-.ui-border-b{
-    border-bottom:1px solid var(--is-border, #2E3D4F);
-}
-.mod-setting{
-  height: 100%;
-  background: var(--is-panel, #273444);
-  overflow: auto;
+.mod-setting {
   position: relative;
-  color: var(--is-text, #fff);
+  display: flex;
+  flex-direction: column;
+  // 用 flex 撑满而不是 height:100%：父级高度非 definite 时百分比会退化成 auto，
+  // 内部 .mod-form 的 overflow-y:auto 就永远不会触发
+  min-height: 0;
+  flex: 1;
   box-sizing: border-box;
-  padding-bottom: 56px;
+  background: var(--is-panel);
+  color: var(--is-text);
+  overflow: hidden;
 
-  h3{
-    text-align:center;
-    font-size:15px;
-    color: var(--is-text, #fff);
-    margin:0;
-    height:42px;
-    line-height:42px;
-    border-bottom:1px solid var(--is-border, #2E3D4F);
-    font-weight:normal;
-    position: sticky;
-    top: 0;
-    z-index: 1;
-    background: var(--is-panel, #273444);
+  &__title {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    height: 38px;
+    border-bottom: 1px solid var(--is-border);
+    background: var(--is-panel);
+    color: var(--is-text);
+    font-size: var(--is-fs-base);
+    font-weight: var(--is-fw-semi);
+    letter-spacing: 0.02em;
   }
-  // 表格模块
-  .mod-form{
-    color: var(--is-text, #fff);
-    >div{
-      padding: 8px 12px;
-      box-sizing:border-box;
-    }
-    i{
-      color: var(--is-text-2, rgba(255,255,255,.6));
-    }
-  }
+
+  // 表单整体可滚动，工具条固定在右下角
+  .mod-form,
   .mod-multi,
-  .mod-empty{
-    padding: 16px 12px;
-    color: var(--is-text-2, rgba(255,255,255,.7));
+  .mod-empty {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: var(--is-s-2) var(--is-s-3) 60px;
   }
-  .mod-quality{
-    color: var(--is-text, #fff);
+}
+
+// --------------------------------------------------------------------------
+// 空态
+// --------------------------------------------------------------------------
+.mod-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--is-s-3);
+  text-align: center;
+  color: var(--is-text-3);
+
+  .is-icon {
+    font-size: 26px;
+    opacity: 0.5;
   }
-  .mod-toolbox{
-    position: sticky;
-    float: right;
-    right: 12px;
-    bottom: 12px;
-    margin: 12px 12px 8px 0;
-    display:flex;
-    gap: 14px;
-    z-index: 2;
-    i{
-      cursor:pointer;
-      color: var(--is-accent, #c8f542);
-      font-size: 18px;
-      padding: 4px;
-      &:hover{ opacity: .75; }
+
+  p {
+    font-size: var(--is-fs-md);
+    line-height: 1.7;
+    color: var(--is-text-2);
+  }
+}
+
+// --------------------------------------------------------------------------
+// 多选态
+// --------------------------------------------------------------------------
+.mod-multi {
+  display: flex;
+  flex-direction: column;
+  gap: var(--is-s-3);
+  justify-content: center;
+
+  p {
+    color: var(--is-text-2);
+    font-size: var(--is-fs-md);
+    line-height: 1.7;
+  }
+}
+
+// --------------------------------------------------------------------------
+// 单选表单
+// --------------------------------------------------------------------------
+.mod-form {
+  &__group {
+    padding: var(--is-s-3) 0;
+    border-bottom: 1px solid var(--is-divider);
+
+    &:last-of-type { border-bottom: none; }
+  }
+
+  &__caption {
+    margin-bottom: var(--is-s-2);
+    color: var(--is-text-3);
+    font-size: var(--is-fs-xs);
+    font-weight: var(--is-fw-bold);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  &__sub {
+    margin-top: var(--is-s-3);
+  }
+
+  // 复选框 + 数值 + 提示的水平行：强制单行并垂直居中，
+  // 此前用 is-form--inline 包裹会让 0-100 提示换行、基线错位
+  &__row {
+    display: flex;
+    align-items: center;
+    gap: var(--is-s-2);
+    flex-wrap: nowrap;
+    min-height: 30px;
+  }
+
+  &__warn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--is-s-1);
+    margin-top: var(--is-s-2);
+    color: var(--is-warn-fg);
+    font-size: var(--is-fs-sm);
+  }
+
+  .is-btn--lg { margin-top: var(--is-s-4); }
+
+  .hint {
+    color: var(--is-text-3);
+    font-size: var(--is-fs-sm);
+    font-style: normal;
+  }
+
+  // 提示独占一行（帧频/循环行下方的「0次代表无限循环」）
+  .hint--block {
+    display: block;
+    margin-top: var(--is-s-1);
+    line-height: 1.5;
+  }
+
+  // 行内小标签：帧频 / 循环
+  .row-label {
+    flex: none;
+    color: var(--is-text-2);
+    font-size: var(--is-fs-md);
+
+    &--gap { margin-left: var(--is-s-2); }
+  }
+
+  .unit {
+    color: var(--is-text-2);
+    font-size: var(--is-fs-md);
+  }
+}
+
+// 定宽数值输入框。必须写成 .is-input.w-xx 复合选择器：
+// ui.scss 里 .is-input { width: 100% } 与本类同为单类选择器且加载更晚，
+// 只写 .w-52 会被覆盖，导致小数值框变成通栏白条并把整行撑爆裁切。
+.is-input.w-52 { width: 52px; flex: none; }
+.is-input.w-60 { width: 60px; flex: none; }
+.is-input.w-70 { width: 70px; flex: none; }
+
+// --------------------------------------------------------------------------
+// 输出路径：真实路径（只读） + 变量路径（可编辑）
+// 定宽标签 + 自适应省略，不再各拉一条通栏输入框
+// --------------------------------------------------------------------------
+.path-rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--is-s-1);
+  margin-top: var(--is-s-2);
+}
+
+.path-row {
+  display: flex;
+  align-items: center;
+  gap: var(--is-s-2);
+  min-width: 0;
+
+  &__label {
+    flex: none;
+    width: 46px;
+    color: var(--is-text-3);
+    font-size: var(--is-fs-xs);
+    text-align: right;
+  }
+
+  // 真实路径：只读、等宽、超长省略
+  &__val {
+    flex: 1;
+    min-width: 0;
+    color: var(--is-text-2);
+    font-family: var(--is-mono);
+    font-size: var(--is-fs-xs);
+    line-height: 1.7;
+  }
+
+  .is-input {
+    flex: 1;
+    min-width: 0;
+    height: 26px;
+    font-family: var(--is-mono);
+    font-size: var(--is-fs-xs);
+  }
+
+  &__pick {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    border: 1px solid var(--is-input-border);
+    border-radius: var(--is-r-sm);
+    background: var(--is-input-bg);
+    color: var(--is-text-2);
+    cursor: pointer;
+    transition: border-color var(--is-dur-fast) var(--is-ease-std),
+      color var(--is-dur-fast) var(--is-ease-std),
+      background-color var(--is-dur-fast) var(--is-ease-std);
+
+    &:hover {
+      border-color: var(--is-accent);
+      background: var(--is-accent-soft);
+      color: var(--is-accent);
     }
   }
 }
 
-// 压缩表单间距（Element 默认偏大）
-.is-theme-dark .mod-setting,
-.is-theme-light .mod-setting {
-  .el-form-item {
-    margin-bottom: 8px;
+// --------------------------------------------------------------------------
+// 体积上限
+// --------------------------------------------------------------------------
+.size-limit {
+  display: flex;
+  flex-direction: column;
+  gap: var(--is-s-2);
+  margin-top: var(--is-s-3);
+  padding: var(--is-s-3);
+  border: 1px solid var(--is-border);
+  border-radius: var(--is-r-sm);
+  background: var(--is-inset);
+
+  &__row {
+    display: flex;
+    align-items: center;
+    gap: var(--is-s-2);
+    // 窄屏靠元素自身压缩（label 省略/分段缩小），不允许整行折行
+    flex-wrap: nowrap;
+    min-width: 0;
   }
-  .el-form-item__label {
-    line-height: 28px;
+
+  &__label {
+    flex: none;
+    min-width: 0;
+    max-width: 45%;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    color: var(--is-text-2);
+    font-size: var(--is-fs-sm);
   }
-  .el-form-item__content {
-    line-height: 28px;
-  }
-  .el-input--mini .el-input__inner {
-    height: 28px;
-    line-height: 28px;
-  }
-  .el-checkbox {
-    margin-right: 12px;
-  }
-  .el-form-item__label,
-  .el-checkbox__label {
-    color: var(--is-text);
-  }
-  .el-input__inner {
-    background: var(--is-card);
-    border-color: var(--is-border);
-    color: var(--is-text);
-  }
-  .el-button--primary {
-    background: var(--is-accent);
-    border-color: var(--is-accent);
-    color: var(--is-bg);
-    &:hover,
-    &:active,
-    &:focus {
-      background: var(--is-hot);
-      border-color: var(--is-hot);
-      color: #fff;
+
+  // 两个复选框并排一行：均分且各自压缩省略，不折行
+  // （本文件为全局样式，无需 ::v-deep）
+  &__row--checks {
+    .size-limit__check .is-check__label {
+      min-width: 0;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+
+    .size-limit__check {
+      flex: 1 1 0;
+      min-width: 0;
+      white-space: nowrap;
     }
   }
-  .el-checkbox__input.is-checked .el-checkbox__inner,
-  .el-checkbox__input.is-indeterminate .el-checkbox__inner {
-    background-color: var(--is-accent);
-    border-color: var(--is-accent);
+
+  &__check {
+    font-size: var(--is-fs-md);
   }
-  .el-checkbox__input.is-checked + .el-checkbox__label {
-    color: var(--is-accent);
+
+  // 行内分段控件（MB/KB）窄屏缩小内距，配合整行不折行
+  .is-segmented {
+    flex: none;
+    .is-segmented__item {
+      min-width: 0;
+      padding: 0 var(--is-s-2);
+    }
   }
-  .el-tag {
-    border-color: var(--is-border-hi);
+
+  // 面板窄档（Home.vue 拖拽时给 body 挂 side-narrow，阈值 ~340px）：
+  // 复选框与分段降一号字号——容器查询单位在 Electron 13 不可用，
+  // 由 JS 维护面板宽度类，等效"文本自适应缩放"
+  body.side-narrow & {
+    .size-limit__check { font-size: var(--is-fs-sm); }
+    .is-segmented .is-segmented__item { font-size: var(--is-fs-xs); }
+    .size-limit__label { font-size: var(--is-fs-xs); }
   }
-  .el-button {
-    margin-left: 0;
+
+  .hint {
+    color: var(--is-text-3);
+    font-size: var(--is-fs-sm);
+    font-style: normal;
   }
-  .size-unit {
-    width: 72px;
-    margin-left: 6px;
-  }
-  .path-modes {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-  }
-  .path-mode {
-    appearance: none;
+}
+
+// --------------------------------------------------------------------------
+// 右下工具条
+// --------------------------------------------------------------------------
+.mod-toolbox {
+  position: absolute;
+  right: var(--is-s-4);
+  bottom: var(--is-s-3);
+  display: flex;
+  align-items: center;
+  gap: var(--is-s-2);
+  z-index: 2;
+
+  &__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
     border: 1px solid var(--is-border);
+    border-radius: var(--is-r-sm);
+    background: var(--is-card);
+    color: var(--is-text-2);
+    font-size: var(--is-fs-lg);
+    cursor: pointer;
+    box-shadow: var(--is-shadow-xs);
+    transition: color var(--is-dur-fast) var(--is-ease-std),
+      border-color var(--is-dur-fast) var(--is-ease-std),
+      background-color var(--is-dur-fast) var(--is-ease-std),
+      transform var(--is-dur-base) var(--is-ease-spring);
+
+    &:hover:not(:disabled) {
+      border-color: var(--is-accent);
+      background: var(--is-accent-soft);
+      color: var(--is-accent);
+      transform: translateY(-2px);
+    }
+
+    &:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    &--danger:hover:not(:disabled) {
+      border-color: var(--is-bad);
+      background: var(--is-bad-bg);
+      color: var(--is-bad-fg);
+    }
+  }
+}
+
+// --------------------------------------------------------------------------
+// 标题行内带控件（输出大小阈值：开关放在标题右侧）
+// --------------------------------------------------------------------------
+.mod-form__capline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--is-s-2);
+}
+
+// --------------------------------------------------------------------------
+// 输出格式：定死三列，永不换行
+// 特异度教训（本项目第 4 次同型事故）：ui.scss 与组件 scoped 样式都给
+// .is-checkbox-group 设过 display:flex；scoped 编译产物带 [data-v-xxx]
+// 属性选择器（0,2,0），所以这里必须用同级复合选择器且分量不落下风。
+// auto-fit 在面板窄时会掉成两列（用户反馈即此问题）；APNG/GIF/WEBP 是
+// 固定三个短词，直接锁 repeat(3, minmax(0,1fr))，格子再窄也只压缩不自换行。
+// --------------------------------------------------------------------------
+.is-checkbox-group.fmt-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--is-s-1);
+  width: 100%;
+
+  .is-check {
+    justify-content: center;
+    width: 100%;
+    min-width: 0;
+    // label 不换行：空间不够时靠省略号，而不是折行破坏一行三格
+    white-space: nowrap;
+    overflow: hidden;
+
+    &__label {
+      flex: none;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+}
+
+// --------------------------------------------------------------------------
+// 输出名拆词胶囊
+// --------------------------------------------------------------------------
+.name-tokens {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--is-s-1);
+  margin-top: var(--is-s-2);
+}
+
+.tok {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  // 不限最大宽：胶囊多了靠 flex-wrap 自然换行（容器 .name-tokens 已有 wrap）
+  height: 22px;
+  padding: 0 var(--is-s-2);
+  border: 1px solid var(--is-border-hi);
+  border-radius: var(--is-r-pill);
+  background: var(--is-accent-soft);
+  color: var(--is-accent);
+  font-family: var(--is-mono);
+  font-size: var(--is-fs-xs);
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: opacity var(--is-dur-fast) var(--is-ease-std),
+    background-color var(--is-dur-fast) var(--is-ease-std),
+    border-color var(--is-dur-fast) var(--is-ease-std),
+    color var(--is-dur-fast) var(--is-ease-std),
+    transform var(--is-dur-fast) var(--is-ease-std);
+
+  &:hover { transform: translateY(-1px); }
+
+  // 文字 token 异色：按序取六色令牌（与路径变量同一组）
+  &--c1 { color: rgb(var(--is-var-1)); background: rgba(var(--is-var-1), 0.10); border-color: rgba(var(--is-var-1), 0.32); }
+  &--c2 { color: rgb(var(--is-var-2)); background: rgba(var(--is-var-2), 0.10); border-color: rgba(var(--is-var-2), 0.32); }
+  &--c3 { color: rgb(var(--is-var-3)); background: rgba(var(--is-var-3), 0.10); border-color: rgba(var(--is-var-3), 0.32); }
+  &--c4 { color: rgb(var(--is-var-4)); background: rgba(var(--is-var-4), 0.10); border-color: rgba(var(--is-var-4), 0.32); }
+  &--c5 { color: rgb(var(--is-var-5)); background: rgba(var(--is-var-5), 0.10); border-color: rgba(var(--is-var-5), 0.32); }
+  &--c6 { color: rgb(var(--is-var-6)); background: rgba(var(--is-var-6), 0.10); border-color: rgba(var(--is-var-6), 0.32); }
+
+  // 分隔符胶囊：固定中性色，不参与异色轮换
+  &.is-sep {
+    min-width: 22px;
+    padding: 0 5px;
+    border-color: var(--is-border);
+    background: var(--is-inset);
+    color: var(--is-text-3);
+  }
+
+  // 被点掉：保留占位但明显弱化，方便再点回来
+  &.is-off {
+    border-color: var(--is-divider);
+    background: transparent !important;
+    color: var(--is-text-3) !important;
+    opacity: 0.45;
+    text-decoration: line-through;
+  }
+
+  &--act {
+    border-style: dashed;
+    border-color: var(--is-border-strong);
     background: transparent;
     color: var(--is-text-2);
-    border-radius: 999px;
-    padding: 4px 10px;
-    font-size: 12px;
-    cursor: pointer;
+    font-family: var(--is-font);
 
     &:hover {
-      border-color: var(--is-border-hi);
-      color: var(--is-text);
-    }
-
-    &--on {
-      background: var(--is-accent);
       border-color: var(--is-accent);
-      color: var(--is-bg);
-      font-weight: 700;
+      color: var(--is-accent);
     }
   }
-  .path-input {
-    width: 100%;
+}
+
+// --------------------------------------------------------------------------
+// 输出名行：输入框 + 右侧「只留文字」漏斗按钮
+// --------------------------------------------------------------------------
+.name-row {
+  display: flex;
+  align-items: center;
+  gap: var(--is-s-1);
+  min-width: 0;
+
+  // 与数值框同一类层叠问题：单类会被 .is-input{width:100%} 覆盖
+  .is-input {
+    flex: 1 1 0;
+    min-width: 0;
   }
-  .path-icon {
+
+  &__filter {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border: 1px solid var(--is-input-border);
+    border-radius: var(--is-r-sm);
+    background: var(--is-input-bg);
+    color: var(--is-text-3);
     cursor: pointer;
-    color: var(--is-accent);
+    transition: border-color var(--is-dur-fast) var(--is-ease-std),
+      color var(--is-dur-fast) var(--is-ease-std),
+      background-color var(--is-dur-fast) var(--is-ease-std);
 
     &:hover {
-      opacity: 0.8;
+      border-color: var(--is-accent);
+      color: var(--is-accent);
     }
-  }
-  .path-hint {
-    margin: 4px 0 0;
-    font-size: 11px;
-    color: var(--is-text-3);
-  }
-  .output-preview {
-    font-size: 11px;
-    color: var(--is-text-3);
-    font-family: var(--is-mono);
-    word-break: break-all;
-    margin: 0 0 8px;
-  }
-  .ui-border-b {
-    border-bottom-color: var(--is-border);
+
+    // 「只留文字」激活态
+    &.is-on {
+      border-color: var(--is-accent);
+      background: var(--is-accent-dim);
+      color: var(--is-accent);
+    }
   }
 }
