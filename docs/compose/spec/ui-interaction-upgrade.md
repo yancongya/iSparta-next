@@ -1,5 +1,5 @@
 feature: ui-interaction-upgrade
-status: M0 in progress
+status: M0 done
 updated: 2026-09-12
 branch: feat/frontend-redesign
 commits: TBD
@@ -153,7 +153,11 @@ frontend-redesign 工作树 Electron 已升级至 **28.3.3（Chromium 120）**�
 
 ## 9. 里程碑建议
 
-- M0：mock 桥 + 浏览器可跑 + 假数据种子
+- M0：mock 桥 + 浏览器可跑 + 假数据种子 ✅（2026-09-12 完成）
+  - `src/util/mock-bridge.js`：dev-only，Electron 下自动空转；main.js 首位 import
+  - 浏览器启动：`npx vue-cli-service serve --port 8090`（与 electron:serve 的 8080 错开）
+  - 验证手段：离屏 Electron（show:false，无 preload）加载 dev server，见仓库根 `.m0-browser-check.js`（临时脚本，未提交）
+  - 验证结果：mock 桥启用、5 条种子渲染（APNG/PNGs/GIF/WEBP）、无页面错误；真实 Electron 回归 mock 空转、无新增错误
 - M1：第一梯队 CSS 全量（曲线统一、stagger、segmented、拖放区）
 - M2：数字滚动 + FLIP 弹跳 + 完成彩带
 - M3：图片对比滑块（含 Electron 实测）
