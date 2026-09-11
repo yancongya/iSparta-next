@@ -63,4 +63,5 @@ module.exports = {
     "outputToPick": "Browse…",
     "outputToTemplate": "Path template (optional)",
     "outputToPreview": "Output to",
+    "outputToCustomHint": "Pick a custom folder via the folder button in per-task Output Settings",
 }
