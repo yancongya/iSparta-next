@@ -51,8 +51,19 @@
           <el-checkbox v-model="sizeEnabled">{{ $t("sizeLimitEnable") }}</el-checkbox>
         </el-form-item>
         <el-form-item :label="$t('sizeLimitMax')">
-          <el-input v-model.number="sizeMaxMB" type="number" size="mini" min="0" step="0.1"></el-input>
-          <i>MB</i>
+          <el-input
+            v-model="sizeValueText"
+            size="mini"
+            type="number"
+            min="0"
+            step="any"
+            placeholder="1"
+            @input="onSizeValueInput"
+          ></el-input>
+          <el-select v-model="sizeUnit" size="mini" class="size-unit">
+            <el-option label="MB" value="MB"></el-option>
+            <el-option label="KB" value="KB"></el-option>
+          </el-select>
         </el-form-item>
         <el-form-item class="mr-5">
           <el-checkbox v-model="sizeAutoQuality">{{ $t("sizeLimitAutoQuality") }}</el-checkbox>
@@ -234,14 +245,29 @@ export default {
         this.pushSizeLimit({ enabled: !!value })
       }
     },
-    sizeMaxMB: {
+    sizeValueText: {
       get () {
         const s = this.curtSetting && this.curtSetting.sizeLimit
-        return (s && s.maxMB != null) ? s.maxMB : 1
+        const bytes = this.sizeLimitBytes(s)
+        const unit = (s && s.unit) || 'MB'
+        if (unit === 'KB') {
+          return String(Math.round((bytes / 1024) * 100) / 100)
+        }
+        return String(Math.round((bytes / (1024 * 1024)) * 1000) / 1000)
+      },
+      set () {
+        // 由 onSizeValueInput 写入，避免 v-model.number 把 0.8 吃掉
+      }
+    },
+    sizeUnit: {
+      get () {
+        const s = this.curtSetting && this.curtSetting.sizeLimit
+        return (s && s.unit) || 'MB'
       },
       set (value) {
-        const n = Number(value)
-        this.pushSizeLimit({ maxMB: isFinite(n) && n > 0 ? n : 1 })
+        const s = this.curtSetting && this.curtSetting.sizeLimit
+        const bytes = this.sizeLimitBytes(s)
+        this.pushSizeLimit({ unit: value, maxBytes: bytes, maxMB: bytes / (1024 * 1024) })
       }
     },
     sizeAutoQuality: {
@@ -282,10 +308,34 @@ export default {
 
   },
   methods: {
+    sizeLimitBytes (s) {
+      if (s && isFinite(Number(s.maxBytes)) && Number(s.maxBytes) > 0) {
+        return Number(s.maxBytes)
+      }
+      if (s && isFinite(Number(s.maxMB)) && Number(s.maxMB) > 0) {
+        return Number(s.maxMB) * 1024 * 1024
+      }
+      return 1024 * 1024
+    },
+    onSizeValueInput (raw) {
+      const n = parseFloat(String(raw).replace(',', '.'))
+      if (!isFinite(n) || n <= 0) {
+        return
+      }
+      const unit = this.sizeUnit
+      const bytes = unit === 'KB' ? n * 1024 : n * 1024 * 1024
+      this.pushSizeLimit({
+        maxBytes: bytes,
+        maxMB: bytes / (1024 * 1024),
+        unit: unit
+      })
+    },
     pushSizeLimit (patch) {
       const base = (this.curtSetting && this.curtSetting.sizeLimit) || {
         enabled: false,
         maxMB: 1,
+        maxBytes: 1048576,
+        unit: 'MB',
         autoDelete: false,
         autoQuality: true,
         step: 5,

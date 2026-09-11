@@ -56,6 +56,8 @@ const defaultState = {
     'sizeLimit': {
       enabled: false,
       maxMB: 1,
+      maxBytes: 1048576,
+      unit: 'MB',
       autoDelete: false,
       autoQuality: true,
       step: 5,
@@ -115,6 +117,17 @@ if (!globalSetting) {
       if (!parsed.options.sizeLimit) {
         parsed.options.sizeLimit = _.cloneDeep(defaultState.options.sizeLimit)
         changed = true
+      } else {
+        // 补 unit / maxBytes
+        if (!parsed.options.sizeLimit.unit) {
+          parsed.options.sizeLimit.unit = 'MB'
+          changed = true
+        }
+        if (!isFinite(Number(parsed.options.sizeLimit.maxBytes)) || Number(parsed.options.sizeLimit.maxBytes) <= 0) {
+          const mb = Number(parsed.options.sizeLimit.maxMB)
+          parsed.options.sizeLimit.maxBytes = (isFinite(mb) && mb > 0) ? mb * 1024 * 1024 : 1048576
+          changed = true
+        }
       }
     }
     if (changed) {
