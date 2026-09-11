@@ -985,9 +985,9 @@ body.is-scroll-locked {
   transform: translateX(60%) scale(0.94);
 }
 
-// 列表：FLIP 位移 + 进出场
+// 列表：FLIP 位移 + 进出场；位移用过冲曲线，重排后「弹一下」落位
 .is-list-move {
-  transition: transform var(--is-dur-slow) var(--is-ease-out);
+  transition: transform var(--is-dur-slow) var(--is-ease-overshoot);
 }
 
 .is-list-enter-active,

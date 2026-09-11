@@ -21,6 +21,7 @@ import IsFormItem from './IsFormItem.vue'
 import IsDialog from './IsDialog.vue'
 import IsSegmented from './IsSegmented.vue'
 import IsSwitch from './IsSwitch.vue'
+import IsNumberTween from './IsNumberTween.vue'
 
 export {
   IsIcon,
@@ -34,7 +35,8 @@ export {
   IsFormItem,
   IsDialog,
   IsSegmented,
-  IsSwitch
+  IsSwitch,
+  IsNumberTween
 }
 
 const components = [
@@ -49,7 +51,8 @@ const components = [
   ['IsFormItem', IsFormItem],
   ['IsDialog', IsDialog],
   ['IsSegmented', IsSegmented],
-  ['IsSwitch', IsSwitch]
+  ['IsSwitch', IsSwitch],
+  ['IsNumberTween', IsNumberTween]
 ]
 
 export default {
