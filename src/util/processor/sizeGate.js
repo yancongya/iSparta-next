@@ -21,7 +21,7 @@ export function normalizeSizeLimit (options) {
 }
 
 export function formatMB (bytes) {
-  if (!bytes) { return '0MB' }
+  if (!bytes || bytes < 0) { return '?' }
   return (bytes / 1024 / 1024).toFixed(2) + 'MB'
 }
 
@@ -81,9 +81,23 @@ export function enforceSizeLimit (item, store, locale) {
   let warned = []
   let triesUsed = 0
 
+  // 每种格式从同一质量基线重试，避免串色
+  const baseQuality = item.options.quality
+    ? {
+      checked: item.options.quality.checked,
+      value: Number(item.options.quality.value)
+    }
+    : { checked: true, value: 80 }
+  if (!isFinite(baseQuality.value)) { baseQuality.value = 80 }
+
   function checkOne (format) {
     const outPath = outputPathFor(item, format)
     let size = fs.statSize(outPath)
+    if (size < 0) {
+      // 输出缺失
+      warned.push({ format, size: 0, missing: true })
+      return Promise.resolve({ format, size: 0, action: 'warn-missing' })
+    }
     if (size <= maxBytes) {
       return Promise.resolve(null)
     }
@@ -99,9 +113,13 @@ export function enforceSizeLimit (item, store, locale) {
       return Promise.resolve({ format, size, action: 'warn' })
     }
 
-    // 自动降质量重压
+    // 自动降质量重压（从 baseQuality 起算）
     function retry (tries) {
       size = fs.statSize(outPath)
+      if (size < 0) {
+        warned.push({ format, size: 0, missing: true })
+        return Promise.resolve({ format, size: 0, action: 'warn-missing' })
+      }
       if (size <= maxBytes) {
         return Promise.resolve(null)
       }
@@ -117,11 +135,22 @@ export function enforceSizeLimit (item, store, locale) {
       }
 
       if (!item.options.quality) {
-        item.options.quality = { checked: true, value: 80 }
+        item.options.quality = { checked: true, value: baseQuality.value }
       }
       item.options.quality.checked = true
-      const current = Number(item.options.quality.value)
-      const nextQ = Math.max(1, (isFinite(current) ? current : 80) - limit.step)
+      const startQ = isFinite(baseQuality.value) ? baseQuality.value : 80
+      const nextQ = Math.max(1, startQ - limit.step * (tries + 1))
+      if (nextQ === Number(item.options.quality.value) && tries > 0) {
+        // 已到质量下限，不再空转
+        if (limit.autoDelete) {
+          return fs.remove(outPath).then(() => {
+            deleted.push(format)
+            return { format, size, action: 'delete-floor', tries }
+          })
+        }
+        warned.push({ format, size, tries })
+        return Promise.resolve({ format, size, action: 'warn-floor', tries })
+      }
       item.options.quality.value = nextQ
       triesUsed = Math.max(triesUsed, tries + 1)
 
@@ -137,7 +166,6 @@ export function enforceSizeLimit (item, store, locale) {
         .then(() => reExportFormat(item, format, store, locale))
         .then(() => retry(tries + 1))
         .catch((err) => {
-          // 压缩失败时按警告处理，避免整任务中断
           warned.push({ format, size, error: String(err && err.err || err) })
           return { format, size, action: 'warn-error' }
         })
@@ -154,10 +182,13 @@ export function enforceSizeLimit (item, store, locale) {
       text = (locale.sizeLimitDeleted || 'Over limit, deleted') + ': ' + deleted.join(', ')
     } else if (warned.length) {
       text = (locale.sizeLimitWarn || 'Over size limit') + ' ' +
-        warned.map(w => w.format + ' ' + formatMB(w.size)).join(', ')
+        warned.map(w => {
+          if (w.missing) { return w.format + ' ?' }
+          return w.format + ' ' + formatMB(w.size)
+        }).join(', ')
     } else if (triesUsed > 0) {
-      text = (locale.convertSuccess || 'OK') + '！' +
-        (locale.sizeLimitAdjusted || ' (size gate Q→)') + triesUsed
+      text = (locale.convertSuccess || 'OK') + '！ ' +
+        (locale.sizeLimitAdjusted || '(size gate Q→)') + triesUsed
     }
     store.dispatch('editProcess', {
       index: item.index,
