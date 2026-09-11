@@ -1,5 +1,5 @@
 // 输出路径策略：output/ 旁级 自定义 + 变量
-import { path as npath } from '../node-env'
+import { path as npath } from './node-env'
 
 export function normalizeOutputTo (options) {
   const o = (options && options.outputTo) || {}
