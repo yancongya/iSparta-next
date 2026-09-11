@@ -1,5 +1,7 @@
-/* iSparta-next tokens — 双主题，工具台/印刷车间气质，避免通用蓝紫 SaaS 风 */
+/* iSparta-next tokens — 双主题（挂在 .ib / html / body） */
 :root,
+html.is-theme-dark,
+body.is-theme-dark,
 .is-theme-dark {
   --is-accent: #c8f542;
   --is-accent-dim: rgba(200, 245, 66, 0.18);
@@ -10,7 +12,6 @@
   --is-bad: #ff5c5c;
 
   --is-bg: #0c0f0e;
-  --is-bg-grid: rgba(200, 245, 66, 0.04);
   --is-panel: #141816;
   --is-card: #1a201c;
   --is-card-hi: #222a24;
@@ -26,12 +27,10 @@
 
   --is-font: "Segoe UI Variable Text", "Segoe UI", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
   --is-mono: "Cascadia Mono", "SF Mono", Consolas, "Courier New", monospace;
-
-  --is-r: 14px;
-  --is-r-sm: 10px;
-  --is-r-xs: 6px;
 }
 
+html.is-theme-light,
+body.is-theme-light,
 .is-theme-light {
   --is-accent: #c2410c;
   --is-accent-dim: rgba(194, 65, 12, 0.14);
@@ -42,7 +41,6 @@
   --is-bad: #b91c1c;
 
   --is-bg: #f3efe6;
-  --is-bg-grid: rgba(28, 25, 23, 0.05);
   --is-panel: #ebe6db;
   --is-card: #fffdf8;
   --is-card-hi: #f7f3ea;
@@ -67,29 +65,186 @@ body,
   font-family: var(--is-font);
 }
 
-/* Element UI 跟随主题（输出设置等） */
-.is-theme-dark .el-button--primary {
-  background-color: #c8f542;
-  border-color: #c8f542;
-  color: #0c0f0e;
+/* ——— Element 全局（含 append-to-body 弹窗） ——— */
+html.is-theme-dark .el-button,
+html.is-theme-light .el-button {
+  color: var(--is-text);
+  border-color: var(--is-border);
+  background: transparent;
 }
-.is-theme-dark .el-checkbox__label,
-.is-theme-dark .el-form-item__label,
-.is-theme-dark .el-button {
+
+html.is-theme-dark .el-button--primary,
+html.is-theme-light .el-button--primary,
+html.is-theme-dark .el-button--primary:focus,
+html.is-theme-light .el-button--primary:focus {
+  background: var(--is-accent);
+  border-color: var(--is-accent);
+  color: var(--is-bg);
+  font-weight: 700;
+}
+
+html.is-theme-dark .el-button--primary:hover,
+html.is-theme-light .el-button--primary:hover,
+html.is-theme-dark .el-button--primary:active,
+html.is-theme-light .el-button--primary:active {
+  background: var(--is-hot);
+  border-color: var(--is-hot);
+  color: #fff;
+  filter: brightness(1.05);
+}
+
+html.is-theme-dark .el-button:hover,
+html.is-theme-light .el-button:hover {
+  color: var(--is-accent);
+  border-color: var(--is-border-hi);
+  background: var(--is-accent-soft);
+}
+
+html.is-theme-dark .el-input__inner,
+html.is-theme-light .el-input__inner {
+  background: var(--is-card);
+  border-color: var(--is-border);
   color: var(--is-text);
 }
-.is-theme-dark .el-input__inner {
-  background: #1a201c;
-  border-color: rgba(232, 240, 230, 0.12);
-  color: #eef3ec;
+
+html.is-theme-dark .el-input__inner:focus,
+html.is-theme-light .el-input__inner:focus {
+  border-color: var(--is-accent);
 }
-.is-theme-light .el-button--primary {
-  background-color: #c2410c;
-  border-color: #c2410c;
-  color: #fffdf8;
+
+html.is-theme-dark .el-checkbox__label,
+html.is-theme-light .el-checkbox__label,
+html.is-theme-dark .el-form-item__label,
+html.is-theme-light .el-form-item__label,
+html.is-theme-dark .el-dialog__title,
+html.is-theme-light .el-dialog__title {
+  color: var(--is-text);
 }
-.is-theme-light .el-input__inner {
-  background: #fffdf8;
-  border-color: rgba(28, 25, 23, 0.12);
-  color: #1c1917;
+
+html.is-theme-dark .el-checkbox__input.is-checked .el-checkbox__inner,
+html.is-theme-light .el-checkbox__input.is-checked .el-checkbox__inner,
+html.is-theme-dark .el-checkbox__input.is-indeterminate .el-checkbox__inner,
+html.is-theme-light .el-checkbox__input.is-indeterminate .el-checkbox__inner {
+  background-color: var(--is-accent);
+  border-color: var(--is-accent);
+}
+
+html.is-theme-dark .el-checkbox__input.is-checked + .el-checkbox__label,
+html.is-theme-light .el-checkbox__input.is-checked + .el-checkbox__label {
+  color: var(--is-accent);
+}
+
+/* 弹窗：延时配置 / 默认设置 */
+html.is-theme-dark .el-dialog,
+html.is-theme-light .el-dialog {
+  background: var(--is-panel);
+  color: var(--is-text);
+  border-radius: 12px;
+  border: 1px solid var(--is-border);
+  box-shadow: var(--is-shadow);
+}
+
+html.is-theme-dark .el-dialog__header,
+html.is-theme-light .el-dialog__header {
+  border-bottom: 1px solid var(--is-border);
+  padding: 14px 18px 10px;
+}
+
+html.is-theme-dark .el-dialog__body,
+html.is-theme-light .el-dialog__body {
+  color: var(--is-text);
+  padding: 14px 18px;
+}
+
+html.is-theme-dark .el-dialog__footer,
+html.is-theme-light .el-dialog__footer {
+  border-top: 1px solid var(--is-border);
+  padding: 10px 18px 14px;
+}
+
+html.is-theme-dark .el-dialog__headerbtn .el-dialog__close,
+html.is-theme-light .el-dialog__headerbtn .el-dialog__close {
+  color: var(--is-text-2);
+}
+
+html.is-theme-dark .el-select-dropdown,
+html.is-theme-light .el-select-dropdown,
+html.is-theme-dark .el-picker-panel,
+html.is-theme-light .el-picker-panel {
+  background: var(--is-panel);
+  border-color: var(--is-border);
+}
+
+html.is-theme-dark .el-select-dropdown__item,
+html.is-theme-light .el-select-dropdown__item {
+  color: var(--is-text);
+}
+
+html.is-theme-dark .el-select-dropdown__item.hover,
+html.is-theme-light .el-select-dropdown__item.hover,
+html.is-theme-dark .el-select-dropdown__item:hover,
+html.is-theme-light .el-select-dropdown__item:hover {
+  background: var(--is-card-hi);
+  color: var(--is-accent);
+}
+
+html.is-theme-dark .el-overlay-mask,
+html.is-theme-light .el-overlay-mask {
+  background: rgba(0, 0, 0, 0.55);
+}
+
+/* 延时帧格 */
+html.is-theme-dark .frame-list .frame,
+html.is-theme-light .frame-list .frame {
+  border-color: var(--is-border);
+  background: var(--is-card);
+}
+
+html.is-theme-dark .frame-list .el-input__inner,
+html.is-theme-light .frame-list .el-input__inner {
+  border-top-color: var(--is-border);
+  background: var(--is-card);
+  color: var(--is-text);
+}
+
+html.is-theme-dark .frame-preview .el-button--primary,
+html.is-theme-light .frame-preview .el-button--primary {
+  background: var(--is-accent);
+  border-color: var(--is-accent);
+  color: var(--is-bg);
+}
+
+html.is-theme-dark .frame-preview .el-button--primary:hover,
+html.is-theme-light .frame-preview .el-button--primary:hover {
+  background: var(--is-hot);
+  border-color: var(--is-hot);
+  color: #fff;
+}
+
+html.is-theme-dark .fps-setting,
+html.is-theme-light .fps-setting {
+  color: var(--is-text);
+}
+
+/* 底栏全选 */
+html.is-theme-dark .mod-bar,
+html.is-theme-light .mod-bar {
+  background: var(--is-panel);
+  border-color: var(--is-border);
+  color: var(--is-text-2);
+}
+
+html.is-theme-dark .mod-bar .bar-label,
+html.is-theme-light .mod-bar .bar-label {
+  color: var(--is-text-2);
+}
+
+html.is-theme-dark .mod-bar .bar-count,
+html.is-theme-light .mod-bar .bar-count {
+  color: var(--is-text-3);
+}
+
+html.is-theme-dark .mod-bar .el-checkbox__label,
+html.is-theme-light .mod-bar .el-checkbox__label {
+  color: var(--is-text);
 }

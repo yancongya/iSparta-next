@@ -91,6 +91,7 @@ export default {
       const t = window.storage && window.storage.getItem('uiTheme')
       if (t === 'light' || t === 'dark') { this.theme = t }
     } catch (e) { /* ignore */ }
+    this.applyThemeClass()
   },
   mounted () {
     window.addEventListener('paste', this.onPaste)
@@ -99,8 +100,16 @@ export default {
     window.removeEventListener('paste', this.onPaste)
   },
   methods: {
+    applyThemeClass () {
+      var root = document.documentElement
+      root.classList.remove('is-theme-dark', 'is-theme-light')
+      root.classList.add(this.theme === 'light' ? 'is-theme-light' : 'is-theme-dark')
+      document.body && document.body.classList.remove('is-theme-dark', 'is-theme-light')
+      document.body && document.body.classList.add(this.theme === 'light' ? 'is-theme-light' : 'is-theme-dark')
+    },
     toggleTheme () {
       this.theme = this.theme === 'dark' ? 'light' : 'dark'
+      this.applyThemeClass()
       try {
         if (window.storage) { window.storage.setItem('uiTheme', this.theme) }
       } catch (e) { /* ignore */ }

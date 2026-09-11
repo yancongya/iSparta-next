@@ -4,9 +4,16 @@
   .frame{
     width:80px;
     margin:10px 5px;
-    border:1px solid #eee;
+    border:1px solid var(--is-border, #eee);
+    border-radius: 6px;
+    overflow: hidden;
+    background: var(--is-card, #fff);
     img{
       width:100%;
+      aspect-ratio: 1 / 1;
+      object-fit: cover;
+      display: block;
+      min-height: 40px;
     }
   }
   .el-input__inner{
