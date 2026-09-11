@@ -240,7 +240,8 @@ export default {
         return (s && s.maxMB != null) ? s.maxMB : 1
       },
       set (value) {
-        this.pushSizeLimit({ maxMB: Number(value) || 1 })
+        const n = Number(value)
+        this.pushSizeLimit({ maxMB: isFinite(n) && n > 0 ? n : 1 })
       }
     },
     sizeAutoQuality: {

@@ -56,7 +56,8 @@ export const fs = {
   remove: (...a) => getFs().remove(...a),
   statSize: (p) => {
     const r = getFs().statSize && getFs().statSize(p)
-    return (r && r.ok) ? r.size : 0
+    // 失败返回 -1，避免把缺文件当成 0 字节从而误判“未超限”
+    return (r && r.ok) ? r.size : -1
   }
 }
 export const path = {

@@ -29,6 +29,13 @@ export default function (item, store, locale) {
     item.basic.fileList = [
       path.join(item.basic.tmpOutputDir, item.options.outputName + '.png')
     ]
+    // 保留未压缩母版，供大小阈值降质量重压（与 pngs2apng 一致）
+    try {
+      const assembled = path.join(item.basic.tmpOutputDir, item.options.outputName + '.png')
+      const src = assembled + '-src.png'
+      fs.copySync(assembled, src)
+      item.basic.assembledApng = src
+    } catch (e) { /* ignore */ }
     return apngCompress(item, 0, store, locale)
   })
 }

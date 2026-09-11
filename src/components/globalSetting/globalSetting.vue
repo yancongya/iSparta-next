@@ -59,8 +59,24 @@
 <script>
 export default {
   data() {
+    let setting = null
+    try {
+      setting = JSON.parse(window.storage.getItem('globalSetting'))
+    } catch (e) {
+      setting = null
+    }
+    if (setting && setting.options && !setting.options.sizeLimit) {
+      setting.options.sizeLimit = {
+        enabled: false,
+        maxMB: 1,
+        autoDelete: false,
+        autoQuality: true,
+        step: 5,
+        maxTries: 10
+      }
+    }
     return {
-      setting: JSON.parse(window.storage.getItem('globalSetting')),
+      setting: setting,
       dialogFormVisible: false,
       formLabelWidth: '120px'
     }
