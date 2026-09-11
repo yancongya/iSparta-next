@@ -53,7 +53,11 @@ export const fs = {
   copy: (...a) => getFs().copy(...a),
   copySync: (...a) => getFs().copySync(...a),
   writeFile: (...a) => getFs().writeFile(...a),
-  remove: (...a) => getFs().remove(...a)
+  remove: (...a) => getFs().remove(...a),
+  statSize: (p) => {
+    const r = getFs().statSize && getFs().statSize(p)
+    return (r && r.ok) ? r.size : 0
+  }
 }
 export const path = {
   join: (...a) => getPath().join(...a),

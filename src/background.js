@@ -208,6 +208,14 @@ function ensureDir (dir) {
 ipcMain.on('fs:existsSync', (event, p) => {
   try { event.returnValue = fsp.existsSync(p) } catch (e) { event.returnValue = false }
 })
+ipcMain.on('fs:statSize', (event, p) => {
+  try {
+    const st = fsp.statSync(p)
+    event.returnValue = { ok: true, size: st.size }
+  } catch (e) {
+    event.returnValue = { ok: false, size: 0, error: String(e && e.message || e) }
+  }
+})
 // 缩略图：主进程读文件转 data URL，避免 sandbox/file 协议问题
 ipcMain.on('fs:readDataUrl', (event, p) => {
   try {

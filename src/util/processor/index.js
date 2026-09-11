@@ -7,6 +7,7 @@ import webp2apng 	from './webp2apng'
 import Action 		from './action'
 import { fs, path, os } 	from '../node-env'
 import TYPE 		from '../../store/enum/type'
+import { enforceSizeLimit } from './sizeGate'
 
 function stat (label) {
   try {
@@ -62,6 +63,10 @@ export default function (store, sameOutputPath, locale) {
 
     if (sameOutputPath) {
       item.basic.outputPath = sameOutputPath
+    }
+    // 记录源文件，供大小阈值重压时恢复母版
+    if (item.basic.fileList && item.basic.fileList[0]) {
+      item.basic.sourceFile = item.basic.fileList[0]
     }
 
     store.dispatch('editProcess', {
@@ -138,10 +143,15 @@ function apng2other (item, store, locale) {
 		// delete tmp dir
     // return fs.remove(item.basic.tmpOutputDir)
     stat('1')
-    store.dispatch('editProcess', {
-      index: item.index,
-      text: locale.convertSuccess + '！',
-      schedule: 1
+    // 大小阈值：警告 / 自动删 / 降质量重压
+    return enforceSizeLimit(item, store, locale).then((result) => {
+      if (!result || !result.enforced) {
+        store.dispatch('editProcess', {
+          index: item.index,
+          text: locale.convertSuccess + '！',
+          schedule: 1
+        })
+      }
     })
   })
 }

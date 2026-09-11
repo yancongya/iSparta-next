@@ -37,10 +37,36 @@
       <el-form :inline="true">
         <el-form-item class="mr-5">
           <el-checkbox v-model="qualityCheck">Quality</el-checkbox>
-        </el-form-item> 
+        </el-form-item>
         <el-form-item>
           <el-input v-model.number="quality" type="number" size="mini" placeholder="100" @blur="qualityBlur"></el-input>
           <i>(0-100)</i>
+        </el-form-item>
+      </el-form>
+    </div>
+    <div class="ui-border-b mod-sizelimit">
+      <p>{{ $t("sizeLimit") }}</p>
+      <el-form label-width="">
+        <el-form-item class="mr-5">
+          <el-checkbox v-model="sizeEnabled">{{ $t("sizeLimitEnable") }}</el-checkbox>
+        </el-form-item>
+        <el-form-item :label="$t('sizeLimitMax')">
+          <el-input v-model.number="sizeMaxMB" type="number" size="mini" min="0" step="0.1"></el-input>
+          <i>MB</i>
+        </el-form-item>
+        <el-form-item class="mr-5">
+          <el-checkbox v-model="sizeAutoQuality">{{ $t("sizeLimitAutoQuality") }}</el-checkbox>
+        </el-form-item>
+        <el-form-item class="mr-5">
+          <el-checkbox v-model="sizeAutoDelete">{{ $t("sizeLimitAutoDelete") }}</el-checkbox>
+        </el-form-item>
+        <el-form-item :label="$t('sizeLimitStep')" v-if="sizeAutoQuality">
+          <el-input v-model.number="sizeStep" type="number" size="mini" min="1" max="100"></el-input>
+          <i>(0-100)</i>
+        </el-form-item>
+        <el-form-item :label="$t('sizeLimitTries')" v-if="sizeAutoQuality">
+          <el-input v-model.number="sizeMaxTries" type="number" size="mini" min="1" max="50"></el-input>
+          <i>{{ $t('sizeLimitTriesTip') }}</i>
         </el-form-item>
       </el-form>
     </div>
@@ -199,10 +225,75 @@ export default {
           }
         })
       }
+    },
+    sizeEnabled: {
+      get () {
+        return !!(this.curtSetting && this.curtSetting.sizeLimit && this.curtSetting.sizeLimit.enabled)
+      },
+      set (value) {
+        this.pushSizeLimit({ enabled: !!value })
+      }
+    },
+    sizeMaxMB: {
+      get () {
+        const s = this.curtSetting && this.curtSetting.sizeLimit
+        return (s && s.maxMB != null) ? s.maxMB : 1
+      },
+      set (value) {
+        this.pushSizeLimit({ maxMB: Number(value) || 1 })
+      }
+    },
+    sizeAutoQuality: {
+      get () {
+        const s = this.curtSetting && this.curtSetting.sizeLimit
+        return !s || s.autoQuality !== false
+      },
+      set (value) {
+        this.pushSizeLimit({ autoQuality: !!value })
+      }
+    },
+    sizeAutoDelete: {
+      get () {
+        return !!(this.curtSetting && this.curtSetting.sizeLimit && this.curtSetting.sizeLimit.autoDelete)
+      },
+      set (value) {
+        this.pushSizeLimit({ autoDelete: !!value })
+      }
+    },
+    sizeStep: {
+      get () {
+        const s = this.curtSetting && this.curtSetting.sizeLimit
+        return (s && s.step) || 5
+      },
+      set (value) {
+        this.pushSizeLimit({ step: Number(value) || 5 })
+      }
+    },
+    sizeMaxTries: {
+      get () {
+        const s = this.curtSetting && this.curtSetting.sizeLimit
+        return (s && s.maxTries) || 10
+      },
+      set (value) {
+        this.pushSizeLimit({ maxTries: Number(value) || 10 })
+      }
     }
 
   },
   methods: {
+    pushSizeLimit (patch) {
+      const base = (this.curtSetting && this.curtSetting.sizeLimit) || {
+        enabled: false,
+        maxMB: 1,
+        autoDelete: false,
+        autoQuality: true,
+        step: 5,
+        maxTries: 10
+      }
+      this.$store.dispatch('editOptions', {
+        sizeLimit: Object.assign({}, base, patch)
+      })
+    },
     floydBlur:function(self){
       self.srcElement.value = this.floyd;
     },
