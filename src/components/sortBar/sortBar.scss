@@ -1,0 +1,106 @@
+// ==========================================================================
+// 底栏：全选 / 计数 / 状态统计 / 总进度 / 快捷键提示
+// ==========================================================================
+
+.mod-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--is-s-4);
+  flex: none;
+  height: var(--is-bar-h);
+  padding: 0 var(--is-s-4);
+  border-top: 1px solid var(--is-border);
+  background: var(--is-panel);
+  color: var(--is-text-2);
+  font-size: var(--is-fs-md);
+  position: relative;
+  z-index: var(--is-z-sticky);
+
+  .bar-selectall {
+    flex: none;
+  }
+
+  .bar-label {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--is-s-1);
+    flex: none;
+    color: var(--is-text-3);
+    font-size: var(--is-fs-sm);
+  }
+
+  .bar-count {
+    color: var(--is-text);
+    font-family: var(--is-mono);
+    font-size: var(--is-fs-base);
+    font-weight: var(--is-fw-bold);
+  }
+
+  .bar-stats {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--is-s-3);
+    flex: none;
+  }
+
+  .bar-stat {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-family: var(--is-mono);
+    font-size: var(--is-fs-sm);
+    font-weight: var(--is-fw-bold);
+    animation: is-pop var(--is-dur-slow) var(--is-ease-spring);
+
+    &.is-done { color: var(--is-ok-fg); }
+    &.is-fail { color: var(--is-bad-fg); }
+    &.is-running { color: var(--is-accent-fg); }
+  }
+
+  // 总进度：占据剩余宽度，比逐条进度更早给出「还要多久」的直觉
+  .bar-total {
+    position: relative;
+    flex: 1 1 120px;
+    min-width: 60px;
+    height: 4px;
+    border-radius: var(--is-r-pill);
+    background: var(--is-track);
+    overflow: hidden;
+
+    &__fill {
+      position: absolute;
+      left: 0;
+      top: 0;
+      height: 100%;
+      width: 0;
+      border-radius: inherit;
+      background: var(--is-accent);
+      transition: width var(--is-dur-slow) var(--is-ease-std);
+
+      &.is-shimmer {
+        background: linear-gradient(90deg, var(--is-accent), var(--is-hot));
+      }
+
+      &.is-shimmer::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.5), transparent);
+        animation: is-shimmer 1.4s linear infinite;
+      }
+    }
+  }
+
+  .bar-shortcuts {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--is-s-3);
+    flex: none;
+    margin-left: auto;
+  }
+}
+
+// 窄屏优先保住进度与统计，隐藏键帽提示
+@media (max-width: 820px) {
+  .mod-bar .bar-shortcuts { display: none; }
+}

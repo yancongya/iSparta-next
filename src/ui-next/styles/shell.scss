@@ -1,0 +1,397 @@
+// ==========================================================================
+// 应用外壳（Home.vue）
+// --------------------------------------------------------------------------
+// 原先这里堆了一批 :deep(.mod-list .item)、:deep(.mod-setting .el-input__inner)
+// 之类的补丁，用来把旧组件强行刷成主题色；子组件自绘后全部删除，
+// 只保留纯粹的布局职责。
+// ==========================================================================
+
+.ib {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: var(--is-bg);
+  color: var(--is-text);
+  font-family: var(--is-font);
+  transition: background-color var(--is-dur-base) var(--is-ease-std),
+    color var(--is-dur-base) var(--is-ease-std);
+}
+
+// --------------------------------------------------------------------------
+// 空态
+// --------------------------------------------------------------------------
+.ib-import {
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+
+  &__top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex: none;
+    padding: var(--is-s-3) var(--is-s-4);
+  }
+
+  &__acts {
+    display: flex;
+    gap: var(--is-s-2);
+  }
+}
+
+.ib-brand {
+  color: var(--is-text);
+  font-size: var(--is-fs-sm);
+  font-weight: var(--is-fw-bold);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.ib-iconbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid var(--is-border);
+  border-radius: var(--is-r-sm);
+  background: var(--is-card);
+  color: var(--is-text-2);
+  font-size: var(--is-fs-lg);
+  cursor: pointer;
+  transition: color var(--is-dur-fast) var(--is-ease-std),
+    border-color var(--is-dur-fast) var(--is-ease-std),
+    background-color var(--is-dur-fast) var(--is-ease-std),
+    transform var(--is-dur-base) var(--is-ease-spring);
+
+  &:hover {
+    border-color: var(--is-border-hi);
+    background: var(--is-accent-soft);
+    color: var(--is-accent);
+    transform: translateY(-1px);
+  }
+
+  &--sm {
+    width: 26px;
+    height: 26px;
+    font-size: var(--is-fs-md);
+  }
+}
+
+.ib-drop {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--is-s-2);
+  margin: 0 var(--is-s-4) var(--is-s-4);
+  padding: var(--is-s-8);
+  text-align: center;
+  border: 1px dashed var(--is-border-hi);
+  border-radius: var(--is-r-lg);
+  background: var(--is-panel);
+  cursor: pointer;
+  transition: border-color var(--is-dur-base) var(--is-ease-std),
+    background-color var(--is-dur-base) var(--is-ease-std),
+    box-shadow var(--is-dur-base) var(--is-ease-std),
+    transform var(--is-dur-base) var(--is-ease-out);
+
+  &:hover {
+    box-shadow: var(--is-glow);
+  }
+
+  // 拖拽悬停：整块区域「接住」文件的反馈
+  &.is-hot {
+    border-color: var(--is-accent);
+    border-style: solid;
+    background: var(--is-accent-soft);
+    box-shadow: var(--is-glow);
+    transform: scale(1.005);
+
+    .ib-drop__icon {
+      transform: translateY(4px) scale(1.12);
+      background: var(--is-accent-dim);
+    }
+  }
+
+  &__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    margin-bottom: var(--is-s-2);
+    border: 1px solid var(--is-border);
+    border-radius: 50%;
+    background: var(--is-card);
+    color: var(--is-accent);
+    font-size: 22px;
+    transition: transform var(--is-dur-slow) var(--is-ease-spring),
+      background-color var(--is-dur-base) var(--is-ease-std);
+  }
+
+  &__kicker {
+    color: var(--is-accent);
+    font-family: var(--is-mono);
+    font-size: var(--is-fs-xs);
+    letter-spacing: 0.2em;
+  }
+
+  h1 {
+    color: var(--is-text);
+    font-size: var(--is-fs-2xl);
+    font-weight: var(--is-fw-black);
+    letter-spacing: -0.01em;
+  }
+
+  &__rule {
+    max-width: 420px;
+    color: var(--is-text-3);
+    font-size: var(--is-fs-md);
+    line-height: 1.7;
+  }
+
+  &__cta {
+    margin-top: var(--is-s-3);
+    padding: 10px var(--is-s-5);
+    border-radius: var(--is-r-pill);
+    background: var(--is-accent);
+    color: var(--is-on-accent);
+    font-size: var(--is-fs-md);
+    font-weight: var(--is-fw-bold);
+  }
+
+  &__kbd {
+    margin-top: var(--is-s-4);
+    color: var(--is-text-3);
+    font-size: var(--is-fs-xs);
+  }
+}
+
+// --------------------------------------------------------------------------
+// 工作区：中列表 + 右设置
+// --------------------------------------------------------------------------
+.ib-ws {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+}
+
+.ib-main {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+
+  &__list {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+}
+
+// --------------------------------------------------------------------------
+// 中间列：工具条 + 可拖拽分隔
+// --------------------------------------------------------------------------
+.ib-rail {
+  position: relative;
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--is-s-2);
+  width: var(--is-rail-w);
+  padding: var(--is-s-2) 0;
+  border-left: 1px solid var(--is-border);
+  background: var(--is-panel);
+  user-select: none;
+
+  &__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    border: none;
+    border-radius: var(--is-r-sm);
+    background: transparent;
+    color: var(--is-text-3);
+    cursor: pointer;
+    transition: color var(--is-dur-fast) var(--is-ease-std),
+      background-color var(--is-dur-fast) var(--is-ease-std);
+
+    &:hover {
+      background: var(--is-accent-soft);
+      color: var(--is-accent);
+    }
+  }
+
+  // 拖拽手柄：双竖线，hover 提示可拖
+  &__grip {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    width: 100%;
+    min-height: 40px;
+    cursor: col-resize;
+    border-top: 1px solid var(--is-divider);
+    transition: background-color var(--is-dur-fast) var(--is-ease-std);
+
+    // 两条竖线
+    &::before,
+    &::after {
+      content: '';
+      width: 2px;
+      height: 18px;
+      margin: 0 1px;
+      border-radius: 1px;
+      background: var(--is-text-3);
+      opacity: 0.45;
+      transition: background-color var(--is-dur-fast) var(--is-ease-std),
+        opacity var(--is-dur-fast) var(--is-ease-std);
+    }
+
+    &:hover::before,
+    &:hover::after {
+      background: var(--is-accent);
+      opacity: 1;
+    }
+  }
+
+  &.is-resizing {
+    cursor: col-resize;
+
+    .ib-rail__grip::before,
+    .ib-rail__grip::after {
+      background: var(--is-accent);
+      opacity: 1;
+    }
+  }
+
+  // ---------- 语言弹出菜单 ----------
+  &__lang {
+    position: relative;
+    display: flex;
+  }
+
+  &__pop {
+    position: absolute;
+    top: 0;
+    right: calc(100% + var(--is-s-2));
+    z-index: var(--is-z-dropdown);
+    display: flex;
+    flex-direction: column;
+    min-width: 104px;
+    padding: var(--is-s-1);
+    border: 1px solid var(--is-border-strong);
+    border-radius: var(--is-r-sm);
+    background: var(--is-elevated);
+    box-shadow: var(--is-shadow-md);
+  }
+
+  &__opt {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: var(--is-s-1) var(--is-s-2);
+    border: none;
+    border-radius: var(--is-r-xs);
+    background: transparent;
+    color: var(--is-text-2);
+    font-family: inherit;
+    font-size: var(--is-fs-sm);
+    text-align: left;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background-color var(--is-dur-fast) var(--is-ease-std),
+      color var(--is-dur-fast) var(--is-ease-std);
+
+    &:hover {
+      background: var(--is-hover);
+      color: var(--is-text);
+    }
+
+    &.is-on {
+      background: var(--is-accent-soft);
+      color: var(--is-accent);
+      font-weight: var(--is-fw-semi);
+    }
+  }
+}
+
+// 拖拽调宽时禁止全局选区，避免误选文本
+body.is-column-resizing {
+  cursor: col-resize !important;
+  user-select: none !important;
+}
+
+.ib-side {
+  display: flex;
+  // 不参与伸缩：宽度完全由 Home.vue 的行内 width 决定（含折叠时的 0px）。
+  // 只写 min-width:0 会保留默认 flex-shrink:1，导致面板被左侧按内容挤扁。
+  flex: 0 0 auto;
+  min-height: 0;
+  flex-direction: column;
+  border-left: 1px solid var(--is-border);
+  background: var(--is-panel);
+  overflow: hidden;
+  transition: width var(--is-dur-base) var(--is-ease-std);
+
+  &--shut {
+    border-left-color: transparent;
+  }
+
+  &__body {
+    display: flex;
+    width: 100%;
+    min-width: 0;
+    // 关键：列向 flex 子项默认 min-height:auto，不写 0 就会被内容撑到全高，
+    // 下游 .mod-form 的 overflow-y:auto 永远不会触发，面板表现为「滚不动」
+    min-height: 0;
+    flex: 1;
+    flex-direction: column;
+  }
+}
+
+// 拖拽进行中关掉右侧的过渡，避免宽度跟不上手
+body.is-column-resizing .ib-side {
+  transition: none !important;
+}
+
+
+// --------------------------------------------------------------------------
+// 全局拖拽遮罩（有任务时）
+// --------------------------------------------------------------------------
+.ib-dragover {
+  position: absolute;
+  inset: 0;
+  z-index: var(--is-z-drag);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.42);
+  backdrop-filter: blur(2px);
+  pointer-events: none;
+
+  &__box {
+    display: flex;
+    align-items: center;
+    gap: var(--is-s-3);
+    padding: var(--is-s-6) var(--is-s-10);
+    border: 2px dashed var(--is-accent);
+    border-radius: var(--is-r-lg);
+    background: var(--is-panel);
+    color: var(--is-accent);
+    font-size: var(--is-fs-lg);
+    font-weight: var(--is-fw-bold);
+    box-shadow: var(--is-glow);
+    animation: is-fade-up var(--is-dur-slow) var(--is-ease-out);
+  }
+}

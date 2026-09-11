@@ -1,8 +1,20 @@
 // 输出路径策略：output/ 旁级 自定义 + 变量
 import { path as npath } from './node-env'
 
-export function normalizeOutputTo (options) {
-  const o = (options && options.outputTo) || {}
+/**
+ * 从「options 容器」或「已解开的 outputTo 对象」里取出 outputTo。
+ * 历史上两种传法都出现过，传错时 mode 会静默兜底成 'output'，
+ * 表现为「点了旁级但弹回 output」，这里统一容错。
+ */
+function pickOutputTo (holder) {
+  if (!holder || typeof holder !== 'object') { return {} }
+  if (holder.outputTo && typeof holder.outputTo === 'object') { return holder.outputTo }
+  if ('mode' in holder || 'template' in holder || 'customPath' in holder) { return holder }
+  return {}
+}
+
+export function normalizeOutputTo (holder) {
+  const o = pickOutputTo(holder)
   const mode = o.mode === 'beside' || o.mode === 'custom' ? o.mode : 'output'
   return {
     mode: mode,
@@ -39,13 +51,9 @@ export function resolveVars (text, ctx) {
 }
 
 /**
- * 计算输出目录
- * mode=output  → {源目录}/output
- * mode=beside  → {源目录}/../  （源目录旁级）
- * mode=custom  → customPath 或 template 展开变量
+ * 变量上下文：供 resolveVars 展开，也供界面做路径模板的实时预览
  */
-export function resolveOutputPath (item, options) {
-  const o = normalizeOutputTo(options || item.options)
+export function outputContext (item) {
   const srcPath = sourceDirOf(item)
   const name = (item && item.options && item.options.outputName) || ''
   const type = (item && item.basic && item.basic.type) || ''
@@ -56,27 +64,50 @@ export function resolveOutputPath (item, options) {
     String(d.getMonth() + 1).padStart(2, '0') +
     String(d.getDate()).padStart(2, '0')
 
-  const ctx = { name, src, type, srcPath, parent, date }
+  return { name, src, type, srcPath, parent, date }
+}
 
-  if (!srcPath) {
-    return o.customPath || ''
-  }
+/**
+ * 预设：分段控件只是往「变量路径」里填一段模板，不再是独立的状态机。
+ * 这样预设、手输变量、文件夹选择三种入口最终都收敛到同一个字段。
+ */
+export const PATH_PRESETS = [
+  { value: 'output', template: '{srcPath}/output' },
+  { value: 'beside', template: '{parent}' }
+]
 
-  if (o.mode === 'output') {
-    return npath.join(srcPath, 'output')
-  }
-  if (o.mode === 'beside') {
-    return parent || srcPath
-  }
-  // custom
-  if (o.template && o.template.trim()) {
-    const expanded = resolveVars(o.template.trim(), ctx)
-    if (expanded) { return expanded }
-  }
-  if (o.customPath && o.customPath.trim()) {
-    return resolveVars(o.customPath.trim(), ctx)
-  }
-  return npath.join(srcPath, 'output')
+// Windows 下 join 会产出反斜杠，比较预设时统一成 / 再比
+function slashNorm (s) {
+  return String(s || '').replace(/[\\/]+/g, '/')
+}
+
+/** 当前模板命中哪个预设；返回 '' 表示自定义 */
+export function activePresetOf (holder) {
+  const tpl = (normalizeOutputTo(holder).template || '').trim()
+  if (!tpl) { return '' }
+  const hit = PATH_PRESETS.filter(function (p) {
+    return slashNorm(p.template) === slashNorm(tpl)
+  })
+  return hit.length ? hit[0].value : ''
+}
+
+/**
+ * 计算输出目录
+ * 模板非空 → 直接展开模板（唯一真相源）
+ * 模板为空 → 兼容历史数据，按 mode / customPath 兜底
+ */
+export function resolveOutputPath (item, options) {
+  const ctx = outputContext(item)
+  const o = normalizeOutputTo(options || item.options)
+  const tpl = (o.template || '').trim()
+
+  if (tpl) { return resolveVars(tpl, ctx) }
+
+  if (!ctx.srcPath) { return o.customPath || '' }
+  if (o.mode === 'beside') { return ctx.parent || ctx.srcPath }
+  if (o.customPath && o.customPath.trim()) { return resolveVars(o.customPath.trim(), ctx) }
+  // 与模板展开保持一致的分隔符，避免同一逻辑结果出现 / 与 \ 两种写法
+  return ctx.srcPath ? ctx.srcPath + '/output' : ''
 }
 
 export function outputPathPreviewLabel (o) {

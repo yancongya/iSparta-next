@@ -1,0 +1,98 @@
+// ==========================================================================
+// 变量路径编辑器（PathVars 组件）
+// 输出设置与默认设置共用，保证两处表现一致
+// ==========================================================================
+
+.pv {
+  width: 100%;
+  min-width: 0;
+
+  &__row {
+    display: flex;
+    align-items: center;
+    gap: var(--is-s-2);
+    min-width: 0;
+  }
+
+  &__label {
+    flex: none;
+    width: 46px;
+    color: var(--is-text-3);
+    font-size: var(--is-fs-xs);
+    text-align: right;
+  }
+
+  // 输入框要能随面板宽度收缩并省略，不能撑破行。
+  // 必须写成 .pv .is-input：单类 .pv__in 与 ui.scss 的 .is-input{width:100%}
+  // 特异度相同且注入更早，会被覆盖成 100% 基准宽而顶掉标签。
+  .is-input {
+    flex: 1 1 0;
+    min-width: 0;
+    height: 26px;
+    font-family: var(--is-mono);
+    font-size: var(--is-fs-xs);
+  }
+
+  &__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--is-s-1);
+    margin-top: var(--is-s-2);
+  }
+}
+
+// --------------------------------------------------------------------------
+// 变量胶囊：每个变量一种颜色，便于在模板里一眼对应
+// --------------------------------------------------------------------------
+.var-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  // 108px 让一行稳定放下两颗
+  max-width: 108px;
+  padding: 2px var(--is-s-2);
+  border: 1px solid var(--chip-line, var(--is-border));
+  border-radius: var(--is-r-xs);
+  background: var(--chip-bg, var(--is-inset));
+  font-family: var(--is-mono);
+  font-size: 10px;
+  line-height: 1.6;
+  cursor: pointer;
+  transition: border-color var(--is-dur-fast) var(--is-ease-std),
+    background-color var(--is-dur-fast) var(--is-ease-std),
+    transform var(--is-dur-fast) var(--is-ease-std);
+
+  &__key {
+    color: var(--chip-fg, var(--is-accent));
+    font-weight: var(--is-fw-bold);
+    flex: none;
+  }
+
+  &__val {
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    color: var(--is-text-3);
+  }
+
+  &:hover:not(:disabled) {
+    border-color: var(--chip-fg, var(--is-accent));
+    transform: translateY(-1px);
+
+    .var-chip__val { color: var(--is-text-2); }
+  }
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  // 六个变量的配色（RGB 三元组来自 tokens.css，两主题各一套）
+  &--c1 { --chip-fg: rgb(var(--is-var-1)); --chip-bg: rgba(var(--is-var-1), 0.10); --chip-line: rgba(var(--is-var-1), 0.30); }
+  &--c2 { --chip-fg: rgb(var(--is-var-2)); --chip-bg: rgba(var(--is-var-2), 0.10); --chip-line: rgba(var(--is-var-2), 0.30); }
+  &--c3 { --chip-fg: rgb(var(--is-var-3)); --chip-bg: rgba(var(--is-var-3), 0.10); --chip-line: rgba(var(--is-var-3), 0.30); }
+  &--c4 { --chip-fg: rgb(var(--is-var-4)); --chip-bg: rgba(var(--is-var-4), 0.10); --chip-line: rgba(var(--is-var-4), 0.30); }
+  &--c5 { --chip-fg: rgb(var(--is-var-5)); --chip-bg: rgba(var(--is-var-5), 0.10); --chip-line: rgba(var(--is-var-5), 0.30); }
+  &--c6 { --chip-fg: rgb(var(--is-var-6)); --chip-bg: rgba(var(--is-var-6), 0.10); --chip-line: rgba(var(--is-var-6), 0.30); }
+}

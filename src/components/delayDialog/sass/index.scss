@@ -1,72 +1,147 @@
-.frame-list{
-  display: flex;
-  flex-wrap: wrap;
-  .frame{
-    width:80px;
-    margin:10px 5px;
-    border:1px solid var(--is-border, #eee);
-    border-radius: 6px;
-    overflow: hidden;
-    background: var(--is-card, #fff);
-    img{
-      width:100%;
-      aspect-ratio: 1 / 1;
-      object-fit: cover;
-      display: block;
-      min-height: 40px;
-    }
-  }
-  .el-input__inner{
-    text-align: center;
-    border:0px;
-    border-top:1px solid #eee;
-    border-radius: 0;
-  }
-  .el-input-number--mini{
-    width:100%;
-    
-  }
-  .el-input-number.is-controls-right .el-input__inner{
-      padding-left:10px;
-      padding-right:30px;
-    }
-  .el-input-number.is-controls-right .el-input-number__decrease{
-    right:0px;
-    bottom:0px;
-    border-radius: 0px;
+// ==========================================================================
+// 延时配置弹窗
+// 原先 .el-input-number 系列补丁全部作废，改为围绕自绘 .is-stepper 布局。
+// ==========================================================================
 
-  }
-  .el-input-number__increase{
-    right:0px;
-    top:1px;
-    border-radius: 0px;
-  }
-  
-}
-.frame-preview{
+// ---------- 预览 ----------
+.frame-preview {
   display: flex;
-  justify-content: center;
-  align-items:center;
-  flex-direction: column;
-  padding-bottom:20px;
-  .preview{
-    width:120px;
-    img{width:100%}
-  }
-  
-}
-.fps-setting{
-    display:flex;
+  align-items: center;
+  gap: var(--is-s-4);
+  padding-bottom: var(--is-s-5);
+  margin-bottom: var(--is-s-4);
+  border-bottom: 1px solid var(--is-divider);
+
+  &__stage {
+    display: flex;
     align-items: center;
-    margin-top:10px;
-    margin-left:10px;
-    .label{
-      width:40px;
+    justify-content: center;
+    flex: none;
+    width: 128px;
+    height: 128px;
+    border: 1px solid var(--is-border);
+    border-radius: var(--is-r-sm);
+    overflow: hidden;
 
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
     }
-    .el-input--mini{
-      width:50px;
-      margin-right:10px;
-    }
-    
   }
+
+  &__ph {
+    color: var(--is-text-3);
+    opacity: 0.6;
+  }
+
+  &__ctrl {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--is-s-3);
+    min-width: 0;
+  }
+
+  &__meta {
+    color: var(--is-text-3);
+    font-family: var(--is-mono);
+    font-size: var(--is-fs-sm);
+
+    em {
+      font-style: normal;
+      color: var(--is-accent-fg);
+    }
+  }
+}
+
+// ---------- 帧格列表 ----------
+.frame-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+  gap: var(--is-s-2);
+  max-height: 320px;
+  padding: var(--is-s-1) 0 var(--is-s-2);
+  overflow-y: auto;
+
+  .frame {
+    position: relative;
+    border: 1px solid var(--is-border);
+    border-radius: var(--is-r-sm);
+    background: var(--is-card);
+    overflow: hidden;
+    cursor: pointer;
+    transition: border-color var(--is-dur-fast) var(--is-ease-std),
+      box-shadow var(--is-dur-base) var(--is-ease-std),
+      transform var(--is-dur-fast) var(--is-ease-std);
+
+    img {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      min-height: 40px;
+      object-fit: contain;
+      display: block;
+      background: var(--is-inset);
+    }
+
+    &:hover {
+      border-color: var(--is-border-hi);
+      transform: translateY(-2px);
+    }
+
+    // 预览正在播的那一格高亮，便于对照延时效果
+    &.is-current {
+      border-color: var(--is-accent);
+      box-shadow: 0 0 0 1px var(--is-accent), var(--is-shadow-md);
+    }
+
+    &__no {
+      position: absolute;
+      top: 3px;
+      left: 4px;
+      padding: 0 4px;
+      border-radius: var(--is-r-xs);
+      background: rgba(0, 0, 0, 0.6);
+      color: #fff;
+      font-family: var(--is-mono);
+      font-size: 9px;
+      font-weight: 700;
+      line-height: 1.6;
+      pointer-events: none;
+    }
+
+    .is-stepper {
+      width: 100%;
+      height: 24px;
+      border: none;
+      border-top: 1px solid var(--is-border);
+      border-radius: 0;
+      box-shadow: none;
+    }
+  }
+}
+
+// ---------- 统一帧频 ----------
+.fps-setting {
+  display: flex;
+  align-items: center;
+  gap: var(--is-s-2);
+  margin-top: var(--is-s-4);
+  padding-top: var(--is-s-3);
+  border-top: 1px solid var(--is-divider);
+
+  &__label {
+    width: 44px;
+    flex: none;
+    color: var(--is-text-2);
+    font-size: var(--is-fs-md);
+  }
+
+  // 定宽必须写成 .fps-setting .is-input：单类 .fps-setting__in 与 ui.scss 里
+  // .is-input { width: 100% } 特异度相同、且组件样式注入更早，会被覆盖成通栏
+  .is-input {
+    width: 70px;
+    flex: none;
+  }
+}

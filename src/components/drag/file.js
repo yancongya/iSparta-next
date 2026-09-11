@@ -1,6 +1,8 @@
 // 依赖库
 import { fs, path } from '../../util/node-env'
 import { resolveOutputPath } from '../../util/outputPath'
+import notice from '../../ui-next/notice'
+import { t } from '../../i18n'
 import _ from 'lodash'
 // 正则匹配
 const reg = {
@@ -90,7 +92,7 @@ class actionFiles {
         this.getImageFormat(root)
       }
     } else {
-      alert('最深支持5层~')
+      notice.warning(t('noticeMaxDepth'), t('noticeMaxDepthTip', { deep: maxDeep }))
     }
   }
   getImageFormat (files) {
@@ -122,14 +124,17 @@ class actionFiles {
     temp.basic.type = format
     if (format === 'PNGs') {
       // 序列帧：默认输出 {帧目录}/output，可由 outputTo 策略覆盖
+      // 不再自动追加 _apng 后缀，输出名交给用户在「输出名字」里用胶囊自行决定
       let folderName = path.basename(address)
-      temp.options.outputName = folderName.replace(/[ ]/g, '') + '_apng'
+      temp.options.outputName = folderName.replace(/[ ]/g, '')
       temp.basic.inputPath = address
       temp.basic.fileList = fileList
       temp.basic.outputPath = resolveOutputPath(temp, globalSetting.options)
     } else {
-      //去除文件名空格
-      temp.options.outputName = path.basename(fileList[0]).split('.')[0].replace(/[ ]/g, '') + '_' + globalSetting.options.outputSuffix
+      //去除文件名空格；后缀为空时不拼出悬尾的下划线
+      let suffix = globalSetting.options.outputSuffix
+      let baseName = path.basename(fileList[0]).split('.')[0].replace(/[ ]/g, '')
+      temp.options.outputName = suffix ? baseName + '_' + suffix : baseName
       temp.basic.inputPath = address + '/' + path.basename(fileList[0]).split('.')[0]
       temp.basic.fileList = fileList
       temp.basic.outputPath = resolveOutputPath(temp, globalSetting.options)

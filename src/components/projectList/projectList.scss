@@ -1,143 +1,362 @@
-.success {
-    color: #13CE66!important;
-}
-.fail {
-    color: #FF4949!important;
-}
+// ==========================================================================
+// 项目列表
+// 颜色/尺寸一律取自 tokens.css，不再出现硬编码色值。
+// ==========================================================================
+
 .mod-list {
+  // 撑满滚动区，条目下方的空白才落在本容器上（供取消全选判定）
+  min-height: 100%;
+  position: relative;
 
-    min-height: 100px;
-    .item {
-        position: relative;
-        padding: 16px;
-        display: flex;
-        border-bottom: 1px solid #f2f2f2;
-        &:hover {
-            background: #EFF2F7;
-        }
-        &.active {
-            background: #D3DCE6;
-        }
-        .check {
-            display: flex;
-            align-items: center;
-            margin-right: 12px;
-            cursor: pointer;
-        }
-        .thumb {
-            width: 72px;
-            height: 72px;
-            aspect-ratio: 1 / 1;
-            flex: 0 0 72px;
-            border: 1px solid var(--is-border, #D8D8D8);
-            border-radius: 8px;
-            overflow: hidden;
-            background: #111;
-            margin-right: 12px;
-            img {
-                width: 100%;
-                height: 100%;
-                object-fit: cover;
-                display: block;
-            }
-        }
-        .info {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            .input {
-              display: flex;
-              align-items: center;
-              .el-tag {
-                  margin-right: 5px;
-              }
-              .inputPath {
-                  height: 24px;
-                  line-height: 22px;
-                  color: #1F2D3D;
-                  margin: 0;
-                  overflow: hidden;
-              }
-              .el-icon-setting{
-                margin-left:10px;
-                color:#666;
-                cursor: pointer;
-                &:hover{
-                  opacity: .8;
-                }
-              }
-            }
-            .output {
-                margin: 5px 0 0;
-                color: #8492A6;
-                font-size: 14px;
-                cursor:pointer;
-                & > i {
-                    float: left;
-                    margin-right: 5px;
-                }
-                .outputPath {
+  &__inner {
+    // 独立卡片流：每条任务一张卡，间距分隔代替贴底细线
+    display: flex;
+    flex-direction: column;
+    gap: var(--is-s-2);
+    padding: var(--is-s-3) var(--is-s-3) var(--is-s-1);
+  }
 
-                    height: 16px;
-                    line-height: 16px;
-                    margin: 0;
-                    overflow: hidden;
-                }
-            }
-        }
-        .status {
-            position: absolute;
-            right: 0;
-            bottom: 5px;
-            padding-right: 10px;
-            color: #8492A6;
-            font-size: 12px;
-            height: 16px;
-            line-height: 16px;
-            i{
-              margin-right:3px;
-            }
-            &.success{
-              color:#13CE66;
-            }
-            &.fail{
-              color:#FF4949;
-            }
-        }
-        .progress {
-            width: 100%;
-            height: 2px;
-            position: absolute;
-            left: 0;
-            bottom: 0;
-            .precent {
-                position: absolute;
-                left: 0;
-                top: 0;
-                height: 100%;
-                width: 0;
-                background: #13CE66;
-                &.ani{
-                  transition:width 0.6s;
-                }
-            }
-            &.fail {
-                .precent {
-                    background: #FF4949;
-                }
-            }
-        }
+  .item {
+    position: relative;
+    display: grid;
+    grid-template-columns: auto 64px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--is-s-3);
+    padding: var(--is-s-2) var(--is-s-3);
+    border: 1px solid var(--is-border);
+    border-radius: var(--is-r-md);
+    background: var(--is-card);
+    box-shadow: var(--is-shadow-xs);
+    cursor: pointer;
+    transition: background-color var(--is-dur-base) var(--is-ease-std),
+      border-color var(--is-dur-base) var(--is-ease-std),
+      box-shadow var(--is-dur-base) var(--is-ease-std),
+      transform var(--is-dur-base) var(--is-ease-out);
+
+    &:hover {
+      border-color: var(--is-border-strong);
+      box-shadow: var(--is-shadow-md);
+      transform: translateY(-1px);
     }
-    .open-folder{
-      text-align: center;
-      line-height: 30px;
-      font-size:12px;
-      margin-top:20px;
-      color:#409EFF;
-      cursor: pointer;
-      &:hover{
-        opacity: .5;
+
+    &.active {
+      border-color: var(--is-accent);
+      background: var(--is-selected);
+      box-shadow: inset 3px 0 0 var(--is-accent), var(--is-shadow-sm);
+    }
+
+    &.is-running {
+      border-color: rgba(var(--is-accent-rgb), 0.45);
+      background: var(--is-accent-soft);
+    }
+
+    &.is-fail {
+      border-color: rgba(var(--is-bad-rgb), 0.5);
+      background: var(--is-bad-bg);
+
+      &:hover { background: var(--is-bad-bg); }
+    }
+  }
+
+  .check {
+    display: flex;
+    align-items: center;
+  }
+
+  // ---------- 缩略图 ----------
+  // contain + 棋盘格：序列帧多为透明背景，裁切或纯色底都会误判留白
+  .thumb {
+    position: relative;
+    width: 64px;
+    height: 64px;
+    flex: 0 0 64px;
+    border: 1px solid var(--is-border);
+    border-radius: var(--is-r-sm);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+
+    &__ph {
+      font-size: 20px;
+      color: var(--is-text-3);
+    }
+
+    // 帧数徽标：序列帧一眼可辨
+    &__badge {
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      padding: 1px 4px;
+      border-top-left-radius: var(--is-r-sm);
+      background: rgba(0, 0, 0, 0.66);
+      color: #fff;
+      font-family: var(--is-mono);
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      line-height: 1.5;
+      pointer-events: none;
+    }
+  }
+
+  // ---------- 信息区 ----------
+  .info {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: var(--is-s-1);
+  }
+
+  .input {
+    display: flex;
+    align-items: center;
+    gap: var(--is-s-2);
+    min-width: 0;
+  }
+
+  // 第一行路径 = 输出目录入口：超链接式常显高亮
+  .outpath {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--is-s-1);
+    flex: 1;
+    min-width: 0;
+    padding: 2px 0;
+    border: none;
+    background: none;
+    // 链接态：主题色 + 常显下划线
+    color: var(--is-accent);
+    font-family: inherit;
+    font-size: var(--is-fs-base);
+    font-weight: var(--is-fw-medium);
+    text-align: left;
+    cursor: pointer;
+    text-decoration: underline;
+    text-decoration-color: rgba(var(--is-accent-rgb), 0.35);
+    text-underline-offset: 3px;
+    transition: color var(--is-dur-fast) var(--is-ease-std),
+      text-decoration-color var(--is-dur-fast) var(--is-ease-std);
+
+    .is-icon {
+      flex: none;
+      color: var(--is-accent);
+      opacity: 0.75;
+      transition: opacity var(--is-dur-fast) var(--is-ease-std),
+        transform var(--is-dur-base) var(--is-ease-spring);
+    }
+
+    > span { min-width: 0; }
+
+    &:hover {
+      color: var(--is-hot);
+      text-decoration-color: var(--is-hot);
+
+      .is-icon {
+        opacity: 1;
+        transform: translateY(-1px) scale(1.08);
       }
     }
-    
+
+    &:active { transform: scale(0.995); }
+  }
+
+  .iconbtn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: none;
+    border-radius: var(--is-r-xs);
+    background: transparent;
+    color: var(--is-text-3);
+    cursor: pointer;
+    transition: background-color var(--is-dur-fast) var(--is-ease-std),
+      color var(--is-dur-fast) var(--is-ease-std),
+      transform var(--is-dur-base) var(--is-ease-std);
+
+    &:hover {
+      background: var(--is-accent-dim);
+      color: var(--is-accent);
+      transform: rotate(45deg);
+    }
+  }
+
+  // ---------- 摘要行：每项独立配色 + hover 反馈 ----------
+  // 配色复用路径变量的六色令牌（--is-var-1..6），与右侧面板胶囊同一套语义色
+  .summary {
+    display: flex;
+    align-items: center;
+    gap: var(--is-s-1);
+    min-width: 0;
+    font-family: var(--is-mono);
+    font-size: var(--is-fs-xs);
+
+    &--out { margin-top: 1px; }
+
+    .sum {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      min-width: 0;
+      padding: 1px var(--is-s-1);
+      border: 1px solid transparent;
+      border-radius: var(--is-r-xs);
+      background: none;
+      color: var(--sum-fg, var(--is-text-3));
+      letter-spacing: 0.01em;
+      cursor: help;
+      transition: background-color var(--is-dur-fast) var(--is-ease-std),
+        border-color var(--is-dur-fast) var(--is-ease-std),
+        color var(--is-dur-fast) var(--is-ease-std);
+
+      .is-icon { flex: none; opacity: 0.8; }
+      > span { min-width: 0; }
+
+      // hover：底色浮出 + 边框点亮，明确"这项可以悬停看详情"
+      &:hover {
+        background: var(--sum-bg, var(--is-hover));
+        border-color: var(--sum-line, var(--is-border));
+        color: var(--sum-fg, var(--is-text-2));
+
+        .is-icon { opacity: 1; }
+      }
+    }
+
+    .sum--fps   { --sum-fg: rgb(var(--is-var-1)); --sum-bg: rgba(var(--is-var-1), 0.12); --sum-line: rgba(var(--is-var-1), 0.32); }
+    .sum--loop  { --sum-fg: rgb(var(--is-var-5)); --sum-bg: rgba(var(--is-var-5), 0.12); --sum-line: rgba(var(--is-var-5), 0.32); }
+    .sum--fmt   { --sum-fg: rgb(var(--is-var-2)); --sum-bg: rgba(var(--is-var-2), 0.12); --sum-line: rgba(var(--is-var-2), 0.32); font-weight: var(--is-fw-bold); }
+    .sum--limit { --sum-fg: rgb(var(--is-var-3)); --sum-bg: rgba(var(--is-var-3), 0.12); --sum-line: rgba(var(--is-var-3), 0.32); }
+    .sum--name  { --sum-fg: rgb(var(--is-var-4)); --sum-bg: rgba(var(--is-var-4), 0.12); --sum-line: rgba(var(--is-var-4), 0.32); }
+    .sum--tpl   { --sum-fg: rgb(var(--is-var-6)); --sum-bg: rgba(var(--is-var-6), 0.12); --sum-line: rgba(var(--is-var-6), 0.32); }
+
+    // 名字与变量路径要能各自压缩省略，不撑破卡片
+    .sum--name,
+    .sum--tpl {
+      flex: 1 1 0;
+    }
+  }
+
+  // ---------- 右侧：齿轮 + 状态 ----------
+  .side {
+    display: flex;
+    align-items: center;
+    gap: var(--is-s-2);
+    flex: none;
+  }
+
+  // ---------- 状态与进度 ----------
+  .meta {
+    display: flex;
+    align-items: center;
+    gap: var(--is-s-3);
+    flex: none;
+  }
+
+  .status {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--is-s-1);
+    min-width: 92px;
+    color: var(--is-text-3);
+    font-size: var(--is-fs-sm);
+    white-space: nowrap;
+
+    &.is-done { color: var(--is-ok-fg); }
+    &.is-fail { color: var(--is-bad-fg); }
+    &.is-running { color: var(--is-accent-fg); }
+  }
+
+  // 原来是一条贴在条目底边、2px 高的线，几乎看不见；
+  // 改成 meta 列里独立的 6px 进度槽 + 四态配色。
+  .progress {
+    position: relative;
+    width: 104px;
+    height: 6px;
+    border-radius: var(--is-r-pill);
+    background: var(--is-track);
+    overflow: hidden;
+
+    &__fill {
+      position: absolute;
+      left: 0;
+      top: 0;
+      height: 100%;
+      width: 0;
+      border-radius: inherit;
+      background: var(--is-text-3);
+      transition: width var(--is-dur-slow) var(--is-ease-std);
+    }
+
+    &.is-pending .progress__fill { opacity: 0.35; }
+
+    &.is-running .progress__fill {
+      background: linear-gradient(90deg, var(--is-accent), var(--is-hot));
+    }
+
+    &.is-done .progress__fill { background: var(--is-ok); }
+
+    &.is-fail .progress__fill { background: var(--is-bad); }
+
+    // 处理中的流光，让长任务看起来「活着」
+    .progress__fill.is-shimmer::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.45), transparent);
+      animation: is-shimmer 1.4s linear infinite;
+    }
+  }
+
+  // ---------- 底部「打开目录」 ----------
+  .open-folder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--is-s-2);
+    width: calc(100% - var(--is-s-8));
+    margin: var(--is-s-5) auto var(--is-s-4);
+    padding: var(--is-s-3);
+    border: 1px dashed var(--is-border-strong);
+    border-radius: var(--is-r-sm);
+    background: transparent;
+    color: var(--is-text-2);
+    font-family: inherit;
+    font-size: var(--is-fs-md);
+    cursor: pointer;
+    transition: border-color var(--is-dur-base) var(--is-ease-std),
+      color var(--is-dur-base) var(--is-ease-std),
+      background-color var(--is-dur-base) var(--is-ease-std);
+
+    &:hover:not(:disabled) {
+      border-color: var(--is-border-hi);
+      background: var(--is-accent-soft);
+      color: var(--is-accent);
+    }
+
+    &:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+  }
+}
+
+// ---------- 窄屏：状态文字让位给进度 ----------
+@media (max-width: 900px) {
+  .mod-list {
+    .meta { gap: var(--is-s-2); }
+    .status { min-width: 0; }
+    .progress { width: 64px; }
+  }
 }

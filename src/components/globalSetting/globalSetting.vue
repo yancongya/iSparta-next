@@ -1,124 +1,175 @@
 <template>
-<section class="globalsetting">
-  <el-dialog :title="$t('defaultSetting')" :visible.sync="dialogFormVisible" v-on:open="resetVarible" :modal="true" :modal-append-to-body="true" :append-to-body="true" width="540px" :close-on-click-modal="false">
-    <el-form>
-      <el-form-item :label="$t('language')" label-width="formLabelWidth">
-        <el-select v-model="setting.language">
-          <el-option label="简体中文" value="zh-cn"></el-option>
-          <el-option label="繁體中文" value="zh-tw"></el-option>
-          <el-option label="English" value="en-us"></el-option>
-        </el-select>
-      </el-form-item>
-      <el-form-item :label="$t('fps')" label-width="formLabelWidth">
-        <el-input type="number" v-model="setting.options.frameRate" max="100" min="0" size="mini" auto-complete="off"></el-input>
-      </el-form-item>
-      <el-form-item :label="$t('loop')" label-width="formLabelWidth">
-        <el-input type="number" v-model="setting.options.loop" size="mini" auto-complete="off"></el-input>{{ $t('times') }}
-        <i>({{ $t('loopTips')}})</i>
-      </el-form-item>
-      <el-form-item :label="$t('filenameSuffix')" class="suffix" label-width="formLabelWidth">
-        <el-input size="mini" v-model="setting.options.outputSuffix" :maxlength="10" auto-complete="off"></el-input>
-      </el-form-item>
-      <el-form-item label="Floyd">
-        <el-input type="number" v-model="setting.options.floyd.value" max="1" min="0" size="mini" @blur="floydBlur"></el-input>
-        <i>(0-1)</i>
-      </el-form-item>
-      <el-form-item label="Quality">
-        <el-input type="number" v-model="setting.options.quality.value" max="100" min="0" size="mini" value="100" @blur="qualityBlur"></el-input>
-        <i>(0-100)</i>
-      </el-form-item>
-      <el-form-item :label="$t('outputTo')">
-        <div class="path-modes">
-          <button type="button" class="path-mode" :class="{ 'path-mode--on': setting.options.outputTo.mode==='output' }" @click="setting.options.outputTo.mode='output'">{{ $t("outputToOutput") }}</button>
-          <button type="button" class="path-mode" :class="{ 'path-mode--on': setting.options.outputTo.mode==='beside' }" @click="setting.options.outputTo.mode='beside'">{{ $t("outputToBeside") }}</button>
-        </div>
-        <p class="path-hint">{{ $t("outputToCustomHint") }}</p>
-      </el-form-item>
-      <el-form-item :label="$t('outputToTemplate')">
-        <el-input v-model="setting.options.outputTo.template" size="mini" placeholder="{srcPath}/output"></el-input>
-      </el-form-item>
-      <el-form-item :label="$t('sizeLimit')">
-        <el-checkbox v-model="setting.options.sizeLimit.enabled">{{ $t("sizeLimitEnable") }}</el-checkbox>
-      </el-form-item>
-      <el-form-item :label="$t('sizeLimitMax')">
-        <el-input
-          :value="sizeDraft !== null ? sizeDraft : sizeValueText"
-          size="mini"
-          type="text"
-          inputmode="decimal"
-          placeholder="1"
-          @focus="onSizeFocus"
-          @input="onSizeDraftInput"
-          @blur="onSizeBlur"
-        ></el-input>
-        <el-select v-model="sizeUnit" size="mini" style="width:72px;margin-left:6px">
-          <el-option label="MB" value="MB"></el-option>
-          <el-option label="KB" value="KB"></el-option>
-        </el-select>
-      </el-form-item>
-      <el-form-item :label="$t('sizeLimitAutoQuality')">
-        <el-checkbox v-model="setting.options.sizeLimit.autoQuality"></el-checkbox>
-      </el-form-item>
-      <el-form-item :label="$t('sizeLimitAutoDelete')">
-        <el-checkbox v-model="setting.options.sizeLimit.autoDelete"></el-checkbox>
-      </el-form-item>
-      <el-form-item :label="$t('sizeLimitStep')" v-if="setting.options.sizeLimit.autoQuality">
-        <el-input type="number" v-model.number="setting.options.sizeLimit.step" min="1" max="100" size="mini"></el-input>
-      </el-form-item>
-      <el-form-item :label="$t('sizeLimitTries')" v-if="setting.options.sizeLimit.autoQuality">
-        <el-input type="number" v-model.number="setting.options.sizeLimit.maxTries" min="1" max="50" size="mini"></el-input>
-        <i>{{ $t('sizeLimitTriesTip') }}</i>
-      </el-form-item>
-    </el-form>
-    <div slot="footer" class="dialog-footer">
-      <el-button @click="dialogFormVisible = false">{{ $t('cancel')}}</el-button>
-      <el-button type="primary" @click="changeVarible">{{ $t('confrim')}}</el-button>
-    </div>
-  </el-dialog>
-</section>
+  <section class="globalsetting">
+    <is-dialog
+      :visible.sync="dialogFormVisible"
+      :title="$t('defaultSetting')"
+      width="560px"
+      :close-on-click-modal="false"
+      @open="resetVarible"
+    >
+      <is-form v-if="setting">
+        <is-form-item :label="$t('language')">
+          <is-segmented v-model="setting.language" :options="languages" size="sm" />
+        </is-form-item>
+
+        <is-form-item :label="$t('appearance')">
+          <is-segmented v-model="themeMode" :options="themeOptions" size="sm" @change="applyThemeMode" />
+        </is-form-item>
+
+        <div class="gs-split"></div>
+
+        <is-form-item :label="$t('fps')">
+          <is-input v-model="setting.options.frameRate" type="number" class="w-80" :max="100" :min="0" number />
+          <em class="hint">0-100</em>
+        </is-form-item>
+        <is-form-item :label="$t('loop')">
+          <is-input v-model="setting.options.loop" type="number" class="w-80" number />
+          <span class="unit">{{ $t('times') }}</span>
+          <em class="hint">{{ $t('loopTips') }}</em>
+        </is-form-item>
+        <is-form-item :label="$t('filenameSuffix')">
+          <is-input v-model="setting.options.outputSuffix" class="is-input--fluid" :maxlength="10" />
+        </is-form-item>
+        <is-form-item label="Floyd">
+          <is-input v-model="setting.options.floyd.value" type="number" class="w-80" :max="1" :min="0" step="0.05" number />
+          <em class="hint">0-1</em>
+        </is-form-item>
+        <is-form-item label="Quality">
+          <is-input v-model="setting.options.quality.value" type="number" class="w-80" :max="100" :min="0" number />
+          <em class="hint">0-100</em>
+        </is-form-item>
+
+        <div class="gs-split"></div>
+
+        <is-form-item :label="$t('outputTo')">
+          <div class="gs-path">
+            <!-- 与输出设置同一套：预设只填模板，变量路径可编辑，胶囊点击插入 -->
+            <is-segmented :value="gsPreset" :options="pathModes" size="sm" @change="applyGsPreset" />
+            <path-vars
+              v-model="setting.options.outputTo.template"
+              :ctx="demoCtx"
+              class="gs-path__vars"
+            />
+          </div>
+          <p class="gs-hint">{{ $t('outputToCustomHint') }}</p>
+        </is-form-item>
+
+        <div class="gs-split"></div>
+
+        <is-form-item :label="$t('sizeLimit')">
+          <is-switch v-model="setting.options.sizeLimit.enabled" />
+        </is-form-item>
+        <is-form-item :label="$t('sizeLimitMax')">
+          <is-input
+            class="w-80"
+            :value="sizeDraft !== null ? sizeDraft : sizeValueText"
+            inputmode="decimal"
+            placeholder="1"
+            @focus="onSizeFocus"
+            @input="onSizeDraftInput"
+            @blur="onSizeBlur"
+          />
+          <is-segmented v-model="sizeUnit" :options="['MB', 'KB']" size="sm" />
+        </is-form-item>
+        <is-form-item :label="$t('sizeLimitAutoQuality')">
+          <is-switch v-model="setting.options.sizeLimit.autoQuality" />
+        </is-form-item>
+        <is-form-item :label="$t('sizeLimitAutoDelete')">
+          <is-switch v-model="setting.options.sizeLimit.autoDelete" />
+        </is-form-item>
+        <is-form-item v-if="setting.options.sizeLimit.autoQuality" :label="$t('sizeLimitStep')">
+          <is-input v-model="setting.options.sizeLimit.step" type="number" class="w-80" :max="100" :min="1" number />
+        </is-form-item>
+        <is-form-item v-if="setting.options.sizeLimit.autoQuality" :label="$t('sizeLimitTries')">
+          <is-input v-model="setting.options.sizeLimit.maxTries" type="number" class="w-80" :max="50" :min="1" number />
+          <em class="hint">{{ $t('sizeLimitTriesTip') }}</em>
+        </is-form-item>
+      </is-form>
+
+      <template #footer>
+        <is-button @click="dialogFormVisible = false">{{ $t('cancel') }}</is-button>
+        <is-button type="primary" @click="changeVarible">{{ $t('confrim') }}</is-button>
+      </template>
+    </is-dialog>
+  </section>
 </template>
 
 <script>
+import { storage } from '../../util/node-env'
+import ThemeManager from '../../ui-next/theme'
+import PathVars from '../../ui-next/components/PathVars.vue'
+import { activePresetOf, PATH_PRESETS } from '../../util/outputPath'
+
+const DEFAULT_SIZE_LIMIT = {
+  enabled: false,
+  maxMB: 1,
+  maxBytes: 1048576,
+  unit: 'MB',
+  autoDelete: false,
+  autoQuality: true,
+  step: 5,
+  maxTries: 10
+}
+
+const DEFAULT_OUTPUT_TO = {
+  mode: 'output',
+  customPath: '',
+  template: ''
+}
+
 export default {
-  data() {
-    let setting = null
-    try {
-      setting = JSON.parse(window.storage.getItem('globalSetting'))
-    } catch (e) {
-      setting = null
-    }
-    if (setting && setting.options && !setting.options.sizeLimit) {
-      setting.options.sizeLimit = {
-        enabled: false,
-        maxMB: 1,
-        maxBytes: 1048576,
-        unit: 'MB',
-        autoDelete: false,
-        autoQuality: true,
-        step: 5,
-        maxTries: 10
-      }
-    }
-    if (setting && setting.options && !setting.options.outputTo) {
-      setting.options.outputTo = {
-        mode: 'output',
-        customPath: '',
-        template: ''
-      }
-    }
+  components: { PathVars },
+  data () {
     return {
-      setting: setting,
+      setting: this.loadSetting(),
       dialogFormVisible: false,
-      formLabelWidth: '120px',
-      sizeDraft: null
+      sizeDraft: null,
+      themeMode: ThemeManager.getMode()
     }
-  },
-  mounted(){
-    this.$root.eventBus.$on('openGlobalSetting', () => {
-      this.showDialog()
-    })
   },
   computed: {
+    languages () {
+      return [
+        { label: '简体', value: 'zh-cn' },
+        { label: '繁體', value: 'zh-tw' },
+        { label: 'EN', value: 'en-us' }
+      ]
+    },
+    themeOptions () {
+      return [
+        { label: this.$t('themeLight'), value: 'light', icon: 'sun' },
+        { label: this.$t('themeDark'), value: 'dark', icon: 'moon' },
+        { label: this.$t('themeSystem'), value: 'system', icon: 'globe' }
+      ]
+    },
+    pathModes () {
+      // 默认设置不提供 custom：这里没有目录选择器，选了会得到空的 customPath
+      return [
+        { label: this.$t('outputToOutput'), value: 'output' },
+        { label: this.$t('outputToBeside'), value: 'beside' }
+      ]
+    },
+    // 与输出设置一致：分段控件高亮由模板反查得出
+    gsPreset () {
+      const o = this.setting && this.setting.options && this.setting.options.outputTo
+      return activePresetOf({ outputTo: o })
+    },
+    // 默认设置没有具体项目，用说明性占位值让胶囊仍能表达每个变量的含义
+    demoCtx () {
+      const o = this.setting && this.setting.options
+      const d = new Date()
+      const date = d.getFullYear() +
+        String(d.getMonth() + 1).padStart(2, '0') +
+        String(d.getDate()).padStart(2, '0')
+      return {
+        srcPath: this.$t('demoSrcPath'),
+        src: this.$t('demoSrc'),
+        name: (o && o.outputName) || this.$t('demoName'),
+        type: 'APNG',
+        parent: this.$t('demoParent'),
+        date: date
+      }
+    },
     sizeValueText () {
       const s = this.setting && this.setting.options && this.setting.options.sizeLimit
       const bytes = this.sizeLimitBytes(s)
@@ -142,7 +193,41 @@ export default {
       }
     }
   },
+  mounted () {
+    this.$root.eventBus.$on('openGlobalSetting', this.showDialog)
+    this._unsubTheme = ThemeManager.onChange((d) => { this.themeMode = ThemeManager.getMode() })
+  },
+  beforeDestroy () {
+    this.$root.eventBus.$off('openGlobalSetting', this.showDialog)
+    if (this._unsubTheme) this._unsubTheme()
+  },
   methods: {
+    // 预设：与输出设置一致，只往模板里填内容
+    applyGsPreset (value) {
+      const hit = PATH_PRESETS.filter(function (p) { return p.value === value })
+      if (!hit.length || !this.setting || !this.setting.options) { return }
+      const o = this.setting.options.outputTo
+      this.$set(o, 'template', hit[0].template)
+      this.$set(o, 'mode', value)
+    },
+    // 读取并补齐历史配置缺字段
+    loadSetting () {
+      let setting = null
+      try {
+        setting = JSON.parse(storage.getItem('globalSetting'))
+      } catch (e) {
+        setting = null
+      }
+      if (setting && setting.options) {
+        if (!setting.options.sizeLimit) {
+          setting.options.sizeLimit = Object.assign({}, DEFAULT_SIZE_LIMIT)
+        }
+        if (!setting.options.outputTo) {
+          setting.options.outputTo = Object.assign({}, DEFAULT_OUTPUT_TO)
+        }
+      }
+      return setting
+    },
     sizeLimitBytes (s) {
       if (s && isFinite(Number(s.maxBytes)) && Number(s.maxBytes) > 0) {
         return Number(s.maxBytes)
@@ -164,76 +249,54 @@ export default {
       const n = parseFloat(String(raw == null ? '' : raw).replace(',', '.'))
       if (!isFinite(n) || n <= 0) { return }
       if (!this.setting.options.sizeLimit) {
-        this.$set(this.setting.options, 'sizeLimit', {
-          enabled: false,
-          maxMB: 1,
-          maxBytes: 1048576,
-          unit: 'MB',
-          autoDelete: false,
-          autoQuality: true,
-          step: 5,
-          maxTries: 10
-        })
+        this.$set(this.setting.options, 'sizeLimit', Object.assign({}, DEFAULT_SIZE_LIMIT))
       }
       const unit = this.setting.options.sizeLimit.unit || 'MB'
       const bytes = unit === 'KB' ? n * 1024 : n * 1024 * 1024
       this.$set(this.setting.options.sizeLimit, 'maxBytes', bytes)
       this.$set(this.setting.options.sizeLimit, 'maxMB', bytes / (1024 * 1024))
     },
-    floydBlur(){
-
+    applyThemeMode (mode) {
+      if (mode === 'system') ThemeManager.followSystem()
+      else ThemeManager.set(mode)
     },
-    qualityBlur(){
-
-    },
-    showDialog(){
-      let locked = this.$store.getters.getterLocked;
-      if(locked){
-        return false;
+    showDialog () {
+      if (this.$store.getters.getterLocked) {
+        return false
       }
       this.dialogFormVisible = true
     },
-    resetVarible(){
-      this.setting = JSON.parse(window.storage.getItem('globalSetting'))
+    resetVarible () {
+      this.setting = this.loadSetting()
       this.sizeDraft = null
-      if (!this.setting.options.sizeLimit) {
-        this.$set(this.setting.options, 'sizeLimit', {
-          enabled: false,
-          maxMB: 1,
-          maxBytes: 1048576,
-          unit: 'MB',
-          autoDelete: false,
-          autoQuality: true,
-          step: 5,
-          maxTries: 10
-        })
-      }
-      if (!this.setting.options.outputTo) {
-        this.$set(this.setting.options, 'outputTo', {
-          mode: 'output',
-          customPath: '',
-          template: ''
-        })
-      }
+      this.themeMode = ThemeManager.getMode()
+      // 打开弹窗时记录基线，保存时据此判断帧率/循环是否被改动
+      this._lastSaved = this.setting && this.setting.options
+        ? JSON.parse(JSON.stringify(this.setting.options))
+        : null
     },
-    changeVarible() {
-      //save to localStorage
-      
-      window.storage.setItem('globalSetting', JSON.stringify(this.setting))
-      this.$data.dialogFormVisible = false
-      //change language
-      switch (this.setting.language) {
-        case 'zh-cn':
-          this.$i18n.locale = 'zh-cn'
-          break;
-        case 'zh-tw':
-          this.$i18n.locale = 'zh-tw'
-          break;
-        case 'en-us':
-          this.$i18n.locale = 'en-us'
-          break;
-        default:
-          break;
+    changeVarible () {
+      const prev = this._lastSaved || null
+      storage.setItem('globalSetting', JSON.stringify(this.setting))
+      this._lastSaved = JSON.parse(JSON.stringify(this.setting.options))
+      this.dialogFormVisible = false
+
+      if (this.themeMode !== ThemeManager.getMode()) {
+        this.applyThemeMode(this.themeMode)
+      }
+
+      if (this.$i18n.locale !== this.setting.language) {
+        this.$i18n.locale = this.setting.language
+      }
+
+      // 帧率/循环是全局默认：变更后同步到所有项目，保持输出设置、列表摘要、
+      // 延时预览三处一致。约定：单项目的帧率以全局默认为准，单独微调请用延时配置。
+      const next = this.setting.options || {}
+      if (prev && (prev.frameRate !== next.frameRate || prev.loop !== next.loop)) {
+        this.$store.dispatch('editMultiOptions', {
+          frameRate: next.frameRate,
+          loop: next.loop
+        })
       }
     }
   }
