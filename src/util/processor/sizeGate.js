@@ -7,12 +7,17 @@ import TYPE from '../../store/enum/type'
 
 export function normalizeSizeLimit (options) {
   const s = (options && options.sizeLimit) || {}
-  const maxMB = Number(s.maxMB)
   const step = Number(s.step)
   const maxTries = Number(s.maxTries)
+  let maxBytes = Number(s.maxBytes)
+  if (!isFinite(maxBytes) || maxBytes <= 0) {
+    const maxMB = Number(s.maxMB)
+    maxBytes = (isFinite(maxMB) && maxMB > 0) ? maxMB * 1024 * 1024 : 1024 * 1024
+  }
   return {
     enabled: !!s.enabled,
-    maxMB: isFinite(maxMB) && maxMB > 0 ? maxMB : 1,
+    maxBytes: maxBytes,
+    maxMB: maxBytes / 1024 / 1024,
     autoDelete: !!s.autoDelete,
     autoQuality: s.autoQuality !== false,
     step: isFinite(step) && step > 0 ? step : 5,
@@ -22,7 +27,14 @@ export function normalizeSizeLimit (options) {
 
 export function formatMB (bytes) {
   if (!bytes || bytes < 0) { return '?' }
+  if (bytes < 1024 * 1024) {
+    return (bytes / 1024).toFixed(1) + 'KB'
+  }
   return (bytes / 1024 / 1024).toFixed(2) + 'MB'
+}
+
+export function formatLimit (bytes) {
+  return formatMB(bytes)
 }
 
 function outputPathFor (item, format) {
@@ -75,7 +87,7 @@ export function enforceSizeLimit (item, store, locale) {
     return Promise.resolve({ enforced: false })
   }
 
-  const maxBytes = limit.maxMB * 1024 * 1024
+  const maxBytes = limit.maxBytes
   const formats = item.options.outputFormat.slice()
   let deleted = []
   let warned = []
@@ -157,7 +169,7 @@ export function enforceSizeLimit (item, store, locale) {
       store.dispatch('editProcess', {
         index: item.index,
         text: (locale.sizeLimitRetry || 'Size over limit, quality→') + nextQ +
-          ' (' + formatMB(size) + ' > ' + limit.maxMB + 'MB) ' + (tries + 1) + '/' + limit.maxTries,
+          ' (' + formatMB(size) + ' > ' + formatLimit(maxBytes) + ') ' + (tries + 1) + '/' + limit.maxTries,
         schedule: 0.85
       })
 

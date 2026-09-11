@@ -31,8 +31,19 @@
         <el-checkbox v-model="setting.options.sizeLimit.enabled">{{ $t("sizeLimitEnable") }}</el-checkbox>
       </el-form-item>
       <el-form-item :label="$t('sizeLimitMax')">
-        <el-input type="number" v-model.number="setting.options.sizeLimit.maxMB" min="0" step="0.1" size="mini"></el-input>
-        <i>MB</i>
+        <el-input
+          :value="sizeValueText"
+          size="mini"
+          type="number"
+          min="0"
+          step="any"
+          placeholder="1"
+          @input="onSizeValueInput"
+        ></el-input>
+        <el-select v-model="sizeUnit" size="mini" style="width:72px;margin-left:6px">
+          <el-option label="MB" value="MB"></el-option>
+          <el-option label="KB" value="KB"></el-option>
+        </el-select>
       </el-form-item>
       <el-form-item :label="$t('sizeLimitAutoQuality')">
         <el-checkbox v-model="setting.options.sizeLimit.autoQuality"></el-checkbox>
@@ -69,6 +80,8 @@ export default {
       setting.options.sizeLimit = {
         enabled: false,
         maxMB: 1,
+        maxBytes: 1048576,
+        unit: 'MB',
         autoDelete: false,
         autoQuality: true,
         step: 5,
@@ -86,7 +99,60 @@ export default {
       this.showDialog()
     })
   },
+  computed: {
+    sizeValueText () {
+      const s = this.setting && this.setting.options && this.setting.options.sizeLimit
+      const bytes = this.sizeLimitBytes(s)
+      const unit = (s && s.unit) || 'MB'
+      if (unit === 'KB') {
+        return String(Math.round((bytes / 1024) * 100) / 100)
+      }
+      return String(Math.round((bytes / (1024 * 1024)) * 1000) / 1000)
+    },
+    sizeUnit: {
+      get () {
+        const s = this.setting && this.setting.options && this.setting.options.sizeLimit
+        return (s && s.unit) || 'MB'
+      },
+      set (value) {
+        if (!this.setting.options.sizeLimit) { return }
+        const bytes = this.sizeLimitBytes(this.setting.options.sizeLimit)
+        this.$set(this.setting.options.sizeLimit, 'unit', value)
+        this.$set(this.setting.options.sizeLimit, 'maxBytes', bytes)
+        this.$set(this.setting.options.sizeLimit, 'maxMB', bytes / (1024 * 1024))
+      }
+    }
+  },
   methods: {
+    sizeLimitBytes (s) {
+      if (s && isFinite(Number(s.maxBytes)) && Number(s.maxBytes) > 0) {
+        return Number(s.maxBytes)
+      }
+      if (s && isFinite(Number(s.maxMB)) && Number(s.maxMB) > 0) {
+        return Number(s.maxMB) * 1024 * 1024
+      }
+      return 1024 * 1024
+    },
+    onSizeValueInput (raw) {
+      const n = parseFloat(String(raw).replace(',', '.'))
+      if (!isFinite(n) || n <= 0) { return }
+      if (!this.setting.options.sizeLimit) {
+        this.$set(this.setting.options, 'sizeLimit', {
+          enabled: false,
+          maxMB: 1,
+          maxBytes: 1048576,
+          unit: 'MB',
+          autoDelete: false,
+          autoQuality: true,
+          step: 5,
+          maxTries: 10
+        })
+      }
+      const unit = this.setting.options.sizeLimit.unit || 'MB'
+      const bytes = unit === 'KB' ? n * 1024 : n * 1024 * 1024
+      this.$set(this.setting.options.sizeLimit, 'maxBytes', bytes)
+      this.$set(this.setting.options.sizeLimit, 'maxMB', bytes / (1024 * 1024))
+    },
     floydBlur(){
 
     },
@@ -106,6 +172,8 @@ export default {
         this.$set(this.setting.options, 'sizeLimit', {
           enabled: false,
           maxMB: 1,
+          maxBytes: 1048576,
+          unit: 'MB',
           autoDelete: false,
           autoQuality: true,
           step: 5,
