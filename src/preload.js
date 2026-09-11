@@ -17,6 +17,7 @@ contextBridge.exposeInMainWorld('ispartaAPI', {
   },
   fs: {
     existsSync: (p) => sync('fs:existsSync', p),
+    readDataUrl: (p) => sync('fs:readDataUrl', p),
     ensureFileSync: (p) => sync('fs:ensureFileSync', p),
     ensureDirSync: (p) => sync('fs:ensureDirSync', p),
     readFileSync: (p, enc) => {
