@@ -210,6 +210,9 @@ const mutations = {
       return false
     }
     var selectedItem = _.filter(state.items, { isSelected: true })
+    if (!selectedItem.length) {
+      return false
+    }
     var selectedBasic = selectedItem[0].basic
     _.extend(selectedBasic, keyValue)
     persistItems()
@@ -219,6 +222,9 @@ const mutations = {
       return false
     }
     var selectedItem = _.filter(state.items, { isSelected: true })
+    if (!selectedItem.length) {
+      return false
+    }
     var selectedOption = selectedItem[0].options
     _.extend(selectedOption, keyValue)
     persistItems()
