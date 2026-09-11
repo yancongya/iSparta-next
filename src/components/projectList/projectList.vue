@@ -6,7 +6,11 @@
         <el-checkbox :value="!!project.isSelected" style="pointer-events:none"></el-checkbox>
       </div>
       <div class="thumb">
-        <img :src="thumbFor(project.basic && project.basic.fileList && project.basic.fileList[0])" />
+        <img
+          :src="thumbSrc(project, index)"
+          @mouseenter="startHover(index)"
+          @mouseleave="stopHover"
+        />
       </div>
       <div class="info">
         <div class="input">
@@ -46,7 +50,10 @@ export default {
     return {
       dialogFormVisible:false,
       delayProject:null,
-      thumbCache: {}
+      thumbCache: {},
+      hoverIdx: -1,
+      hoverFrame: 0,
+      hoverTimer: null
     }
   },
 
@@ -70,6 +77,9 @@ export default {
       this.$store.dispatch('remove')
     })
   },
+  beforeDestroy () {
+    this.stopHover()
+  },
   computed: {
     selectedList () {
       var data = this.$store.getters.getterSelected
@@ -91,6 +101,34 @@ export default {
     }
   },
   methods: {
+    thumbSrc (project, index) {
+      var list = project && project.basic && project.basic.fileList
+      if (!list || !list.length) { return '' }
+      if (this.hoverIdx === index) {
+        var i = this.hoverFrame % Math.min(list.length, 48)
+        return this.thumbFor(list[i])
+      }
+      return this.thumbFor(list[0])
+    },
+    startHover (index) {
+      this.stopHover()
+      this.hoverIdx = index
+      this.hoverFrame = 0
+      var project = this.projectList[index]
+      var list = project && project.basic && project.basic.fileList
+      if (!list || list.length < 2) { return }
+      this.hoverTimer = setInterval(() => {
+        this.hoverFrame += 1
+      }, 120)
+    },
+    stopHover () {
+      if (this.hoverTimer) {
+        clearInterval(this.hoverTimer)
+        this.hoverTimer = null
+      }
+      this.hoverIdx = -1
+      this.hoverFrame = 0
+    },
     // 生成降采样缩略图，避免长列表直接加载全尺寸原图导致的内存占用
     thumbFor (filePath) {
       if (!filePath) { return '' }

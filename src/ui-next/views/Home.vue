@@ -248,11 +248,12 @@ export default {
   :deep(.mod-list .item) {
     border-bottom-color: var(--is-border);
     color: var(--is-text);
+    background: transparent;
   }
 
   :deep(.mod-list .item.active),
   :deep(.mod-list .item:hover) {
-    background: var(--is-card-hi);
+    background: var(--is-card-hi) !important;
   }
 
   :deep(.mod-list .open-folder) {
