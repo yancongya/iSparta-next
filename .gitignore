@@ -40,5 +40,9 @@ run-dev.cmd
 run-npm-install.cmd
 run-clean-install.cmd
 run-electron-install.cmd
+run-build.cmd
+build.log
+build.err
+build.status
 .npmrc
 .worktrees/
