@@ -48,20 +48,47 @@
       <p>{{ $t("outputTo") }}</p>
       <el-form label-width="">
         <el-form-item>
-          <el-radio-group v-model="outputToMode" size="mini">
-            <el-radio-button label="output">{{ $t("outputToOutput") }}</el-radio-button>
-            <el-radio-button label="beside">{{ $t("outputToBeside") }}</el-radio-button>
-            <el-radio-button label="custom">{{ $t("outputToCustom") }}</el-radio-button>
-          </el-radio-group>
+          <div class="path-modes">
+            <button
+              type="button"
+              class="path-mode"
+              :class="{ 'path-mode--on': outputToMode === 'output' }"
+              @click="setOutputToMode('output')"
+            >{{ $t("outputToOutput") }}</button>
+            <button
+              type="button"
+              class="path-mode"
+              :class="{ 'path-mode--on': outputToMode === 'beside' }"
+              @click="setOutputToMode('beside')"
+            >{{ $t("outputToBeside") }}</button>
+            <button
+              type="button"
+              class="path-mode"
+              :class="{ 'path-mode--on': outputToMode === 'custom' }"
+              @click="setOutputToMode('custom')"
+            >{{ $t("outputToCustom") }}</button>
+          </div>
         </el-form-item>
-        <el-form-item v-if="outputToMode === 'custom'">
-          <el-input v-model="outputToPath" size="mini" :placeholder="$t('outputToPathPh')"></el-input>
-          <el-button size="mini" @click="pickOutputDir">{{ $t("outputToPick") }}</el-button>
+        <el-form-item>
+          <div class="path-custom-row">
+            <input
+              class="path-preview"
+              type="text"
+              readonly
+              :value="outputPathPreview"
+              :title="outputPathPreview"
+            />
+            <button
+              type="button"
+              class="path-pick"
+              title="选择输出目录"
+              @click="pickOutputDir"
+            >📁</button>
+          </div>
         </el-form-item>
         <el-form-item :label="$t('outputToTemplate')">
           <el-input v-model="outputToTemplate" size="mini" :placeholder="'{srcPath}/output'"></el-input>
         </el-form-item>
-        <p class="output-preview">{{ outputPathPreview }}</p>
       </el-form>
     </div>
     <div class="ui-border-b mod-sizelimit">
@@ -336,15 +363,6 @@ export default {
         this.pushOutputTo({ mode: value })
       }
     },
-    outputToPath: {
-      get () {
-        const o = this.curtSetting && this.curtSetting.outputTo
-        return (o && o.customPath) || ''
-      },
-      set (value) {
-        this.pushOutputTo({ customPath: String(value || '') })
-      }
-    },
     outputToTemplate: {
       get () {
         const o = this.curtSetting && this.curtSetting.outputTo
@@ -357,8 +375,7 @@ export default {
     outputPathPreview () {
       if (this.selectedList.length !== 1) { return '' }
       const item = this.selectedList[0]
-      const p = resolveOutputPath(item, item.options)
-      return this.$t('outputToPreview') + ': ' + p
+      return resolveOutputPath(item, item.options)
     }
 
   },
@@ -410,6 +427,10 @@ export default {
           this.$store.dispatch('editBasic', { outputPath: p })
         })
       }
+    },
+    setOutputToMode (mode) {
+      // 单选且不可取消：始终写入一个 mode
+      this.pushOutputTo({ mode: mode })
     },
     pickOutputDir () {
       ipc.invoke('dialog:openDirectory', {

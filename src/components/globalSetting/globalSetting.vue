@@ -28,14 +28,11 @@
         <i>(0-100)</i>
       </el-form-item>
       <el-form-item :label="$t('outputTo')">
-        <el-radio-group v-model="setting.options.outputTo.mode" size="mini">
-          <el-radio-button label="output">{{ $t("outputToOutput") }}</el-radio-button>
-          <el-radio-button label="beside">{{ $t("outputToBeside") }}</el-radio-button>
-          <el-radio-button label="custom">{{ $t("outputToCustom") }}</el-radio-button>
-        </el-radio-group>
-      </el-form-item>
-      <el-form-item v-if="setting.options.outputTo && setting.options.outputTo.mode==='custom'" :label="$t('outputToCustom')">
-        <el-input v-model="setting.options.outputTo.customPath" size="mini" :placeholder="$t('outputToPathPh')"></el-input>
+        <div class="path-modes">
+          <button type="button" class="path-mode" :class="{ 'path-mode--on': setting.options.outputTo.mode==='output' }" @click="setting.options.outputTo.mode='output'">{{ $t("outputToOutput") }}</button>
+          <button type="button" class="path-mode" :class="{ 'path-mode--on': setting.options.outputTo.mode==='beside' }" @click="setting.options.outputTo.mode='beside'">{{ $t("outputToBeside") }}</button>
+        </div>
+        <p class="path-hint">{{ $t("outputToCustomHint") }}</p>
       </el-form-item>
       <el-form-item :label="$t('outputToTemplate')">
         <el-input v-model="setting.options.outputTo.template" size="mini" placeholder="{srcPath}/output"></el-input>

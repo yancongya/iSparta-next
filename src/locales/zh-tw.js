@@ -63,4 +63,5 @@ module.exports = {
     "outputToPick": "選擇…",
     "outputToTemplate": "路徑模板(可選)",
     "outputToPreview": "輸出到",
+    "outputToCustomHint": "自定義目錄請在單任務「輸出設置」裡用資料夾按鈕選擇",
 }

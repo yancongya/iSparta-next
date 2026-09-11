@@ -133,6 +133,71 @@ input[type="number"] {
     width: 72px;
     margin-left: 6px;
   }
+  .path-modes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .path-mode {
+    appearance: none;
+    border: 1px solid var(--is-border);
+    background: transparent;
+    color: var(--is-text-2);
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: 12px;
+    cursor: pointer;
+
+    &:hover {
+      border-color: var(--is-border-hi);
+      color: var(--is-text);
+    }
+
+    &--on {
+      background: var(--is-accent);
+      border-color: var(--is-accent);
+      color: var(--is-bg);
+      font-weight: 700;
+    }
+  }
+  .path-custom-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+  }
+  .path-preview {
+    flex: 1;
+    min-width: 0;
+    height: 28px;
+    box-sizing: border-box;
+    padding: 0 8px;
+    border-radius: 6px;
+    border: 1px solid var(--is-border);
+    background: var(--is-card);
+    color: var(--is-text);
+    font-size: 12px;
+    font-family: var(--is-mono);
+  }
+  .path-pick {
+    flex: 0 0 auto;
+    width: 32px;
+    height: 28px;
+    border-radius: 6px;
+    border: 1px solid var(--is-border);
+    background: var(--is-card);
+    cursor: pointer;
+    font-size: 14px;
+
+    &:hover {
+      border-color: var(--is-border-hi);
+    }
+  }
+  .path-hint {
+    margin: 4px 0 0;
+    font-size: 11px;
+    color: var(--is-text-3);
+  }
   .output-preview {
     font-size: 11px;
     color: var(--is-text-3);
