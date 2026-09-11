@@ -48,40 +48,34 @@
       <p>{{ $t("outputTo") }}</p>
       <el-form label-width="">
         <el-form-item>
-          <div class="path-modes" @click.stop>
+          <div class="path-modes">
             <button
               type="button"
               class="path-mode"
-              :class="{ 'path-mode--on': outputToMode === 'output' }"
-              @click.stop.prevent="setOutputToMode('output')"
+              :class="{ 'path-mode--on': pathModeUI === 'output' }"
+              @click.prevent.stop="setOutputToMode('output')"
             >{{ $t("outputToOutput") }}</button>
             <button
               type="button"
               class="path-mode"
-              :class="{ 'path-mode--on': outputToMode === 'beside' }"
-              @click.stop.prevent="setOutputToMode('beside')"
+              :class="{ 'path-mode--on': pathModeUI === 'beside' }"
+              @click.prevent.stop="setOutputToMode('beside')"
             >{{ $t("outputToBeside") }}</button>
-            <button
-              type="button"
-              class="path-mode"
-              :class="{ 'path-mode--on': outputToMode === 'custom' }"
-              @click.stop.prevent="setOutputToMode('custom')"
-            >{{ $t("outputToCustom") }}</button>
           </div>
         </el-form-item>
         <el-form-item>
           <el-input
             size="mini"
             readonly
-            :value="outputPathPreview"
-            :title="outputPathPreview"
+            :value="pathPreviewUI"
+            :title="pathPreviewUI"
             class="path-input"
           >
             <i
               slot="suffix"
               class="el-input__icon el-icon-folder-opened path-icon"
-              @click.stop.prevent="pickOutputDir"
-              title="选择输出目录"
+              title="选择自定义输出目录"
+              @click.prevent.stop="pickOutputDir"
             ></i>
           </el-input>
         </el-form-item>
@@ -143,16 +137,32 @@ import { resolveOutputPath, normalizeOutputTo } from '../../util/outputPath'
 export default {
   data () {
     return {
-      sizeDraft: null
+      sizeDraft: null,
+      // 本地 UI 状态，保证点选立即高亮
+      pathModeUI: 'output',
+      pathPreviewUI: ''
+    }
+  },
+  watch: {
+    selectedList: {
+      immediate: true,
+      handler () {
+        this.syncPathUI()
+      }
+    },
+    curtSetting: {
+      deep: true,
+      handler () {
+        this.syncPathUI()
+      }
     }
   },
   created () {
     // 回应输出到目录的操作
     ipc.on('change-multiItem-fold', (path) => {
-      // console.log(this.$store,path[0]);
       this.start(path[0])
-      // processor().then(() => {})
     })
+    this.syncPathUI()
   },
   computed: {
     selectedList () {
@@ -429,9 +439,20 @@ export default {
       const p = resolveOutputPath(item, merged)
       this.$store.dispatch('editBasic', { outputPath: p })
     },
+    syncPathUI () {
+      if (this.selectedList.length !== 1) {
+        this.pathModeUI = 'output'
+        this.pathPreviewUI = ''
+        return
+      }
+      const o = normalizeOutputTo(this.curtSetting && this.curtSetting.outputTo)
+      this.pathModeUI = o.mode
+      this.pathPreviewUI = resolveOutputPath(this.selectedList[0], this.selectedList[0].options)
+    },
     setOutputToMode (mode) {
-      // 单选且不可取消
+      this.pathModeUI = mode
       this.pushOutputTo({ mode: mode })
+      this.syncPathUI()
     },
     pickOutputDir () {
       if (this.selectedList.length !== 1) { return }
@@ -440,7 +461,10 @@ export default {
         defaultPath: cur
       }).then((r) => {
         if (!r || r.canceled || !r.filePaths || !r.filePaths[0]) { return }
+        this.pathModeUI = 'custom'
         this.pushOutputTo({ mode: 'custom', customPath: r.filePaths[0] })
+        this.pathPreviewUI = r.filePaths[0]
+        this.syncPathUI()
       }).catch(() => {})
     },
     pushSizeLimit (patch) {
