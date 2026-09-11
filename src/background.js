@@ -1,6 +1,6 @@
 'use strict'
 
-import { app, protocol, BrowserWindow, ipcMain, dialog, shell, Menu } from 'electron'
+import { app, protocol, BrowserWindow, ipcMain, dialog, shell, Menu, net } from 'electron'
 import {
   createProtocol
 } from 'vue-cli-plugin-electron-builder/lib'
@@ -9,13 +9,36 @@ const path = require("path");
 const fsp = require('fs');
 const childProcess = require('child_process');
 const os = require('os');
+const { pathToFileURL } = require('url');
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
 
 let win
 
 // Scheme must be registered before the app is ready
-protocol.registerSchemesAsPrivileged([{scheme: 'app', privileges: { secure: true, standard: true } }])
+protocol.registerSchemesAsPrivileged([
+  { scheme: 'app', privileges: { secure: true, standard: true } },
+  // sandbox 下渲染层不能 file://，用自定义协议读本地帧缩略图
+  {
+    scheme: 'isparta-file',
+    privileges: {
+      secure: true,
+      standard: true,
+      supportFetchAPI: true,
+      stream: true,
+      bypassCSP: true
+    }
+  }
+])
+
+function mediaPathFromUrl (requestUrl) {
+  let p = decodeURIComponent(requestUrl.replace(/^isparta-file:/, '').replace(/^\/\//, '/'))
+  // /E:/foo -> E:/foo
+  if (/^\/[A-Za-z]:/.test(p)) {
+    p = p.slice(1)
+  }
+  return p
+}
 
 
 function createWindow () {
@@ -82,8 +105,18 @@ app.on('activate', () => {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.on('ready', async () => {
+  protocol.handle('isparta-file', (request) => {
+    try {
+      const filePath = mediaPathFromUrl(request.url)
+      if (!filePath || !fsp.existsSync(filePath)) {
+        return new Response('Not found', { status: 404 })
+      }
+      return net.fetch(pathToFileURL(filePath).toString())
+    } catch (e) {
+      return new Response(String(e && e.message || e), { status: 500 })
+    }
+  })
 
-  
   if (isDevelopment && !process.env.IS_TEST) {
     // Install Vue Devtools
     // Devtools extensions are broken in Electron 6.0.0 and greater

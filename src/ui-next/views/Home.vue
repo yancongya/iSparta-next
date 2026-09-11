@@ -64,7 +64,7 @@
                 type="button"
                 class="ib-card__gear"
                 title="设置此任务"
-                @click.stop="selectTab(index); settingsOpen = true"
+                @click.stop="openSettingsFor(index)"
               >⚙</button>
             </button>
           </div>
@@ -280,14 +280,20 @@ export default {
       if (p.schedule > 0 && p.schedule < 1) { return Math.round(p.schedule * 100) + '%' }
       return 'IDLE'
     },
+    mediaUrl (p) {
+      if (!p) { return '' }
+      const norm = String(p).replace(/\\/g, '/')
+      const withSlash = norm.charAt(0) === '/' ? norm : '/' + norm
+      return 'isparta-file://' + encodeURI(withSlash).replace(/#/g, '%23')
+    },
     coverSrc (item, index) {
       const list = item && item.basic && item.basic.fileList
       if (!list || !list.length) { return '' }
       if (this.hoverIdx === index) {
         const i = this.hoverFrame % Math.min(list.length, 48)
-        return 'file://' + list[i]
+        return this.mediaUrl(list[i])
       }
-      return 'file://' + list[0]
+      return this.mediaUrl(list[0])
     },
     startHover (index) {
       this.stopHover()
@@ -310,6 +316,10 @@ export default {
       this.$store.dispatch('singleSelect', index)
       this.syncFromItem()
       this.loadThumbs()
+    },
+    openSettingsFor (index) {
+      this.selectTab(index)
+      this.settingsOpen = true
     },
     removeCurrent () {
       if (!this.current) { return }
@@ -398,7 +408,7 @@ export default {
       const max = Math.min(list.length, 48)
       const out = []
       for (let i = 0; i < max; i++) {
-        out.push('file://' + list[i])
+        out.push(this.mediaUrl(list[i]))
       }
       this.thumbs = out
     },
