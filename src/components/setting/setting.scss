@@ -107,6 +107,13 @@ input[type="number"] {
     background: var(--is-accent);
     border-color: var(--is-accent);
     color: var(--is-bg);
+    &:hover,
+    &:active,
+    &:focus {
+      background: var(--is-hot);
+      border-color: var(--is-hot);
+      color: #fff;
+    }
   }
   .el-checkbox__input.is-checked .el-checkbox__inner,
   .el-checkbox__input.is-indeterminate .el-checkbox__inner {

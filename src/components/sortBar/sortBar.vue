@@ -46,14 +46,16 @@
 
 <style lang="scss">
 .mod-bar{
-  position:fixed;
-  left:0;
-  bottom:0;
-  width:100%;
+  position:relative;
+  left:auto;
+  bottom:auto;
+  width:auto;
   height:40px;
   line-height:40px;
-  border:1px solid #E4E4E4;
-  background:#F2F2F2;
+  border:1px solid var(--is-border, #E4E4E4);
+  border-left:0;
+  border-right:0;
+  background:var(--is-panel, #F2F2F2);
   padding:0 15px;
   display: flex;
   align-items: center;
@@ -61,10 +63,10 @@
   z-index: 100;
   .bar-label{
     font-size:13px;
-    color:#5a5a5a;
+    color:var(--is-text-2, #5a5a5a);
   }
   .bar-count{
-    color:#999;
+    color:var(--is-text-3, #999);
   }
   .bar-selectall{
     margin-left:auto;
