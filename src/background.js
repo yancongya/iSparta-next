@@ -208,6 +208,18 @@ function ensureDir (dir) {
 ipcMain.on('fs:existsSync', (event, p) => {
   try { event.returnValue = fsp.existsSync(p) } catch (e) { event.returnValue = false }
 })
+// 缩略图：主进程读文件转 data URL，避免 sandbox/file 协议问题
+ipcMain.on('fs:readDataUrl', (event, p) => {
+  try {
+    const buf = fsp.readFileSync(p)
+    const ext = path.extname(String(p)).toLowerCase()
+    let mime = 'image/png'
+    if (ext === '.jpg' || ext === '.jpeg') { mime = 'image/jpeg' } else if (ext === '.gif') { mime = 'image/gif' } else if (ext === '.webp') { mime = 'image/webp' }
+    event.returnValue = { ok: true, dataUrl: 'data:' + mime + ';base64,' + buf.toString('base64') }
+  } catch (e) {
+    event.returnValue = { ok: false, error: String(e && e.message || e) }
+  }
+})
 ipcMain.on('fs:readdirSync', (event, p) => {
   try { event.returnValue = fsp.readdirSync(p) } catch (e) { event.returnValue = [] }
 })

@@ -96,32 +96,20 @@ export default {
       if (!filePath) { return '' }
       var cached = this.thumbCache[filePath]
       if (cached) { return cached }
-      var norm = String(filePath).replace(/\\/g, '/')
-      var withSlash = norm.charAt(0) === '/' ? norm : '/' + norm
-      var placeholder = 'isparta-file://' + encodeURI(withSlash).replace(/#/g, '%23')
       var self = this
-      var size = 120
-      var img = new Image()
-      img.onload = function () {
-        try {
-          var canvas = document.createElement('canvas')
-          canvas.width = size
-          canvas.height = size
-          var ctx = canvas.getContext('2d')
-          var scale = Math.min(size / img.width, size / img.height)
-          var w = Math.max(1, Math.round(img.width * scale))
-          var h = Math.max(1, Math.round(img.height * scale))
-          ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h)
-          self.$set(self.thumbCache, filePath, canvas.toDataURL('image/png'))
-        } catch (e) {
-          self.$set(self.thumbCache, filePath, placeholder)
+      try {
+        var api = window.ispartaAPI && window.ispartaAPI.fs
+        if (api && api.readDataUrl) {
+          var r = api.readDataUrl(filePath)
+          if (r && r.ok && r.dataUrl) {
+            this.$set(this.thumbCache, filePath, r.dataUrl)
+            return r.dataUrl
+          }
         }
-      }
-      img.onerror = function () {
-        self.$set(self.thumbCache, filePath, placeholder)
-      }
-      img.src = placeholder
-      return placeholder
+      } catch (e) { /* fallthrough */ }
+      var fallback = ''
+      this.$set(this.thumbCache, filePath, fallback)
+      return fallback
     },
     // 映射标签样式
     getLabel (label) {

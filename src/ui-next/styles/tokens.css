@@ -66,3 +66,30 @@ body,
   color: var(--is-text);
   font-family: var(--is-font);
 }
+
+/* Element UI 跟随主题（输出设置等） */
+.is-theme-dark .el-button--primary {
+  background-color: #c8f542;
+  border-color: #c8f542;
+  color: #0c0f0e;
+}
+.is-theme-dark .el-checkbox__label,
+.is-theme-dark .el-form-item__label,
+.is-theme-dark .el-button {
+  color: var(--is-text);
+}
+.is-theme-dark .el-input__inner {
+  background: #1a201c;
+  border-color: rgba(232, 240, 230, 0.12);
+  color: #eef3ec;
+}
+.is-theme-light .el-button--primary {
+  background-color: #c2410c;
+  border-color: #c2410c;
+  color: #fffdf8;
+}
+.is-theme-light .el-input__inner {
+  background: #fffdf8;
+  border-color: rgba(28, 25, 23, 0.12);
+  color: #1c1917;
+}
