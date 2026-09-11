@@ -2,14 +2,14 @@
   <el-dialog :title="$t('delayTitle')" :visible="true"  :modal-append-to-body="true" :append-to-body="true" width="600px" :close-on-click-modal="false" @close="onClose" top="30px">
     <div class="frame-preview">
       <div class="preview">
-        <img :src="'file://'+previewURL" />
+        <img :src="mediaUrl(previewURL)" />
       </div>
       <el-button type="primary" size="small" @click="onPreview">{{ $t('preview')}}</el-button>
       
     </div>
     <div class="frame-list" v-if="delayProject">
       <div class="frame" v-for="(item,index) in delayProject.basic.fileList"  :key="index">
-        <img :src="'file://'+delayProject.basic.fileList[index]" />
+        <img :src="mediaUrl(delayProject.basic.fileList[index])" />
         <el-input-number v-model="delays[index]" controls-position="right" size="mini" :step="0.01"></el-input-number>
         <!-- <el-input  size="mini"   v-model="delays[index]"></el-input> -->
       </div>
@@ -76,6 +76,12 @@ export default {
     this.rate = this.delayProject.options.frameRate;
   },
   methods: {
+    mediaUrl (p) {
+      if (!p) { return '' }
+      const norm = String(p).replace(/\\/g, '/')
+      const withSlash = norm.charAt(0) === '/' ? norm : '/' + norm
+      return 'isparta-file://' + encodeURI(withSlash).replace(/#/g, '%23')
+    },
     
     
     onDelayConfirm(){
