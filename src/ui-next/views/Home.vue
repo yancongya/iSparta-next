@@ -1,24 +1,13 @@
 <template>
-  <div
-    class="ib"
-    :class="['ib--' + theme, { 'ib--empty': !items.length }]"
-  >
-    <!-- ===== 空态：全屏导入 ===== -->
+  <div class="ib" :class="[themeClass, { 'ib--empty': !items.length }]">
+    <!-- ========== 空态 ========== -->
     <section v-if="!items.length" class="ib-import">
-      <div class="ib-noise" aria-hidden="true"></div>
       <header class="ib-top">
-        <div class="ib-logo">
-          <span class="ib-logo__glyph">▣</span>
-          <div>
-            <div class="ib-logo__name">iSparta</div>
-            <div class="ib-logo__sub">NEXT · SEQUENCE PRESS</div>
-          </div>
-        </div>
+        <div class="ib-logo"><span class="ib-logo__glyph">▣</span><span class="ib-logo__name">iSparta</span></div>
         <button type="button" class="ib-iconbtn" :title="themeTitle" @click="toggleTheme">
-          {{ theme === 'dark' ? '☼' : '☾' }}
+          <span class="ib-iconbtn__i">{{ theme === 'dark' ? '☀' : '☾' }}</span>
         </button>
       </header>
-
       <div
         class="ib-drop"
         :class="{ 'ib-drop--hot': drag }"
@@ -27,124 +16,100 @@
         @drop.prevent="onDrop"
         @click="onPick"
       >
-        <div class="ib-drop__rings" aria-hidden="true">
-          <span></span><span></span><span></span>
-        </div>
-        <div class="ib-drop__copy">
-          <div class="ib-drop__kicker">DROP · PASTE · CLICK</div>
-          <h1>把序列帧<br />压进流水线</h1>
-          <p>PNG 序列 · APNG · GIF · 拖文件夹 / 粘贴文件 / 点击选择</p>
-          <div class="ib-drop__cta">选择文件 / 目录</div>
-          <ul class="ib-drop__pills">
-            <li>本地转换</li>
-            <li>帧序自然排序</li>
-            <li>APNG · GIF · WEBP</li>
-          </ul>
-        </div>
-        <div class="ib-drop__ticker" aria-hidden="true">
-          <span>APNG</span><span>GIF</span><span>WEBP</span><span>PNGs</span>
-          <span>APNG</span><span>GIF</span><span>WEBP</span><span>PNGs</span>
-        </div>
+        <div class="ib-drop__kicker">DROP · PASTE · CLICK</div>
+        <h1>把序列帧压进流水线</h1>
+        <p>PNG 序列 · APNG · GIF</p>
+        <div class="ib-drop__cta">选择文件 / 目录</div>
       </div>
-
-      <footer class="ib-foot">
-        <span>Ctrl 拖文件夹即可批量</span>
-        <span class="ib-foot__sep">/</span>
-        <span>接口：store · ispartaAPI · processor</span>
-      </footer>
     </section>
 
-    <!-- ===== 工作台 ===== -->
+    <!-- ========== 工作台：左列表 + 中预览 + 右设置 ========== -->
     <section v-else class="ib-ws">
-      <div class="ib-noise" aria-hidden="true"></div>
-
       <header class="ib-top ib-top--ws">
-        <div class="ib-logo">
-          <span class="ib-logo__glyph">▣</span>
-          <div class="ib-logo__name">iSparta</div>
-        </div>
-
-        <nav class="ib-tabs">
-          <button
-            v-for="(item, index) in items"
-            :key="index"
-            type="button"
-            class="ib-tab"
-            :class="{ 'ib-tab--on': index === selected }"
-            @click="selectTab(index)"
-          >
-            <i class="ib-tab__pip" :data-t="typeOf(item)"></i>
-            <span>{{ shortName(item) }}</span>
+        <div class="ib-logo"><span class="ib-logo__glyph">▣</span><span class="ib-logo__name">iSparta</span></div>
+        <div class="ib-top__actions">
+          <button type="button" class="ib-iconbtn" title="输出设置" @click="settingsOpen = !settingsOpen">
+            <span class="ib-iconbtn__i">⚙</span>
           </button>
-          <button type="button" class="ib-tab ib-tab--add" @click="onPick">＋</button>
-          <button
-            v-if="items.length"
-            type="button"
-            class="ib-tab ib-tab--del"
-            title="删除当前任务"
-            @click="removeCurrent"
-          >✕</button>
-        </nav>
-
-        <div class="ib-top__right">
           <button type="button" class="ib-iconbtn" :title="themeTitle" @click="toggleTheme">
-            {{ theme === 'dark' ? '☼' : '☾' }}
+            <span class="ib-iconbtn__i">{{ theme === 'dark' ? '☀' : '☾' }}</span>
           </button>
         </div>
       </header>
 
       <div class="ib-body">
-        <!-- 中央舞台 -->
-        <div class="ib-stage">
-          <div class="ib-card ib-focus">
-            <div class="ib-focus__bar">
+        <!-- 左：任务封面列表 -->
+        <aside class="ib-list">
+          <div class="ib-list__scroll">
+            <button
+              v-for="(item, index) in items"
+              :key="index"
+              type="button"
+              class="ib-card"
+              :class="{ 'ib-card--on': index === selected }"
+              @click="selectTab(index)"
+              @mouseenter="startHover(index)"
+              @mouseleave="stopHover"
+            >
+              <div class="ib-card__cover">
+                <img v-if="coverSrc(item, index)" :src="coverSrc(item, index)" alt="" />
+                <span v-else class="ib-card__ph">{{ typeOf(item) }}</span>
+                <span class="ib-card__type" :data-t="typeOf(item)">{{ typeOf(item) }}</span>
+              </div>
+              <div class="ib-card__meta">
+                <div class="ib-card__name">{{ shortName(item) }}</div>
+                <div class="ib-card__sub">{{ frameCountOf(item) }} 帧 · {{ scheduleOf(item) }}</div>
+              </div>
+              <button
+                type="button"
+                class="ib-card__gear"
+                title="设置此任务"
+                @click.stop="selectTab(index); settingsOpen = true"
+              >⚙</button>
+            </button>
+          </div>
+          <button type="button" class="ib-add" title="继续导入" @click="onPick">＋</button>
+        </aside>
+
+        <!-- 中：选中任务预览 -->
+        <main class="ib-main">
+          <div class="ib-focus">
+            <div class="ib-focus__head">
               <span class="ib-tag" :data-t="typeOf(current)">{{ typeOf(current) }}</span>
               <div class="ib-focus__text">
                 <div class="ib-focus__title">{{ nameOf(current) }}</div>
                 <div class="ib-focus__path">{{ pathOf(current) }}</div>
               </div>
               <div class="ib-focus__meters">
-                <div class="ib-meter">
-                  <b>{{ frameCount }}</b><span>FRAMES</span>
-                </div>
-                <div class="ib-meter">
-                  <b>{{ scheduleLabel }}</b><span>STATE</span>
-                </div>
+                <div class="ib-meter"><b>{{ frameCount }}</b><span>FRAMES</span></div>
+                <div class="ib-meter"><b>{{ scheduleLabel }}</b><span>STATE</span></div>
               </div>
             </div>
-
-            <!-- 胶片条（可折叠） -->
-            <div class="ib-filmwrap" :class="{ 'ib-filmwrap--shut': filmShut }">
-              <button type="button" class="ib-fold" @click="filmShut = !filmShut">
-                <span>FILM STRIP</span>
-                <span class="ib-fold__chev">{{ filmShut ? '▸' : '▾' }}</span>
-              </button>
-              <div v-show="!filmShut" class="ib-film">
-                <button
+            <div class="ib-film">
+              <div class="ib-film__track">
+                <div
                   v-for="(t, i) in thumbs"
                   :key="i"
-                  type="button"
                   class="ib-cell"
                   :class="{ 'ib-cell--on': i === activeFrame }"
                   @click="activeFrame = i"
                 >
                   <img v-if="t" :src="t" alt="" />
                   <em>{{ i + 1 }}</em>
-                </button>
-                <div v-if="!thumbs.length" class="ib-film__empty">暂无缩略图</div>
+                </div>
+                <div v-if="!thumbs.length" class="ib-film__empty">暂无帧预览</div>
               </div>
             </div>
           </div>
-        </div>
+        </main>
 
-        <!-- 右侧可折叠参数舱 -->
-        <aside class="ib-side" :class="{ 'ib-side--shut': sideShut }">
-          <button type="button" class="ib-side__toggle" @click="sideShut = !sideShut">
-            <span>{{ sideShut ? '参数' : '输出参数' }}</span>
-            <span>{{ sideShut ? '‹' : '›' }}</span>
+        <!-- 右：可折叠设置 -->
+        <aside class="ib-side" :class="{ 'ib-side--shut': !settingsOpen }">
+          <button type="button" class="ib-side__icon" :title="settingsOpen ? '收起设置' : '展开设置'" @click="settingsOpen = !settingsOpen">
+            {{ settingsOpen ? '›' : '‹' }}
           </button>
-
-          <div v-show="!sideShut" class="ib-side__body">
+          <div v-show="settingsOpen" class="ib-side__body">
+            <div class="ib-side__title">输出设置</div>
             <div class="ib-lab">输出格式</div>
             <div class="ib-chips">
               <button
@@ -156,48 +121,35 @@
                 @click="toggleFormat(f)"
               >{{ f }}</button>
             </div>
-
             <template v-if="typeOf(current) === 'PNGs'">
               <div class="ib-lab">帧频 / 循环</div>
               <div class="ib-rows">
-                <label class="ib-num">
-                  <span>FPS</span>
-                  <input type="number" min="1" max="100" v-model.number="fps" @change="pushOptions" />
-                </label>
-                <label class="ib-num">
-                  <span>LOOP</span>
-                  <input type="number" min="0" v-model.number="loop" @change="pushOptions" />
-                </label>
+                <label class="ib-num"><span>FPS</span><input type="number" min="1" max="100" v-model.number="fps" @change="pushOptions" /></label>
+                <label class="ib-num"><span>LOOP</span><input type="number" min="0" v-model.number="loop" @change="pushOptions" /></label>
               </div>
             </template>
-
             <div class="ib-lab">输出名</div>
             <input class="ib-text" type="text" v-model="outputName" @change="pushOptions" />
-
-            <div class="ib-side__gap"></div>
-
-            <button
-              type="button"
-              class="ib-go"
-              :disabled="!formats.length || busy"
-              @click="startConvert"
-            >
-              <span class="ib-go__pulse" aria-hidden="true"></span>
-              {{ busy ? 'PRESS RUNNING…' : 'START PRESS' }}
+            <div class="ib-lab">压缩质量</div>
+            <label class="ib-quality">
+              <input type="checkbox" v-model="qualityOn" @change="pushOptions" />
+              <span>Quality</span>
+              <input type="number" min="0" max="100" v-model.number="quality" @change="pushOptions" />
+            </label>
+            <button type="button" class="ib-go" :disabled="!formats.length || busy" @click="startConvert">
+              {{ busy ? '转换中…' : '开始' }}
             </button>
             <div class="ib-prog" v-if="busy || progress > 0">
               <div class="ib-prog__bar" :style="{ width: progress + '%' }"></div>
             </div>
-            <p class="ib-side__note">至少勾选一种格式才能启动</p>
           </div>
         </aside>
       </div>
 
       <footer class="ib-status">
         <span>任务 {{ items.length }}</span>
-        <span class="ib-status__dots"><i v-for="n in items.length" :key="n"></i></span>
         <span class="ib-status__grow"></span>
-        <button type="button" class="ib-ghost" @click="onPick">继续导入</button>
+        <button type="button" class="ib-ghost ib-ghost--del" title="删除当前" @click="removeCurrent">删除当前</button>
       </footer>
     </section>
   </div>
@@ -216,19 +168,29 @@ export default {
     return {
       theme: 'dark',
       drag: false,
-      filmShut: false,
-      sideShut: false,
+      settingsOpen: true,
       selected: 0,
       activeFrame: 0,
       formats: [],
       fps: 25,
       loop: 0,
       outputName: '',
+      qualityOn: false,
+      quality: 80,
       thumbs: [],
+      hoverIdx: -1,
+      hoverTimer: null,
+      hoverFrame: 0,
       busy: false
     }
   },
   computed: {
+    themeClass () {
+      return this.theme === 'light' ? 'is-theme-light' : 'is-theme-dark'
+    },
+    themeTitle () {
+      return this.theme === 'dark' ? '切换到亮色' : '切换到暗色'
+    },
     items () {
       return this.$store.getters.getterItems
     },
@@ -239,25 +201,15 @@ export default {
       return ALL_FORMATS
     },
     frameCount () {
-      const c = this.current
-      return (c && c.basic && c.basic.fileList && c.basic.fileList.length) || 0
+      return this.frameCountOf(this.current)
     },
     scheduleLabel () {
-      const p = this.current && this.current.process
-      if (!p) { return 'IDLE' }
-      if (p.schedule === 1) { return 'OK' }
-      if (p.schedule === -1) { return 'FAIL' }
-      if (p.schedule > 0 && p.schedule < 1) { return Math.round(p.schedule * 100) + '%' }
-      return 'IDLE'
-    },
-    themeTitle () {
-      return this.theme === 'dark' ? '切换到亮色' : '切换到暗色'
+      return this.scheduleOf(this.current)
     },
     progress () {
       const p = this.current && this.current.process
       if (!p) { return 0 }
-      if (p.schedule === 1) { return 100 }
-      if (p.schedule === -1) { return 100 }
+      if (p.schedule === 1 || p.schedule === -1) { return 100 }
       if (p.schedule > 0 && p.schedule < 1) { return Math.round(p.schedule * 100) }
       return 0
     }
@@ -279,9 +231,10 @@ export default {
   },
   created () {
     try {
-      if (window.storage && window.storage.getItem('uiTheme') === 'light') {
-        this.theme = 'light'
-      }
+      const t = window.storage && window.storage.getItem('uiTheme')
+      if (t === 'light' || t === 'dark') { this.theme = t }
+      const s = window.storage && window.storage.getItem('uiSettingsOpen')
+      if (s === '0') { this.settingsOpen = false }
     } catch (e) { /* ignore */ }
     this.syncFromItem()
   },
@@ -291,14 +244,17 @@ export default {
   },
   beforeDestroy () {
     window.removeEventListener('paste', this.onPaste)
+    this.stopHover()
   },
   methods: {
+    /* ---------- theme ---------- */
     toggleTheme () {
       this.theme = this.theme === 'dark' ? 'light' : 'dark'
       try {
         if (window.storage) { window.storage.setItem('uiTheme', this.theme) }
       } catch (e) { /* ignore */ }
     },
+    /* ---------- items ---------- */
     typeOf (item) {
       return (item && item.basic && item.basic.type) || '?'
     },
@@ -312,6 +268,42 @@ export default {
     },
     pathOf (item) {
       return (item && item.basic && item.basic.inputPath) || '—'
+    },
+    frameCountOf (item) {
+      return (item && item.basic && item.basic.fileList && item.basic.fileList.length) || 0
+    },
+    scheduleOf (item) {
+      const p = item && item.process
+      if (!p) { return 'IDLE' }
+      if (p.schedule === 1) { return 'OK' }
+      if (p.schedule === -1) { return 'FAIL' }
+      if (p.schedule > 0 && p.schedule < 1) { return Math.round(p.schedule * 100) + '%' }
+      return 'IDLE'
+    },
+    coverSrc (item, index) {
+      const list = item && item.basic && item.basic.fileList
+      if (!list || !list.length) { return '' }
+      if (this.hoverIdx === index) {
+        const i = this.hoverFrame % Math.min(list.length, 48)
+        return 'file://' + list[i]
+      }
+      return 'file://' + list[0]
+    },
+    startHover (index) {
+      this.stopHover()
+      this.hoverIdx = index
+      this.hoverFrame = 0
+      this.hoverTimer = setInterval(() => {
+        this.hoverFrame += 1
+      }, 120)
+    },
+    stopHover () {
+      if (this.hoverTimer) {
+        clearInterval(this.hoverTimer)
+        this.hoverTimer = null
+      }
+      this.hoverIdx = -1
+      this.hoverFrame = 0
     },
     selectTab (index) {
       this.selected = index
@@ -340,12 +332,11 @@ export default {
       this.fps = o.frameRate || 25
       this.loop = o.loop || 0
       this.outputName = o.outputName || ''
+      if (o.quality) {
+        this.qualityOn = !!o.quality.checked
+        this.quality = o.quality.value != null ? o.quality.value : 80
+      }
       this.syncBusy()
-    },
-    toggleFormat (f) {
-      const i = this.formats.indexOf(f)
-      if (i > -1) { this.formats.splice(i, 1) } else { this.formats.push(f) }
-      this.pushOptions()
     },
     pushOptions () {
       if (!this.current) { return }
@@ -353,9 +344,19 @@ export default {
         outputFormat: this.formats.slice(),
         frameRate: this.fps,
         loop: this.loop,
-        outputName: this.outputName
+        outputName: this.outputName,
+        quality: {
+          checked: this.qualityOn,
+          value: this.quality
+        }
       })
     },
+    toggleFormat (f) {
+      const i = this.formats.indexOf(f)
+      if (i > -1) { this.formats.splice(i, 1) } else { this.formats.push(f) }
+      this.pushOptions()
+    },
+    /* ---------- import ---------- */
     onPick () {
       ipc.invoke('dialog:openFiles', {
         properties: ['openFile', 'openDirectory', 'multiSelections']
@@ -382,27 +383,22 @@ export default {
             const _b = b.replace(/(\d+)/g, (e) => '0'.repeat(8 - Math.min(e.length, 8)) + e)
             return _a > _b ? 1 : -1
           })
-          this.$store.dispatch('add', {
-            basic: ars[i].basic,
-            options: ars[i].options
-          })
+          this.$store.dispatch('add', { basic: ars[i].basic, options: ars[i].options })
         }
         this.selected = Math.max(0, this.items.length - 1)
       }).catch((e) => { console.error(e) })
     },
     loadThumbs () {
-      this.thumbs = []
       this.activeFrame = 0
       const list = this.current && this.current.basic && this.current.basic.fileList
-      if (!list || !list.length) { return }
-      const max = Math.min(list.length, 24)
+      if (!list || !list.length) {
+        this.thumbs = []
+        return
+      }
+      const max = Math.min(list.length, 48)
       const out = []
       for (let i = 0; i < max; i++) {
-        try {
-          out.push('file://' + list[i])
-        } catch (e) {
-          out.push('')
-        }
+        out.push('file://' + list[i])
       }
       this.thumbs = out
     },
@@ -435,228 +431,127 @@ export default {
   overflow: hidden;
   background: var(--is-bg);
   color: var(--is-text);
-  transition: background 0.25s ease, color 0.25s ease;
-}
-
-.ib-noise {
-  pointer-events: none;
-  position: absolute;
-  inset: 0;
-  opacity: 0.35;
-  background-image:
-    linear-gradient(var(--is-bg-grid) 1px, transparent 1px),
-    linear-gradient(90deg, var(--is-bg-grid) 1px, transparent 1px);
-  background-size: 28px 28px;
-  mask-image: radial-gradient(ellipse at 50% 30%, #000 20%, transparent 75%);
+  font-family: var(--is-font);
+  transition: background 0.2s ease, color 0.2s ease;
 }
 
 .ib-top {
-  position: relative;
-  z-index: 2;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 18px 22px 0;
-}
+  height: 48px;
+  padding: 0 14px;
+  flex: 0 0 auto;
 
-.ib-top--ws {
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--is-border);
-  background: color-mix(in srgb, var(--is-panel) 88%, transparent);
-  backdrop-filter: blur(10px);
-  gap: 12px;
+  &--ws {
+    border-bottom: 1px solid var(--is-border);
+    background: var(--is-panel);
+  }
+
+  &__actions {
+    display: flex;
+    gap: 8px;
+  }
 }
 
 .ib-logo {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 
   &__glyph {
-    width: 28px;
-    height: 28px;
+    width: 22px;
+    height: 22px;
     display: grid;
     place-items: center;
-    border-radius: 8px;
+    border-radius: 6px;
     background: var(--is-accent);
     color: var(--is-bg);
-    font-size: 14px;
-    box-shadow: var(--is-glow);
+    font-size: 11px;
   }
 
   &__name {
-    font-size: 13px;
-    font-weight: 750;
-    letter-spacing: 0.14em;
-  }
-
-  &__sub {
-    font-size: 9px;
-    letter-spacing: 0.22em;
-    color: var(--is-text-3);
-    font-family: var(--is-mono);
-    margin-top: 2px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
   }
 }
 
 .ib-iconbtn {
-  width: 36px;
-  height: 36px;
-  border-radius: 999px;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
   border: 1px solid var(--is-border);
   background: var(--is-card);
   color: var(--is-text);
   cursor: pointer;
-  font-size: 15px;
+  display: grid;
+  place-items: center;
 
   &:hover {
     border-color: var(--is-border-hi);
     color: var(--is-accent);
   }
+
+  &__i {
+    font-size: 14px;
+    line-height: 1;
+  }
 }
 
-/* import stage */
+/* import */
 .ib-import {
   height: 100%;
   display: flex;
   flex-direction: column;
-  position: relative;
 }
 
 .ib-drop {
-  position: relative;
-  z-index: 1;
   flex: 1;
-  margin: 18px;
-  border-radius: 22px;
+  margin: 12px 16px 16px;
+  border-radius: 16px;
   border: 1px dashed var(--is-border-hi);
-  background:
-    radial-gradient(800px 320px at 50% 0%, var(--is-accent-soft), transparent 70%),
-    var(--is-panel);
-  cursor: pointer;
-  overflow: hidden;
+  background: var(--is-panel);
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  cursor: pointer;
+  text-align: center;
+  padding: 24px;
 
-  &:hover,
-  &--hot {
-    transform: translateY(-2px);
+  &:hover, &--hot {
     box-shadow: var(--is-glow);
   }
 
-  &__rings {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-
-    span {
-      position: absolute;
-      border: 1px solid var(--is-accent-dim);
-      border-radius: 50%;
-      animation: ib-spin 18s linear infinite;
-    }
-
-    span:nth-child(1) { width: 420px; height: 420px; left: 12%; top: 18%; }
-    span:nth-child(2) { width: 280px; height: 280px; right: 14%; bottom: 16%; animation-duration: 12s; animation-direction: reverse; }
-    span:nth-child(3) { width: 120px; height: 120px; right: 28%; top: 22%; animation-duration: 8s; }
+  h1 {
+    margin: 10px 0 6px;
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
   }
 
-  &__copy {
-    position: relative;
-    z-index: 1;
-    text-align: center;
-    padding: 32px;
-    max-width: 520px;
+  p {
+    margin: 0 0 18px;
+    color: var(--is-text-2);
+    font-size: 13px;
   }
 
   &__kicker {
     font-family: var(--is-mono);
     font-size: 11px;
-    letter-spacing: 0.28em;
+    letter-spacing: 0.22em;
     color: var(--is-accent);
-    margin-bottom: 14px;
-  }
-
-  h1 {
-    margin: 0 0 12px;
-    font-size: clamp(28px, 4vw, 40px);
-    line-height: 1.15;
-    font-weight: 800;
-    letter-spacing: -0.03em;
-  }
-
-  p {
-    margin: 0 0 22px;
-    color: var(--is-text-2);
-    font-size: 13px;
   }
 
   &__cta {
-    display: inline-flex;
-    padding: 12px 20px;
+    padding: 10px 18px;
     border-radius: 999px;
     background: var(--is-accent);
     color: var(--is-bg);
-    font-weight: 750;
+    font-weight: 700;
     font-size: 13px;
-    letter-spacing: 0.06em;
   }
-
-  &__pills {
-    list-style: none;
-    margin: 18px 0 0;
-    padding: 0;
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 8px;
-
-    li {
-      font-size: 11px;
-      font-family: var(--is-mono);
-      letter-spacing: 0.04em;
-      color: var(--is-text-2);
-      border: 1px solid var(--is-border);
-      border-radius: 999px;
-      padding: 4px 10px;
-      background: var(--is-accent-soft);
-    }
-  }
-
-  &__ticker {
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    display: flex;
-    gap: 28px;
-    padding: 10px 0;
-    overflow: hidden;
-    font-family: var(--is-mono);
-    font-size: 10px;
-    letter-spacing: 0.2em;
-    color: var(--is-text-3);
-    border-top: 1px solid var(--is-border);
-    background: color-mix(in srgb, var(--is-bg) 70%, transparent);
-    animation: ib-marquee 22s linear infinite;
-    width: max-content;
-  }
-}
-
-.ib-foot {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-  padding: 0 16px 16px;
-  font-size: 11px;
-  color: var(--is-text-3);
-  font-family: var(--is-mono);
-
-  &__sep { opacity: 0.4; }
 }
 
 /* workspace */
@@ -664,115 +559,208 @@ export default {
   height: 100%;
   display: flex;
   flex-direction: column;
-  position: relative;
-}
-
-.ib-tabs {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  overflow-x: auto;
-  flex: 1;
-  min-width: 0;
-  scrollbar-width: thin;
-}
-
-.ib-tab {
-  appearance: none;
-  border: 1px solid var(--is-border);
-  background: var(--is-card);
-  color: var(--is-text-2);
-  border-radius: 999px;
-  padding: 7px 12px;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  font-size: 12px;
-  max-width: 180px;
-
-  span {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  &--on {
-    border-color: var(--is-border-hi);
-    color: var(--is-text);
-    background: var(--is-accent-dim);
-  }
-
-  &--add {
-    padding: 7px 12px;
-    color: var(--is-accent);
-  }
-
-  &--del {
-    padding: 7px 12px;
-    color: var(--is-bad);
-  }
-
-  &__pip {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--is-accent);
-    flex: 0 0 auto;
-
-    &[data-t='APNG'] { background: var(--is-ok); }
-    &[data-t='GIF'] { background: var(--is-warn); }
-  }
 }
 
 .ib-body {
   flex: 1;
   min-height: 0;
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 0;
-  position: relative;
-  z-index: 1;
+  display: flex;
 }
 
-.ib-stage {
-  min-width: 0;
-  overflow: auto;
-  padding: 18px;
+/* left list */
+.ib-list {
+  width: 280px;
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--is-border);
+  background: var(--is-panel);
+  min-height: 0;
+
+  &__scroll {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    /* 自定义滚动条 */
+    scrollbar-width: thin;
+    scrollbar-color: var(--is-border-hi) transparent;
+
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: var(--is-border-hi);
+      border-radius: 999px;
+    }
+  }
 }
 
 .ib-card {
-  border-radius: 18px;
+  appearance: none;
   border: 1px solid var(--is-border);
-  background: var(--is-panel);
-  box-shadow: var(--is-shadow);
+  background: var(--is-card);
+  border-radius: 12px;
+  padding: 8px;
+  display: grid;
+  grid-template-columns: 72px 1fr auto;
+  gap: 8px;
+  align-items: center;
+  cursor: pointer;
+  text-align: left;
+  color: inherit;
+  position: relative;
+
+  &:hover {
+    border-color: var(--is-border-hi);
+    background: var(--is-card-hi);
+  }
+
+  &--on {
+    border-color: var(--is-accent);
+    box-shadow: 0 0 0 1px var(--is-accent-dim);
+  }
+
+  &__cover {
+    width: 72px;
+    height: 72px;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #000;
+    position: relative;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+  }
+
+  &__ph {
+    display: grid;
+    place-items: center;
+    height: 100%;
+    font-size: 10px;
+    color: var(--is-text-3);
+  }
+
+  &__type {
+    position: absolute;
+    left: 4px;
+    top: 4px;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.55);
+    color: var(--is-accent);
+
+    &[data-t='APNG'] { color: var(--is-ok); }
+    &[data-t='GIF'] { color: var(--is-warn); }
+  }
+
+  &__meta {
+    min-width: 0;
+  }
+
+  &__name {
+    font-size: 12px;
+    font-weight: 650;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__sub {
+    margin-top: 4px;
+    font-size: 10px;
+    color: var(--is-text-3);
+    font-family: var(--is-mono);
+  }
+
+  &__gear {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    color: var(--is-text-3);
+    cursor: pointer;
+    font-size: 14px;
+    padding: 4px;
+    border-radius: 6px;
+
+    &:hover {
+      color: var(--is-accent);
+      background: var(--is-accent-soft);
+    }
+  }
+}
+
+.ib-add {
+  flex: 0 0 auto;
+  margin: 0 10px 10px;
+  height: 36px;
+  border-radius: 10px;
+  border: 1px dashed var(--is-border-hi);
+  background: transparent;
+  color: var(--is-accent);
+  font-size: 18px;
+  font-weight: 500;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--is-accent-soft);
+  }
+}
+
+/* main */
+.ib-main {
+  flex: 1;
+  min-width: 0;
+  overflow: auto;
+  padding: 14px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--is-border-hi) transparent;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: var(--is-border-hi);
+    border-radius: 999px;
+  }
 }
 
 .ib-focus {
-  padding: 16px 16px 12px;
+  border: 1px solid var(--is-border);
+  background: var(--is-panel);
+  border-radius: 14px;
+  padding: 14px;
 
-  &__bar {
+  &__head {
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: 12px;
     margin-bottom: 14px;
   }
 
   &__text {
-    min-width: 0;
     flex: 1;
+    min-width: 0;
   }
 
   &__title {
-    font-size: 16px;
+    font-size: 15px;
     font-weight: 700;
-    letter-spacing: -0.02em;
   }
 
   &__path {
     font-size: 11px;
-    font-family: var(--is-mono);
     color: var(--is-text-3);
+    font-family: var(--is-mono);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -786,202 +774,162 @@ export default {
 
 .ib-tag {
   flex: 0 0 auto;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 800;
-  letter-spacing: 0.08em;
-  padding: 4px 10px;
+  padding: 3px 8px;
   border-radius: 999px;
   background: var(--is-accent-dim);
   color: var(--is-accent);
-  border: 1px solid var(--is-border-hi);
 
-  &[data-t='APNG'] {
-    color: var(--is-ok);
-    border-color: color-mix(in srgb, var(--is-ok) 40%, transparent);
-    background: color-mix(in srgb, var(--is-ok) 12%, transparent);
-  }
-
-  &[data-t='GIF'] {
-    color: var(--is-warn);
-    border-color: color-mix(in srgb, var(--is-warn) 40%, transparent);
-    background: color-mix(in srgb, var(--is-warn) 12%, transparent);
-  }
+  &[data-t='APNG'] { color: var(--is-ok); }
+  &[data-t='GIF'] { color: var(--is-warn); }
 }
 
 .ib-meter {
-  min-width: 72px;
-  padding: 8px 10px;
-  border-radius: 10px;
+  min-width: 68px;
+  padding: 6px 8px;
+  border-radius: 8px;
   background: var(--is-card);
   border: 1px solid var(--is-border);
   text-align: center;
 
   b {
     display: block;
-    font-size: 14px;
+    font-size: 13px;
     font-family: var(--is-mono);
   }
-
   span {
     font-size: 9px;
-    letter-spacing: 0.14em;
     color: var(--is-text-3);
+    letter-spacing: 0.1em;
   }
-}
-
-.ib-filmwrap {
-  border-top: 1px solid var(--is-border);
-  padding-top: 8px;
-}
-
-.ib-fold {
-  appearance: none;
-  border: 0;
-  background: transparent;
-  color: var(--is-text-3);
-  font-size: 10px;
-  letter-spacing: 0.2em;
-  font-family: var(--is-mono);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  padding: 4px 2px 10px;
-
-  &:hover { color: var(--is-accent); }
-
-  &__chev { font-size: 12px; }
 }
 
 .ib-film {
-  display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  padding-bottom: 6px;
+  border: 1px solid var(--is-border);
+  border-radius: 10px;
+  background: var(--is-card);
+
+  &__track {
+    display: flex;
+    gap: 8px;
+    padding: 10px;
+    overflow-x: auto;
+    min-height: 100px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--is-accent) transparent;
+
+    &::-webkit-scrollbar {
+      height: 6px;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: var(--is-accent);
+      border-radius: 999px;
+    }
+  }
 
   &__empty {
     width: 100%;
-    text-align: center;
-    padding: 28px;
+    display: grid;
+    place-items: center;
     color: var(--is-text-3);
     font-size: 12px;
-    border: 1px dashed var(--is-border);
-    border-radius: 12px;
+    min-height: 80px;
   }
 }
 
 .ib-cell {
   position: relative;
   flex: 0 0 auto;
-  width: 88px;
-  height: 88px;
-  border-radius: 10px;
+  width: 84px;
+  height: 84px;
+  border-radius: 8px;
   border: 1px solid var(--is-border);
-  background: #000;
   overflow: hidden;
-  padding: 0;
   cursor: pointer;
-  transition: transform 0.15s ease, border-color 0.15s ease;
+  background: #000;
 
   img {
     width: 100%;
     height: 100%;
     object-fit: cover;
     display: block;
-    opacity: 0.92;
   }
 
   em {
     position: absolute;
-    left: 6px;
-    bottom: 4px;
+    left: 4px;
+    bottom: 2px;
     font-style: normal;
     font-size: 10px;
     font-family: var(--is-mono);
     color: #fff;
-    text-shadow: 0 1px 3px #000;
+    text-shadow: 0 1px 2px #000;
   }
 
-  &:hover {
-    transform: translateY(-3px) scale(1.02);
-    border-color: var(--is-border-hi);
-  }
-
+  &:hover { border-color: var(--is-border-hi); }
   &--on {
     border-color: var(--is-accent);
     box-shadow: var(--is-glow);
   }
 }
 
-/* side panel */
+/* side settings */
 .ib-side {
   width: 300px;
+  flex: 0 0 auto;
   border-left: 1px solid var(--is-border);
   background: var(--is-panel);
   display: flex;
-  flex-direction: column;
-  transition: width 0.2s ease;
+  min-height: 0;
+  transition: width 0.18s ease;
 
   &--shut {
-    width: 44px;
+    width: 36px;
   }
 
-  &__toggle {
+  &__icon {
+    flex: 0 0 36px;
     appearance: none;
     border: 0;
+    border-right: 1px solid var(--is-border);
     background: transparent;
     color: var(--is-text-2);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    padding: 14px 14px;
     cursor: pointer;
-    font-size: 11px;
-    letter-spacing: 0.16em;
-    font-family: var(--is-mono);
-    border-bottom: 1px solid var(--is-border);
-    writing-mode: horizontal-tb;
+    font-size: 16px;
 
     &:hover { color: var(--is-accent); }
   }
 
-  &--shut &__toggle {
-    writing-mode: vertical-rl;
-    height: 100%;
-    border-bottom: 0;
-    border-left: 0;
-    padding: 16px 0;
-  }
-
   &__body {
-    padding: 14px;
-    overflow: auto;
     flex: 1;
+    min-width: 0;
+    overflow: auto;
+    padding: 14px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--is-border-hi) transparent;
   }
 
-  &__gap { height: 18px; }
-
-  &__note {
-    margin: 10px 0 0;
-    font-size: 11px;
-    color: var(--is-text-3);
-    text-align: center;
+  &__title {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    margin-bottom: 8px;
   }
 }
 
 .ib-lab {
   font-size: 10px;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.14em;
   color: var(--is-text-3);
   font-family: var(--is-mono);
-  margin: 12px 0 8px;
+  margin: 14px 0 6px;
 }
 
 .ib-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
 }
 
 .ib-chip {
@@ -990,16 +938,12 @@ export default {
   background: transparent;
   color: var(--is-text-2);
   border-radius: 999px;
-  padding: 8px 12px;
+  padding: 6px 12px;
   font-size: 12px;
   font-weight: 650;
   cursor: pointer;
 
-  &:hover {
-    border-color: var(--is-border-hi);
-    color: var(--is-text);
-  }
-
+  &:hover { border-color: var(--is-border-hi); }
   &--on {
     background: var(--is-accent);
     border-color: var(--is-accent);
@@ -1019,14 +963,13 @@ export default {
   gap: 4px;
   font-size: 10px;
   color: var(--is-text-3);
-  font-family: var(--is-mono);
 
   input {
     background: var(--is-card);
     border: 1px solid var(--is-border);
     color: var(--is-text);
-    border-radius: 8px;
-    padding: 8px;
+    border-radius: 6px;
+    padding: 7px;
     font-family: var(--is-mono);
 
     &:focus {
@@ -1042,8 +985,8 @@ export default {
   background: var(--is-card);
   border: 1px solid var(--is-border);
   color: var(--is-text);
-  border-radius: 8px;
-  padding: 9px 10px;
+  border-radius: 6px;
+  padding: 8px;
   font-size: 12px;
 
   &:focus {
@@ -1052,79 +995,40 @@ export default {
   }
 }
 
+.ib-quality {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--is-text-2);
+
+  input[type='number'] {
+    width: 64px;
+    background: var(--is-card);
+    border: 1px solid var(--is-border);
+    color: var(--is-text);
+    border-radius: 6px;
+    padding: 6px;
+    font-family: var(--is-mono);
+  }
+}
+
 .ib-go {
-  position: relative;
   width: 100%;
+  margin-top: 18px;
   appearance: none;
   border: 0;
   border-radius: 999px;
-  padding: 14px 16px;
-  font-size: 12px;
+  padding: 12px;
+  font-size: 13px;
   font-weight: 800;
-  letter-spacing: 0.14em;
   cursor: pointer;
   background: var(--is-accent);
   color: var(--is-bg);
-  overflow: hidden;
 
   &:disabled {
     opacity: 0.35;
     cursor: not-allowed;
-  }
-
-  &__pulse {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(120deg, transparent 30%, rgba(255, 255, 255, 0.35), transparent 70%);
-    transform: translateX(-100%);
-  }
-
-  &:not(:disabled):hover &__pulse {
-    animation: ib-sheen 0.8s ease;
-  }
-}
-
-.ib-status {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 16px;
-  border-top: 1px solid var(--is-border);
-  font-size: 11px;
-  color: var(--is-text-2);
-  font-family: var(--is-mono);
-
-  &__dots {
-    display: flex;
-    gap: 4px;
-
-    i {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: var(--is-accent);
-      opacity: 0.85;
-    }
-  }
-
-  &__grow { flex: 1; }
-}
-
-.ib-ghost {
-  appearance: none;
-  border: 1px solid var(--is-border);
-  background: transparent;
-  color: var(--is-text-2);
-  border-radius: 999px;
-  padding: 6px 12px;
-  font-size: 11px;
-  cursor: pointer;
-
-  &:hover {
-    color: var(--is-accent);
-    border-color: var(--is-border-hi);
   }
 }
 
@@ -1142,16 +1046,32 @@ export default {
   }
 }
 
-@keyframes ib-spin {
-  to { transform: rotate(360deg); }
+.ib-status {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  border-top: 1px solid var(--is-border);
+  font-size: 11px;
+  color: var(--is-text-2);
+  font-family: var(--is-mono);
+  background: var(--is-panel);
+
+  &__grow { flex: 1; }
 }
 
-@keyframes ib-marquee {
-  from { transform: translateX(0); }
-  to { transform: translateX(-50%); }
-}
+.ib-ghost {
+  appearance: none;
+  border: 1px solid var(--is-border);
+  background: transparent;
+  color: var(--is-text-2);
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: 11px;
+  cursor: pointer;
 
-@keyframes ib-sheen {
-  to { transform: translateX(100%); }
+  &:hover { color: var(--is-accent); border-color: var(--is-border-hi); }
+  &--del:hover { color: var(--is-bad); border-color: var(--is-bad); }
 }
 </style>
