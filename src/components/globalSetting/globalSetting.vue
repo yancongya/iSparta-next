@@ -27,18 +27,32 @@
         <el-input type="number" v-model="setting.options.quality.value" max="100" min="0" size="mini" value="100" @blur="qualityBlur"></el-input>
         <i>(0-100)</i>
       </el-form-item>
+      <el-form-item :label="$t('outputTo')">
+        <el-radio-group v-model="setting.options.outputTo.mode" size="mini">
+          <el-radio-button label="output">{{ $t("outputToOutput") }}</el-radio-button>
+          <el-radio-button label="beside">{{ $t("outputToBeside") }}</el-radio-button>
+          <el-radio-button label="custom">{{ $t("outputToCustom") }}</el-radio-button>
+        </el-radio-group>
+      </el-form-item>
+      <el-form-item v-if="setting.options.outputTo && setting.options.outputTo.mode==='custom'" :label="$t('outputToCustom')">
+        <el-input v-model="setting.options.outputTo.customPath" size="mini" :placeholder="$t('outputToPathPh')"></el-input>
+      </el-form-item>
+      <el-form-item :label="$t('outputToTemplate')">
+        <el-input v-model="setting.options.outputTo.template" size="mini" placeholder="{srcPath}/output"></el-input>
+      </el-form-item>
       <el-form-item :label="$t('sizeLimit')">
         <el-checkbox v-model="setting.options.sizeLimit.enabled">{{ $t("sizeLimitEnable") }}</el-checkbox>
       </el-form-item>
       <el-form-item :label="$t('sizeLimitMax')">
         <el-input
-          :value="sizeValueText"
+          :value="sizeDraft !== null ? sizeDraft : sizeValueText"
           size="mini"
-          type="number"
-          min="0"
-          step="any"
+          type="text"
+          inputmode="decimal"
           placeholder="1"
-          @input="onSizeValueInput"
+          @focus="onSizeFocus"
+          @input="onSizeDraftInput"
+          @blur="onSizeBlur"
         ></el-input>
         <el-select v-model="sizeUnit" size="mini" style="width:72px;margin-left:6px">
           <el-option label="MB" value="MB"></el-option>
@@ -88,10 +102,18 @@ export default {
         maxTries: 10
       }
     }
+    if (setting && setting.options && !setting.options.outputTo) {
+      setting.options.outputTo = {
+        mode: 'output',
+        customPath: '',
+        template: ''
+      }
+    }
     return {
       setting: setting,
       dialogFormVisible: false,
-      formLabelWidth: '120px'
+      formLabelWidth: '120px',
+      sizeDraft: null
     }
   },
   mounted(){
@@ -133,8 +155,16 @@ export default {
       }
       return 1024 * 1024
     },
-    onSizeValueInput (raw) {
-      const n = parseFloat(String(raw).replace(',', '.'))
+    onSizeFocus () {
+      this.sizeDraft = this.sizeValueText
+    },
+    onSizeDraftInput (raw) {
+      this.sizeDraft = String(raw == null ? '' : raw)
+    },
+    onSizeBlur () {
+      const raw = this.sizeDraft
+      this.sizeDraft = null
+      const n = parseFloat(String(raw == null ? '' : raw).replace(',', '.'))
       if (!isFinite(n) || n <= 0) { return }
       if (!this.setting.options.sizeLimit) {
         this.$set(this.setting.options, 'sizeLimit', {
@@ -168,6 +198,7 @@ export default {
     },
     resetVarible(){
       this.setting = JSON.parse(window.storage.getItem('globalSetting'))
+      this.sizeDraft = null
       if (!this.setting.options.sizeLimit) {
         this.$set(this.setting.options, 'sizeLimit', {
           enabled: false,
@@ -178,6 +209,13 @@ export default {
           autoQuality: true,
           step: 5,
           maxTries: 10
+        })
+      }
+      if (!this.setting.options.outputTo) {
+        this.$set(this.setting.options, 'outputTo', {
+          mode: 'output',
+          customPath: '',
+          template: ''
         })
       }
     },

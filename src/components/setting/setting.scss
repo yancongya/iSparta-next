@@ -133,6 +133,13 @@ input[type="number"] {
     width: 72px;
     margin-left: 6px;
   }
+  .output-preview {
+    font-size: 11px;
+    color: var(--is-text-3);
+    font-family: var(--is-mono);
+    word-break: break-all;
+    margin: 0 0 8px;
+  }
   .ui-border-b {
     border-bottom-color: var(--is-border);
   }

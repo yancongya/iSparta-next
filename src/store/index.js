@@ -62,6 +62,11 @@ const defaultState = {
       autoQuality: true,
       step: 5,
       maxTries: 10
+    },
+    'outputTo': {
+      mode: 'output',
+      customPath: '',
+      template: ''
     }
   },
   basic: {

@@ -54,4 +54,13 @@ module.exports = {
     "sizeLimitDeleted": "Deleted (over limit)",
     "sizeLimitRetry": "Over limit, quality→",
     "sizeLimitAdjusted": " (size gate)",
+    // output path
+    "outputTo": "Output path",
+    "outputToOutput": "Source/output",
+    "outputToBeside": "Beside folder",
+    "outputToCustom": "Custom folder",
+    "outputToPathPh": "Pick or type folder",
+    "outputToPick": "Browse…",
+    "outputToTemplate": "Path template (optional)",
+    "outputToPreview": "Output to",
 }
