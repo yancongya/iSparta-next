@@ -96,7 +96,9 @@ export default {
       if (!filePath) { return '' }
       var cached = this.thumbCache[filePath]
       if (cached) { return cached }
-      var placeholder = 'file://' + filePath
+      var norm = String(filePath).replace(/\\/g, '/')
+      var withSlash = norm.charAt(0) === '/' ? norm : '/' + norm
+      var placeholder = 'isparta-file://' + encodeURI(withSlash).replace(/#/g, '%23')
       var self = this
       var size = 120
       var img = new Image()
