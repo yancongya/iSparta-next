@@ -10,19 +10,19 @@
 
     <span class="bar-label">
       {{ $t('inputItems') }}
-      <b class="bar-count">{{ itemCount }}</b>
+      <b class="bar-count"><is-number-tween :value="itemCount" /></b>
     </span>
 
     <!-- 统计：一眼看出成功/失败/进行中，不必逐条扫列表 -->
     <span v-if="itemCount" class="bar-stats">
       <span v-if="doneCount" class="bar-stat is-done" :title="$t('statDone')">
-        <is-icon name="check-circle" size="sm" />{{ doneCount }}
+        <is-icon name="check-circle" size="sm" /><is-number-tween :value="doneCount" />
       </span>
       <span v-if="failCount" class="bar-stat is-fail" :title="$t('statFail')">
-        <is-icon name="x-circle" size="sm" />{{ failCount }}
+        <is-icon name="x-circle" size="sm" /><is-number-tween :value="failCount" />
       </span>
       <span v-if="runningCount" class="bar-stat is-running" :title="$t('statRunning')">
-        <is-icon name="loader" size="sm" spin />{{ runningCount }}
+        <is-icon name="loader" size="sm" spin /><is-number-tween :value="runningCount" />
       </span>
     </span>
 
@@ -47,6 +47,8 @@
 </template>
 
 <script>
+import confetti from '../../ui-next/confetti'
+
 export default {
   data () {
     return { pressed: '' }
@@ -104,6 +106,22 @@ export default {
     this._onKeyUp = () => { this.pressed = '' }
     window.addEventListener('keydown', this._onKey)
     window.addEventListener('keyup', this._onKeyUp)
+  },
+  watch: {
+    // 彩带防误触发：只有本会话里真的有任务跑起来过才庆祝。
+    // 否则「删除唯一未完成项凑成 100%」这种收尾也会放烟花。
+    runningCount (n) {
+      if (n > 0) { this._wasRunning = true }
+    },
+    itemCount (n) {
+      if (n === 0) { this._wasRunning = false }
+    },
+    totalPercent (nv, ov) {
+      if (nv === 100 && ov !== 100 && this.itemCount && this._wasRunning) {
+        this._wasRunning = false
+        confetti.celebrate()
+      }
+    }
   },
   beforeDestroy () {
     window.removeEventListener('keydown', this._onKey)
