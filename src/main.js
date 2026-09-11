@@ -1,3 +1,6 @@
+// 必须保持第一个 import：浏览器调试时要在 store 顶层求值前注入 mock 桥
+// （Electron 生产运行时 preload 更早注入，此模块自动空转）
+import './util/mock-bridge'
 import Vue from 'vue'
 import App from './App.vue'
 import router from './router'
