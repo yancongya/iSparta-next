@@ -100,6 +100,7 @@
 
   &:hover {
     box-shadow: var(--is-glow);
+    transform: translateY(-2px);
   }
 
   // 拖拽悬停：整块区域「接住」文件的反馈
@@ -110,9 +111,13 @@
     box-shadow: var(--is-glow);
     transform: scale(1.005);
 
+    // 图标持续上下弹跳 + 接住时整体过冲放大：拖入等待期的「活力感」
+    animation: is-drop-catch var(--is-dur-slow) var(--is-ease-overshoot);
+
     .ib-drop__icon {
       transform: translateY(4px) scale(1.12);
       background: var(--is-accent-dim);
+      animation: is-drop-bounce 0.5s var(--is-ease-std) infinite alternate;
     }
   }
 

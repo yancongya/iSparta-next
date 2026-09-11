@@ -6,8 +6,9 @@
      2. 静态刻度（间距/圆角/字号/时长/层级，与主题无关）
      3. 基础层（复位、滚动条、选区、焦点、共享关键帧）
    约定：组件样式禁止硬编码色值与魔法间距，一律引用本文件变量。
-   运行时为 Electron 13 / Chromium 91，禁用 color-mix()、oklch()、:has()、
-   CSS 嵌套等新特性；本文件保持纯 CSS，不依赖预处理器。
+   运行时为 Electron 28 / Chromium 120（sandbox + contextIsolation）。
+   新 CSS 特性（color-mix/oklch/:has/嵌套）技术可用，但本项目约定
+   保持渐进写法：动效只用 transform/opacity，本文件保持纯 CSS。
    ========================================================================== */
 
 /* --------------------------------------------------------------------------
@@ -56,6 +57,9 @@
   --is-ease-std: cubic-bezier(0.4, 0, 0.2, 1);
   --is-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --is-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  /* 入场过冲（源自参考项目「即压」的物理感配方）：
+     overshoot 用于元素进入/弹出，settle 用于位移归位 */
+  --is-ease-overshoot: cubic-bezier(0.175, 0.885, 0.32, 1.275);
 
   /* 层级（预留区间，避免 +1 竞争） */
   --is-z-base: 1;
@@ -391,6 +395,47 @@ button {
 @keyframes is-fade-up {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+/* 分段选择器选中落位：轻度过冲放大再归位 */
+@keyframes is-segmented-in {
+  0% { transform: scale(0.92); }
+  60% { transform: scale(1.04); }
+  100% { transform: scale(1); }
+}
+
+/* 输入框聚焦呼吸：光晕轻放大后收敛到 --is-focus */
+@keyframes is-input-focus {
+  0% { box-shadow: 0 0 0 0 rgba(var(--is-accent-rgb), 0); }
+  55% { box-shadow: 0 0 0 5px rgba(var(--is-accent-rgb), 0.22); }
+  100% { box-shadow: var(--is-focus); }
+}
+
+/* 列表项删除后相邻项归位时的弹跳落地 */
+@keyframes is-list-settle {
+  0% { transform: scale(1); }
+  45% { transform: scale(1.015); }
+  100% { transform: scale(1); }
+}
+
+/* 拖放区「接住」瞬间：从常态弹到放大态 */
+@keyframes is-drop-catch {
+  0% { transform: scale(1); }
+  60% { transform: scale(1.012); }
+  100% { transform: scale(1.005); }
+}
+
+/* 拖放区图标等待弹跳（alternate 往复） */
+@keyframes is-drop-bounce {
+  from { transform: translateY(4px) scale(1.12); }
+  to { transform: translateY(-6px) scale(1.18); }
+}
+
+/* 进度条完成确认：轻放大回落 */
+@keyframes is-progress-done {
+  0% { transform: scaleX(1); }
+  40% { transform: scaleX(1.25); }
+  100% { transform: scaleX(1); }
 }
 
 /* 尊重系统「减少动态效果」偏好 */

@@ -363,6 +363,12 @@
   &--cool    { background: var(--is-cool-bg);    color: var(--is-cool-fg);    border-color: rgba(var(--is-cool-rgb), 0.3); }
   &--violet  { background: var(--is-violet-bg);  color: var(--is-violet-fg);  border-color: rgba(var(--is-violet-rgb), 0.3); }
   &--plain   { background: var(--is-hover);      color: var(--is-text-2);     border-color: var(--is-border); }
+
+  // 出场即弹入 + hover 轻浮：格式徽章等小标签的即时反馈
+  animation: is-pop var(--is-dur-slow) var(--is-ease-overshoot);
+  transition: transform var(--is-dur-base) var(--is-ease-spring);
+
+  &:hover { transform: translateY(-1px); }
 }
 
 // --------------------------------------------------------------------------
@@ -390,6 +396,8 @@
   &.is-focus {
     border-color: var(--is-accent);
     box-shadow: var(--is-focus);
+    // 聚焦呼吸：光晕从无到有轻放大再收敛，提示「输入就绪」
+    animation: is-input-focus var(--is-dur-slow) var(--is-ease-out);
   }
 
   &__inner {
@@ -620,7 +628,8 @@
     cursor: pointer;
     transition: color var(--is-dur-base) var(--is-ease-std),
       background-color var(--is-dur-base) var(--is-ease-std),
-      box-shadow var(--is-dur-base) var(--is-ease-std);
+      box-shadow var(--is-dur-base) var(--is-ease-std),
+      transform var(--is-dur-fast) var(--is-ease-std);
 
     &:hover:not(:disabled) { color: var(--is-text); }
 
@@ -631,7 +640,11 @@
       color: var(--is-accent);
       font-weight: var(--is-fw-bold);
       box-shadow: var(--is-shadow-xs);
+      // 选中弹跳：进入选中态轻微过冲放大，制造「咔哒」落位感
+      animation: is-segmented-in var(--is-dur-slow) var(--is-ease-overshoot);
     }
+
+    &:active:not(:disabled) { transform: scale(0.96); }
   }
 
   &--sm .is-segmented__item {
@@ -977,10 +990,38 @@ body.is-scroll-locked {
   transition: transform var(--is-dur-slow) var(--is-ease-out);
 }
 
-.is-list-enter-active {
+.is-list-enter-active,
+.is-list-appear-active,
+/* 特异度须压过 projectList.scss 的 .mod-list .item 过渡简写（0,2,0），
+   否则入场动画被 .item 自身的 hover 过渡劫持，opacity 直接跳变 */
+.mod-list__inner > .item.is-list-enter-active,
+.mod-list__inner > .item.is-list-appear-active {
   transition: opacity var(--is-dur-slow) var(--is-ease-std),
-    transform var(--is-dur-slow) var(--is-ease-out);
+    transform var(--is-dur-slow) var(--is-ease-overshoot);
 }
+
+/* 入场 stagger：批量导入时逐项错峰（nth-child 上限 10 项，之后统一 400ms）。
+   曲线为过冲版制造「弹入」物理感。appear（首次挂载）与 enter 共用同一组延迟。 */
+.mod-list__inner > .item:nth-child(2).is-list-enter-active,
+.mod-list__inner > .item:nth-child(2).is-list-appear-active { transition-delay: 40ms; }
+.mod-list__inner > .item:nth-child(3).is-list-enter-active,
+.mod-list__inner > .item:nth-child(3).is-list-appear-active { transition-delay: 80ms; }
+.mod-list__inner > .item:nth-child(4).is-list-enter-active,
+.mod-list__inner > .item:nth-child(4).is-list-appear-active { transition-delay: 120ms; }
+.mod-list__inner > .item:nth-child(5).is-list-enter-active,
+.mod-list__inner > .item:nth-child(5).is-list-appear-active { transition-delay: 160ms; }
+.mod-list__inner > .item:nth-child(6).is-list-enter-active,
+.mod-list__inner > .item:nth-child(6).is-list-appear-active { transition-delay: 200ms; }
+.mod-list__inner > .item:nth-child(7).is-list-enter-active,
+.mod-list__inner > .item:nth-child(7).is-list-appear-active { transition-delay: 240ms; }
+.mod-list__inner > .item:nth-child(8).is-list-enter-active,
+.mod-list__inner > .item:nth-child(8).is-list-appear-active { transition-delay: 280ms; }
+.mod-list__inner > .item:nth-child(9).is-list-enter-active,
+.mod-list__inner > .item:nth-child(9).is-list-appear-active { transition-delay: 320ms; }
+.mod-list__inner > .item:nth-child(10).is-list-enter-active,
+.mod-list__inner > .item:nth-child(10).is-list-appear-active { transition-delay: 360ms; }
+.mod-list__inner > .item:nth-child(n+11).is-list-enter-active,
+.mod-list__inner > .item:nth-child(n+11).is-list-appear-active { transition-delay: 400ms; }
 
 .is-list-leave-active {
   transition: opacity var(--is-dur-base) var(--is-ease-std),
@@ -989,7 +1030,8 @@ body.is-scroll-locked {
     padding var(--is-dur-base) var(--is-ease-std);
 }
 
-.is-list-enter {
+.is-list-enter,
+.is-list-appear {
   opacity: 0;
   transform: translateY(14px) scale(0.985);
 }
