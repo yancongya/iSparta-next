@@ -41,4 +41,17 @@ module.exports = {
     "delayTitle": "delay setting",
     "preview": "preview",
     "apply": "apply",
+    // size limit
+    "sizeLimit": "Output size limit",
+    "sizeLimitEnable": "Enable size limit",
+    "sizeLimitMax": "Limit",
+    "sizeLimitAutoQuality": "Auto lower quality if over",
+    "sizeLimitAutoDelete": "Auto delete if over",
+    "sizeLimitStep": "Quality step",
+    "sizeLimitTries": "Max retries",
+    "sizeLimitTriesTip": "",
+    "sizeLimitWarn": "Over size limit",
+    "sizeLimitDeleted": "Deleted (over limit)",
+    "sizeLimitRetry": "Over limit, quality→",
+    "sizeLimitAdjusted": " (size gate)",
 }

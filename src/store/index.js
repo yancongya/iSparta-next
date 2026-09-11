@@ -52,6 +52,14 @@ const defaultState = {
     'quality': {
       checked: false,
       value: 80
+    },
+    'sizeLimit': {
+      enabled: false,
+      maxMB: 1,
+      autoDelete: false,
+      autoQuality: true,
+      step: 5,
+      maxTries: 10
     }
   },
   basic: {
@@ -102,6 +110,10 @@ if (!globalSetting) {
       // 仅当仍为旧出厂后缀 iSpt 时迁移为空，保留用户自定义后缀
       if (parsed.options.outputSuffix === 'iSpt') {
         parsed.options.outputSuffix = ''
+        changed = true
+      }
+      if (!parsed.options.sizeLimit) {
+        parsed.options.sizeLimit = _.cloneDeep(defaultState.options.sizeLimit)
         changed = true
       }
     }

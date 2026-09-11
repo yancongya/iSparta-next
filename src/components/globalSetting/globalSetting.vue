@@ -27,6 +27,26 @@
         <el-input type="number" v-model="setting.options.quality.value" max="100" min="0" size="mini" value="100" @blur="qualityBlur"></el-input>
         <i>(0-100)</i>
       </el-form-item>
+      <el-form-item :label="$t('sizeLimit')">
+        <el-checkbox v-model="setting.options.sizeLimit.enabled">{{ $t("sizeLimitEnable") }}</el-checkbox>
+      </el-form-item>
+      <el-form-item :label="$t('sizeLimitMax')">
+        <el-input type="number" v-model.number="setting.options.sizeLimit.maxMB" min="0" step="0.1" size="mini"></el-input>
+        <i>MB</i>
+      </el-form-item>
+      <el-form-item :label="$t('sizeLimitAutoQuality')">
+        <el-checkbox v-model="setting.options.sizeLimit.autoQuality"></el-checkbox>
+      </el-form-item>
+      <el-form-item :label="$t('sizeLimitAutoDelete')">
+        <el-checkbox v-model="setting.options.sizeLimit.autoDelete"></el-checkbox>
+      </el-form-item>
+      <el-form-item :label="$t('sizeLimitStep')" v-if="setting.options.sizeLimit.autoQuality">
+        <el-input type="number" v-model.number="setting.options.sizeLimit.step" min="1" max="100" size="mini"></el-input>
+      </el-form-item>
+      <el-form-item :label="$t('sizeLimitTries')" v-if="setting.options.sizeLimit.autoQuality">
+        <el-input type="number" v-model.number="setting.options.sizeLimit.maxTries" min="1" max="50" size="mini"></el-input>
+        <i>{{ $t('sizeLimitTriesTip') }}</i>
+      </el-form-item>
     </el-form>
     <div slot="footer" class="dialog-footer">
       <el-button @click="dialogFormVisible = false">{{ $t('cancel')}}</el-button>
@@ -66,6 +86,16 @@ export default {
     },
     resetVarible(){
       this.setting = JSON.parse(window.storage.getItem('globalSetting'))
+      if (!this.setting.options.sizeLimit) {
+        this.$set(this.setting.options, 'sizeLimit', {
+          enabled: false,
+          maxMB: 1,
+          autoDelete: false,
+          autoQuality: true,
+          step: 5,
+          maxTries: 10
+        })
+      }
     },
     changeVarible() {
       //save to localStorage

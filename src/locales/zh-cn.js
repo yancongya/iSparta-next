@@ -41,4 +41,17 @@ module.exports = {
     "delayTitle":"延时配置",
     "preview":"预览",
     "apply":"应用",
+    // size limit
+    "sizeLimit":"输出大小阈值",
+    "sizeLimitEnable":"启用大小阈值",
+    "sizeLimitMax":"阈值",
+    "sizeLimitAutoQuality":"超出后自动降质量",
+    "sizeLimitAutoDelete":"超出后自动删除",
+    "sizeLimitStep":"每次递减",
+    "sizeLimitTries":"最多重试",
+    "sizeLimitTriesTip":"次",
+    "sizeLimitWarn":"超出大小阈值",
+    "sizeLimitDeleted":"超出阈值已删除",
+    "sizeLimitRetry":"超限，质量→",
+    "sizeLimitAdjusted":"（已按阈值降质量）",
 }
