@@ -1,5 +1,6 @@
 <template>
   <div class="ib" :class="themeClass">
+    <globalsetting></globalsetting>
     <!-- 空态：无任务时全屏导入 -->
     <section v-if="!items.length" class="ib-import">
       <div class="ib-import__top">
@@ -56,6 +57,7 @@
 import projectList from '../../components/projectList/projectList.vue'
 import setting from '../../components/setting/setting.vue'
 import sortBar from '../../components/sortBar/sortBar.vue'
+import globalSetting from '../../components/globalSetting/globalSetting.vue'
 import { f as fsOperate } from '../../components/drag/file.js'
 
 export default {
@@ -63,7 +65,8 @@ export default {
   components: {
     'project-list': projectList,
     'setting': setting,
-    'sort-bar': sortBar
+    'sort-bar': sortBar,
+    'globalsetting': globalSetting
   },
   data () {
     return {
@@ -312,12 +315,14 @@ export default {
   &__theme {
     display: flex;
     justify-content: flex-end;
-    padding: 10px 12px 0;
+    padding: 8px 10px 0;
+    flex: 0 0 auto;
   }
 
   :deep(.mod-setting) {
     color: var(--is-text);
     flex: 1;
+    min-height: 0;
   }
 
   :deep(.mod-setting h3),

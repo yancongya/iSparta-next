@@ -78,9 +78,14 @@ export default {
   methods: {
     mediaUrl (p) {
       if (!p) { return '' }
-      const norm = String(p).replace(/\\/g, '/')
-      const withSlash = norm.charAt(0) === '/' ? norm : '/' + norm
-      return 'isparta-file://' + encodeURI(withSlash).replace(/#/g, '%23')
+      try {
+        var api = window.ispartaAPI && window.ispartaAPI.fs
+        if (api && api.readDataUrl) {
+          var r = api.readDataUrl(p)
+          if (r && r.ok && r.dataUrl) { return r.dataUrl }
+        }
+      } catch (e) { /* ignore */ }
+      return ''
     },
     
     
