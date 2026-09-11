@@ -309,6 +309,11 @@
 
     &.is-fail .progress__fill { background: var(--is-bad); }
 
+    // 完成瞬间：整条进度槽弹一下，绿色确认感
+    &.is-done {
+      animation: is-progress-done var(--is-dur-slow) var(--is-ease-overshoot);
+    }
+
     // 处理中的流光，让长任务看起来「活着」
     .progress__fill.is-shimmer::after {
       content: '';

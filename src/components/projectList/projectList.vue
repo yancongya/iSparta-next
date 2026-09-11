@@ -1,5 +1,8 @@
 <template>
   <section class="mod-list" @click="onBlankClick">
+    <!-- 注意：不加 appear —— Vue 2 transition-group 初始挂载时 enter-active 类
+         不会挂上（enter-to 残留），实测动画不生效且留脏类；stagger 仅在
+         「向已有列表追加」的常规 enter 路径上生效（已实测验证） -->
     <transition-group name="is-list" tag="div" class="mod-list__inner">
       <div
         v-for="(project, index) in projectList"
