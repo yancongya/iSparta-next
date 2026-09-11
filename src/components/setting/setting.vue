@@ -44,6 +44,26 @@
         </el-form-item>
       </el-form>
     </div>
+    <div class="ui-border-b mod-outputto">
+      <p>{{ $t("outputTo") }}</p>
+      <el-form label-width="">
+        <el-form-item>
+          <el-radio-group v-model="outputToMode" size="mini">
+            <el-radio-button label="output">{{ $t("outputToOutput") }}</el-radio-button>
+            <el-radio-button label="beside">{{ $t("outputToBeside") }}</el-radio-button>
+            <el-radio-button label="custom">{{ $t("outputToCustom") }}</el-radio-button>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item v-if="outputToMode === 'custom'">
+          <el-input v-model="outputToPath" size="mini" :placeholder="$t('outputToPathPh')"></el-input>
+          <el-button size="mini" @click="pickOutputDir">{{ $t("outputToPick") }}</el-button>
+        </el-form-item>
+        <el-form-item :label="$t('outputToTemplate')">
+          <el-input v-model="outputToTemplate" size="mini" :placeholder="'{srcPath}/output'"></el-input>
+        </el-form-item>
+        <p class="output-preview">{{ outputPathPreview }}</p>
+      </el-form>
+    </div>
     <div class="ui-border-b mod-sizelimit">
       <p>{{ $t("sizeLimit") }}</p>
       <el-form label-width="">
@@ -52,13 +72,14 @@
         </el-form-item>
         <el-form-item :label="$t('sizeLimitMax')">
           <el-input
-            v-model="sizeValueText"
+            :value="sizeDraft !== null ? sizeDraft : sizeValueText"
             size="mini"
-            type="number"
-            min="0"
-            step="any"
+            type="text"
+            inputmode="decimal"
             placeholder="1"
-            @input="onSizeValueInput"
+            @focus="onSizeFocus"
+            @input="onSizeDraftInput"
+            @blur="onSizeBlur"
           ></el-input>
           <el-select v-model="sizeUnit" size="mini" class="size-unit">
             <el-option label="MB" value="MB"></el-option>
@@ -92,10 +113,11 @@
 <script>
 import processor from '../../util/processor'
 import { ipc } from '../../util/node-env'
+import { resolveOutputPath, normalizeOutputTo } from '../../util/outputPath'
 export default {
   data () {
     return {
-      // formatStatic: ['APNG', 'GIF', 'WEBP']
+      sizeDraft: null
     }
   },
   created () {
@@ -304,6 +326,39 @@ export default {
       set (value) {
         this.pushSizeLimit({ maxTries: Number(value) || 10 })
       }
+    },
+    outputToMode: {
+      get () {
+        const o = this.curtSetting && this.curtSetting.outputTo
+        return normalizeOutputTo(o).mode
+      },
+      set (value) {
+        this.pushOutputTo({ mode: value })
+      }
+    },
+    outputToPath: {
+      get () {
+        const o = this.curtSetting && this.curtSetting.outputTo
+        return (o && o.customPath) || ''
+      },
+      set (value) {
+        this.pushOutputTo({ customPath: String(value || '') })
+      }
+    },
+    outputToTemplate: {
+      get () {
+        const o = this.curtSetting && this.curtSetting.outputTo
+        return (o && o.template) || ''
+      },
+      set (value) {
+        this.pushOutputTo({ template: String(value || '') })
+      }
+    },
+    outputPathPreview () {
+      if (this.selectedList.length !== 1) { return '' }
+      const item = this.selectedList[0]
+      const p = resolveOutputPath(item, item.options)
+      return this.$t('outputToPreview') + ': ' + p
     }
 
   },
@@ -317,8 +372,17 @@ export default {
       }
       return 1024 * 1024
     },
-    onSizeValueInput (raw) {
-      const n = parseFloat(String(raw).replace(',', '.'))
+    onSizeFocus () {
+      this.sizeDraft = this.sizeValueText
+    },
+    onSizeDraftInput (raw) {
+      // 允许清空/半成品输入，不立刻回写 store
+      this.sizeDraft = String(raw == null ? '' : raw)
+    },
+    onSizeBlur () {
+      const raw = this.sizeDraft
+      this.sizeDraft = null
+      const n = parseFloat(String(raw == null ? '' : raw).replace(',', '.'))
       if (!isFinite(n) || n <= 0) {
         return
       }
@@ -329,6 +393,31 @@ export default {
         maxMB: bytes / (1024 * 1024),
         unit: unit
       })
+    },
+    pushOutputTo (patch) {
+      const base = (this.curtSetting && this.curtSetting.outputTo) || {
+        mode: 'output',
+        customPath: '',
+        template: ''
+      }
+      const next = Object.assign({}, base, patch)
+      this.$store.dispatch('editOptions', { outputTo: next })
+      // 同步刷新当前任务 outputPath 预览
+      if (this.selectedList.length === 1) {
+        import('../../util/outputPath').then(({ resolveOutputPath }) => {
+          const item = this.selectedList[0]
+          const p = resolveOutputPath(item, Object.assign({}, item.options, { outputTo: next }))
+          this.$store.dispatch('editBasic', { outputPath: p })
+        })
+      }
+    },
+    pickOutputDir () {
+      ipc.invoke('dialog:openDirectory', {
+        defaultPath: (this.curtSetting && this.curtSetting.outputTo && this.curtSetting.outputTo.customPath) || ''
+      }).then((r) => {
+        if (!r || r.canceled || !r.filePaths || !r.filePaths[0]) { return }
+        this.pushOutputTo({ mode: 'custom', customPath: r.filePaths[0] })
+      }).catch(() => {})
     },
     pushSizeLimit (patch) {
       const base = (this.curtSetting && this.curtSetting.sizeLimit) || {

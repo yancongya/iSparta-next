@@ -54,4 +54,13 @@ module.exports = {
     "sizeLimitDeleted": "超出閾值已刪除",
     "sizeLimitRetry": "超限，質量→",
     "sizeLimitAdjusted": "（已按閾值降質量）",
+    // output path
+    "outputTo": "輸出路徑",
+    "outputToOutput": "源目錄/output",
+    "outputToBeside": "目錄旁級",
+    "outputToCustom": "自定義目錄",
+    "outputToPathPh": "選擇或輸入目錄",
+    "outputToPick": "選擇…",
+    "outputToTemplate": "路徑模板(可選)",
+    "outputToPreview": "輸出到",
 }

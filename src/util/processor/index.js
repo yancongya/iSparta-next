@@ -8,6 +8,7 @@ import Action 		from './action'
 import { fs, path, os } 	from '../node-env'
 import TYPE 		from '../../store/enum/type'
 import { enforceSizeLimit } from './sizeGate'
+import { resolveOutputPath } from '../outputPath'
 
 function stat (label) {
   try {
@@ -63,6 +64,9 @@ export default function (store, sameOutputPath, locale) {
 
     if (sameOutputPath) {
       item.basic.outputPath = sameOutputPath
+    } else {
+      // 按 outputTo 策略解析（output / beside / custom+变量）
+      item.basic.outputPath = resolveOutputPath(item, item.options)
     }
     // 记录源文件，供大小阈值重压时恢复母版
     if (item.basic.fileList && item.basic.fileList[0]) {

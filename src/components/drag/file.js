@@ -1,5 +1,6 @@
 // 依赖库
 import { fs, path } from '../../util/node-env'
+import { resolveOutputPath } from '../../util/outputPath'
 import _ from 'lodash'
 // 正则匹配
 const reg = {
@@ -120,18 +121,19 @@ class actionFiles {
     temp.options = globalSetting.options
     temp.basic.type = format
     if (format === 'PNGs') {
-      // 序列帧：输出到帧文件夹的同级目录，文件名用帧文件夹名 + _apng
+      // 序列帧：默认输出 {帧目录}/output，可由 outputTo 策略覆盖
       let folderName = path.basename(address)
       temp.options.outputName = folderName.replace(/[ ]/g, '') + '_apng'
       temp.basic.inputPath = address
-      temp.basic.outputPath = path.dirname(address)
+      temp.basic.fileList = fileList
+      temp.basic.outputPath = resolveOutputPath(temp, globalSetting.options)
     } else {
       //去除文件名空格
       temp.options.outputName = path.basename(fileList[0]).split('.')[0].replace(/[ ]/g, '') + '_' + globalSetting.options.outputSuffix
       temp.basic.inputPath = address + '/' + path.basename(fileList[0]).split('.')[0]
-      temp.basic.outputPath = address
+      temp.basic.fileList = fileList
+      temp.basic.outputPath = resolveOutputPath(temp, globalSetting.options)
     }
-    temp.basic.fileList = fileList
     items.push(temp)
   }
 
