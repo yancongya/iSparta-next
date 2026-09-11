@@ -28,9 +28,6 @@
       <header class="ib-top ib-top--ws">
         <div class="ib-logo"><span class="ib-logo__glyph">▣</span><span class="ib-logo__name">iSparta</span></div>
         <div class="ib-top__actions">
-          <button type="button" class="ib-iconbtn" title="输出设置" @click="settingsOpen = !settingsOpen">
-            <span class="ib-iconbtn__i">⚙</span>
-          </button>
           <button type="button" class="ib-iconbtn" :title="themeTitle" @click="toggleTheme">
             <span class="ib-iconbtn__i">{{ theme === 'dark' ? '☀' : '☾' }}</span>
           </button>
@@ -61,11 +58,12 @@
                 <div class="ib-card__sub">{{ frameCountOf(item) }} 帧 · {{ scheduleOf(item) }}</div>
               </div>
               <button
+                v-if="typeOf(item) === 'PNGs'"
                 type="button"
                 class="ib-card__gear"
-                title="设置此任务"
-                @click.stop="openSettingsFor(index)"
-              >⚙</button>
+                title="设置每帧间隔"
+                @click.stop="openDelayFor(index)"
+              >⏱</button>
             </button>
           </div>
           <button type="button" class="ib-add" title="继续导入" @click="onPick">＋</button>
@@ -105,7 +103,7 @@
 
         <!-- 右：可折叠设置 -->
         <aside class="ib-side" :class="{ 'ib-side--shut': !settingsOpen }">
-          <button type="button" class="ib-side__icon" :title="settingsOpen ? '收起设置' : '展开设置'" @click="settingsOpen = !settingsOpen">
+          <button type="button" class="ib-side__icon" :title="settingsOpen ? '收起输出设置' : '展开输出设置'" @click="toggleSettings">
             {{ settingsOpen ? '›' : '‹' }}
           </button>
           <div v-show="settingsOpen" class="ib-side__body">
@@ -151,6 +149,13 @@
         <span class="ib-status__grow"></span>
         <button type="button" class="ib-ghost ib-ghost--del" title="删除当前" @click="removeCurrent">删除当前</button>
       </footer>
+
+      <!-- 每帧间隔设置（仅 PNGs） -->
+      <delay-dialog
+        v-if="delayOpen && delayItem"
+        :project="delayItem"
+        @close="delayOpen = false"
+      />
     </section>
   </div>
 </template>
@@ -159,16 +164,22 @@
 import { f as fsOperate } from '../../components/drag/file.js'
 import { ipc } from '../../util/node-env'
 import processor from '../../util/processor'
+import DelayDialog from '../../components/delayDialog/index.vue'
 
 const ALL_FORMATS = ['APNG', 'GIF', 'WEBP']
 
 export default {
   name: 'UiNextHome',
+  components: {
+    'delay-dialog': DelayDialog
+  },
   data () {
     return {
       theme: 'dark',
       drag: false,
       settingsOpen: true,
+      delayOpen: false,
+      delayItem: null,
       selected: 0,
       activeFrame: 0,
       formats: [],
@@ -248,6 +259,14 @@ export default {
   },
   methods: {
     /* ---------- theme ---------- */
+    toggleSettings () {
+      this.settingsOpen = !this.settingsOpen
+      try {
+        if (window.storage) {
+          window.storage.setItem('uiSettingsOpen', this.settingsOpen ? '1' : '0')
+        }
+      } catch (e) { /* ignore */ }
+    },
     toggleTheme () {
       this.theme = this.theme === 'dark' ? 'light' : 'dark'
       try {
@@ -320,6 +339,13 @@ export default {
     openSettingsFor (index) {
       this.selectTab(index)
       this.settingsOpen = true
+    },
+    openDelayFor (index) {
+      this.selectTab(index)
+      const item = this.items[index]
+      if (!item || this.typeOf(item) !== 'PNGs') { return }
+      this.delayItem = item
+      this.delayOpen = true
     },
     removeCurrent () {
       if (!this.current) { return }
