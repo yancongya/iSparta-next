@@ -19,7 +19,8 @@
   .item {
     position: relative;
     display: grid;
-    grid-template-columns: auto 64px minmax(0, 1fr) auto;
+    // 缩略图列改为 auto：宽度由 .thumb 自身决定，容器查询降档时才能整体收缩
+    grid-template-columns: auto auto minmax(0, 1fr) auto;
     align-items: center;
     gap: var(--is-s-3);
     padding: var(--is-s-2) var(--is-s-3);
@@ -28,6 +29,8 @@
     background: var(--is-card);
     box-shadow: var(--is-shadow-xs);
     cursor: pointer;
+    // 卡片自身作为查询容器：右栏开合、窗口拖拽都会实时驱动密度降档（Electron 28 / Chromium 120 原生支持）
+    container: is-item / inline-size;
     transition: background-color var(--is-dur-base) var(--is-ease-std),
       border-color var(--is-dur-base) var(--is-ease-std),
       box-shadow var(--is-dur-base) var(--is-ease-std),
@@ -249,6 +252,8 @@
       background: none;
       color: var(--sum-fg, var(--is-text-3));
       letter-spacing: 0.01em;
+      // 芯片文字永不内部折行（「12 f/s」曾被拆成两行是窄卡片挤乱的主因）
+      white-space: nowrap;
       cursor: help;
       transition: background-color var(--is-dur-fast) var(--is-ease-std),
         border-color var(--is-dur-fast) var(--is-ease-std),
@@ -397,5 +402,63 @@
     .meta { gap: var(--is-s-2); }
     .status { min-width: 0; }
     .progress { width: 64px; }
+  }
+}
+
+// ---------- 卡片密度降档（容器查询） ----------
+// 右栏开合、面板拖宽、窗口 resize 都会实时驱动卡片换档，无需 JS。
+// 中档：缩略图收缩 + 配置芯片只留图标（数值走现有 v-tip 气泡）
+@container is-item (max-width: 480px) {
+  .mod-list {
+    .item { gap: var(--is-s-2); }
+
+    .thumb {
+      width: 44px;
+      height: 44px;
+      flex: 0 0 44px;
+    }
+
+    // 仅配置行收纯图标；输出名行（summary--out）的名字必须保留
+    .summary:not(.summary--out) {
+      gap: 2px;
+
+      .sum {
+        padding: 1px 3px;
+
+        // 只隐藏数值文字；is-icon 根元素也是 span，裸选 > span 会把图标一起藏掉
+        .sum-v { display: none; }
+      }
+    }
+
+    .outpath { font-size: var(--is-fs-md); }
+  }
+}
+
+// 窄档：只保留「标签 + 输出名 + 进度」三要素。
+// 配置值此时在右侧面板（选中项）与 hover 气泡里都完整可得，卡片不重复堆砌。
+@container is-item (max-width: 340px) {
+  .mod-list {
+    .item {
+      gap: var(--is-s-1);
+      padding: var(--is-s-1) var(--is-s-2);
+    }
+
+    .thumb {
+      width: 36px;
+      height: 36px;
+      flex: 0 0 36px;
+
+      &__badge { font-size: 9px; padding: 0 3px; }
+    }
+
+    .info { gap: 0; }
+
+    // 配置芯片行整体收起（图标也不留，信息已在右栏/气泡）
+    .summary:not(.summary--out) { display: none; }
+
+    // 变量路径模板次要，输出名优先
+    .summary--out .sum--tpl { display: none; }
+
+    .progress { width: 48px; }
   }
 }
