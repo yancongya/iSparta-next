@@ -7,7 +7,9 @@
         │  只发指令，不构建安装包
         ▼
 GitHub Actions  Release 工作流
-        │  bump 版本 → commit + tag → Win/Linux 打包 → 挂 Release
+        │  bump 版本 → commit + tag
+        │  → 自动汇总本次迭代 commit 生成 Release Notes
+        │  → Win / Linux / macOS 打包 → 挂 Release
         ▼
 https://github.com/yancongya/iSparta-next/releases
 ```
@@ -19,6 +21,7 @@ https://github.com/yancongya/iSparta-next/releases
 - 已登录 `gh`：`gh auth status` 显示 `yancongya`
 - 在 `master`，工作区干净（无未提交改动）
 - 要发的代码已合入并推送
+- 建议 commit 使用 Conventional 前缀（`feat:` / `fix:` / `docs:` / `ci:` / `chore:`），便于自动汇总
 
 ```powershell
 cd <local-repo>
@@ -69,7 +72,21 @@ Actions → **Release** → Run workflow → 选 bump / prerelease / dry_run。
 | --- | --- |
 | Windows x64 | `isparta-<ver>-win-x64.zip` |
 | Linux x64 | `isparta-<ver>-linux-x64.tar.gz` |
-| macOS | CI 不出包，本地构建后手动补传 dmg |
+| macOS arm64 | `isparta-<ver>-mac-arm64.dmg` |
+| macOS x64 | `isparta-<ver>-mac-x64.dmg` |
+
+### 自动版本说明（bot 汇总）
+
+Release 工作流会把上个 tag 到当前 HEAD 的 commit **自动分类汇总**进 Release Notes：
+
+- `feat` → 新功能  
+- `fix` → 修复  
+- `docs` / `ci` / `build` / `refactor` / `perf` / `test` → 其他  
+- 其余无前缀 commit → 其他  
+
+并附带 compare 链接与安装表。无需手写 changelog；若某次要改文案，直接在 GitHub 上 Edit release 即可。
+
+> macOS 为 CI **未签名** 构建。用户若被 Gatekeeper 拦截，见 Release 页说明（系统设置放行或 `xattr -dr com.apple.quarantine`）。
 
 ## 3. 版本号怎么选
 
