@@ -81,7 +81,7 @@ Get the latest installers from **[Releases](https://github.com/yancongya/iSparta
 | macOS | `.dmg` | x64 / arm64 |
 | Linux | `.tar.gz` | x64 |
 
-Windows / Linux are built by GitHub Actions. macOS packages are built locally and attached to the same Release.
+Windows / Linux / macOS are all built by GitHub Actions. **macOS packages are unsigned** — if Gatekeeper blocks the app, allow it in System Settings → Privacy & Security, or run `xattr -dr com.apple.quarantine` on the `.app`.
 
 ## Features
 
@@ -149,8 +149,8 @@ Outputs land in `dist_electron/`.
 
 | Workflow | File | Trigger | What it does |
 | --- | --- | --- | --- |
-| **Build Multi-Platform** | [build.yml](.github/workflows/build.yml) | push `master` / manual | Builds Win/Linux artifacts (~7 days), **no Release** |
-| **Release** | [release.yml](.github/workflows/release.yml) | manual `workflow_dispatch` | Bump version → commit + tag → build → GitHub Release |
+| **Build Multi-Platform** | [build.yml](.github/workflows/build.yml) | push `master` / manual | Builds Win/Linux/macOS artifacts (~7 days), **no Release** |
+| **Release** | [release.yml](.github/workflows/release.yml) | manual `workflow_dispatch` | Bump version → commit + tag → auto changelog → build 3 OS → GitHub Release |
 
 #### Daily builds
 

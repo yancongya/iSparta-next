@@ -14,6 +14,8 @@ win:
         - x64
   icon: ./public/icons/icon.ico
 mac:
+  # CI 无证书环境：不签名、不公证，仅出可本地打开的 dmg
+  identity: null
   target:
     - target: dmg
       arch:

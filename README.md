@@ -102,7 +102,7 @@
 | macOS | `.dmg` | x64 / arm64 |
 | Linux | `.tar.gz` | x64 |
 
-Windows / Linux 由 GitHub Actions 构建；macOS 安装包由维护者本地构建后补传到同一 Release。
+三端均由 GitHub Actions 构建。macOS 包为 **未签名** 构建：若系统拦截，可在「系统设置 → 隐私与安全性」中允许打开，或对 App 执行 `xattr -dr com.apple.quarantine`。
 
 > 需要自己编译或参与开发，请往下看「快速开始」。
 
@@ -179,8 +179,8 @@ npm run build:windows
 
 | 工作流 | 文件 | 触发 | 作用 |
 | --- | --- | --- | --- |
-| **Build Multi-Platform** | [build.yml](.github/workflows/build.yml) | push `master` / 手动 | 只构建 Win/Linux 并上传 Artifact（约 7 天），**不发 Release** |
-| **Release** | [release.yml](.github/workflows/release.yml) | 手动 `workflow_dispatch` | 自动升版本 → 提交并打 tag → 构建 → 创建 GitHub Release |
+| **Build Multi-Platform** | [build.yml](.github/workflows/build.yml) | push `master` / 手动 | 构建 Win/Linux/macOS Artifact（约 7 天），**不发 Release** |
+| **Release** | [release.yml](.github/workflows/release.yml) | 手动 `workflow_dispatch` | 自动升版本 → 提交并打 tag → 构建三端 → 创建 GitHub Release |
 
 #### 日常构建
 
@@ -209,9 +209,12 @@ gh workflow run release.yml -R yancongya/iSparta-next -f bump=patch -f prereleas
 运行成功后会：
    - 更新 `package.json` / `package-lock.json` 版本号
    - 提交 `chore(release): vX.Y.Z [skip ci]` 并创建 `vX.Y.Z` 标签
-   - 用该版本号在 GitHub runner 上构建 Win/Linux，资产命名为：
+   - **自动汇总**上个 tag 以来的 commit（feat/fix/docs/ci 等）生成 Release Notes
+   - 用该版本号在 GitHub runner 上构建 Win / Linux / macOS，资产命名为：
      - `isparta-<ver>-win-x64.zip`
      - `isparta-<ver>-linux-x64.tar.gz`
+     - `isparta-<ver>-mac-arm64.dmg`
+     - `isparta-<ver>-mac-x64.dmg`
 
 > 说明：发版提交带 `[skip ci]`，避免和日常 CI 重复构建。  
 > macOS 包不在 CI 内产出，需要本地 `npm run build` 后手动补传到同一 Release。  

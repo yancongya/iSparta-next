@@ -21,11 +21,12 @@ jobs:
           - os: windows-latest
             platform: win
             flag: --win
-            asset_suffix: win-x64
           - os: ubuntu-latest
             platform: linux
             flag: --linux
-            asset_suffix: linux-x64
+          - os: macos-latest
+            platform: mac
+            flag: --mac
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
@@ -37,8 +38,6 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      # electron-chromedriver(spectron 传递依赖)在部分平台会下载失败并中断安装，
-      # 故跳过所有安装脚本，随后单独安装 electron 运行时二进制
       - name: Install dependencies
         run: npm ci --ignore-scripts --no-audit --no-fund
 
@@ -54,27 +53,44 @@ jobs:
       - name: Collect & rename assets
         shell: bash
         env:
-          SUFFIX: ${{ matrix.asset_suffix }}
+          PLATFORM: ${{ matrix.platform }}
         run: |
           set -euo pipefail
           VERSION=$(node -p "require('./package.json').version")
           mkdir -p release
           shopt -s nullglob
           for f in dist_electron/*.dmg dist_electron/*.zip dist_electron/*.tar.gz dist_electron/*.exe dist_electron/*.AppImage; do
+            # 跳过 blockmap / yml 等更新元数据（上面 glob 本身不含，但保险）
             cp "$f" release/
           done
+          count=$(ls -1 release 2>/dev/null | wc -l | tr -d ' ')
+          if [ "$count" -eq 0 ]; then
+            echo "No build artifacts found under dist_electron" >&2
+            ls -la dist_electron || true
+            exit 1
+          fi
           for f in release/*; do
             base="$(basename "$f")"
-            ext="${base##*.}"
-            case "$ext" in
-              zip|gz|exe|dmg|AppImage)
-                if [[ "$base" == *.tar.gz ]]; then
-                  mv "$f" "release/isparta-${VERSION}-${SUFFIX}.tar.gz"
-                else
-                  mv "$f" "release/isparta-${VERSION}-${SUFFIX}.${ext}"
-                fi
-                ;;
-            esac
+            lower="$(echo "$base" | tr '[:upper:]' '[:lower:]')"
+            if [[ "$lower" == *.tar.gz ]]; then
+              ext="tar.gz"
+            else
+              ext="${base##*.}"
+            fi
+            if [[ "$PLATFORM" == "mac" ]]; then
+              if [[ "$lower" == *arm64* ]]; then
+                dest="isparta-${VERSION}-mac-arm64.dmg"
+              elif [[ "$lower" == *x64* || "$lower" == *x86_64* || "$lower" == *intel* ]]; then
+                dest="isparta-${VERSION}-mac-x64.dmg"
+              else
+                dest="isparta-${VERSION}-mac.dmg"
+              fi
+            elif [[ "$PLATFORM" == "win" ]]; then
+              dest="isparta-${VERSION}-win-x64.${ext}"
+            else
+              dest="isparta-${VERSION}-linux-x64.${ext}"
+            fi
+            mv "$f" "release/$dest"
           done
           ls -lh release
 
