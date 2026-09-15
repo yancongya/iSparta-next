@@ -80,6 +80,7 @@
 }
 
 .ib-drop {
+  position: relative;
   display: flex;
   flex: 1;
   flex-direction: column;
@@ -135,6 +136,14 @@
     font-size: 22px;
     transition: transform var(--is-dur-slow) var(--is-ease-spring),
       background-color var(--is-dur-base) var(--is-ease-std);
+  }
+
+  // 空态守望者：小精灵蹲在拖放区右上角，拖入时变兴奋态
+  &__pet {
+    position: absolute;
+    top: var(--is-s-3);
+    right: var(--is-s-4);
+    opacity: 0.9;
   }
 
   &__kicker {
