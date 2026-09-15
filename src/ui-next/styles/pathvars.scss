@@ -96,3 +96,82 @@
   &--c5 { --chip-fg: rgb(var(--is-var-5)); --chip-bg: rgba(var(--is-var-5), 0.10); --chip-line: rgba(var(--is-var-5), 0.30); }
   &--c6 { --chip-fg: rgb(var(--is-var-6)); --chip-bg: rgba(var(--is-var-6), 0.10); --chip-line: rgba(var(--is-var-6), 0.30); }
 }
+
+// --------------------------------------------------------------------------
+// 「将当前路径存为预设」书签
+// --------------------------------------------------------------------------
+// 挂在 PathVars 的 append 插槽上：与选目录按钮同一视觉家族
+.pv__bookmark {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--is-r-xs);
+  background: none;
+  color: var(--is-text-3);
+  cursor: pointer;
+  transition: color var(--is-dur-fast) var(--is-ease-std),
+    background-color var(--is-dur-fast) var(--is-ease-std),
+    border-color var(--is-dur-fast) var(--is-ease-std),
+    transform var(--is-dur-base) var(--is-ease-spring);
+
+  &:hover {
+    color: var(--is-accent);
+    background: var(--is-accent-soft);
+    transform: translateY(-1px) scale(1.06);
+  }
+
+  // 展开命名行时保持点亮，明确「正在收藏」
+  &.is-on {
+    color: var(--is-accent);
+    border-color: var(--is-border-hi);
+    background: var(--is-accent-dim);
+  }
+}
+
+.bookmark-row {
+  display: flex;
+  align-items: center;
+  gap: var(--is-s-1);
+  padding-left: 46px;
+
+  &--gs { padding-left: 0; }
+  min-width: 0;
+
+  &__in {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  &__ok {
+    color: var(--is-ok-fg);
+  }
+
+  button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border: 1px solid var(--is-border);
+    border-radius: var(--is-r-xs);
+    background: var(--is-inset);
+    color: var(--is-text-2);
+    cursor: pointer;
+    transition: background-color var(--is-dur-fast) var(--is-ease-std),
+      color var(--is-dur-fast) var(--is-ease-std),
+      border-color var(--is-dur-fast) var(--is-ease-std);
+
+    &:hover {
+      border-color: var(--is-border-strong);
+      background: var(--is-hover);
+      color: var(--is-text);
+    }
+  }
+}

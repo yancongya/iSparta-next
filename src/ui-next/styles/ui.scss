@@ -1147,3 +1147,220 @@ body.is-scroll-locked {
   flex: 1 1 0;
   min-width: 0;
 }
+
+// --------------------------------------------------------------------------
+// 输出路径预设条（IsPresetBar）
+// --------------------------------------------------------------------------
+.is-preset {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--is-s-1);
+
+  &.is-disabled {
+    opacity: 0.5;
+    pointer-events: none;
+  }
+
+  &__row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--is-s-1);
+  }
+
+  &__slot {
+    position: relative;
+    display: inline-flex;
+  }
+
+  // 胶囊：操作按钮常驻占位（只切透明度），避免 hover 时宽度跳动
+  &__chip {
+    display: inline-flex;
+    align-items: center;
+    height: 24px;
+    padding-right: 2px;
+    border: 1px solid var(--is-border);
+    border-radius: var(--is-r-pill);
+    background: var(--is-inset);
+    transition: border-color var(--is-dur-base) var(--is-ease-std),
+      background-color var(--is-dur-base) var(--is-ease-std),
+      box-shadow var(--is-dur-base) var(--is-ease-std);
+
+    &:hover { border-color: var(--is-border-strong); }
+
+    &.is-active {
+      border-color: var(--is-border-hi);
+      background: var(--is-accent-soft);
+      box-shadow: 0 0 0 1px rgba(var(--is-accent-rgb), 0.12);
+    }
+
+    // 内置项被改过：小圆点提示「这不是出厂模板」
+    &.is-modified .is-preset__main::after {
+      content: '';
+      display: inline-block;
+      width: 4px;
+      height: 4px;
+      margin-left: 4px;
+      border-radius: 50%;
+      background: var(--is-warn);
+      vertical-align: middle;
+    }
+  }
+
+  &__main {
+    padding: 0 2px 0 10px;
+    border: none;
+    background: none;
+    color: var(--is-text-2);
+    font-family: inherit;
+    font-size: var(--is-fs-xs);
+    white-space: nowrap;
+    cursor: pointer;
+
+    .is-preset__chip.is-active & {
+      color: var(--is-accent);
+      font-weight: var(--is-fw-bold);
+    }
+  }
+
+  &__acts {
+    display: inline-flex;
+    align-items: center;
+    gap: 1px;
+    opacity: 0;
+    transition: opacity var(--is-dur-fast) var(--is-ease-std);
+  }
+
+  &__chip:hover &__acts,
+  &__chip:focus-within &__acts { opacity: 1; }
+
+  &__act {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 17px;
+    height: 17px;
+    padding: 0;
+    border: none;
+    border-radius: var(--is-r-xs);
+    background: none;
+    color: var(--is-text-3);
+    cursor: pointer;
+    transition: background-color var(--is-dur-fast) var(--is-ease-std),
+      color var(--is-dur-fast) var(--is-ease-std),
+      transform var(--is-dur-base) var(--is-ease-spring);
+
+    &:hover {
+      background: var(--is-hover);
+      color: var(--is-text);
+      transform: scale(1.12);
+    }
+
+    &--danger:hover {
+      color: var(--is-bad-fg);
+      background: var(--is-bad-bg);
+    }
+  }
+
+  // 内联编辑表单
+  &__form {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    height: 24px;
+    padding: 0 2px 0 6px;
+    border: 1px solid var(--is-border-hi);
+    border-radius: var(--is-r-pill);
+    background: var(--is-card);
+    box-shadow: var(--is-shadow-xs);
+    animation: is-pop var(--is-dur-slow) var(--is-ease-overshoot);
+  }
+
+  &__in {
+    height: 20px;
+    padding: 0;
+    border: none;
+    outline: none;
+    background: none;
+    color: var(--is-text);
+    font-family: inherit;
+    font-size: var(--is-fs-xs);
+
+    &::placeholder { color: var(--is-placeholder); }
+
+    &--label { width: 58px; }
+
+    &--tpl {
+      width: 112px;
+      padding-right: 4px;
+      border-right: 1px solid var(--is-divider);
+      font-family: var(--is-mono);
+    }
+  }
+
+  &__mini {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    border: none;
+    border-radius: var(--is-r-xs);
+    background: none;
+    color: var(--is-text-3);
+    cursor: pointer;
+
+    &:hover { background: var(--is-hover); color: var(--is-text); }
+
+    &--ok { color: var(--is-ok-fg); }
+  }
+
+  &__add {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    height: 24px;
+    padding: 0 9px;
+    border: 1px dashed var(--is-border-strong);
+    border-radius: var(--is-r-pill);
+    background: none;
+    color: var(--is-text-3);
+    font-family: inherit;
+    font-size: var(--is-fs-xs);
+    cursor: pointer;
+    transition: border-color var(--is-dur-base) var(--is-ease-std),
+      color var(--is-dur-base) var(--is-ease-std),
+      background-color var(--is-dur-base) var(--is-ease-std);
+
+    &:hover {
+      border-color: var(--is-accent);
+      border-style: solid;
+      background: var(--is-accent-soft);
+      color: var(--is-accent);
+    }
+  }
+}
+
+// 预设增删/重排过渡：删除项脱离文档流，其余胶囊平滑补位
+.is-preset-list-move {
+  transition: transform var(--is-dur-slow) var(--is-ease-overshoot);
+}
+
+.is-preset-list-enter-active {
+  transition: opacity var(--is-dur-base) var(--is-ease-std),
+    transform var(--is-dur-slow) var(--is-ease-overshoot);
+}
+
+.is-preset-list-leave-active {
+  position: absolute;
+  transition: opacity var(--is-dur-fast) var(--is-ease-std),
+    transform var(--is-dur-base) var(--is-ease-std);
+}
+
+.is-preset-list-enter,
+.is-preset-list-leave-to {
+  opacity: 0;
+  transform: scale(0.82);
+}
