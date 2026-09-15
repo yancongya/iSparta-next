@@ -14,6 +14,14 @@
 > Product page: **[https://yancongya.github.io/iSparta-next/](https://yancongya.github.io/iSparta-next/)**  
 > Stack: Electron 28 + Vue 2 · Platforms: Windows / macOS / Linux
 
+### Good for
+
+- **APNG to GIF / APNG to WebP**, and reverse **GIF/WebP to APNG**
+- **PNG sequence to animated image** (stickers, frame animation)
+- **Animated image compression** under a size cap (e.g. 1MB sticker limits)
+- **Batch convert** folders of frames with path templates
+- Looking for an **iSparta alternative** after the original stalled
+
 ## Why iSparta-next
 
 **The original [iSparta](https://github.com/iSparta/iSparta) has been unmaintained for years** — outdated Electron, stagnant UI and pipeline, many unfixed issues (frame order, open-folder failures, storage glitches, broken packaging), and missing security patches.

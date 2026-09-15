@@ -14,6 +14,14 @@
 > 产品介绍页：**[https://yancongya.github.io/iSparta-next/](https://yancongya.github.io/iSparta-next/)**  
 > 技术栈：Electron 28 + Vue 2 · 支持 Windows / macOS / Linux
 
+### 适合这些场景
+
+- **APNG 转 GIF / APNG 转 WebP**，或反向 **GIF 转 APNG、WebP 转 APNG**
+- **PNG 序列合成动图**（表情包、贴纸、帧动画导出）
+- **动图压缩**：控制输出体积（例如贴纸平台 1MB 限制）
+- **批量转换** 多组帧文件，按目录 / 日期归档
+- 找 **iSparta 替代品**、停更后的 **APNG 工具** 桌面版
+
 ## 项目背景：为什么还有 iSparta-next
 
 **原版 [iSparta](https://github.com/iSparta/iSparta) 已长期停止维护**——Electron 主版本停在旧内核、界面与转换链路多年未迭代，大量历史 Issue（帧错乱、路径打开失败、存储异常、打包过时等）无人修复，安全补丁也跟不上。
