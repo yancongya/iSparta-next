@@ -60,6 +60,12 @@ module.exports = {
     "outputing":"正在輸出",
     // delay dialog
     "delayTitle": "延時配置",
+    // compare dialog
+    "compareTitle": "前後對比",
+    "compareBefore": "原始",
+    "compareAfter": "輸出",
+    "compareHint": "拖動分隔線對比效果；← → 鍵盤微調",
+    "compareNoFile": "沒有可對比的文件（需先完成轉換）",
     "preview": "預覽",
     "stop": "停止",
     "apply": "套用",

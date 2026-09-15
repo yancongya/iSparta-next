@@ -60,6 +60,12 @@ module.exports = {
     "outputing":"Writing output",
     // delay dialog
     "delayTitle": "Frame delay",
+    // compare dialog
+    "compareTitle": "Before / After",
+    "compareBefore": "Original",
+    "compareAfter": "Output",
+    "compareHint": "Drag the divider to compare; arrow keys to fine-tune",
+    "compareNoFile": "Nothing to compare (convert first)",
     "preview": "Preview",
     "stop": "Stop",
     "apply": "Apply",

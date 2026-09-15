@@ -89,6 +89,40 @@
       color: var(--is-text-3);
     }
 
+    // 已完成：可点击对比，缩略图轻微呼吸提示
+    &.is-comparable {
+      cursor: zoom-in;
+      border-color: rgba(var(--is-ok-rgb), 0.35);
+      transition: border-color var(--is-dur-base) var(--is-ease-std),
+        box-shadow var(--is-dur-base) var(--is-ease-std);
+
+      &:hover {
+        border-color: var(--is-ok);
+        box-shadow: 0 0 0 3px rgba(var(--is-ok-rgb), 0.18);
+      }
+    }
+
+    // hover 时的对比角标（eye 图标），右下角淡入
+    &__cmp-hint {
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 18px;
+      height: 18px;
+      border-top-right-radius: var(--is-r-xs);
+      background: var(--is-ok-bg);
+      color: var(--is-ok-fg);
+      opacity: 0;
+      transition: opacity var(--is-dur-fast) var(--is-ease-std);
+    }
+
+    &:hover &__cmp-hint {
+      opacity: 1;
+    }
+
     // 帧数徽标：序列帧一眼可辨
     &__badge {
       position: absolute;

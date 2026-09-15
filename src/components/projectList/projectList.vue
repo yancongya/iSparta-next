@@ -23,8 +23,12 @@
           />
         </div>
 
-        <!-- 缩略图：悬停时逐帧播放 -->
-        <div class="thumb is-checker">
+        <!-- 缩略图：悬停逐帧播放；已完成的条目点击打开前后对比 -->
+        <div
+          class="thumb is-checker"
+          :class="{ 'is-comparable': stateOf(project.process) === 'done' }"
+          @click.stop="openCompare(project)"
+        >
           <img
             v-if="thumbSrc(project, index)"
             :src="thumbSrc(project, index)"
@@ -35,6 +39,9 @@
           />
           <is-icon v-else name="image" class="thumb__ph" />
           <span v-if="frameCount(project) > 1" class="thumb__badge">{{ frameCount(project) }}F</span>
+          <span v-if="stateOf(project.process) === 'done'" class="thumb__cmp-hint">
+            <is-icon name="eye" size="xs" />
+          </span>
         </div>
 
         <div class="info">
@@ -121,6 +128,12 @@
       @close="dialogFormVisible = false"
     ></dialay-dialog>
 
+    <compare-dialog
+      v-if="compareProject"
+      :project="compareProject"
+      @close="compareProject = null"
+    ></compare-dialog>
+
     <button type="button" class="open-folder" :disabled="isLocked" @click="openFolder">
       <is-icon name="folder-plus" size="sm" />
       {{ $t('openFolder') }}
@@ -131,18 +144,22 @@
 import { ipc } from '../../util/node-env'
 import rightMenu from './menu'
 import DelayDialog from '../delayDialog/index.vue'
+import CompareDialog from '../compareDialog/index.vue'
 import { f as fsOperate } from '../drag/file.js'
 import { naturalSort } from '../../util/sort'
 import notice from '../../ui-next/notice'
 
 export default {
   components: {
-    'dialay-dialog': DelayDialog
+    'dialay-dialog': DelayDialog,
+    'compare-dialog': CompareDialog
   },
   data () {
     return {
       dialogFormVisible: false,
       delayProject: null,
+      // 对比弹窗：仅 done 条目打开（有输出文件可比）
+      compareProject: null,
       thumbCache: {},
       hoverIdx: -1,
       hoverFrame: 0,
@@ -389,6 +406,11 @@ export default {
         return false
       }
       ipc.send('change-item-fold', outputPath, index)
+    },
+    // 打开前后对比：仅已完成（有输出文件）的条目有意义
+    openCompare (project) {
+      if (this.stateOf(project.process) !== 'done') return
+      this.compareProject = project
     },
     openFolder () {
       if (this.isLocked) return

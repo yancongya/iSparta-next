@@ -174,12 +174,15 @@ function seedItems (fs, path, storage) {
 
   const mk = (type, fileList, outputName, isSelected) => {
     fileList.forEach((p) => fs.writeFileSync(p, 'mock'))
+    const outputPath = path.join(path.dirname(fileList[0]), 'output', outputName + '.png')
+    // 输出文件也写入 mock fs：done 条目的前后对比弹窗才有「输出侧」图可读
+    fs.writeFileSync(outputPath, 'mock')
     return {
       basic: {
         type,
         inputPath: path.dirname(fileList[0]) + '/' + path.basename(fileList[0]).split('.')[0],
         fileList,
-        outputPath: path.join(path.dirname(fileList[0]), 'output', outputName + '.png')
+        outputPath
       },
       options: {
         frameRate: 25,
