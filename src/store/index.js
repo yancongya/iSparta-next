@@ -178,6 +178,21 @@ if (localData) {
       if (!item.options.sizeLimit) {
         item.options.sizeLimit = _.cloneDeep(defaultState.options.sizeLimit)
       }
+      // 旧版（a6bbb47）给 PNGs 自动命名「<文件夹去空格>_apng」，c426076 起已移除；
+      // 但已存任务恢复时不改写 outputName，旧后缀会永久留着。
+      // 按指纹剥离：仅当 PNGs 且基名与所在文件夹同形（忽略空格/下划线差异）时才去掉
+      // 「_apng」，手起的名字（与文件夹名对不上）不受影响。
+      if (item.basic && item.basic.type === 'PNGs' &&
+          typeof item.options.outputName === 'string' &&
+          /_apng$/.test(item.options.outputName) &&
+          item.basic.fileList && item.basic.fileList.length) {
+        var legacyBase = item.options.outputName.slice(0, -'_apng'.length)
+        var folder = path.basename(path.dirname(item.basic.fileList[0]))
+        var norm = function (s) { return String(s).replace(/[ _]/g, '') }
+        if (norm(legacyBase) === norm(folder)) {
+          item.options.outputName = folder.replace(/[ ]/g, '')
+        }
+      }
       items.push(item);
     }
   })
