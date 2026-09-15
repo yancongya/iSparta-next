@@ -208,6 +208,7 @@
 
   function stopGate() {
     gateRunning = false;
+    setPetRunning(false);
     if (gateTimer) {
       clearTimeout(gateTimer);
       gateTimer = null;
@@ -223,6 +224,8 @@
 
     if (qSlider) qSlider.value = String(q);
     if (qVal) qVal.textContent = String(q);
+    // 拟物联动：演示进行中时，小机器狗按当前质量调速奔跑
+    setPetRunning(gateRunning, q);
     if (resultFmt) resultFmt.textContent = labelOf(activeFmt);
     if (resultSize) resultSize.textContent = mb.toFixed(2) + " MB";
 
@@ -321,6 +324,7 @@
 
     function finish(ok) {
       gateRunning = false;
+      setPetRunning(false);
       if (btnAuto) btnAuto.disabled = false;
       if (ok && hasGsap && !reduceMotion && resultCard) {
         window.gsap.fromTo(resultCard, { scale: 1 }, { scale: 1.02, duration: 0.2, yoyo: true, repeat: 1 });
@@ -403,6 +407,31 @@
   }
 
   /* ---------- hero motion ---------- */
+  /* ---------- 小机器狗：与阈值演示 / 帧投喂联动的拟物 ---------- */
+  // 质量越低（压得越狠）跑得越快：动画周期越短。q=10 → 0.5s，q=100 → 2.2s
+  function petRunDuration(q) {
+    const v = Math.max(10, Math.min(100, Number(q) || 85))
+    return (0.5 + ((v - 10) / 90) * 1.7).toFixed(2) + "s"
+  }
+
+  function setPetRunning(running, q) {
+    const pet = document.getElementById("pet")
+    if (!pet) return
+    pet.classList.toggle("is-running", !!running)
+    if (running) {
+      pet.style.setProperty("--pet-speed", petRunDuration(q))
+    }
+  }
+
+  function cheerPet() {
+    const pet = document.getElementById("pet")
+    if (!pet || reduceMotion) return
+    pet.classList.remove("is-cheer")
+    void pet.getBoundingClientRect()
+    pet.classList.add("is-cheer")
+    window.setTimeout(function () { pet.classList.remove("is-cheer") }, 600)
+  }
+
   function setupPacket() {
     if (!hasGsap || reduceMotion) return;
     const packet = document.getElementById("packet");
@@ -411,7 +440,7 @@
 
     const len = path.getTotalLength();
     const state = { t: 0 };
-    window.gsap.to(state, {
+    const railTl = window.gsap.to(state, {
       t: 1,
       duration: 5.5,
       repeat: -1,
@@ -422,7 +451,7 @@
       },
     });
 
-    window.gsap.to("#film .frame", {
+    const bobTl = window.gsap.to("#film .frame", {
       y: -8,
       duration: 1.4,
       stagger: 0.18,
@@ -431,32 +460,60 @@
       ease: "sine.inOut",
     });
 
-    window.gsap.to("#pet", {
-      y: -6,
-      duration: 0.9,
-      yoyo: true,
-      repeat: -1,
-      ease: "sine.inOut",
-    });
-
+    // 标题词轮换：原来是裸 setInterval，切到后台标签页仍在跑；
+    // 现在统一交给下面的可见性/离屏闸门控制
     const el = document.getElementById("hero-accent-word");
-    if (!el) return;
-    let i = 0;
-    setInterval(function () {
-      const list = isEn()
-        ? ["into motion", "under limit", "batch export", "compare"]
-        : ["变成动图", "压进阈值", "批量导出", "前后对比"];
-      i = (i + 1) % list.length;
-      window.gsap.to(el, {
-        opacity: 0,
-        y: 8,
-        duration: 0.25,
-        onComplete: function () {
-          el.textContent = list[i];
-          window.gsap.fromTo(el, { opacity: 0, y: -8 }, { opacity: 1, y: 0, duration: 0.3 });
+    let rotTimer = null;
+    function rotTick() {
+      if (rotTimer !== null || !el) return;
+      rotTimer = window.setInterval(function () {
+        const list = isEn()
+          ? ["into motion", "under limit", "batch export", "compare"]
+          : ["变成动图", "压进阈值", "批量导出", "前后对比"];
+        const i = (Number(el.dataset.i || 0) + 1) % list.length;
+        el.dataset.i = String(i);
+        window.gsap.to(el, {
+          opacity: 0,
+          y: 8,
+          duration: 0.25,
+          onComplete: function () {
+            el.textContent = list[i];
+            window.gsap.fromTo(el, { opacity: 0, y: -8 }, { opacity: 1, y: 0, duration: 0.3 });
+          },
+        });
+      }, 2800);
+    }
+    function rotStop() {
+      if (rotTimer !== null) {
+        window.clearInterval(rotTimer);
+        rotTimer = null;
+      }
+    }
+
+    // 离屏或后台标签页时全部停掉：省电，也避免回到页面时动画与状态错位
+    const hero = document.querySelector(".hero");
+    let inView = true;
+    let visible = !document.hidden;
+    function syncMotion() {
+      const run = inView && visible;
+      railTl.paused(!run);
+      bobTl.paused(!run);
+      if (run) rotTick(); else rotStop();
+    }
+    if ("IntersectionObserver" in window && hero) {
+      new IntersectionObserver(
+        function (entries) {
+          inView = entries[0].isIntersecting;
+          syncMotion();
         },
-      });
-    }, 2800);
+        { threshold: 0 }
+      ).observe(hero);
+    }
+    document.addEventListener("visibilitychange", function () {
+      visible = !document.hidden;
+      syncMotion();
+    });
+    syncMotion();
   }
 
   /* ---------- scroll ---------- */
@@ -868,8 +925,339 @@
       });
   }
 
+
+  /* ---------- 04 · COMPARE：真实前后擦除对比 ---------- */
+  // 数据全部来自本仓库 test/ 下同一素材（300x300 · 13 帧）的实测值，非示意
+  const CMP_SRC = { size: "1028.5 KB", alpha: 141, semi: "25.6%", colors: 19490 };
+  const CMP = {
+    apng: { img: "assets/cmp-apng.png", tag: "APNG", size: "244.6 KB", vs: "-76.2%", alpha: 27, semi: "25.7%", colors: 244, alphaOk: true },
+    gif:  { img: "assets/cmp-gif.png",  tag: "GIF",  size: "270.1 KB", vs: "-73.7%", alpha: 2,  semi: "0%",    colors: 233, alphaOk: false },
+    webp: { img: "assets/cmp-webp.png", tag: "WebP", size: "438.2 KB", vs: "-57.4%", alpha: 27, semi: "25.7%", colors: 10323, alphaOk: true }
+  };
+
+  function cmpLabels() {
+    return isEn()
+      ? { size: "File size", vs: "vs source", alpha: "Alpha levels", semi: "Semi-transparent", colors: "Colors" }
+      : { size: "整段体积", vs: "相对源序列", alpha: "Alpha 级数", semi: "半透明像素", colors: "颜色数" };
+  }
+
+  function renderCmpStats(key) {
+    const el = document.getElementById("cmp-stats");
+    const d = CMP[key];
+    if (!el || !d) return;
+    const L = cmpLabels();
+    const rows = [
+      [L.size, d.size, ""],
+      [L.vs, d.vs, "is-ok"],
+      [L.alpha, String(d.alpha), d.alphaOk ? "is-ok" : "is-bad"],
+      [L.semi, d.semi, d.alphaOk ? "is-ok" : "is-bad"],
+      [L.colors, d.colors.toLocaleString("en-US"), ""]
+    ];
+    el.innerHTML = rows
+      .map(function (r) {
+        return '<dt>' + r[0] + '</dt><dd class="' + r[2] + '">' + r[1] + "</dd>";
+      })
+      .join("");
+    // 数值跳动：让「切换格式」有可见因果
+    if (!reduceMotion) {
+      el.querySelectorAll("dd").forEach(function (dd, i) {
+        window.setTimeout(function () {
+          dd.classList.remove("is-flash");
+          void dd.offsetWidth;
+          dd.classList.add("is-flash");
+        }, i * 45);
+      });
+    }
+  }
+
+  function setupCompare() {
+    const stage = document.getElementById("cmp-stage");
+    const over = document.getElementById("cmp-over");
+    const tag = document.getElementById("cmp-over-tag");
+    if (!stage || !over) return;
+
+    let target = 50;
+    let pos = 50;
+    let raf = null;
+    let dragging = false;
+
+    function paint() {
+      stage.style.setProperty("--cmp-pos", pos.toFixed(2) + "%");
+      stage.setAttribute("aria-valuenow", String(Math.round(pos)));
+    }
+
+    function tick() {
+      const diff = target - pos;
+      if (Math.abs(diff) < 0.1) {
+        pos = target;
+        paint();
+        raf = null;
+        return;
+      }
+      // 阻尼跟随：手柄不粘指针，带一点追手感（与应用内对比滑块同一配方）
+      pos += diff * 0.22;
+      paint();
+      raf = window.requestAnimationFrame(tick);
+    }
+
+    function kick() {
+      if (reduceMotion) {
+        pos = target;
+        paint();
+        return;
+      }
+      if (raf === null) raf = window.requestAnimationFrame(tick);
+    }
+
+    function fromClientX(x) {
+      const r = stage.getBoundingClientRect();
+      if (!r.width) return;
+      target = Math.max(0, Math.min(100, ((x - r.left) / r.width) * 100));
+      kick();
+    }
+
+    stage.addEventListener("pointerdown", function (e) {
+      dragging = true;
+      stage.classList.add("is-dragging");
+      if (stage.setPointerCapture) {
+        try { stage.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
+      }
+      fromClientX(e.clientX);
+      e.preventDefault();
+    });
+    stage.addEventListener("pointermove", function (e) {
+      if (dragging) fromClientX(e.clientX);
+    });
+    function endDrag() {
+      dragging = false;
+      stage.classList.remove("is-dragging");
+    }
+    stage.addEventListener("pointerup", endDrag);
+    stage.addEventListener("pointercancel", endDrag);
+
+    stage.addEventListener("keydown", function (e) {
+      if (e.key === "ArrowLeft") { target = Math.max(0, target - 4); }
+      else if (e.key === "ArrowRight") { target = Math.min(100, target + 4); }
+      else if (e.key === "Home") { target = 0; }
+      else if (e.key === "End") { target = 100; }
+      else return;
+      e.preventDefault();
+      kick();
+    });
+
+    let curKey = "apng";
+    // 语言切换后统计标签要跟着换（i18n 只重写带 data-i18n 的节点，JS 生成的内容得自己重渲染）
+    document.addEventListener("is:lang-change", function () {
+      renderCmpStats(curKey);
+    });
+
+    document.querySelectorAll(".cmp-tab").forEach(function (tab) {
+      tab.addEventListener("click", function () {
+        const key = tab.getAttribute("data-cmp");
+        const d = CMP[key];
+        if (!d) return;
+        curKey = key;
+        document.querySelectorAll(".cmp-tab").forEach(function (t) {
+          const on = t === tab;
+          t.classList.toggle("is-on", on);
+          t.setAttribute("aria-selected", on ? "true" : "false");
+        });
+        over.src = d.img;
+        if (tag) tag.textContent = d.tag;
+        renderCmpStats(key);
+      });
+    });
+
+    renderCmpStats(curKey);
+    paint();
+  }
+
+
+  /* ---------- HERO 投喂台：把「DROP · PASTE」变成真体验 ---------- */
+  const FEED_TOTAL = 3      // 演示用的 3 帧
+  const TRAY_MAX = 6        // 真实文件最多展示 6 个，避免撑爆版面
+
+  function fmtBytes(n) {
+    if (!isFinite(n) || n <= 0) return "0 B"
+    if (n < 1024) return n + " B"
+    if (n < 1024 * 1024) return (n / 1024).toFixed(1) + " KB"
+    return (n / 1048576).toFixed(2) + " MB"
+  }
+
+  function setupHeroFeeder() {
+    const stage = document.getElementById("hero-stage")
+    const packet = document.getElementById("packet")
+    const countEl = document.getElementById("packet-count")
+    const tray = document.getElementById("hero-tray")
+    const ph = document.getElementById("hero-tray-ph")
+    if (!stage || !packet || !tray) return
+
+    let fed = 0
+    let resetTimer = null
+    const objectUrls = []
+
+    function setCount() {
+      if (countEl) countEl.textContent = String(fed)
+      stage.classList.toggle("is-ready", fed >= FEED_TOTAL)
+    }
+
+    function bump(el, cls) {
+      if (reduceMotion || !el) return
+      el.classList.remove(cls)
+      void el.getBoundingClientRect()
+      el.classList.add(cls)
+    }
+
+    function feed(frameEl) {
+      if (!frameEl || frameEl.classList.contains("is-fed") || fed >= FEED_TOTAL) return
+      frameEl.classList.add("is-fed")
+      fed += 1
+      setCount()
+      bump(packet, "is-bump")
+      // 攒满后自动复位，让后面的访客能重复这段演示
+      window.clearTimeout(resetTimer)
+      if (fed >= FEED_TOTAL) {
+        cheerPet()
+        resetTimer = window.setTimeout(resetFeed, 3600)
+      }
+    }
+
+    function resetFeed() {
+      fed = 0
+      setCount()
+      stage.querySelectorAll(".frame--grab").forEach(function (f) {
+        f.classList.remove("is-fed", "is-ghost")
+      })
+    }
+
+    // 指针拖拽：松手时命中收集器才算投进
+    let dragging = null
+    function overPacket(x, y) {
+      const r = packet.getBoundingClientRect()
+      const pad = 14
+      return x >= r.left - pad && x <= r.right + pad && y >= r.top - pad && y <= r.bottom + pad
+    }
+
+    stage.querySelectorAll(".frame--grab").forEach(function (frame) {
+      frame.addEventListener("pointerdown", function (e) {
+        if (frame.classList.contains("is-fed")) return
+        dragging = frame
+        frame.classList.add("is-ghost")
+        if (frame.setPointerCapture) {
+          try { frame.setPointerCapture(e.pointerId) } catch (err) { /* ignore */ }
+        }
+        e.preventDefault()
+      })
+      frame.addEventListener("pointermove", function (e) {
+        if (dragging !== frame) return
+        packet.classList.toggle("is-hot", overPacket(e.clientX, e.clientY))
+      })
+      function release(e) {
+        if (dragging !== frame) return
+        dragging = null
+        frame.classList.remove("is-ghost")
+        packet.classList.remove("is-hot")
+        if (e && overPacket(e.clientX, e.clientY)) feed(frame)
+      }
+      frame.addEventListener("pointerup", release)
+      frame.addEventListener("pointercancel", function () {
+        dragging = null
+        frame.classList.remove("is-ghost")
+        packet.classList.remove("is-hot")
+      })
+      // 点一下也直接投喂：拖拽不是唯一入口
+      frame.addEventListener("click", function (e) {
+        if (overPacket(e.clientX, e.clientY)) return
+        feed(frame)
+      })
+      frame.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault()
+          feed(frame)
+        }
+      })
+    })
+
+    // 收集器本身也可点击复位
+    packet.addEventListener("click", function () {
+      if (fed > 0) resetFeed()
+    })
+
+    /* ---------- 真实文件：拖入 / 粘贴，只显示真实体积 ---------- */
+    function addFiles(list) {
+      const files = [].slice.call(list || []).filter(function (f) {
+        return f && /^image\//.test(f.type || "")
+      })
+      if (!files.length) return
+      if (ph) ph.hidden = true
+      files.slice(0, Math.max(0, TRAY_MAX - tray.querySelectorAll(".hero-tray__item").length)).forEach(function (f) {
+        const url = URL.createObjectURL(f)
+        objectUrls.push(url)
+        const item = document.createElement("span")
+        item.className = "hero-tray__item"
+        const img = document.createElement("img")
+        img.src = url
+        img.alt = ""
+        img.loading = "lazy"
+        const meta = document.createElement("span")
+        meta.className = "hero-tray__meta"
+        const name = document.createElement("span")
+        name.className = "hero-tray__name"
+        name.textContent = f.name
+        const size = document.createElement("span")
+        size.className = "hero-tray__size"
+        size.textContent = fmtBytes(f.size)
+        meta.appendChild(name)
+        meta.appendChild(size)
+        item.appendChild(img)
+        item.appendChild(meta)
+        tray.appendChild(item)
+      })
+    }
+
+    function hasFiles(e) {
+      const dt = e.dataTransfer
+      if (!dt || !dt.types) return false
+      return [].slice.call(dt.types).indexOf("Files") >= 0
+    }
+
+    ;["dragenter", "dragover"].forEach(function (t) {
+      stage.addEventListener(t, function (e) {
+        if (!hasFiles(e)) return
+        e.preventDefault()
+        tray.classList.add("is-hot")
+      })
+    })
+    ;["dragleave", "drop"].forEach(function (t) {
+      stage.addEventListener(t, function () {
+        tray.classList.remove("is-hot")
+      })
+    })
+    stage.addEventListener("drop", function (e) {
+      if (!hasFiles(e)) return
+      e.preventDefault()
+      addFiles(e.dataTransfer.files)
+    })
+    document.addEventListener("paste", function (e) {
+      const cd = e.clipboardData
+      if (!cd || !cd.files || !cd.files.length) return
+      // 输入框里的粘贴不劫持
+      const t = e.target
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return
+      addFiles(cd.files)
+    })
+
+    window.addEventListener("beforeunload", function () {
+      objectUrls.forEach(function (u) { URL.revokeObjectURL(u) })
+    })
+
+    setCount()
+  }
+
   resolveLatestDownloads();
 
+  setupCompare();
+  setupHeroFeeder();
   setupPacket();
   setupScroll();
 })();

@@ -88,6 +88,7 @@
       <a href="#convert" data-i18n="nav.convert">能力</a>
       <a href="#play" data-i18n="nav.play">阈值</a>
       <a href="#naming" data-i18n="nav.naming">命名</a>
+      <a href="#compare" data-i18n="nav.compare">对比</a>
       <a href="#shots" data-i18n="nav.shots">界面</a>
       <a href="#lineage" data-i18n="nav.lineage">脉络</a>
       <a class="nav-gh" href="https://github.com/yancongya/iSparta-next" target="_blank" rel="noopener" data-i18n-aria="nav.github" title="GitHub">
@@ -127,7 +128,7 @@
       </ul>
     </div>
 
-    <div class="hero-stage" aria-hidden="true">
+    <div class="hero-stage" id="hero-stage" role="group" aria-label="转换演示台">
       <svg class="hero-svg" id="hero-svg" viewBox="0 0 520 420" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <pattern id="checker" width="12" height="12" patternUnits="userSpaceOnUse">
@@ -144,17 +145,17 @@
         <path d="M40 300 C160 300, 200 140, 260 140 S360 300, 480 300" fill="none" stroke="#c2410c" stroke-width="2" stroke-dasharray="6 8" opacity=".55"/>
 
         <g id="film" filter="url(#soft)">
-          <g class="frame" data-i="0">
+          <g class="frame frame--grab" data-i="0" tabindex="0" role="button" aria-label="把第 1 帧投进收集器">
             <rect x="28" y="56" width="72" height="72" rx="10" fill="url(#checker)" stroke="#c2410c" stroke-width="1.5"/>
             <rect x="40" y="78" width="28" height="20" rx="3" fill="#c2410c" opacity=".85"/>
             <text x="64" y="140" text-anchor="middle" class="svg-label">01</text>
           </g>
-          <g class="frame" data-i="1">
+          <g class="frame frame--grab" data-i="1" tabindex="0" role="button" aria-label="把第 2 帧投进收集器">
             <rect x="108" y="56" width="72" height="72" rx="10" fill="url(#checker)" stroke="#c2410c" stroke-width="1.5"/>
             <rect x="124" y="70" width="36" height="36" rx="18" fill="#ea580c" opacity=".75"/>
             <text x="144" y="140" text-anchor="middle" class="svg-label">02</text>
           </g>
-          <g class="frame" data-i="2">
+          <g class="frame frame--grab" data-i="2" tabindex="0" role="button" aria-label="把第 3 帧投进收集器">
             <rect x="188" y="56" width="72" height="72" rx="10" fill="url(#checker)" stroke="#c2410c" stroke-width="1.5"/>
             <path d="M204 112 L224 76 L244 112 Z" fill="#c2410c" opacity=".8"/>
             <text x="224" y="140" text-anchor="middle" class="svg-label">03</text>
@@ -176,21 +177,35 @@
           </g>
         </g>
 
-        <g id="packet">
-          <rect x="-24" y="-24" width="48" height="48" rx="10" fill="url(#checker)" stroke="#c2410c" stroke-width="2"/>
-          <rect x="-10" y="-8" width="20" height="14" rx="2" fill="#c2410c"/>
+        <!-- 收集器：#packet 由 GSAP 沿轨道定位，#packet-inner 交给 CSS 做接住/弹跳
+             （同层会互相覆盖：GSAP 写的是内联 transform，优先级压过 class 变换） -->
+        <g id="packet" role="img" aria-label="帧收集器">
+          <g id="packet-inner">
+            <rect x="-24" y="-24" width="48" height="48" rx="10" fill="url(#checker)" stroke="#c2410c" stroke-width="2"/>
+            <rect x="-10" y="-8" width="20" height="14" rx="2" fill="#c2410c"/>
+            <text id="packet-count" x="0" y="42" text-anchor="middle" class="svg-label">0</text>
+          </g>
         </g>
 
+        <!-- 小机器狗：#pet 定位，#pet-inner 做待机漂浮与奔跑（速度由 --pet-speed 驱动） -->
         <g id="pet" transform="translate(450 330)">
+          <g id="pet-inner">
           <rect x="0" y="8" width="36" height="28" rx="6" fill="#fffdf8" stroke="#c2410c" stroke-width="1.5"/>
           <rect x="6" y="16" width="6" height="6" fill="#c2410c"/>
           <rect x="24" y="16" width="6" height="6" fill="#c2410c"/>
           <rect x="12" y="26" width="12" height="4" rx="1" fill="#c2410c" opacity=".7"/>
           <rect x="8" y="0" width="6" height="10" rx="2" fill="#c2410c"/>
           <rect x="22" y="0" width="6" height="10" rx="2" fill="#c2410c"/>
+          </g>
         </g>
       </svg>
-      <p class="stage-hint mono" data-i18n="hero.hint">PNG 序列 → APNG / GIF / WebP · 互转与压缩</p>
+      <p class="stage-hint mono" data-i18n="hero.hint">把帧拖进小盒子 · 或拖入 / 粘贴你自己的图片</p>
+
+      <!-- 真实投放区：读取用户自己的图片，只显示真实字节数，不伪造转换结果 -->
+      <div class="hero-tray" id="hero-tray">
+        <p class="hero-tray__ph mono" id="hero-tray-ph" data-i18n="hero.trayPh">拖入或 Ctrl+V 粘贴图片</p>
+      </div>
+      <p class="hero-tray__note" data-i18n="hero.trayNote">这里只真实读取你放进来的文件；转换在桌面端完成</p>
     </div>
   </section>
 
@@ -410,9 +425,61 @@
     </div>
   </section>
 
+  <!-- compare: real before/after wipe on repo's own test fixture -->
+  <section class="section section-compare" id="compare">
+    <div class="section-head">
+      <p class="eyebrow mono" data-i18n="cmp.eb">04 · COMPARE</p>
+      <h2 data-i18n="cmp.h2">拖一下，看 GIF 把边缘吃掉了</h2>
+      <p class="section-sub" data-i18n="cmp.sub">
+        同一帧素材，左边是 PNG 序列原帧，右边是实际导出结果。切换格式后拖动分隔线：GIF 只有 2 级透明，边缘全是锯齿；APNG / WebP 保留了完整的半透明过渡。
+      </p>
+    </div>
+
+    <div class="cmp-board">
+      <div
+        class="is-compare"
+        id="cmp-stage"
+        tabindex="0"
+        role="slider"
+        aria-label="前后对比"
+        data-i18n-aria="cmp.aria"
+        aria-valuemin="0"
+        aria-valuemax="100"
+        aria-valuenow="50"
+      >
+        <div class="is-compare__canvas is-checker">
+          <img class="is-compare__base" id="cmp-base" src="assets/cmp-src.png" alt="PNG 序列原帧" width="300" height="300" draggable="false" />
+          <img class="is-compare__over" id="cmp-over" src="assets/cmp-apng.png" alt="APNG 导出首帧" width="300" height="300" draggable="false" />
+          <span class="is-compare__tag is-compare__tag--l mono" data-i18n="cmp.src">原帧</span>
+          <span class="is-compare__tag is-compare__tag--r mono" id="cmp-over-tag">APNG</span>
+        </div>
+        <div class="is-compare__divider" id="cmp-divider">
+          <span class="is-compare__grip" aria-hidden="true">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M5 3 2 7l3 4M9 3l3 4-3 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+        </div>
+      </div>
+
+      <aside class="cmp-side">
+        <div class="cmp-tabs" role="tablist" aria-label="导出格式">
+          <button type="button" role="tab" class="cmp-tab is-on" data-cmp="apng" aria-selected="true">APNG</button>
+          <button type="button" role="tab" class="cmp-tab" data-cmp="gif" aria-selected="false">GIF</button>
+          <button type="button" role="tab" class="cmp-tab" data-cmp="webp" aria-selected="false">WebP</button>
+        </div>
+
+        <dl class="cmp-stats" id="cmp-stats" aria-live="polite"></dl>
+
+        <p class="cmp-note" data-i18n="cmp.note">
+          数据取自本仓库 test/ 下的同一素材（300×300 · 13 帧）实测，非示意值。
+        </p>
+        <p class="cmp-hint mono" data-i18n="cmp.hint">拖动分隔线 · 或聚焦后按 ← →</p>
+      </aside>
+    </div>
+  </section>
+
   <section class="section" id="shots">
     <div class="section-head">
-      <p class="eyebrow mono" data-i18n="shots.eb">04 · REAL UI</p>
+      <p class="eyebrow mono" data-i18n="shots.eb">05 · REAL UI</p>
       <h2 data-i18n="shots.h2">真实软件界面，不是概念稿</h2>
       <p class="section-sub" data-i18n="shots.sub">应用真实界面：空状态导入、任务胶片列表与输出设置、默认设置（主题 / 路径模板 / 大小阈值）。</p>
     </div>
@@ -442,7 +509,7 @@
   <section class="section section-dl" id="download">
     <div class="dl-panel">
       <div>
-        <p class="eyebrow mono" data-i18n="dl.eb">05 · GET IT</p>
+        <p class="eyebrow mono" data-i18n="dl.eb">06 · GET IT</p>
         <h2 data-i18n="dl.h2">选一个系统，直接开箱</h2>
         <p class="section-sub" data-i18n="dl.sub">安装包由 GitHub Actions 构建。macOS 未签名，首次打开见 Release 说明。</p>
       </div>
@@ -470,7 +537,7 @@
   <!-- lineage + why + authors at the end -->
   <section class="section section-why" id="why">
     <div class="section-head">
-      <p class="eyebrow mono" data-i18n="why.eb">06 · WHY NEXT</p>
+      <p class="eyebrow mono" data-i18n="why.eb">07 · WHY NEXT</p>
       <h2 data-i18n="why.h2">不是旧版补丁，是重做过的工作台</h2>
       <p class="section-sub" data-i18n="why.sub">原版长期停更；本仓库在社区 fork 基建上重写前后端，而不是只修几个按钮。</p>
     </div>
@@ -510,7 +577,7 @@
 
   <section class="section section-lineage" id="lineage">
     <div class="section-head">
-      <p class="eyebrow mono" data-i18n="lineage.eb">07 · LINEAGE</p>
+      <p class="eyebrow mono" data-i18n="lineage.eb">08 · LINEAGE</p>
       <h2 data-i18n="lineage.h2">从原版到 iSparta-next</h2>
       <p class="section-sub" data-i18n="lineage.sub">感谢原作者与每一位社区维护者。本仓库站在他们肩膀上继续改。</p>
     </div>
@@ -622,8 +689,10 @@
     </div>
   </footer>
 
-  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+  <!-- GSAP 自托管：CDN（jsdelivr）在国内不可达时，整层滚动与轨道动效会静默消失。
+       本地副本 72KB + 43KB，GreenSock 标准许可允许自托管部署，许可头保留在文件内 -->
+  <script src="assets/vendor/gsap.min.js"></script>
+  <script src="assets/vendor/ScrollTrigger.min.js"></script>
   <script src="i18n.js"></script>
   <script src="main.js"></script>
 </body>
