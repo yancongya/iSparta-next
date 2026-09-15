@@ -5,7 +5,6 @@
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const hasGsap = typeof window.gsap !== "undefined";
 
-  /* conversion map — aligned with setting.vue formatStatic */
   const MAP = {
     PNGs: ["APNG", "GIF", "WEBP"],
     APNG: ["APNG", "GIF", "WEBP"],
@@ -13,26 +12,37 @@
     WEBP: ["APNG", "GIF", "WEBP"],
   };
 
-  const LABEL = {
-    PNGs: "PNG 序列",
-    APNG: "APNG",
-    GIF: "GIF",
-    WEBP: "WebP",
+  const NOTE = {
+    "PNGs>APNG": {
+      zh: "多帧合并为 APNG，可调帧频、循环、逐帧延时",
+      en: "Merge frames to APNG; fps, loop, per-frame delay",
+    },
+    "PNGs>GIF": { zh: "先合成 APNG，再导出 GIF", en: "Assemble APNG, then export GIF" },
+    "PNGs>WEBP": {
+      zh: "先合成 APNG，再导出 Animated WebP",
+      en: "Assemble APNG, then Animated WebP",
+    },
+    "APNG>APNG": { zh: "无损 / 有损压缩，减小体积", en: "Lossless / lossy compress" },
+    "APNG>WEBP": {
+      zh: "APNG → Animated WebP，可设循环与质量",
+      en: "APNG → Animated WebP; loop & quality",
+    },
+    "APNG>GIF": { zh: "APNG → GIF", en: "APNG → GIF" },
+    "GIF>APNG": { zh: "GIF → APNG，保留透明更友好", en: "GIF → APNG (better alpha)" },
+    "GIF>WEBP": { zh: "GIF → Animated WebP", en: "GIF → Animated WebP" },
+    "WEBP>APNG": { zh: "Animated WebP → APNG", en: "Animated WebP → APNG" },
+    "WEBP>GIF": { zh: "经 APNG 中间态导出 GIF", en: "Via APNG, export GIF" },
+    "WEBP>WEBP": { zh: "Animated WebP 重编码 / 压缩", en: "Animated WebP re-encode" },
   };
 
-  const NOTE = {
-    "PNGs>APNG": "多帧合并为 APNG，可调帧频、循环、逐帧延时",
-    "PNGs>GIF": "先合成 APNG，再导出 GIF",
-    "PNGs>WEBP": "先合成 APNG，再导出 Animated WebP",
-    "APNG>APNG": "无损 / 有损压缩，减小体积",
-    "APNG>WEBP": "APNG → Animated WebP，可设循环与质量",
-    "APNG>GIF": "APNG → GIF",
-    "GIF>APNG": "GIF → APNG，保留透明更友好",
-    "GIF>WEBP": "GIF → Animated WebP",
-    "WEBP>APNG": "Animated WebP → APNG",
-    "WEBP>GIF": "经 APNG 中间态导出 GIF",
-    "WEBP>WEBP": "Animated WebP 重编码 / 压缩",
-  };
+  function isEn() {
+    return window.LandingI18n && window.LandingI18n.lang === "en-US";
+  }
+
+  function labelOf(k) {
+    if (isEn()) return { PNGs: "PNG seq", APNG: "APNG", GIF: "GIF", WEBP: "WebP" }[k] || k;
+    return { PNGs: "PNG 序列", APNG: "APNG", GIF: "GIF", WEBP: "WebP" }[k] || k;
+  }
 
   let currentIn = "PNGs";
   let currentOut = "APNG";
@@ -50,9 +60,9 @@
     outs.forEach(function (out) {
       const b = document.createElement("button");
       b.type = "button";
-      b.className = "chip" + (out === currentOut ? " is-on" : "");
+      b.className = "chip chip--sm" + (out === currentOut ? " is-on" : "");
       b.dataset.out = out;
-      b.textContent = LABEL[out] || out;
+      b.textContent = labelOf(out);
       b.addEventListener("click", function () {
         currentOut = out;
         renderOutChips();
@@ -70,18 +80,29 @@
     });
 
     const key = currentIn + ">" + currentOut;
+    const n = NOTE[key] || {};
+    const tip = (isEn() ? n.en : n.zh) || (isEn() ? "Batch tasks & path templates" : "支持批量任务与输出路径模板");
     noteEl.innerHTML =
-      "当前路径：<strong>" +
-      LABEL[currentIn] +
+      (isEn() ? "Path: " : "当前路径：<strong>") +
+      labelOf(currentIn) +
       " → " +
-      LABEL[currentOut] +
-      "</strong> · " +
-      (NOTE[key] || "支持批量任务与输出路径模板");
+      labelOf(currentOut) +
+      (isEn() ? " · " : "</strong> · ") +
+      tip;
+    if (isEn()) {
+      noteEl.innerHTML =
+        "Path: <strong>" +
+        labelOf(currentIn) +
+        " → " +
+        labelOf(currentOut) +
+        "</strong> · " +
+        tip;
+    }
 
     const taskFmt = document.getElementById("task-fmt");
-    if (taskFmt) taskFmt.textContent = LABEL[currentOut] || currentOut;
+    if (taskFmt) taskFmt.textContent = labelOf(currentOut);
     const taskType = document.getElementById("task-type");
-    if (taskType) taskType.textContent = currentIn === "PNGs" ? "PNGs" : LABEL[currentIn];
+    if (taskType) taskType.textContent = currentIn === "PNGs" ? "PNGs" : labelOf(currentIn);
 
     if (reduceMotion || !hasGsap) {
       steps.forEach(function (s) {
@@ -110,10 +131,15 @@
     });
   }
 
+  document.addEventListener("is:lang-change", function () {
+    renderOutChips();
+    runPipeline();
+  });
+
   renderOutChips();
   runPipeline();
 
-  /* ---------- sizeGate: live result + slider + auto retry ---------- */
+  /* ---------- sizeGate ---------- */
   const gateEnabled = document.getElementById("gate-enabled");
   const gateMax = document.getElementById("gate-max");
   const gateAutoQ = document.getElementById("gate-auto-q");
@@ -136,8 +162,7 @@
   let gateTimer = null;
   let gateRunning = false;
   let activeFmt = "APNG";
-  let limitUnit = "MB"; // MB | KB
-
+  let limitUnit = "MB";
   const FMT_FACTOR = { APNG: 1, GIF: 0.72, WEBP: 0.55 };
 
   function limitMB() {
@@ -163,7 +188,6 @@
   }
 
   function sizeForQuality(q, fmt) {
-    // 演示曲线：q=85 约 2.2MB，q=40 约 1MB 附近，便于 4~5 次内过线
     const t = (100 - q) / 90;
     const base = Math.max(0.18, 2.85 * Math.pow(1 - t * 0.88, 1.7) + 0.1);
     const factor = FMT_FACTOR[fmt || activeFmt] || 1;
@@ -191,9 +215,7 @@
     if (btnAuto) btnAuto.disabled = false;
   }
 
-  /** 即时刷新结果卡：体积是否落在阈值内 */
-  function paintResult(q, opts) {
-    opts = opts || {};
+  function paintResult(q) {
     const cfg = readGateCfg();
     const mb = sizeForQuality(q, activeFmt);
     const enabled = cfg.enabled;
@@ -201,40 +223,38 @@
 
     if (qSlider) qSlider.value = String(q);
     if (qVal) qVal.textContent = String(q);
-    if (resultFmt) resultFmt.textContent = activeFmt;
+    if (resultFmt) resultFmt.textContent = labelOf(activeFmt);
     if (resultSize) resultSize.textContent = mb.toFixed(2) + " MB";
 
     if (resultVs) {
-      if (!enabled) resultVs.textContent = "未启用阈值";
-      else resultVs.textContent = "阈值 " + fmtLimitLabel();
+      if (!enabled) resultVs.textContent = isEn() ? "Limit off" : "未启用阈值";
+      else resultVs.textContent = (isEn() ? "Limit " : "阈值 ") + fmtLimitLabel();
     }
 
     if (resultBadge) {
       resultBadge.classList.remove("is-pass", "is-over");
       if (!enabled) {
-        resultBadge.textContent = "不限制";
+        resultBadge.textContent = isEn() ? "Off" : "不限制";
         resultBadge.classList.add("is-pass");
       } else if (ok) {
-        resultBadge.textContent = "通过";
+        resultBadge.textContent = isEn() ? "Pass" : "通过";
         resultBadge.classList.add("is-pass");
       } else {
-        resultBadge.textContent = "超限";
+        resultBadge.textContent = isEn() ? "Over" : "超限";
         resultBadge.classList.add("is-over");
       }
     }
 
     if (resultCard) {
       resultCard.classList.remove("is-pass", "is-over");
-      if (!enabled || ok) resultCard.classList.add("is-pass");
-      else resultCard.classList.add("is-over");
+      resultCard.classList.add(!enabled || ok ? "is-pass" : "is-over");
     }
 
     if (gateFill) {
       const scale = Math.max(cfg.maxMB * 2.2, mb + 0.2, 1);
       gateFill.style.width = Math.min(100, (mb / scale) * 100) + "%";
       gateFill.classList.remove("is-over", "is-ok");
-      if (ok) gateFill.classList.add("is-ok");
-      else gateFill.classList.add("is-over");
+      gateFill.classList.add(ok ? "is-ok" : "is-over");
     }
 
     if (gateLimit) {
@@ -252,51 +272,49 @@
     clearLog();
     let q = 85;
     let tryN = 0;
-
     if (btnAuto) btnAuto.disabled = true;
     gateRunning = true;
-
     paintResult(q);
-
     const delay = reduceMotion ? 0 : 450;
 
     function attempt() {
       if (!gateRunning) return;
       tryN += 1;
       const st = paintResult(q);
+      const passT = isEn() ? "Pass" : "通过";
+      const overT = isEn() ? "Over" : "超限";
+      const offT = isEn() ? "No limit" : "不限制";
 
-      // 一行一次结果
-      let line;
       if (!st.cfg.enabled) {
-        line =
-          "<span class='st'>#" + tryN + "</span><span>q=" + q + "</span><span>" + st.mb.toFixed(2) + "MB</span><span>不限制</span>";
-        addLog(line, "is-pass");
+        addLog(
+          "<span class='st'>#" + tryN + "</span><span>q=" + q + "</span><span>" + st.mb.toFixed(2) + "MB</span><span>" + offT + "</span>",
+          "is-pass"
+        );
         finish(true);
         return;
       }
       if (st.mb <= st.cfg.maxMB) {
-        line =
-          "<span class='st'>#" + tryN + "</span><span>q=" + q + "</span><span>" + st.mb.toFixed(2) + "MB</span><span>通过</span>";
-        addLog(line, "is-pass");
+        addLog(
+          "<span class='st'>#" + tryN + "</span><span>q=" + q + "</span><span>" + st.mb.toFixed(2) + "MB</span><span>" + passT + "</span>",
+          "is-pass"
+        );
         finish(true);
         return;
       }
-
-      line =
-        "<span class='st'>#" + tryN + "</span><span>q=" + q + "</span><span>" + st.mb.toFixed(2) + "MB</span><span>超限</span>";
-      addLog(line, "is-over");
-
+      addLog(
+        "<span class='st'>#" + tryN + "</span><span>q=" + q + "</span><span>" + st.mb.toFixed(2) + "MB</span><span>" + overT + "</span>",
+        "is-over"
+      );
       if (!st.cfg.autoQuality) {
-        addLog("<span>未开自动降质量</span>", "is-over");
+        addLog("<span>" + (isEn() ? "Auto quality off" : "未开自动降质量") + "</span>", "is-over");
         finish(false);
         return;
       }
       if (tryN >= st.cfg.maxTries || q <= 10) {
-        addLog("<span>达最大重试</span>", "is-over");
+        addLog("<span>" + (isEn() ? "Max retries" : "达最大重试") + "</span>", "is-over");
         finish(false);
         return;
       }
-
       q = Math.max(10, q - st.cfg.step);
       gateTimer = setTimeout(attempt, delay);
     }
@@ -339,7 +357,6 @@
       unitBtns.forEach(function (b) {
         b.classList.toggle("is-on", b === btn);
       });
-      // 数值随单位换算，阈值物理大小不变
       const cur = Number(gateMax && gateMax.value) || 1;
       if (gateMax) {
         if (prev === "MB" && unit === "KB") gateMax.value = String(Math.round(cur * 1024));
@@ -357,7 +374,6 @@
   });
 
   if (btnAuto) btnAuto.addEventListener("click", runGateDemo);
-
   [gateEnabled, gateMax, gateAutoQ, gateStep, gateTries].forEach(function (el) {
     if (!el) return;
     el.addEventListener("change", function () {
@@ -367,7 +383,7 @@
   });
 
   paintResult(85);
-  addLog("<span>拖动质量或运行自动重压</span>", "");
+  addLog("<span>" + (isEn() ? "Slide quality or run auto re-encode" : "拖动质量或运行自动重压") + "</span>", "");
 
   if ("IntersectionObserver" in window) {
     let played = false;
@@ -386,7 +402,7 @@
     if (board) io.observe(board);
   }
 
-  /* ---------- hero packet on path ---------- */
+  /* ---------- hero motion ---------- */
   function setupPacket() {
     if (!hasGsap || reduceMotion) return;
     const packet = document.getElementById("packet");
@@ -423,30 +439,30 @@
       ease: "sine.inOut",
     });
 
-    const words = ["变成动图", "压进阈值", "批量导出", "前后对比"];
     const el = document.getElementById("hero-accent-word");
     if (!el) return;
     let i = 0;
     setInterval(function () {
-      i = (i + 1) % words.length;
+      const list = isEn()
+        ? ["into motion", "under limit", "batch export", "compare"]
+        : ["变成动图", "压进阈值", "批量导出", "前后对比"];
+      i = (i + 1) % list.length;
       window.gsap.to(el, {
         opacity: 0,
         y: 8,
         duration: 0.25,
         onComplete: function () {
-          el.textContent = words[i];
+          el.textContent = list[i];
           window.gsap.fromTo(el, { opacity: 0, y: -8 }, { opacity: 1, y: 0, duration: 0.3 });
         },
       });
     }, 2800);
   }
 
-  /* ---------- scroll reveals ---------- */
+  /* ---------- scroll ---------- */
   function setupScroll() {
     if (!hasGsap || reduceMotion) return;
-    if (window.ScrollTrigger) {
-      window.gsap.registerPlugin(window.ScrollTrigger);
-    }
+    if (window.ScrollTrigger) window.gsap.registerPlugin(window.ScrollTrigger);
 
     window.gsap.from(".hero-copy > *", {
       opacity: 0,
@@ -456,7 +472,6 @@
       ease: "power2.out",
       delay: 0.1,
     });
-
     window.gsap.from(".hero-stage", {
       opacity: 0,
       scale: 0.96,
@@ -464,7 +479,6 @@
       ease: "power2.out",
       delay: 0.2,
     });
-
     gsap.utils.toArray(".why-card").forEach(function (card, idx) {
       gsap.from(card, {
         scrollTrigger: { trigger: card, start: "top 90%" },
@@ -474,14 +488,12 @@
         delay: (idx % 3) * 0.06,
       });
     });
-
     gsap.from(".gate-board", {
       scrollTrigger: { trigger: ".gate-board", start: "top 85%" },
       opacity: 0,
       y: 32,
       duration: 0.7,
     });
-
     gsap.utils.toArray(".shot, .shot-main").forEach(function (shot, idx) {
       gsap.from(shot, {
         scrollTrigger: { trigger: shot, start: "top 90%" },
@@ -491,7 +503,6 @@
         delay: idx * 0.06,
       });
     });
-
     gsap.from(".dl-card", {
       scrollTrigger: { trigger: ".dl-grid", start: "top 90%" },
       opacity: 0,
@@ -499,7 +510,6 @@
       stagger: 0.1,
       duration: 0.5,
     });
-
     gsap.utils.toArray(".tl-item").forEach(function (item, idx) {
       gsap.from(item, {
         scrollTrigger: { trigger: item, start: "top 90%" },
@@ -509,14 +519,12 @@
         delay: idx * 0.05,
       });
     });
-
     gsap.from(".authors", {
       scrollTrigger: { trigger: ".authors", start: "top 92%" },
       opacity: 0,
       y: 20,
       duration: 0.55,
     });
-
     if (document.querySelector(".name-grid")) {
       window.gsap.from(".name-panel", {
         scrollTrigger: { trigger: ".name-grid", start: "top 88%" },
@@ -548,12 +556,90 @@
     });
   });
 
-  /* ---------- output name tokenizer (setting.vue style) ---------- */
+  /* ---------- task card ---------- */
+  const taskItem = document.getElementById("task-item");
+  const taskCheck = document.getElementById("task-check");
+  const taskStatus = document.getElementById("task-status");
+  const taskStatusText = document.getElementById("task-status-text");
+  const taskProgress = document.getElementById("task-progress");
+  const taskFill = document.getElementById("task-progress-fill");
+  const taskStateBtns = document.querySelectorAll("[data-task-state]");
+
+  function taskLabel(state) {
+    if (isEn())
+      return { idle: "Queued", running: "Running…", done: "Done", fail: "Failed" }[state] || state;
+    return { idle: "待处理", running: "开始转换…", done: "生成成功", fail: "生成失败" }[state] || state;
+  }
+
+  function setTaskState(state) {
+    if (!taskItem) return;
+    taskItem.classList.remove("is-running", "is-fail", "is-done", "is-idle");
+    taskItem.classList.add("is-" + state);
+    if (state === "done") taskItem.classList.add("is-selected");
+    if (taskStatus) {
+      taskStatus.classList.remove("is-done", "is-running", "is-fail", "is-idle");
+      taskStatus.classList.add("is-" + state);
+    }
+    if (taskStatusText) taskStatusText.textContent = taskLabel(state);
+    if (taskProgress) {
+      taskProgress.classList.remove("is-done", "is-running", "is-fail", "is-idle");
+      taskProgress.classList.add("is-" + state);
+    }
+    if (taskFill) {
+      if (state === "idle") taskFill.style.width = "0%";
+      else if (state === "running") taskFill.style.width = "62%";
+      else if (state === "done") taskFill.style.width = "100%";
+      else taskFill.style.width = "38%";
+    }
+    taskStateBtns.forEach(function (b) {
+      b.classList.toggle("is-on", b.dataset.taskState === state);
+    });
+  }
+
+  taskStateBtns.forEach(function (btn) {
+    btn.addEventListener("click", function (e) {
+      e.stopPropagation();
+      setTaskState(btn.dataset.taskState);
+      if (taskItem) taskItem.dataset.state = btn.dataset.taskState;
+    });
+  });
+
+  if (taskStatus) {
+    taskStatus.addEventListener("click", function (e) {
+      e.stopPropagation();
+      const order = ["idle", "running", "done", "fail"];
+      const cur = (taskItem && taskItem.dataset.state) || "done";
+      const next = order[(order.indexOf(cur) + 1) % order.length];
+      if (taskItem) taskItem.dataset.state = next;
+      setTaskState(next);
+    });
+  }
+
+  if (taskCheck) {
+    taskCheck.addEventListener("click", function (e) {
+      e.stopPropagation();
+      const on = taskCheck.classList.toggle("is-on");
+      taskCheck.setAttribute("aria-pressed", on ? "true" : "false");
+      if (taskItem) taskItem.classList.toggle("is-selected", on);
+    });
+  }
+
+  if (taskItem) {
+    taskItem.addEventListener("click", function () {
+      taskItem.classList.toggle("is-selected");
+      if (taskCheck) {
+        const on = taskItem.classList.contains("is-selected");
+        taskCheck.classList.toggle("is-on", on);
+        taskCheck.setAttribute("aria-pressed", on ? "true" : "false");
+      }
+    });
+  }
+
+  /* ---------- name tokens ---------- */
   const TOKEN_RE = /[一-鿿]+|[A-Za-z]+|\d+|[^A-Za-z0-9一-鿿]/g;
   const SEP_RE = /^[^A-Za-z0-9一-鿿]+$/;
   const RAW_NAME = "春节贴纸-行走循环 高清_v3";
   let tokens = [];
-  let wordsOnly = false;
 
   function tokenize(name) {
     const parts = String(name).match(TOKEN_RE) || [];
@@ -572,6 +658,18 @@
   const nameFilter = document.getElementById("name-filter");
   const tokenRow = document.getElementById("token-row");
   const nameHint = document.getElementById("name-hint");
+  const PATH_CTX = {
+    srcPath: "D:/Work/design/春节限定/frames",
+    src: "frames",
+    name: "春节贴纸行走循环高清v3",
+    type: "PNGs",
+    parent: "D:/Work/design/春节限定",
+    date: "20260915",
+  };
+  const VAR_KEYS = ["srcPath", "src", "name", "type", "parent", "date"];
+  const pathVars = document.getElementById("path-vars");
+  const pathInput = document.getElementById("path-template");
+  const pathPreview = document.getElementById("path-preview");
 
   function isWordsOnlyState() {
     if (!tokens.length) return false;
@@ -605,95 +703,28 @@
       b.className = cls;
       b.textContent = t.text;
       b.setAttribute("aria-pressed", t.on ? "true" : "false");
-      b.title = t.sep ? "分隔符" : "字词";
       b.addEventListener("click", function () {
         tokens[i].on = !tokens[i].on;
         syncNameFromTokens();
       });
       tokenRow.appendChild(b);
     });
-
-    wordsOnly = isWordsOnlyState();
+    const wordsOnly = isWordsOnlyState();
     if (nameFilter) {
       nameFilter.classList.toggle("is-on", wordsOnly);
       nameFilter.setAttribute("aria-pressed", wordsOnly ? "true" : "false");
     }
     if (nameHint) {
       nameHint.textContent = wordsOnly
-        ? "只留文字：分隔符已全部取消"
-        : "点字词可取消；漏斗=只留文字";
+        ? isEn()
+          ? "Words only: separators off"
+          : "只留文字：分隔符已全部取消"
+        : isEn()
+          ? "Click tokens · funnel = words only"
+          : "点字词可取消；漏斗=只留文字";
     }
-    if (opts.syncInput !== false && nameInput) {
-      nameInput.value = joinTokens(tokens);
-    }
+    if (opts.syncInput !== false && nameInput) nameInput.value = joinTokens(tokens);
   }
-
-  function syncNameFromTokens() {
-    const v = joinTokens(tokens);
-    if (nameInput) nameInput.value = v;
-    paintTokens({ syncInput: false });
-    paintPathPreview();
-    refreshNameChip();
-  }
-
-  function retokenFromInput() {
-    const v = (nameInput && nameInput.value) || "";
-    tokens = tokenize(v).map(function (t) {
-      return { text: t.text, sep: t.sep, on: true };
-    });
-    paintTokens({ syncInput: false });
-    paintPathPreview();
-    refreshNameChip();
-  }
-
-  function refreshNameChip() {
-    if (!pathVars) return;
-    const chip = pathVars.querySelector('[data-key="name"]');
-    if (!chip) return;
-    const valEl = chip.querySelector(".var-chip__val");
-    if (valEl) valEl.textContent = joinTokens(tokens) || PATH_CTX.name;
-  }
-
-  if (tokenRow) {
-    tokens = tokenize(RAW_NAME);
-    tokens.forEach(function (t) {
-      if (t.sep) t.on = false;
-    });
-    paintTokens();
-  }
-
-  if (nameInput) {
-    nameInput.addEventListener("input", function () {
-      retokenFromInput();
-    });
-  }
-
-  if (nameFilter) {
-    nameFilter.addEventListener("click", function () {
-      const on = isWordsOnlyState();
-      tokens = tokens.map(function (t) {
-        return { text: t.text, sep: t.sep, on: t.sep ? !!on : true };
-      });
-      syncNameFromTokens();
-      if (hasGsap && !reduceMotion) {
-        window.gsap.fromTo(tokenRow, { opacity: 0.5 }, { opacity: 1, duration: 0.25 });
-      }
-    });
-  }
-
-  /* ---------- path template vars (PathVars style) ---------- */
-  const PATH_CTX = {
-    srcPath: "D:/Work/design/春节限定/frames",
-    src: "frames",
-    name: "春节贴纸行走循环高清v3",
-    type: "PNGs",
-    parent: "D:/Work/design/春节限定",
-    date: "20260915",
-  };
-  const VAR_KEYS = ["srcPath", "src", "name", "type", "parent", "date"];
-  const pathVars = document.getElementById("path-vars");
-  const pathInput = document.getElementById("path-template");
-  const pathPreview = document.getElementById("path-preview");
 
   function resolveVars(text) {
     return String(text || "").replace(/\{([a-zA-Z]+)\}/g, function (m, key) {
@@ -708,6 +739,51 @@
     pathPreview.textContent = resolveVars(pathInput.value) || "—";
   }
 
+  function refreshNameChip() {
+    if (!pathVars) return;
+    const chip = pathVars.querySelector('[data-key="name"]');
+    if (!chip) return;
+    const valEl = chip.querySelector(".var-chip__val");
+    if (valEl) valEl.textContent = joinTokens(tokens) || PATH_CTX.name;
+  }
+
+  function syncNameFromTokens() {
+    if (nameInput) nameInput.value = joinTokens(tokens);
+    paintTokens({ syncInput: false });
+    paintPathPreview();
+    refreshNameChip();
+  }
+
+  if (tokenRow) {
+    tokens = tokenize(RAW_NAME);
+    tokens.forEach(function (t) {
+      if (t.sep) t.on = false;
+    });
+    paintTokens();
+  }
+
+  if (nameInput) {
+    nameInput.addEventListener("input", function () {
+      const v = nameInput.value || "";
+      tokens = tokenize(v).map(function (t) {
+        return { text: t.text, sep: t.sep, on: true };
+      });
+      paintTokens({ syncInput: false });
+      paintPathPreview();
+      refreshNameChip();
+    });
+  }
+
+  if (nameFilter) {
+    nameFilter.addEventListener("click", function () {
+      const on = isWordsOnlyState();
+      tokens = tokens.map(function (t) {
+        return { text: t.text, sep: t.sep, on: t.sep ? !!on : true };
+      });
+      syncNameFromTokens();
+    });
+  }
+
   if (pathVars && pathInput) {
     VAR_KEYS.forEach(function (key) {
       const b = document.createElement("button");
@@ -715,9 +791,7 @@
       b.className = "var-chip";
       b.dataset.key = key;
       b.innerHTML =
-        '<span class="var-chip__key">{' +
-        key +
-        '}</span><span class="var-chip__val">' +
+        '<span class="var-chip__key">{' + key + '}</span><span class="var-chip__val">' +
         (key === "name" ? joinTokens(tokens) || PATH_CTX.name : PATH_CTX[key]) +
         "</span>";
       b.addEventListener("click", function () {
@@ -732,7 +806,6 @@
       });
       pathVars.appendChild(b);
     });
-
     pathInput.addEventListener("input", paintPathPreview);
     paintPathPreview();
 
@@ -741,99 +814,14 @@
       beside: "{parent}",
       custom: "{srcPath}/export/{date}",
     };
-
     document.querySelectorAll("[data-preset]").forEach(function (btn) {
       btn.addEventListener("click", function () {
-        const p = btn.dataset.preset;
-        pathInput.value = PRESET_MAP[p] || "{srcPath}";
+        pathInput.value = PRESET_MAP[btn.dataset.preset] || "{srcPath}";
         document.querySelectorAll("[data-preset]").forEach(function (x) {
           x.classList.toggle("is-on", x === btn);
         });
         paintPathPreview();
       });
-    });
-  }
-
-  paintPathPreview();
-
-  /* ---------- task card demo (projectList-like) ---------- */
-  const taskItem = document.getElementById("task-item");
-  const taskCheck = document.getElementById("task-check");
-  const taskStatus = document.getElementById("task-status");
-  const taskStatusText = document.getElementById("task-status-text");
-  const taskProgress = document.getElementById("task-progress");
-  const taskFill = document.getElementById("task-progress-fill");
-  const taskStateBtns = document.querySelectorAll("[data-task-state]");
-
-  const TASK_STATES = {
-    idle: { label: "待处理", icon: "clock", cls: "is-idle" },
-    running: { label: "开始转换…", icon: "spin", cls: "is-running" },
-    done: { label: "生成成功", icon: "check", cls: "is-done" },
-    fail: { label: "生成失败", icon: "x", cls: "is-fail" },
-  };
-
-  function setTaskState(state) {
-    if (!taskItem || !TASK_STATES[state]) return;
-    const cfg = TASK_STATES[state];
-    taskItem.classList.remove("is-running", "is-fail", "is-done", "is-idle");
-    taskItem.classList.add(cfg.cls);
-    if (state === "done") taskItem.classList.add("is-selected");
-
-    if (taskStatus) {
-      taskStatus.classList.remove("is-done", "is-running", "is-fail", "is-idle");
-      taskStatus.classList.add(cfg.cls);
-    }
-    if (taskStatusText) taskStatusText.textContent = cfg.label;
-    if (taskProgress) {
-      taskProgress.classList.remove("is-done", "is-running", "is-fail", "is-idle");
-      taskProgress.classList.add(cfg.cls);
-    }
-    if (taskFill) {
-      if (state === "idle") taskFill.style.width = "0%";
-      else if (state === "running") taskFill.style.width = "62%";
-      else if (state === "done") taskFill.style.width = "100%";
-      else taskFill.style.width = "38%";
-    }
-
-    taskStateBtns.forEach(function (b) {
-      b.classList.toggle("is-on", b.dataset.taskState === state);
-    });
-  }
-
-  taskStateBtns.forEach(function (btn) {
-    btn.addEventListener("click", function (e) {
-      e.stopPropagation();
-      setTaskState(btn.dataset.taskState);
-    });
-  });
-
-  if (taskStatus) {
-    taskStatus.addEventListener("click", function (e) {
-      e.stopPropagation();
-      const order = ["idle", "running", "done", "fail"];
-      const cur = taskItem && (taskItem.dataset.state || "done");
-      const next = order[(order.indexOf(cur) + 1) % order.length];
-      if (taskItem) taskItem.dataset.state = next;
-      setTaskState(next);
-    });
-  }
-
-  if (taskCheck) {
-    taskCheck.addEventListener("click", function (e) {
-      e.stopPropagation();
-      const on = taskCheck.classList.toggle("is-on");
-      taskCheck.setAttribute("aria-pressed", on ? "true" : "false");
-      if (taskItem) taskItem.classList.toggle("is-selected", on);
-    });
-  }
-
-  if (taskItem) {
-    taskItem.addEventListener("click", function () {
-      taskItem.classList.toggle("is-selected");
-      if (taskCheck) {
-        taskCheck.classList.toggle("is-on", taskItem.classList.contains("is-selected"));
-        taskCheck.setAttribute("aria-pressed", taskItem.classList.contains("is-selected") ? "true" : "false");
-      }
     });
   }
 

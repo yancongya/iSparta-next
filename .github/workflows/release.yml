@@ -335,6 +335,26 @@ jobs:
           echo "Notes head:"
           head -n 20 notes/release-notes.md
 
+      # 稳定文件名别名：供落地页 releases/latest/download/<stable> 固定链接
+      - name: Add stable-named aliases
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          VER="${VERSION}"
+          copy_stable() {
+            src="$1"; dest="$2"
+            if [ -f "dist/$src" ]; then
+              cp -f "dist/$src" "dist/$dest"
+              echo "alias $src -> $dest"
+            fi
+          }
+          copy_stable "isparta-${VER}-win-x64.zip" "isparta-win-x64.zip"
+          copy_stable "isparta-${VER}-linux-x64.tar.gz" "isparta-linux-x64.tar.gz"
+          copy_stable "isparta-${VER}-mac-arm64.zip" "isparta-mac-arm64.zip"
+          copy_stable "isparta-${VER}-mac-x64.zip" "isparta-mac-x64.zip"
+          ls -lh dist
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
