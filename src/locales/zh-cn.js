@@ -85,7 +85,7 @@ module.exports = {
     "sizeLimitAdjusted":"（已按阈值降质量）",
     // output path
     "outputTo":"输出路径",
-    "outputToOutput":"源目录/output",
+    "outputToOutput":"源目录",
     "outputToBeside":"目录旁级",
     "outputToCustom":"自定义目录",
     "outputToPathPh":"选择或输入目录",

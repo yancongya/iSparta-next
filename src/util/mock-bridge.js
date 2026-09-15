@@ -174,7 +174,8 @@ function seedItems (fs, path, storage) {
 
   const mk = (type, fileList, outputName, isSelected) => {
     fileList.forEach((p) => fs.writeFileSync(p, 'mock'))
-    const outputPath = path.join(path.dirname(fileList[0]), 'output', outputName + '.png')
+    // 与新版预设 1 保持一致：直接输出到源目录，不再建 output 子目录
+    const outputPath = path.join(path.dirname(fileList[0]), outputName + '.png')
     // 输出文件也写入 mock fs：done 条目的前后对比弹窗才有「输出侧」图可读
     fs.writeFileSync(outputPath, 'mock')
     return {

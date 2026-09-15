@@ -85,7 +85,7 @@ module.exports = {
     "sizeLimitAdjusted": "（已按閾值降質量）",
     // output path
     "outputTo": "輸出路徑",
-    "outputToOutput": "源目錄/output",
+    "outputToOutput": "源目錄",
     "outputToBeside": "目錄旁級",
     "outputToCustom": "自定義目錄",
     "outputToPathPh": "選擇或輸入目錄",

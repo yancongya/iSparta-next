@@ -85,7 +85,7 @@ module.exports = {
     "sizeLimitAdjusted": " (size gate)",
     // output path
     "outputTo": "Output path",
-    "outputToOutput": "Source/output",
+    "outputToOutput": "Source folder",
     "outputToBeside": "Beside folder",
     "outputToCustom": "Custom folder",
     "outputToPathPh": "Pick or type folder",
