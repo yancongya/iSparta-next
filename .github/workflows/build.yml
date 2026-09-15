@@ -83,7 +83,7 @@ jobs:
               elif [[ "$lower" == *x64* || "$lower" == *x86_64* || "$lower" == *intel* ]]; then
                 dest="isparta-${VERSION}-mac-x64.zip"
               else
-                dest="isparta-${VERSION}-mac.zip"
+                dest="isparta-${VERSION}-mac-x64.zip"
               fi
             elif [[ "$PLATFORM" == "win" ]]; then
               dest="isparta-${VERSION}-win-x64.${ext}"
