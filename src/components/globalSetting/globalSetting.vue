@@ -44,12 +44,48 @@
         <is-form-item :label="$t('outputTo')">
           <div class="gs-path">
             <!-- 与输出设置同一套：预设只填模板，变量路径可编辑，胶囊点击插入 -->
-            <is-segmented :value="gsPreset" :options="pathModes" size="sm" @change="applyGsPreset" />
+            <is-preset-bar
+              :presets="presetItems"
+              :active-id="gsPreset"
+              :ctx="demoCtx"
+              :current-template="setting.options.outputTo.template"
+              @apply="onGsPresetApply"
+              @save="onGsPresetSave"
+              @reset="onGsPresetReset"
+              @remove="onGsPresetRemove"
+            />
             <path-vars
               v-model="setting.options.outputTo.template"
               :ctx="demoCtx"
               class="gs-path__vars"
-            />
+            >
+              <button
+                slot="append"
+                type="button"
+                class="pv__bookmark"
+                :class="{ 'is-on': bookmarkOpen }"
+                v-tip="$t('presetSaveTip')"
+                :aria-label="$t('presetSaveTip')"
+                @click.stop="bookmarkOpen = !bookmarkOpen"
+              ><is-icon name="bookmark" size="sm" /></button>
+            </path-vars>
+            <div v-if="bookmarkOpen" class="bookmark-row bookmark-row--gs">
+              <is-input
+                v-model="bookmarkLabel"
+                class="bookmark-row__in"
+                size="sm"
+                :placeholder="$t('presetNamePh')"
+                :maxlength="16"
+                @keyup.enter.native="confirmGsBookmark"
+                @keyup.esc.native="bookmarkOpen = false"
+              />
+              <button type="button" class="bookmark-row__ok" :aria-label="$t('confirm')" @click.stop="confirmGsBookmark">
+                <is-icon name="check" size="xs" />
+              </button>
+              <button type="button" :aria-label="$t('cancel')" @click.stop="bookmarkOpen = false">
+                <is-icon name="close" size="xs" />
+              </button>
+            </div>
           </div>
           <p class="gs-hint">{{ $t('outputToCustomHint') }}</p>
         </is-form-item>
@@ -98,7 +134,17 @@
 import { storage } from '../../util/node-env'
 import ThemeManager from '../../ui-next/theme'
 import PathVars from '../../ui-next/components/PathVars.vue'
-import { activePresetOf, PATH_PRESETS } from '../../util/outputPath'
+import IsPresetBar from '../../ui-next/components/IsPresetBar.vue'
+import {
+  loadPresets,
+  savePresets,
+  presetList,
+  activePresetIdOf,
+  setBuiltinTemplate,
+  resetBuiltinTemplate,
+  upsertCustomPreset,
+  removeCustomPreset
+} from '../../util/outputPresets'
 
 const DEFAULT_SIZE_LIMIT = {
   enabled: false,
@@ -118,13 +164,17 @@ const DEFAULT_OUTPUT_TO = {
 }
 
 export default {
-  components: { PathVars },
+  components: { PathVars, IsPresetBar },
   data () {
     return {
       setting: this.loadSetting(),
       dialogFormVisible: false,
       sizeDraft: null,
-      themeMode: ThemeManager.getMode()
+      themeMode: ThemeManager.getMode(),
+      // 输出路径预设：与输出设置面板共享同一份 storage 键
+      outputPresets: loadPresets(),
+      bookmarkOpen: false,
+      bookmarkLabel: ''
     }
   },
   computed: {
@@ -142,17 +192,14 @@ export default {
         { label: this.$t('themeSystem'), value: 'system', icon: 'globe' }
       ]
     },
-    pathModes () {
-      // 默认设置不提供 custom：这里没有目录选择器，选了会得到空的 customPath
-      return [
-        { label: this.$t('outputToOutput'), value: 'output' },
-        { label: this.$t('outputToBeside'), value: 'beside' }
-      ]
+    // 预设条渲染数据：内置（含被改过的模板）+ 用户自定义
+    presetItems () {
+      return presetList(this.outputPresets)
     },
-    // 与输出设置一致：分段控件高亮由模板反查得出
+    // 与输出设置一致：高亮由模板反查得出（含用户预设）
     gsPreset () {
       const o = this.setting && this.setting.options && this.setting.options.outputTo
-      return activePresetOf({ outputTo: o })
+      return activePresetIdOf({ outputTo: o }, this.outputPresets)
     },
     // 默认设置没有具体项目，用说明性占位值让胶囊仍能表达每个变量的含义
     demoCtx () {
@@ -202,13 +249,50 @@ export default {
     if (this._unsubTheme) this._unsubTheme()
   },
   methods: {
-    // 预设：与输出设置一致，只往模板里填内容
-    applyGsPreset (value) {
-      const hit = PATH_PRESETS.filter(function (p) { return p.value === value })
-      if (!hit.length || !this.setting || !this.setting.options) { return }
+    // ---------- 输出路径预设（与输出设置面板共享同一份存储） ----------
+    applyGsTemplate (tpl, mode) {
+      if (!this.setting || !this.setting.options) { return }
       const o = this.setting.options.outputTo
-      this.$set(o, 'template', hit[0].template)
-      this.$set(o, 'mode', value)
+      this.$set(o, 'template', tpl)
+      if (mode) { this.$set(o, 'mode', mode) }
+    },
+    onGsPresetApply (p) {
+      this.applyGsTemplate(p.template, p.builtin ? p.id : 'custom')
+    },
+    onGsPresetSave (entry) {
+      if (entry.builtin) {
+        this.outputPresets = setBuiltinTemplate(this.outputPresets, entry.id, entry.template)
+      } else {
+        this.outputPresets = upsertCustomPreset(this.outputPresets, entry)
+      }
+      savePresets(this.outputPresets)
+      if (entry.id === '' || this.gsPreset === entry.id) {
+        this.applyGsTemplate(entry.template)
+      }
+    },
+    onGsPresetReset (p) {
+      this.outputPresets = resetBuiltinTemplate(this.outputPresets, p.id)
+      savePresets(this.outputPresets)
+    },
+    onGsPresetRemove (p) {
+      this.outputPresets = removeCustomPreset(this.outputPresets, p.id)
+      savePresets(this.outputPresets)
+    },
+    // 书签：把当前默认模板收藏成预设
+    confirmGsBookmark () {
+      const cur = this.setting && this.setting.options && this.setting.options.outputTo
+      const tpl = String((cur && cur.template) || '').trim()
+      if (!tpl) {
+        this.bookmarkOpen = false
+        return
+      }
+      this.outputPresets = upsertCustomPreset(this.outputPresets, {
+        label: this.bookmarkLabel || this.$t('presetUnnamed'),
+        template: tpl
+      })
+      savePresets(this.outputPresets)
+      this.bookmarkOpen = false
+      this.bookmarkLabel = ''
     },
     // 读取并补齐历史配置缺字段
     loadSetting () {

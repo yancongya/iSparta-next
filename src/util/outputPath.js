@@ -68,28 +68,125 @@ export function outputContext (item) {
 }
 
 /**
- * 预设：分段控件只是往「变量路径」里填一段模板，不再是独立的状态机。
+ * 内置预设出厂模板：分段控件只是往「变量路径」里填一段模板，不再是独立的状态机。
  * 这样预设、手输变量、文件夹选择三种入口最终都收敛到同一个字段。
  * 预设 1 原为 {srcPath}/output（总在同级建 output 目录），已改为直接输出到源目录。
  */
-export const PATH_PRESETS = [
-  { value: 'output', template: '{srcPath}' },
-  { value: 'beside', template: '{parent}' }
+export const BUILTIN_PRESETS = [
+  { value: 'output', labelKey: 'outputToOutput', template: '{srcPath}' },
+  { value: 'beside', labelKey: 'outputToBeside', template: '{parent}' }
 ]
+// 向后兼容旧引用名
+export const PATH_PRESETS = BUILTIN_PRESETS
 
-// Windows 下 join 会产出反斜杠，比较预设时统一成 / 再比
+// Windows 下 join 会产出反斜杠，比较模板时统一成 / 再比
 function slashNorm (s) {
   return String(s || '').replace(/[\\/]+/g, '/')
 }
 
-/** 当前模板命中哪个预设；返回 '' 表示自定义 */
-export function activePresetOf (holder) {
+/* --------------------------------------------------------------------------
+   用户可增删改的预设层
+   --------------------------------------------------------------------------
+   存储形态（独立 storage 键 outputPresets，不塞进 globalSetting.options：
+   ITEMS_ADD 会把全局配置整个 clone 进每条任务，塞进去会让每个任务背一份副本）：
+
+     { builtin: { output: '<改后模板>' },          // 只存被改过的内置项
+       custom: [{ id, label, template }] }
+
+   任务只保存自己的 template 快照，所以删改预设永远不会破坏已有任务。
+   -------------------------------------------------------------------------- */
+
+export function emptyPresets () {
+  return { builtin: {}, custom: [] }
+}
+
+export function normalizePresets (raw) {
+  const p = raw && typeof raw === 'object' ? raw : {}
+  const builtin = p.builtin && typeof p.builtin === 'object' ? p.builtin : {}
+  const custom = Array.isArray(p.custom) ? p.custom.filter(function (c) {
+    return c && typeof c === 'object' && typeof c.template === 'string'
+  }).map(function (c, i) {
+    return {
+      id: typeof c.id === 'string' && c.id ? c.id : 'p-' + i,
+      label: typeof c.label === 'string' ? c.label : '',
+      template: c.template
+    }
+  }) : []
+  return { builtin: builtin, custom: custom }
+}
+
+/** 渲染用的完整预设列表：内置（含改后模板与 modified 标记）+ 用户预设 */
+export function presetList (raw) {
+  const p = normalizePresets(raw)
+  const out = BUILTIN_PRESETS.map(function (b) {
+    const over = p.builtin[b.value]
+    const tpl = typeof over === 'string' && over.trim() ? over : b.template
+    return {
+      id: b.value,
+      labelKey: b.labelKey,
+      template: tpl,
+      builtin: true,
+      modified: tpl !== b.template
+    }
+  })
+  p.custom.forEach(function (c) {
+    out.push({ id: c.id, label: c.label, template: c.template, builtin: false, modified: false })
+  })
+  return out
+}
+
+/** 当前模板命中哪个预设 id；返回 '' 表示未收藏的自定义路径 */
+export function activePresetIdOf (holder, rawPresets) {
   const tpl = (normalizeOutputTo(holder).template || '').trim()
   if (!tpl) { return '' }
-  const hit = PATH_PRESETS.filter(function (p) {
-    return slashNorm(p.template) === slashNorm(tpl)
+  const hit = presetList(rawPresets).filter(function (x) {
+    return slashNorm(x.template) === slashNorm(tpl)
   })
-  return hit.length ? hit[0].value : ''
+  return hit.length ? hit[0].id : ''
+}
+
+/** 旧签名：只按内置匹配，返回 value 或 ''（保留给未升级的调用点） */
+export function activePresetOf (holder) {
+  return activePresetIdOf(holder, null)
+}
+
+/* ---------- 纯函数式增删改：都返回新对象，便于 Vue 响应式赋值 ---------- */
+
+export function setBuiltinTemplate (raw, value, template) {
+  const p = normalizePresets(raw)
+  const b = BUILTIN_PRESETS.filter(function (x) { return x.value === value })[0]
+  if (!b) { return p }
+  const builtin = Object.assign({}, p.builtin)
+  // 改回出厂模板等于取消覆盖，别留脏数据
+  if (!template || template.trim() === b.template) { delete builtin[value] }
+  else { builtin[value] = template.trim() }
+  return { builtin: builtin, custom: p.custom }
+}
+
+export function resetBuiltinTemplate (raw, value) {
+  const p = normalizePresets(raw)
+  const builtin = Object.assign({}, p.builtin)
+  delete builtin[value]
+  return { builtin: builtin, custom: p.custom }
+}
+
+export function upsertCustomPreset (raw, entry) {
+  const p = normalizePresets(raw)
+  if (!entry || !String(entry.template || '').trim()) { return p }
+  const next = {
+    id: entry.id || ('p-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 6)),
+    label: String(entry.label || '').trim(),
+    template: String(entry.template).trim()
+  }
+  const custom = p.custom.slice()
+  const at = custom.findIndex(function (c) { return c.id === next.id })
+  if (at >= 0) { custom.splice(at, 1, next) } else { custom.push(next) }
+  return { builtin: p.builtin, custom: custom }
+}
+
+export function removeCustomPreset (raw, id) {
+  const p = normalizePresets(raw)
+  return { builtin: p.builtin, custom: p.custom.filter(function (c) { return c.id !== id }) }
 }
 
 /**

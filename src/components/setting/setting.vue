@@ -104,7 +104,17 @@
       <!-- 输出路径：预设只往变量路径填模板，真实路径实时展开 -->
       <div class="mod-form__group">
         <p class="mod-form__caption">{{ $t("outputTo") }}</p>
-        <is-segmented :value="activePreset" :options="pathModes" size="sm" @change="applyPreset" />
+        <is-preset-bar
+          :presets="presetItems"
+          :active-id="presetActiveId"
+          :ctx="pathContext"
+          :current-template="outputToTemplate"
+          :disabled="projectCount === 0"
+          @apply="onPresetApply"
+          @save="onPresetSave"
+          @reset="onPresetReset"
+          @remove="onPresetRemove"
+        />
 
         <div class="path-rows">
           <!-- 真实路径：与变量路径同样用输入框呈现，选目录的图标挂在这一行右侧 -->
@@ -119,8 +129,41 @@
             ><is-icon name="folder" size="sm" /></button>
           </div>
 
-          <!-- 变量路径 + 彩色变量胶囊：与默认设置共用同一组件 -->
-          <path-vars v-model="outputToTemplate" :ctx="pathContext" @insert="insertVariable" />
+          <!-- 变量路径 + 彩色变量胶囊：与默认设置共用同一组件。
+               append 插槽挂「存为预设」书签：调好路径一键收藏，无需进编辑器 -->
+          <path-vars v-model="outputToTemplate" :ctx="pathContext" @insert="insertVariable">
+            <button
+              slot="append"
+              type="button"
+              class="pv__bookmark"
+              :class="{ 'is-on': bookmarkOpen }"
+              v-tip="$t('presetSaveTip')"
+              :aria-label="$t('presetSaveTip')"
+              @click.stop="bookmarkOpen = !bookmarkOpen"
+            ><is-icon name="bookmark" size="sm" /></button>
+          </path-vars>
+
+          <!-- 书签命名行：确认后新胶囊从右侧弹入 -->
+          <transition name="is-collapse">
+            <div v-if="bookmarkOpen" class="bookmark-row">
+              <is-input
+                ref="bookmarkIn"
+                v-model="bookmarkLabel"
+                class="bookmark-row__in"
+                size="sm"
+                :placeholder="$t('presetNamePh')"
+                :maxlength="16"
+                @keyup.enter.native="confirmBookmark"
+                @keyup.esc.native="bookmarkOpen = false"
+              />
+              <button type="button" class="bookmark-row__ok" :aria-label="$t('confirm')" @click.stop="confirmBookmark">
+                <is-icon name="check" size="xs" />
+              </button>
+              <button type="button" :aria-label="$t('cancel')" @click.stop="bookmarkOpen = false">
+                <is-icon name="close" size="xs" />
+              </button>
+            </div>
+          </transition>
         </div>
       </div>
 
@@ -208,13 +251,24 @@
 <script>
 import processor from '../../util/processor'
 import { ipc } from '../../util/node-env'
-import { resolveOutputPath, normalizeOutputTo, outputContext, activePresetOf, PATH_PRESETS } from '../../util/outputPath'
+import { resolveOutputPath, normalizeOutputTo, outputContext } from '../../util/outputPath'
+import {
+  loadPresets,
+  savePresets,
+  presetList,
+  activePresetIdOf,
+  setBuiltinTemplate,
+  resetBuiltinTemplate,
+  upsertCustomPreset,
+  removeCustomPreset
+} from '../../util/outputPresets'
 import { tokenizeName, joinTokens } from '../../util/tokenizeName'
 import PathVars from '../../ui-next/components/PathVars.vue'
+import IsPresetBar from '../../ui-next/components/IsPresetBar.vue'
 import notice from '../../ui-next/notice'
 
 export default {
-  components: { PathVars },
+  components: { PathVars, IsPresetBar },
   data () {
     return {
       sizeDraft: null,
@@ -222,7 +276,12 @@ export default {
       pathPreviewUI: '',
       pressed: '',
       // 输出名的拆词胶囊：[{ text, sep, on }]
-      nameTokens: []
+      nameTokens: [],
+      // 输出路径预设（内置覆盖 + 用户自定义），独立 storage 键持久化
+      outputPresets: loadPresets(),
+      // 「将当前路径存为预设」的内联命名框
+      bookmarkOpen: false,
+      bookmarkLabel: ''
     }
   },
   computed: {
@@ -280,19 +339,14 @@ export default {
       }
       return ['APNG', 'GIF', 'WEBP']
     },
-    pathModes () {
-      // 不再提供 custom 选项：自定义目录由路径框右侧的文件夹按钮直接选择
-      return [
-        { label: this.$t('outputToOutput'), value: 'output' },
-        { label: this.$t('outputToBeside'), value: 'beside' }
-      ]
-    },
     // ---------- 输出路径：模板是唯一真相源 ----------
-    activePreset () {
-      return activePresetOf(this.curtSetting)
+    // 预设条渲染数据：内置（含被改过的模板）+ 用户自定义
+    presetItems () {
+      return presetList(this.outputPresets)
     },
-    presetTemplate () {
-      return PATH_PRESETS[0].template
+    // 当前模板命中哪个预设；'' 表示未收藏的自定义路径（无胶囊高亮）
+    presetActiveId () {
+      return activePresetIdOf(this.curtSetting, this.outputPresets)
     },
     // ---------- 变量标签的当前取值 ----------
     pathContext () {
@@ -438,6 +492,15 @@ export default {
     selectedList () {
       this.syncPathUI()
     },
+    // 书签命名行展开即聚焦，少一次点击
+    bookmarkOpen (v) {
+      if (!v) { return }
+      this.$nextTick(() => {
+        const el = this.$refs.bookmarkIn
+        const input = el && el.$el ? el.$el.querySelector('input') : null
+        if (input) { input.focus() }
+      })
+    },
     curtSetting: {
       deep: true,
       handler () {
@@ -566,12 +629,51 @@ export default {
       // 「真实路径」行：模板展开结果
       this.pathPreviewUI = resolveOutputPath(this.selectedList[0], this.selectedList[0].options)
     },
-    // 预设：往变量路径里填对应模板，真实路径随之变化
-    applyPreset (value) {
-      const hit = PATH_PRESETS.filter(function (p) { return p.value === value })
-      if (!hit.length) { return }
-      this.pushOutputTo({ template: hit[0].template, mode: value })
+    // ---------- 输出路径预设 ----------
+    // 点胶囊：把模板写进「变量路径」（唯一真相源）
+    onPresetApply (p) {
+      this.pushOutputTo({ template: p.template, mode: p.builtin ? p.id : 'custom' })
       this.syncPathUI()
+    },
+    // 新增或改名/改模板；内置项走 override，用户项走 custom 列表
+    onPresetSave (entry) {
+      if (entry.builtin) {
+        this.outputPresets = setBuiltinTemplate(this.outputPresets, entry.id, entry.template)
+      } else {
+        this.outputPresets = upsertCustomPreset(this.outputPresets, entry)
+      }
+      savePresets(this.outputPresets)
+      // 改的正是当前选中的预设时，让任务模板跟着更新
+      if (this.presetActiveId === entry.id || entry.id === '') {
+        this.pushOutputTo({ template: entry.template })
+        this.syncPathUI()
+      }
+    },
+    onPresetReset (p) {
+      this.outputPresets = resetBuiltinTemplate(this.outputPresets, p.id)
+      savePresets(this.outputPresets)
+      notice.success(this.$t('presetResetDone'), this.$t('presetResetDoneTip'))
+    },
+    onPresetRemove (p) {
+      this.outputPresets = removeCustomPreset(this.outputPresets, p.id)
+      savePresets(this.outputPresets)
+    },
+    // 书签：把当前「变量路径」一键收藏成预设
+    confirmBookmark () {
+      const tpl = String(this.outputToTemplate || '').trim()
+      if (!tpl) {
+        notice.warning(this.$t('presetSaveEmpty'), this.$t('presetSaveEmptyTip'))
+        this.bookmarkOpen = false
+        return
+      }
+      this.outputPresets = upsertCustomPreset(this.outputPresets, {
+        label: this.bookmarkLabel || this.$t('presetUnnamed'),
+        template: tpl
+      })
+      savePresets(this.outputPresets)
+      this.bookmarkOpen = false
+      this.bookmarkLabel = ''
+      notice.success(this.$t('presetSaved'), this.$t('presetSavedTip'))
     },
     pickOutputDir () {
       if (this.selectedList.length !== 1) { return }
