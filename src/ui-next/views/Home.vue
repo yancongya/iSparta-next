@@ -184,6 +184,9 @@ export default {
     isLocked () {
       return this.$store.getters.getterLocked
     },
+    selectedCount () {
+      return this.$store.getters.getterSelected.length
+    },
     themeTitle () {
       return this.theme === 'dark' ? this.$t('themeToLight') : this.$t('themeToDark')
     },
@@ -212,6 +215,13 @@ export default {
     }
   },
   watch: {
+    // 选中 ↔ 面板联动：无选中自动折叠（把宽度让给列表），选中即自动展开。
+    // 只响应「变化沿」，不持续强制——用户手动点开的折叠态面板，
+    // 在没有新的选中动作前保持打开，尊重手动意图。
+    selectedCount (nv, ov) {
+      if (nv > 0 && ov === 0) { this.settingsOpen = true }
+      else if (nv === 0 && ov > 0) { this.settingsOpen = false }
+    },
     // 类挂到 body 上：immediate 保证恢复的持久化宽度本来就窄时也立即生效
     sideNarrow: {
       immediate: true,
@@ -226,6 +236,9 @@ export default {
     this.theme = ThemeManager.get()
     this._unsubTheme = ThemeManager.onChange((d) => { this.theme = d.theme })
     this.sideW = this.readSideW()
+    // 初始挂载同样遵循「无选中即折叠」；store 恢复逻辑保证有任务时至少选中一条，
+    // 因此正常情况下带任务启动面板是开的
+    this.settingsOpen = this.selectedCount > 0
   },
   mounted () {
     window.addEventListener('paste', this.onPaste)
