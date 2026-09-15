@@ -186,17 +186,32 @@ npm run build:windows
 
 推送到 `master` 会自动出测试包；也可在 Actions 页面手动跑 `Build Multi-Platform`。
 
-#### 正式发版（推荐走 Actions）
+#### 正式发版（本地 CLI 触发，云端 CI/CD 打包）
 
-1. 打开仓库 **Actions → Release → Run workflow**
-2. 选择：
+本地不构建安装包，只触发 GitHub Actions：
+
+```powershell
+.\scripts\release.ps1 -Bump patch
+# 或 minor / major，可加 -DryRun、-Prerelease
+```
+
+也可网页：**Actions → Release → Run workflow**，或：
+
+```powershell
+gh workflow run release.yml -R yancongya/iSparta-next -f bump=patch -f prerelease=false -f dry_run=false
+```
+
+选择：
    - **bump**：`patch` / `minor` / `major`（从当前 `package.json` 版本递增）
    - **prerelease**：勾选后在 GitHub 上标为 Pre-release（测试包可勾，正式版可不勾）
    - **dry_run**：只试算版本并构建，不提交、不打 tag、不发 Release
-3. 运行成功后会：
+
+运行成功后会：
    - 更新 `package.json` / `package-lock.json` 版本号
    - 提交 `chore(release): vX.Y.Z [skip ci]` 并创建 `vX.Y.Z` 标签
-   - 用该版本号构建 Win/Linux 并挂到 GitHub Release
+   - 用该版本号在 GitHub runner 上构建 Win/Linux，资产命名为：
+     - `isparta-<ver>-win-x64.zip`
+     - `isparta-<ver>-linux-x64.tar.gz`
 
 > 说明：发版提交带 `[skip ci]`，避免和日常 CI 重复构建。  
 > macOS 包不在 CI 内产出，需要本地 `npm run build` 后手动补传到同一 Release。  
