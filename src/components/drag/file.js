@@ -126,7 +126,7 @@ class actionFiles {
     temp.options = _.cloneDeep(globalSetting.options)
     temp.basic.type = format
     if (format === 'PNGs') {
-      // 序列帧：默认输出 {帧目录}/output，可由 outputTo 策略覆盖
+      // 序列帧：默认输出到 {帧目录}（预设 1 已不再追加 /output），可由 outputTo 策略覆盖
       // 不再自动追加 _apng 后缀，输出名交给用户在「输出名字」里用胶囊自行决定
       let folderName = path.basename(address)
       temp.options.outputName = folderName.replace(/[ ]/g, '')

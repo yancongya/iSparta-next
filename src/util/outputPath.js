@@ -70,9 +70,10 @@ export function outputContext (item) {
 /**
  * 预设：分段控件只是往「变量路径」里填一段模板，不再是独立的状态机。
  * 这样预设、手输变量、文件夹选择三种入口最终都收敛到同一个字段。
+ * 预设 1 原为 {srcPath}/output（总在同级建 output 目录），已改为直接输出到源目录。
  */
 export const PATH_PRESETS = [
-  { value: 'output', template: '{srcPath}/output' },
+  { value: 'output', template: '{srcPath}' },
   { value: 'beside', template: '{parent}' }
 ]
 
@@ -106,13 +107,13 @@ export function resolveOutputPath (item, options) {
   if (!ctx.srcPath) { return o.customPath || '' }
   if (o.mode === 'beside') { return ctx.parent || ctx.srcPath }
   if (o.customPath && o.customPath.trim()) { return resolveVars(o.customPath.trim(), ctx) }
-  // 与模板展开保持一致的分隔符，避免同一逻辑结果出现 / 与 \ 两种写法
-  return ctx.srcPath ? ctx.srcPath + '/output' : ''
+  // 历史数据（模板为空、mode=output）：直接输出到源目录，不再追加 /output
+  return ctx.srcPath || ''
 }
 
 export function outputPathPreviewLabel (o) {
   const mode = normalizeOutputTo(o).mode
-  if (mode === 'output') { return '{源目录}/output' }
+  if (mode === 'output') { return '{源目录}' }
   if (mode === 'beside') { return '{源目录}/../（旁级）' }
   return '{自定义目录}'
 }

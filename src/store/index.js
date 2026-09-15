@@ -5,6 +5,7 @@ import modules from './modules'
 
 import * as types from './mutation-types'
 import { fs, storage, os, path, getProcessBridge } from '../util/node-env'
+import { resolveOutputPath } from '../util/outputPath'
 const _ = require("lodash");
 // 【bug fix】修复初次使用时读取缓存错误的问题
 let storagePath = "";
@@ -97,6 +98,16 @@ const persistItems = _.debounce(function () {
 }, 200)
 
 
+// 旧版第一个输出预设是 {srcPath}/output（总在同级建 output 目录），现已改为直接
+// 输出到源目录 {srcPath}。已存任务与全局默认里写死的旧模板必须在此改写，
+// 否则用户即使没动过设置，也会继续被输出到 /output。
+// 只精确匹配旧默认模板（含反斜杠变体），用户自定义的路径不受影响。
+function migrateLegacyOutputTpl (tpl) {
+  if (typeof tpl !== 'string') { return tpl }
+  var norm = tpl.trim().replace(/[\\/]+/g, '/')
+  return norm === '{srcPath}/output' ? '{srcPath}' : tpl
+}
+
 //init globalSetting
 var globalSetting = window.storage.getItem('globalSetting');
 
@@ -143,6 +154,11 @@ if (!globalSetting) {
         parsed.options.outputTo.mode = defaultState.options.outputTo.mode
         changed = true
       }
+      var gTpl = migrateLegacyOutputTpl(parsed.options.outputTo.template)
+      if (gTpl !== parsed.options.outputTo.template) {
+        parsed.options.outputTo.template = gTpl
+        changed = true
+      }
     }
     if (changed) {
       window.storage.setItem('globalSetting', JSON.stringify(parsed))
@@ -177,6 +193,15 @@ if (localData) {
       }
       if (!item.options.sizeLimit) {
         item.options.sizeLimit = _.cloneDeep(defaultState.options.sizeLimit)
+      }
+      // 输出路径旧模板迁移（{srcPath}/output → {srcPath}）
+      if (item.options.outputTo) {
+        var iTpl = migrateLegacyOutputTpl(item.options.outputTo.template)
+        if (iTpl !== item.options.outputTo.template) {
+          item.options.outputTo.template = iTpl
+          // 模板变了要重算已存的 outputPath，否则界面与真实落盘路径不一致
+          item.basic.outputPath = resolveOutputPath(item, item.options)
+        }
       }
       // 旧版（a6bbb47）给 PNGs 自动命名「<文件夹去空格>_apng」，c426076 起已移除；
       // 但已存任务恢复时不改写 outputName，旧后缀会永久留着。
