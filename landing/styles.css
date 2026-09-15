@@ -2177,3 +2177,443 @@ html[data-theme="dark"] .author-tools li a {
     grid-template-columns: 1fr;
   }
 }
+
+/* ==========================================================================
+   04 · COMPARE — 真实前后对比擦除
+   位置由 --cmp-pos 单点驱动：clip-path 与分隔线共用，避免两处状态不同步
+   ========================================================================== */
+.cmp-board {
+  display: grid;
+  grid-template-columns: minmax(0, auto) minmax(0, 1fr);
+  gap: 28px;
+  align-items: start;
+}
+
+.is-compare {
+  --cmp-pos: 50%;
+  position: relative;
+  width: 300px;
+  max-width: 100%;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  cursor: ew-resize;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.is-compare__canvas {
+  position: relative;
+  width: 300px;
+  max-width: 100%;
+  aspect-ratio: 1 / 1;
+  background-color: #fffdf8;
+  background-image: linear-gradient(45deg, #e8dfd0 25%, transparent 25%),
+    linear-gradient(-45deg, #e8dfd0 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #e8dfd0 75%),
+    linear-gradient(-45deg, transparent 75%, #e8dfd0 75%);
+  background-size: 12px 12px;
+  background-position: 0 0, 0 6px, 6px -6px, -6px 0;
+}
+
+html[data-theme="dark"] .is-compare__canvas {
+  background-color: #1a201c;
+  background-image: linear-gradient(45deg, #232b26 25%, transparent 25%),
+    linear-gradient(-45deg, #232b26 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #232b26 75%),
+    linear-gradient(-45deg, transparent 75%, #232b26 75%);
+}
+
+.is-compare__base,
+.is-compare__over {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+  image-rendering: auto;
+}
+
+/* 覆盖层只露出分隔线右侧：左侧保留原帧 */
+.is-compare__over {
+  clip-path: inset(0 0 0 var(--cmp-pos));
+}
+
+.is-compare__divider {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--cmp-pos);
+  width: 2px;
+  margin-left: -1px;
+  background: var(--accent);
+  box-shadow: 0 0 10px rgba(194, 65, 12, 0.45);
+  pointer-events: none;
+  will-change: left;
+}
+
+html[data-theme="dark"] .is-compare__divider {
+  box-shadow: 0 0 10px rgba(200, 245, 66, 0.4);
+}
+
+.is-compare__grip {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 2px solid var(--accent);
+  border-radius: 50%;
+  background: var(--card);
+  color: var(--accent);
+  transform: translate(-50%, -50%);
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.2s ease;
+}
+
+.is-compare:hover .is-compare__grip,
+.is-compare:focus-visible .is-compare__grip {
+  transform: translate(-50%, -50%) scale(1.12);
+  box-shadow: 0 0 0 6px rgba(194, 65, 12, 0.12);
+}
+
+.is-compare.is-dragging .is-compare__grip {
+  transform: translate(-50%, -50%) scale(0.94);
+}
+
+.is-compare:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.is-compare__tag {
+  position: absolute;
+  top: 8px;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: rgba(28, 25, 23, 0.72);
+  color: #fffdf8;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  pointer-events: none;
+}
+
+.is-compare__tag--l { left: 8px; }
+.is-compare__tag--r { right: 8px; }
+
+/* ---------- 右侧：格式切换与实测数据 ---------- */
+.cmp-tabs {
+  display: inline-flex;
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--card);
+}
+
+.cmp-tab {
+  padding: 5px 14px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.15s ease;
+}
+
+.cmp-tab:hover { color: var(--ink); }
+
+.cmp-tab.is-on {
+  background: var(--accent);
+  color: #fffdf8;
+}
+
+html[data-theme="dark"] .cmp-tab.is-on { color: #0c0f0e; }
+
+.cmp-tab:active { transform: scale(0.96); }
+
+.cmp-stats {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 14px;
+  margin: 18px 0 0;
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--card);
+}
+
+.cmp-stats dt {
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.cmp-stats dd {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  transition: color 0.25s ease;
+}
+
+.cmp-stats dd.is-bad { color: var(--warn); }
+.cmp-stats dd.is-ok { color: var(--ok); }
+
+/* 数值变化时轻微弹一下，让「切换格式」有因果反馈 */
+.cmp-stats dd.is-flash {
+  animation: cmpFlash 0.42s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes cmpFlash {
+  0% { transform: translateY(3px) scale(0.97); opacity: 0.55; }
+  60% { transform: translateY(0) scale(1.03); opacity: 1; }
+  100% { transform: translateY(0) scale(1); }
+}
+
+.cmp-note {
+  margin: 14px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.cmp-hint {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+@media (max-width: 860px) {
+  .cmp-board {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    gap: 22px;
+  }
+  .cmp-side { width: 100%; max-width: 420px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .is-compare__grip,
+  .cmp-tab,
+  .cmp-stats dd { transition: none; }
+  .cmp-stats dd.is-flash { animation: none; }
+}
+
+/* ==========================================================================
+   HERO · 可投喂演示台
+   ========================================================================== */
+.frame--grab {
+  cursor: grab;
+  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.25s ease;
+}
+
+.frame--grab:hover { transform: translateY(-4px); }
+
+.frame--grab:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+/* 正在被拖：半透明并轻微放大，明确「我抓到了东西」 */
+.frame--grab.is-ghost {
+  opacity: 0.45;
+  transform: scale(1.06);
+  cursor: grabbing;
+}
+
+/* 已投进收集器：淡出并缩到中心，不占位（可再点重置） */
+.frame--grab.is-fed {
+  opacity: 0;
+  transform: scale(0.4);
+  pointer-events: none;
+}
+
+/* 形变只作用在内层：外层 #packet 的 transform 由 GSAP 沿轨道定位（内联样式），
+   同层写 class 变换会被覆盖 */
+#packet-inner {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* 帧悬停在收集器上方：张开「接住」姿态 */
+#packet.is-hot #packet-inner {
+  transform: scale(1.14);
+}
+
+#packet.is-hot #packet-inner rect {
+  stroke-width: 3;
+}
+
+/* 收到帧的瞬间弹一下 */
+#packet.is-bump #packet-inner {
+  animation: packetBump 0.42s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes packetBump {
+  0% { transform: scale(1); }
+  45% { transform: scale(1.22); }
+  100% { transform: scale(1); }
+}
+
+/* 攒满：整台机器进入「可以导出了」状态 */
+.hero-stage.is-ready #outputs .out-chip rect {
+  stroke-width: 2.4;
+}
+
+.hero-stage.is-ready #rail {
+  stroke: var(--accent-soft);
+}
+
+/* ---------- 真实文件投放托盘 ---------- */
+.hero-tray {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-height: 62px;
+  margin-top: 10px;
+  padding: 8px 10px;
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  background: var(--card);
+  transition: border-color 0.2s ease, background-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.hero-tray.is-hot {
+  border-color: var(--accent);
+  border-style: solid;
+  background: var(--accent-soft);
+  box-shadow: 0 0 0 4px rgba(194, 65, 12, 0.1);
+}
+
+html[data-theme="dark"] .hero-tray.is-hot {
+  box-shadow: 0 0 0 4px rgba(200, 245, 66, 0.12);
+}
+
+.hero-tray__ph {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.03em;
+}
+
+.hero-tray__item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 8px 4px 4px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--paper);
+  animation: trayIn 0.34s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes trayIn {
+  0% { opacity: 0; transform: translateY(8px) scale(0.9); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.hero-tray__item img {
+  width: 34px;
+  height: 34px;
+  object-fit: cover;
+  border-radius: 6px;
+  display: block;
+}
+
+.hero-tray__meta {
+  display: flex;
+  flex-direction: column;
+  max-width: 120px;
+}
+
+.hero-tray__name {
+  font-size: 11px;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hero-tray__size {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--muted);
+}
+
+.hero-tray__note {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .frame--grab,
+  #packet,
+  .hero-tray { transition: none; }
+  .frame--grab:hover { transform: none; }
+  #packet.is-bump,
+  .hero-tray__item { animation: none; }
+}
+
+
+/* ---------- 小机器狗：与 sizeGate 数据联动的拟物 ---------- */
+#pet-inner {
+  --pet-speed: 2.4s;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: petIdle 2.6s ease-in-out infinite alternate;
+}
+
+@keyframes petIdle {
+  from { transform: translateY(-2px); }
+  to { transform: translateY(2px); }
+}
+
+/* 演示运行中：质量越低（压得越狠）它跑得越欢 */
+#pet.is-running #pet-inner {
+  animation: petRun var(--pet-speed) linear infinite;
+}
+
+@keyframes petRun {
+  0%   { transform: translateY(0) rotate(-3deg); }
+  25%  { transform: translateY(-5px) rotate(0deg); }
+  50%  { transform: translateY(0) rotate(3deg); }
+  75%  { transform: translateY(-5px) rotate(0deg); }
+  100% { transform: translateY(0) rotate(-3deg); }
+}
+
+/* 攒满 3 帧：跳一下庆祝 */
+#pet.is-cheer #pet-inner {
+  animation: petCheer 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes petCheer {
+  0% { transform: translateY(0) scale(1); }
+  40% { transform: translateY(-12px) scale(1.08); }
+  100% { transform: translateY(0) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #pet-inner,
+  #pet.is-running #pet-inner,
+  #pet.is-cheer #pet-inner { animation: none; }
+  #packet-inner { transition: none; }
+  #packet.is-bump #packet-inner { animation: none; }
+}
