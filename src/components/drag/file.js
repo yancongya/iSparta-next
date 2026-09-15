@@ -120,7 +120,10 @@ class actionFiles {
     let temp = {}
     let globalSetting = JSON.parse(window.storage.getItem('globalSetting'))
     temp.basic = {}
-    temp.options = globalSetting.options
+    // 必须深拷贝：直接引用 globalSetting.options 会让本次导入的所有任务共享
+    // 同一个对象，下面逐条写 outputName 时互相覆盖——多文件夹批量导入全部
+    // 串成最后一个名字（单条导入看不出来）。路径解析同理传 temp.options。
+    temp.options = _.cloneDeep(globalSetting.options)
     temp.basic.type = format
     if (format === 'PNGs') {
       // 序列帧：默认输出 {帧目录}/output，可由 outputTo 策略覆盖
@@ -129,15 +132,15 @@ class actionFiles {
       temp.options.outputName = folderName.replace(/[ ]/g, '')
       temp.basic.inputPath = address
       temp.basic.fileList = fileList
-      temp.basic.outputPath = resolveOutputPath(temp, globalSetting.options)
+      temp.basic.outputPath = resolveOutputPath(temp, temp.options)
     } else {
       //去除文件名空格；后缀为空时不拼出悬尾的下划线
-      let suffix = globalSetting.options.outputSuffix
+      let suffix = temp.options.outputSuffix
       let baseName = path.basename(fileList[0]).split('.')[0].replace(/[ ]/g, '')
       temp.options.outputName = suffix ? baseName + '_' + suffix : baseName
       temp.basic.inputPath = address + '/' + path.basename(fileList[0]).split('.')[0]
       temp.basic.fileList = fileList
-      temp.basic.outputPath = resolveOutputPath(temp, globalSetting.options)
+      temp.basic.outputPath = resolveOutputPath(temp, temp.options)
     }
     items.push(temp)
   }
