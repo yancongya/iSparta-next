@@ -1,7 +1,9 @@
 name: Release
 
-# 手动触发发版：自动 bump 版本 → 提交并打 tag → 构建 Win/Linux → 创建 GitHub Release
-# 不用「push tag 触发另一条 workflow」的写法：GITHUB_TOKEN 推送不会再次触发 CI（防递归）。
+# 设计约定（本地 CLI 触发 + 云端 CI/CD 打包）：
+#   本地只负责：gh workflow run release.yml -f bump=...
+#   版本号、tag、Win/Linux 构建、挂 Release 全部在 GitHub Actions 完成。
+# 不用「push tag 触发另一条 workflow」：GITHUB_TOKEN 推送不会二次触发 CI（防递归）。
 
 on:
   workflow_dispatch:
@@ -40,7 +42,7 @@ jobs:
       published: ${{ steps.bump.outputs.published }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -123,22 +125,22 @@ jobs:
           - os: windows-latest
             platform: win
             flag: --win
+            asset_suffix: win-x64
           - os: ubuntu-latest
             platform: linux
             flag: --linux
+            asset_suffix: linux-x64
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
-          # 正式发版：检出刚推送的 vX.Y.Z（含版本号提交）
-          # dry_run：仍用触发时的 SHA
           ref: ${{ needs.version.outputs.published == 'true' && needs.version.outputs.tag || github.sha }}
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: '16'
+          node-version: '20'
           cache: 'npm'
 
       - name: Install dependencies
@@ -153,18 +155,31 @@ jobs:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Collect build outputs
+      - name: Collect & rename assets
         shell: bash
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+          SUFFIX: ${{ matrix.asset_suffix }}
         run: |
+          set -euo pipefail
           mkdir -p release
           shopt -s nullglob
-          for f in \
-            dist_electron/*.dmg \
-            dist_electron/*.zip \
-            dist_electron/*.tar.gz \
-            dist_electron/*.exe \
-            dist_electron/*.AppImage; do
+          for f in dist_electron/*.dmg dist_electron/*.zip dist_electron/*.tar.gz dist_electron/*.exe dist_electron/*.AppImage; do
             cp "$f" release/
+          done
+          # 统一成 isparta-<ver>-win-x64.zip / isparta-<ver>-linux-x64.tar.gz
+          for f in release/*; do
+            base="$(basename "$f")"
+            ext="${base##*.}"
+            case "$ext" in
+              zip|gz|exe|dmg|AppImage)
+                if [[ "$base" == *.tar.gz ]]; then
+                  mv "$f" "release/isparta-${VERSION}-${SUFFIX}.tar.gz"
+                else
+                  mv "$f" "release/isparta-${VERSION}-${SUFFIX}.${ext}"
+                fi
+                ;;
+            esac
           done
           ls -lh release
 
@@ -183,7 +198,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download all build artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           path: dist
           merge-multiple: true
@@ -191,7 +206,6 @@ jobs:
       - name: List release files
         run: ls -lh dist
 
-      # CI 只挂 Win/Linux；macOS 仍建议本地构建后手动补传到同一 Release
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -202,5 +216,14 @@ jobs:
           generate_release_notes: true
           prerelease: ${{ inputs.prerelease }}
           draft: false
+          body: |
+            ## Installers
+
+            | Platform | Asset |
+            | --- | --- |
+            | Windows x64 | `isparta-${{ needs.version.outputs.version }}-win-x64.zip` |
+            | Linux x64 | `isparta-${{ needs.version.outputs.version }}-linux-x64.tar.gz` |
+
+            macOS is built locally and can be attached manually to this release.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

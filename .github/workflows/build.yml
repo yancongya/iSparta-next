@@ -1,7 +1,7 @@
 name: Build Multi-Platform
 
 # 日常 CI：push master / 手动跑，只构建并上传 Artifact，不创建 Release。
-# 正式发版请用 Actions → Release（.github/workflows/release.yml）。
+# 正式发版：本地 scripts/release.ps1 或 Actions → Release（release.yml）。
 
 on:
   push:
@@ -21,18 +21,20 @@ jobs:
           - os: windows-latest
             platform: win
             flag: --win
+            asset_suffix: win-x64
           - os: ubuntu-latest
             platform: linux
             flag: --linux
+            asset_suffix: linux-x64
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: '16'
+          node-version: '20'
           cache: 'npm'
 
       # electron-chromedriver(spectron 传递依赖)在部分平台会下载失败并中断安装，
@@ -49,19 +51,30 @@ jobs:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # 只收集最终安装包/压缩包，剔除 blockmap、yml 等更新元数据
-      - name: Collect build outputs
+      - name: Collect & rename assets
         shell: bash
+        env:
+          SUFFIX: ${{ matrix.asset_suffix }}
         run: |
+          set -euo pipefail
+          VERSION=$(node -p "require('./package.json').version")
           mkdir -p release
           shopt -s nullglob
-          for f in \
-            dist_electron/*.dmg \
-            dist_electron/*.zip \
-            dist_electron/*.tar.gz \
-            dist_electron/*.exe \
-            dist_electron/*.AppImage; do
+          for f in dist_electron/*.dmg dist_electron/*.zip dist_electron/*.tar.gz dist_electron/*.exe dist_electron/*.AppImage; do
             cp "$f" release/
+          done
+          for f in release/*; do
+            base="$(basename "$f")"
+            ext="${base##*.}"
+            case "$ext" in
+              zip|gz|exe|dmg|AppImage)
+                if [[ "$base" == *.tar.gz ]]; then
+                  mv "$f" "release/isparta-${VERSION}-${SUFFIX}.tar.gz"
+                else
+                  mv "$f" "release/isparta-${VERSION}-${SUFFIX}.${ext}"
+                fi
+                ;;
+            esac
           done
           ls -lh release
 
