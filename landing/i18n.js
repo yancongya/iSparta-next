@@ -11,9 +11,9 @@
 
   var DICT = {
     "zh-CN": {
-      "meta.title": "iSparta-next · 把帧变成动图",
+      "meta.title": "iSparta-next · APNG / WebP / GIF 转换工作台",
       "meta.desc":
-        "iSparta-next — PNG 序列、APNG、WebP、GIF 互转压缩。桌面小工具，免费开源。",
+        "iSparta-next：把 PNG 序列、APNG、Animated WebP、GIF 互转与压缩的开源桌面工具。支持大小阈值自动重压、路径变量、批量导出。Win / macOS / Linux 免费下载。",
       "nav.convert": "能干啥",
       "nav.play": "压体积",
       "nav.naming": "起名字",
@@ -138,9 +138,9 @@
       "lang.toggle": "切换语言",
     },
     "en-US": {
-      "meta.title": "iSparta-next · Frames in, motion out",
+      "meta.title": "iSparta-next · APNG / WebP / GIF converter",
       "meta.desc":
-        "iSparta-next — convert & compress PNG sequences, APNG, WebP, and GIF. Desktop, free, open source.",
+        "iSparta-next: open-source desktop app to convert and compress PNG sequences, APNG, Animated WebP, and GIF. Size limit, path vars, batch export. Free for Win / macOS / Linux.",
       "nav.convert": "What it does",
       "nav.play": "Size limit",
       "nav.naming": "Naming",
