@@ -825,6 +825,51 @@
     });
   }
 
+  /* ---------- resolve latest release asset URLs ---------- */
+  function resolveLatestDownloads() {
+    var api = "https://api.github.com/repos/yancongya/iSparta-next/releases/latest";
+    fetch(api)
+      .then(function (r) {
+        if (!r.ok) throw new Error("api");
+        return r.json();
+      })
+      .then(function (rel) {
+        var assets = rel.assets || [];
+        var byName = {};
+        assets.forEach(function (a) {
+          byName[a.name] = a.browser_download_url;
+        });
+        function pick(patterns) {
+          for (var i = 0; i < patterns.length; i++) {
+            var re = patterns[i];
+            for (var n in byName) {
+              if (re.test(n)) return byName[n];
+            }
+          }
+          return null;
+        }
+        var map = {
+          win: pick([/win-x64\.zip$/i]),
+          macArm: pick([/mac-arm64\.zip$/i, /arm64.*\.dmg$/i]),
+          macX64: pick([/mac-x64\.zip$/i, /x64.*\.dmg$/i]),
+          linux: pick([/linux-x64\.tar\.gz$/i]),
+        };
+        document.querySelectorAll("a[data-dl]").forEach(function (a) {
+          var url = map[a.getAttribute("data-dl")];
+          if (url) a.href = url;
+        });
+        var hero = document.querySelector(".hero-actions a.btn-primary");
+        if (hero && (map.win || map.linux || map.macArm)) {
+          hero.href = map.win || map.macArm || map.linux || hero.href;
+        }
+      })
+      .catch(function () {
+        /* 离线或 API 限流时保留静态 latest/download 链接 */
+      });
+  }
+
+  resolveLatestDownloads();
+
   setupPacket();
   setupScroll();
 })();
