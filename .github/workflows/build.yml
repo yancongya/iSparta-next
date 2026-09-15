@@ -1,13 +1,15 @@
 name: Build Multi-Platform
 
+# 日常 CI：push master / 手动跑，只构建并上传 Artifact，不创建 Release。
+# 正式发版请用 Actions → Release（.github/workflows/release.yml）。
+
 on:
   push:
     branches: [master]
-    tags: ['v*']
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build:
@@ -70,28 +72,3 @@ jobs:
           if-no-files-found: error
           retention-days: 7
           path: release/*
-
-  release:
-    name: Publish Release
-    needs: build
-    if: startsWith(github.ref, 'refs/tags/v')
-    runs-on: ubuntu-latest
-    steps:
-      - name: Download all build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: dist
-          merge-multiple: true
-
-      - name: List release files
-        run: ls -lh dist
-
-      # 仅上传 CI 构建的 win/linux 产物；mac 由本地构建后手动补传到同一 Release
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: dist/*
-          fail_on_unmatched_files: true
-          generate_release_notes: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

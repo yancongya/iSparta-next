@@ -46,3 +46,7 @@ build.err
 build.status
 .npmrc
 .worktrees/
+.*-check.js
+.preset-verify.png
+.preset.out
+.apng-boot-check.js

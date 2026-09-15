@@ -7,7 +7,7 @@
   "private": true,
   "repository": {
     "type": "git",
-    "url": "https://github.com/jeakey/iSparta-test.git"
+    "url": "https://github.com/yancongya/iSparta-next.git"
   },
   "scripts": {
     "dev": "vue-cli-service electron:serve",

@@ -1,0 +1,206 @@
+name: Release
+
+# 手动触发发版：自动 bump 版本 → 提交并打 tag → 构建 Win/Linux → 创建 GitHub Release
+# 不用「push tag 触发另一条 workflow」的写法：GITHUB_TOKEN 推送不会再次触发 CI（防递归）。
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: '版本号递增类型'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+        default: patch
+      prerelease:
+        description: '标记为 Pre-release（测试包可勾选；正式版保持不勾）'
+        type: boolean
+        default: false
+      dry_run:
+        description: '试运行：算版本并构建，但不提交、不打 tag、不创建 Release'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  version:
+    name: Bump version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.bump.outputs.version }}
+      tag: ${{ steps.bump.outputs.tag }}
+      published: ${{ steps.bump.outputs.published }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compute & write version
+        id: bump
+        env:
+          BUMP: ${{ inputs.bump }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require('fs')
+          const path = require('path')
+
+          const bumpType = (process.env.BUMP || 'patch').toLowerCase()
+          const dryRun = String(process.env.DRY_RUN).toLowerCase() === 'true'
+
+          const pkgPath = path.join(process.cwd(), 'package.json')
+          const lockPath = path.join(process.cwd(), 'package-lock.json')
+          const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'))
+
+          const cur = pkg.version
+          const parts = String(cur).split('.').map(n => parseInt(n, 10))
+          if (parts.length !== 3 || parts.some(n => !Number.isFinite(n) || n < 0)) {
+            console.error('Invalid package.json version: ' + cur)
+            process.exit(1)
+          }
+
+          let [maj, min, pat] = parts
+          if (bumpType === 'major') { maj += 1; min = 0; pat = 0 }
+          else if (bumpType === 'minor') { min += 1; pat = 0 }
+          else if (bumpType === 'patch') { pat += 1 }
+          else {
+            console.error('Unsupported bump: ' + bumpType)
+            process.exit(1)
+          }
+
+          const version = [maj, min, pat].join('.')
+          const tag = 'v' + version
+
+          pkg.version = version
+          fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n')
+
+          if (fs.existsSync(lockPath)) {
+            const lock = JSON.parse(fs.readFileSync(lockPath, 'utf8'))
+            if ('version' in lock) lock.version = version
+            if (lock.packages && lock.packages['']) lock.packages[''].version = version
+            fs.writeFileSync(lockPath, JSON.stringify(lock, null, 2) + '\n')
+          }
+
+          const out = process.env.GITHUB_OUTPUT || ''
+          fs.appendFileSync(out, `version=${version}\n`)
+          fs.appendFileSync(out, `tag=${tag}\n`)
+          fs.appendFileSync(out, `published=${dryRun ? 'false' : 'true'}\n`)
+          console.log(`Version: ${cur} -> ${version} (dry_run=${dryRun})`)
+          NODE
+
+      - name: Commit & tag
+        if: ${{ inputs.dry_run != true }}
+        env:
+          VERSION: ${{ steps.bump.outputs.version }}
+          TAG: ${{ steps.bump.outputs.tag }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json
+          git commit -m "chore(release): ${TAG} [skip ci]"
+          git tag -a "${TAG}" -m "Release ${TAG}"
+          git push origin HEAD
+          git push origin "refs/tags/${TAG}"
+
+  build:
+    name: Build (${{ matrix.platform }})
+    needs: version
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            platform: win
+            flag: --win
+          - os: ubuntu-latest
+            platform: linux
+            flag: --linux
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # 正式发版：检出刚推送的 vX.Y.Z（含版本号提交）
+          # dry_run：仍用触发时的 SHA
+          ref: ${{ needs.version.outputs.published == 'true' && needs.version.outputs.tag || github.sha }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '16'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Install electron binary
+        run: node node_modules/electron/install.js
+
+      - name: Build ${{ matrix.platform }}
+        run: npx vue-cli-service electron:build ${{ matrix.flag }} --publish never
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Collect build outputs
+        shell: bash
+        run: |
+          mkdir -p release
+          shopt -s nullglob
+          for f in \
+            dist_electron/*.dmg \
+            dist_electron/*.zip \
+            dist_electron/*.tar.gz \
+            dist_electron/*.exe \
+            dist_electron/*.AppImage; do
+            cp "$f" release/
+          done
+          ls -lh release
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: isparta-release-${{ needs.version.outputs.version }}-${{ matrix.platform }}
+          if-no-files-found: error
+          retention-days: 14
+          path: release/*
+
+  publish:
+    name: Publish GitHub Release
+    needs: [version, build]
+    if: needs.version.outputs.published == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: List release files
+        run: ls -lh dist
+
+      # CI 只挂 Win/Linux；macOS 仍建议本地构建后手动补传到同一 Release
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.version.outputs.tag }}
+          name: ${{ needs.version.outputs.tag }}
+          files: dist/*
+          fail_on_unmatched_files: true
+          generate_release_notes: true
+          prerelease: ${{ inputs.prerelease }}
+          draft: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
