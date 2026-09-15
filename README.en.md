@@ -11,6 +11,7 @@
 **iSparta-next** is a desktop animated-image converter rebuilt from the classic [iSparta](https://github.com/iSparta/iSparta). It converts and compresses **APNG / Animated WebP / GIF / PNG sequences**.
 
 > **[Download from Releases →](https://github.com/yancongya/iSparta-next/releases)**  
+> Product page: **[https://yancongya.github.io/iSparta-next/](https://yancongya.github.io/iSparta-next/)**  
 > Stack: Electron 28 + Vue 2 · Platforms: Windows / macOS / Linux
 
 ## Why iSparta-next
