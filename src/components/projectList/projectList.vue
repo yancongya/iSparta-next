@@ -60,23 +60,24 @@
               <span class="is-ellipsis">{{ outPathOf(project) | basePath }}</span>
             </button>
           </div>
-          <!-- 第二行：配置摘要。每项独立配色 + hover 反馈 + 完整设置说明 -->
+          <!-- 第二行：配置摘要。每项独立配色 + hover 反馈 + 完整设置说明。
+               数值文字包进 .sum-v：中档容器查询只隐藏数值（is-icon 本身也是 span，不能裸选 > span） -->
           <div class="summary">
             <span class="sum sum--fps" v-tip="tipOf('fps', fpsTip(project))">
-              <is-icon name="zap" size="xs" />{{ frameRateOf(project) }} f/s
+              <is-icon name="zap" size="xs" /><span class="sum-v">{{ frameRateOf(project) }} f/s</span>
             </span>
             <span class="sum sum--loop" v-tip="tipOf('loop', loopTip(project))">
-              <is-icon name="refresh" size="xs" />{{ loopText(project) }}
+              <is-icon name="refresh" size="xs" /><span class="sum-v">{{ loopText(project) }}</span>
             </span>
             <span class="sum sum--fmt" v-tip="tipOf('outputFormat', formatText(project))">
-              <is-icon name="layers" size="xs" />{{ formatText(project) }}
+              <is-icon name="layers" size="xs" /><span class="sum-v">{{ formatText(project) }}</span>
             </span>
             <span
               v-if="sizeLimitOf(project)"
               class="sum sum--limit"
               v-tip="tipOf('sizeLimit', sizeLimitTip(project))"
             >
-              <is-icon name="box" size="xs" />≤ {{ sizeLimitOf(project) }}
+              <is-icon name="box" size="xs" /><span class="sum-v">≤ {{ sizeLimitOf(project) }}</span>
             </span>
           </div>
           <!-- 第三行：准备输出的名字 + 变量路径 -->
