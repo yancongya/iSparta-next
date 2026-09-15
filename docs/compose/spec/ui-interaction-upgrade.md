@@ -1,8 +1,8 @@
 feature: ui-interaction-upgrade
-status: M0 done
+status: M0-M4 done
 updated: 2026-09-12
 branch: feat/frontend-redesign
-commits: TBD
+commits: f5c914a, 522496b, b422f84, d922b78, M4
 ---
 
 # iSparta 前端交互升级设计文档
@@ -158,9 +158,27 @@ frontend-redesign 工作树 Electron 已升级至 **28.3.3（Chromium 120）**�
   - 浏览器启动：`npx vue-cli-service serve --port 8090`（与 electron:serve 的 8080 错开）
   - 验证手段：离屏 Electron（show:false，无 preload）加载 dev server，见仓库根 `.m0-browser-check.js`（临时脚本，未提交）
   - 验证结果：mock 桥启用、5 条种子渲染（APNG/PNGs/GIF/WEBP）、无页面错误；真实 Electron 回归 mock 空转、无新增错误
-- M1：第一梯队 CSS 全量（曲线统一、stagger、segmented、拖放区）
-- M2：数字滚动 + FLIP 弹跳 + 完成彩带
-- M3：图片对比滑块（含 Electron 实测）
-- M4：人格化彩蛋 + 收尾（tokens 注释修正、prefers-reduced-motion 全量核查）
+- M1：第一梯队 CSS 全量 ✅（522496b）
+  - 过冲曲线 `--is-ease-overshoot` 入 tokens；列表 stagger（nth-child 错峰）；
+    segmented 弹跳 / tag 弹入 / 输入框聚焦呼吸 / 拖放区接住+图标往复弹跳；进度条完成确认动画；
+    修正 tokens.css:9 陈旧注释（实际 Electron 28 / Chromium 120）
+  - 实测揪出真实 bug：`.mod-list .item` 过渡简写（0,2,0）劫持 `.is-list-enter-active`（0,1,0），
+    入场 opacity 直接跳变——enter-active 升为容器前缀选择器修复
+  - Vue 2 transition-group 的 `appear` 初始挂载不挂 enter-active（enter-to 残留脏类），
+    实测动画不生效，已移除 appear 并在组件注释留档
+- M2：数字滚动 + FLIP 弹跳 + 完成彩带 ✅（b422f84）
+  - IsNumberTween（rAF + easeOutCubic；reduced-motion 跳过；aria-label 恒为终值）
+  - is-list-move 换过冲曲线：重排落位带弹跳
+  - confetti.js（animejs 90 粒双喷口自清理）；sortBar watch totalPercent 100% 触发，
+    _wasRunning 防「删项凑满 100%」误庆祝
+- M3：图片对比滑块 ✅（d922b78）
+  - IsCompareSlider：rAF 阻尼跟随（0.18 系数）+ clip-path inset；键盘 ←→ 微调；role=slider
+  - CompareDialog：done 条目点击缩略图打开（原始帧 vs 输出文件）
+  - mock 种子补写 outputPath 文件，浏览器模式可完整走通对比链路
+- M4：人格化彩蛋 + 无障碍核查 ✅（本次提交）
+  - IsPet 胶片小精灵三态：idle（空态右上角漂浮+眨眼）/ excited（拖入蹦跳瞪眼）/
+    working（底栏奔跑，周期 = 1.6s − 0.25×(并行数−1)，最快 0.45s——数据联动，对标仓鼠轮）
+  - prefers-reduced-motion 全量核查：CSS 动画由 tokens.css 全局规则统一降级；
+    JS 动画四处显式守卫（confetti / IsNumberTween / IsCompareSlider / IsButton 水波纹）
 
 每个里程碑：Electron 实测（截图验证）→ 提交 → 推送 origin。

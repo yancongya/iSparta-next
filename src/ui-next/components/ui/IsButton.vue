@@ -16,6 +16,9 @@
 import anime from 'animejs'
 import IsIcon from './IsIcon.vue'
 
+var REDUCED = typeof window !== 'undefined' &&
+  window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
 export default {
   name: 'IsButton',
   components: { IsIcon },
@@ -46,7 +49,7 @@ export default {
   methods: {
     onClick (e) {
       if (this.disabled || this.loading) return
-      if (this.ripple) this.spawnRipple(e)
+      if (this.ripple && !REDUCED) this.spawnRipple(e)
       this.$emit('click', e)
     },
     spawnRipple (e) {

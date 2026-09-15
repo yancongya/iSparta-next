@@ -30,6 +30,8 @@
         <div class="ib-drop__icon">
           <is-icon :name="dragging ? 'download' : 'film'" size="xl" />
         </div>
+        <!-- 像素小精灵：空态待机，拖拽悬停时兴奋蹦跳 -->
+        <is-pet :mood="dragging ? 'excited' : 'idle'" class="ib-drop__pet" />
         <p class="ib-drop__kicker">DROP · PASTE · CLICK</p>
         <h1>{{ $t('uploadTips') }}</h1>
         <p class="ib-drop__rule">{{ $t('uploadRule') }}</p>
@@ -132,6 +134,7 @@ import setting from '../../components/setting/setting.vue'
 import sortBar from '../../components/sortBar/sortBar.vue'
 import globalSetting from '../../components/globalSetting/globalSetting.vue'
 import IsNoticeHost from '../components/IsNoticeHost.vue'
+import IsPet from '../components/IsPet.vue'
 import { f as fsOperate } from '../../components/drag/file.js'
 import { naturalSort } from '../../util/sort'
 import ThemeManager from '../theme'
@@ -158,7 +161,8 @@ export default {
     'setting': setting,
     'sort-bar': sortBar,
     'globalsetting': globalSetting,
-    'is-notice-host': IsNoticeHost
+    'is-notice-host': IsNoticeHost,
+    'is-pet': IsPet
   },
   data () {
     return {
