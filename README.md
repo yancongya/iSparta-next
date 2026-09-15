@@ -99,10 +99,10 @@
 | 平台 | 产物 | 架构 |
 | --- | --- | --- |
 | Windows | `.zip` | x64 |
-| macOS | `.dmg` | x64 / arm64 |
+| macOS | `.zip`（内含 `.app`） | x64 / arm64 |
 | Linux | `.tar.gz` | x64 |
 
-三端均由 GitHub Actions 构建。macOS 包为 **未签名** 构建：若系统拦截，可在「系统设置 → 隐私与安全性」中允许打开，或对 App 执行 `xattr -dr com.apple.quarantine`。
+三端均由 GitHub Actions 构建。macOS 包为 **未签名** 构建：解压后若系统拦截，可在「系统设置 → 隐私与安全性」中允许打开，或对 App 执行 `xattr -dr com.apple.quarantine`。
 
 > 需要自己编译或参与开发，请往下看「快速开始」。
 
@@ -213,8 +213,8 @@ gh workflow run release.yml -R yancongya/iSparta-next -f bump=patch -f prereleas
    - 用该版本号在 GitHub runner 上构建 Win / Linux / macOS，资产命名为：
      - `isparta-<ver>-win-x64.zip`
      - `isparta-<ver>-linux-x64.tar.gz`
-     - `isparta-<ver>-mac-arm64.dmg`
-     - `isparta-<ver>-mac-x64.dmg`
+     - `isparta-<ver>-mac-arm64.zip`
+     - `isparta-<ver>-mac-x64.zip`
 
 > 说明：发版提交带 `[skip ci]`，避免和日常 CI 重复构建。  
 > macOS 包不在 CI 内产出，需要本地 `npm run build` 后手动补传到同一 Release。  

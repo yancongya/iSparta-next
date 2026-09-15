@@ -189,8 +189,8 @@ jobs:
             echo "| --- | --- |"
             echo "| Windows x64 | \`isparta-${VERSION}-win-x64.zip\` |"
             echo "| Linux x64 | \`isparta-${VERSION}-linux-x64.tar.gz\` |"
-            echo "| macOS arm64 | \`isparta-${VERSION}-mac-arm64.dmg\` |"
-            echo "| macOS x64 | \`isparta-${VERSION}-mac-x64.dmg\` |"
+            echo "| macOS arm64 | \`isparta-${VERSION}-mac-arm64.zip\` |"
+            echo "| macOS x64 | \`isparta-${VERSION}-mac-x64.zip\` |"
             echo ""
             if [ -n "$PREV_TAG" ]; then
               echo "**Full Changelog**: https://github.com/${REPO}/compare/${PREV_TAG}...${TAG}"
@@ -281,11 +281,11 @@ jobs:
             fi
             if [[ "$PLATFORM" == "mac" ]]; then
               if [[ "$lower" == *arm64* ]]; then
-                dest="isparta-${VERSION}-mac-arm64.dmg"
+                dest="isparta-${VERSION}-mac-arm64.zip"
               elif [[ "$lower" == *x64* || "$lower" == *x86_64* || "$lower" == *intel* ]]; then
-                dest="isparta-${VERSION}-mac-x64.dmg"
+                dest="isparta-${VERSION}-mac-x64.zip"
               else
-                dest="isparta-${VERSION}-mac.dmg"
+                dest="isparta-${VERSION}-mac.zip"
               fi
             elif [[ "$PLATFORM" == "win" ]]; then
               dest="isparta-${VERSION}-win-x64.${ext}"

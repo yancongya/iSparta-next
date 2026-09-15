@@ -79,11 +79,11 @@ jobs:
             fi
             if [[ "$PLATFORM" == "mac" ]]; then
               if [[ "$lower" == *arm64* ]]; then
-                dest="isparta-${VERSION}-mac-arm64.dmg"
+                dest="isparta-${VERSION}-mac-arm64.zip"
               elif [[ "$lower" == *x64* || "$lower" == *x86_64* || "$lower" == *intel* ]]; then
-                dest="isparta-${VERSION}-mac-x64.dmg"
+                dest="isparta-${VERSION}-mac-x64.zip"
               else
-                dest="isparta-${VERSION}-mac.dmg"
+                dest="isparta-${VERSION}-mac.zip"
               fi
             elif [[ "$PLATFORM" == "win" ]]; then
               dest="isparta-${VERSION}-win-x64.${ext}"

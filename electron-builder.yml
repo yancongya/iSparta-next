@@ -14,10 +14,11 @@ win:
         - x64
   icon: ./public/icons/icon.ico
 mac:
-  # CI 无证书环境：不签名、不公证，仅出可本地打开的 dmg
+  # CI 无证书环境：不签名、不公证
+  # macos-latest 无 /usr/bin/python，electron-builder@22 的 dmg 会 ENOENT，故用 zip
   identity: null
   target:
-    - target: dmg
+    - target: zip
       arch:
         - x64
         - arm64

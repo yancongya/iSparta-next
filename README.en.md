@@ -78,10 +78,10 @@ Get the latest installers from **[Releases](https://github.com/yancongya/iSparta
 | Platform | Artifact | Arch |
 | --- | --- | --- |
 | Windows | `.zip` | x64 |
-| macOS | `.dmg` | x64 / arm64 |
+| macOS | `.zip` (contains `.app`) | x64 / arm64 |
 | Linux | `.tar.gz` | x64 |
 
-Windows / Linux / macOS are all built by GitHub Actions. **macOS packages are unsigned** — if Gatekeeper blocks the app, allow it in System Settings → Privacy & Security, or run `xattr -dr com.apple.quarantine` on the `.app`.
+All three platforms are built by GitHub Actions. **macOS packages are unsigned** — unzip and, if Gatekeeper blocks the app, allow it in System Settings → Privacy & Security, or run `xattr -dr com.apple.quarantine` on the `.app`.
 
 ## Features
 

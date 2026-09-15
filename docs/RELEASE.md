@@ -72,8 +72,10 @@ Actions → **Release** → Run workflow → 选 bump / prerelease / dry_run。
 | --- | --- |
 | Windows x64 | `isparta-<ver>-win-x64.zip` |
 | Linux x64 | `isparta-<ver>-linux-x64.tar.gz` |
-| macOS arm64 | `isparta-<ver>-mac-arm64.dmg` |
-| macOS x64 | `isparta-<ver>-mac-x64.dmg` |
+| macOS arm64 | `isparta-<ver>-mac-arm64.zip` |
+| macOS x64 | `isparta-<ver>-mac-x64.zip` |
+
+> macOS 用 zip（runner 无 `/usr/bin/python`，旧 electron-builder 的 dmg 会失败）。包为**未签名**构建。
 
 ### 自动版本说明（bot 汇总）
 
