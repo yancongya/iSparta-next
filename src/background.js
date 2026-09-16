@@ -50,9 +50,13 @@ function createWindow () {
     // 默认给到 1000；minWidth 仍是 820，小屏与手动收窄不受影响
     width: 1000,
     height: 800, 
-    icon:path.join(__static,"icons/icon.icns"),
-    title:"iSparta-next",
+    // 图标必须按平台给格式：写死 .icns 时 Windows 读不到，窗口与任务栏会回落成
+    // Electron 默认图标。exe 文件自身的图标由 electron-builder 的 rcedit 负责，另一回事。
+    icon: path.join(__static, 'icons/icon.' + (process.platform === 'win32' ? 'ico'
+      : process.platform === 'darwin' ? 'icns' : 'png')),
+    title: app.getName(),
     show: false,
+    autoHideMenuBar: true,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -76,12 +80,12 @@ function createWindow () {
   win.on('closed', () => {
     win = null
   })
-  // 页面 <title> 会覆盖窗口标题，固定为 iSparta-next 以便与旧版 dev 区分
+  // 页面 <title> 会覆盖窗口标题，统一锁到 productName（iSparta）
   win.on('page-title-updated', (event) => {
     event.preventDefault()
   })
   win.once('ready-to-show', () => {
-    win.setTitle('iSparta-next')
+    win.setTitle(app.getName())
     win.show()
   })
 }
@@ -106,7 +110,25 @@ app.on('activate', () => {
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
+// 不设置时 Electron 会挂上默认的 File/Edit/View/Window/Help 菜单，
+// 对这种单窗口工具是噪音；macOS 必须保留一份精简菜单，否则没有 Cmd+Q 与粘贴。
+function setupApplicationMenu () {
+  if (process.platform !== 'darwin') {
+    Menu.setApplicationMenu(null)
+    return
+  }
+  const name = app.getName()
+  Menu.setApplicationMenu(Menu.buildFromTemplate([
+    { label: name, submenu: [{ role: 'close' }, { role: 'quit' }] },
+    { label: 'Edit', submenu: [
+      { role: 'undo' }, { role: 'redo' }, { type: 'separator' },
+      { role: 'cut' }, { role: 'copy' }, { role: 'paste' }, { role: 'selectAll' }
+    ] }
+  ]))
+}
+
 app.on('ready', async () => {
+  setupApplicationMenu()
   protocol.handle('isparta-file', (request) => {
     try {
       const filePath = mediaPathFromUrl(request.url)
