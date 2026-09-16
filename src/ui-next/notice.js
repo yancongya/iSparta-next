@@ -12,6 +12,7 @@
  */
 
 import Vue from 'vue'
+import appLog from './log'
 
 const state = Vue.observable({ items: [] })
 
@@ -59,6 +60,10 @@ function push (options) {
   }
   state.items.push(item)
   schedule(item)
+  // 气泡会超时消失，warn / error 额外落一份到全局运行日志，事后可回看与复制
+  if (type === 'warning' || type === 'error') {
+    appLog[type === 'error' ? 'error' : 'warn'](item.title, item.text)
+  }
   return id
 }
 

@@ -4,6 +4,8 @@ import apngCompress from './apngCompress'
 import apng2gif from './apng2gif'
 import apng2webp from './apng2webp'
 import TYPE from '../../store/enum/type'
+import appLog from '../../ui-next/log'
+import i18n from '../../i18n'
 
 export function normalizeSizeLimit (options) {
   const s = (options && options.sizeLimit) || {}
@@ -127,6 +129,9 @@ export function enforceSizeLimit (item, store, locale) {
 
     // 自动降质量重压（从 baseQuality 起算）
     function retry (tries) {
+      appLog.warn(i18n.t('logGateRetry', {
+        fmt: format, tries: tries, size: (size / 1048576).toFixed(2), max: (maxBytes / 1048576).toFixed(2)
+      }))
       size = fs.statSize(outPath)
       if (size < 0) {
         warned.push({ format, size: 0, missing: true })

@@ -6,6 +6,8 @@ import modules from './modules'
 import * as types from './mutation-types'
 import { fs, storage, os, path, getProcessBridge } from '../util/node-env'
 import { resolveOutputPath } from '../util/outputPath'
+import appLog from '../ui-next/log'
+import i18n from '../i18n'
 const _ = require("lodash");
 // 【bug fix】修复初次使用时读取缓存错误的问题
 let storagePath = "";
@@ -423,10 +425,56 @@ const getters = {
 
 // A Vuex instance is created by combining the state, mutations, actions,
 // and getters.
-export default new Vuex.Store({
+const store = new Vuex.Store({
   state,
   getters,
   actions,
   mutations,
   modules
 })
+
+/* ---------- 全局运行日志：在 store 层集中捕获任务状态跃迁 ----------
+ * 不在各处理器里埋点：转换链路有 5 条入口（PNGs / GIF / APNG / WEBP 各自再导出多格式，
+ * 外加阈值重压循环），逐个埋点必漏；而 schedule 的跃迁只会发生在这里。
+ * 深监听会随进度更新频繁触发，因此先比对上一次的 schedule，只在真正跃迁时写日志。
+ */
+const lastSchedule = new Map()
+
+function logItemKey (it) {
+  var b = it && it.basic
+  if (b && b.inputPath) { return b.inputPath + '|' + (b.type || '') }
+  // 没有稳定标识的条目不参与跃迁判定，避免把不同任务误判成同一个
+  return ''
+}
+
+store.watch(
+  function () { return store.state.items },
+  function (items) {
+    var alive = new Set()
+    items.forEach(function (it) {
+      var k = logItemKey(it)
+      if (!k) { return }
+      alive.add(k)
+      var s = (it.process && typeof it.process.schedule === 'number') ? it.process.schedule : 0
+      var prev = lastSchedule.get(k)
+      if (prev === s) { return }
+      lastSchedule.set(k, s)
+      var name = (it.options && it.options.outputName) ||
+        (it.basic && it.basic.fileList && it.basic.fileList[0]) || ''
+      if (s > 0 && s < 1) {
+        appLog.info(i18n.t('logConverting'), name)
+      } else if (s === 1) {
+        appLog.success(i18n.t('logDone'), (it.basic && it.basic.outputPath) || name)
+      } else if (s === -1) {
+        appLog.error(i18n.t('logFailed'), (it.process && it.process.text) || name)
+      }
+    })
+    // 已删除的任务清掉记录，否则长会话里 Map 只增不减
+    lastSchedule.forEach(function (v, k) {
+      if (!alive.has(k)) { lastSchedule.delete(k) }
+    })
+  },
+  { deep: true }
+)
+
+export default store

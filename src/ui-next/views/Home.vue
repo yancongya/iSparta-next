@@ -92,6 +92,19 @@
           <is-icon name="settings" size="sm" />
         </button>
 
+        <!-- 运行日志：未读时右上角亮小点，warn/error 才计数，普通 info 不打扰 -->
+        <button
+          type="button"
+          class="ib-rail__btn"
+          :class="{ 'is-active': logOpen }"
+          :title="$t('logTip')"
+          @click="logOpen = true"
+        >
+          <is-icon name="terminal" size="sm" />
+          <span v-if="logUnread" class="ib-rail__badge" aria-hidden="true" />
+          <span class="is-sr-only" aria-live="polite">{{ logUnread }}</span>
+        </button>
+
         <div
           class="ib-rail__grip"
           :title="$t('resizeHint')"
@@ -125,6 +138,8 @@
         </div>
       </div>
     </transition>
+
+    <is-log-panel :visible="logOpen" @close="logOpen = false" />
   </div>
 </template>
 
@@ -135,6 +150,8 @@ import sortBar from '../../components/sortBar/sortBar.vue'
 import globalSetting from '../../components/globalSetting/globalSetting.vue'
 import IsNoticeHost from '../components/IsNoticeHost.vue'
 import IsPet from '../components/IsPet.vue'
+import IsLogPanel from '../components/IsLogPanel.vue'
+import appLog from '../log'
 import { f as fsOperate } from '../../components/drag/file.js'
 import { naturalSort } from '../../util/sort'
 import ThemeManager from '../theme'
@@ -162,7 +179,8 @@ export default {
     'sort-bar': sortBar,
     'globalsetting': globalSetting,
     'is-notice-host': IsNoticeHost,
-    'is-pet': IsPet
+    'is-pet': IsPet,
+    'is-log-panel': IsLogPanel
   },
   data () {
     return {
@@ -174,7 +192,9 @@ export default {
       pressed: '',
       langOpen: false,
       resizing: false,
-      sideW: DEFAULT_SIDE_W
+      sideW: DEFAULT_SIDE_W,
+      // 运行日志面板
+      logOpen: false
     }
   },
   computed: {
@@ -186,6 +206,10 @@ export default {
     },
     selectedCount () {
       return this.$store.getters.getterSelected.length
+    },
+    // 面板关着时的未读告警数（读 state 上的响应式字段）
+    logUnread () {
+      return appLog.state.unread
     },
     themeTitle () {
       return this.theme === 'dark' ? this.$t('themeToLight') : this.$t('themeToDark')
@@ -398,9 +422,14 @@ export default {
       if (this.isLocked) return
       return fsOperate.readerFiles(list).then((ars) => {
         if (!ars || !ars.length) {
+          appLog.warn(this.$t('noticeNothingFound'), list.join(', '))
           notice.warning(this.$t('noticeNothingFound'), this.$t('noticeNothingFoundTip'))
           return
         }
+        appLog.info(
+          this.$t('logImported', { n: ars.length }),
+          ars.map((a) => (a.basic && a.basic.type) || '?').join(' / ')
+        )
         for (var i in ars) {
           ars[i].basic.fileList.sort(naturalSort)
           this.$store.dispatch('add', {

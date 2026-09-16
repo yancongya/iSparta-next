@@ -1364,3 +1364,200 @@ body.is-scroll-locked {
   opacity: 0;
   transform: scale(0.82);
 }
+
+// --------------------------------------------------------------------------
+// 吃豆人 loading 在按钮内的对齐
+// --------------------------------------------------------------------------
+.is-btn__spinner {
+  flex: none;
+  transform: translateY(1px);
+}
+
+// 视觉隐藏但保留给读屏器的文本（未读数播报）
+.is-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+// --------------------------------------------------------------------------
+// 运行日志面板（IsLogPanel）
+// --------------------------------------------------------------------------
+.log-title {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--is-s-2);
+
+  &__count {
+    color: var(--is-text-3);
+    font-size: var(--is-fs-xs);
+    font-weight: var(--is-fw-medium);
+  }
+}
+
+.log {
+  display: flex;
+  flex-direction: column;
+  gap: var(--is-s-2);
+  min-height: 0;
+}
+
+.log__bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--is-s-1);
+}
+
+.log__bar-spacer {
+  flex: 1 1 auto;
+}
+
+.log__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 24px;
+  padding: 0 10px;
+  border: 1px solid var(--is-border);
+  border-radius: var(--is-r-pill);
+  background: none;
+  color: var(--is-text-2);
+  font-family: inherit;
+  font-size: var(--is-fs-xs);
+  cursor: pointer;
+  transition: border-color var(--is-dur-fast) var(--is-ease-std),
+    background-color var(--is-dur-fast) var(--is-ease-std),
+    color var(--is-dur-fast) var(--is-ease-std);
+
+  &:hover {
+    border-color: var(--is-border-strong);
+    color: var(--is-text);
+  }
+
+  &.is-on {
+    border-color: var(--is-border-hi);
+    background: var(--is-accent-soft);
+    color: var(--is-accent);
+  }
+
+  &-n {
+    color: var(--is-text-3);
+    font-size: 10px;
+  }
+}
+
+.log__follow {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--is-text-3);
+  font-size: var(--is-fs-xs);
+  cursor: pointer;
+  user-select: none;
+}
+
+.log__list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  height: 320px;
+  padding: var(--is-s-2);
+  overflow-y: auto;
+  border: 1px solid var(--is-border);
+  border-radius: var(--is-r-sm);
+  background: var(--is-inset);
+  font-family: var(--is-mono);
+  font-size: var(--is-fs-xs);
+  outline: none;
+
+  &:focus-visible {
+    border-color: var(--is-accent);
+  }
+}
+
+.log__empty {
+  margin: auto;
+  color: var(--is-text-3);
+  text-align: center;
+}
+
+.log__row {
+  display: grid;
+  grid-template-columns: 58px 44px minmax(0, 1fr);
+  align-items: baseline;
+  gap: var(--is-s-2);
+  padding: 3px var(--is-s-1);
+  border-radius: var(--is-r-xs);
+  line-height: 1.45;
+
+  &:nth-child(odd) { background: rgba(255, 255, 255, 0.02); }
+
+  &.is-ok .log__lv { color: var(--is-ok); }
+  &.is-warn .log__lv { color: var(--is-warn); }
+  &.is-error .log__lv { color: var(--is-bad); }
+  &.is-info .log__lv { color: var(--is-cool); }
+
+  &.is-error .log__msg { color: var(--is-bad-fg); }
+  &.is-warn .log__msg { color: var(--is-warn-fg); }
+}
+
+.log__t {
+  color: var(--is-text-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.log__lv {
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+}
+
+.log__msg {
+  min-width: 0;
+  color: var(--is-text);
+  overflow-wrap: anywhere;
+}
+
+.log__detail {
+  grid-column: 3;
+  color: var(--is-text-3);
+  font-size: 10px;
+  overflow-wrap: anywhere;
+}
+
+.log__act {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 28px;
+  padding: 0 var(--is-s-3);
+  border: 1px solid var(--is-border);
+  border-radius: var(--is-r-sm);
+  background: none;
+  color: var(--is-text-2);
+  font-family: inherit;
+  font-size: var(--is-fs-sm);
+  cursor: pointer;
+  transition: border-color var(--is-dur-fast) var(--is-ease-std),
+    color var(--is-dur-fast) var(--is-ease-std),
+    background-color var(--is-dur-fast) var(--is-ease-std);
+
+  &:hover {
+    border-color: var(--is-border-strong);
+    background: var(--is-hover);
+    color: var(--is-text);
+  }
+
+  &--danger:hover {
+    border-color: rgba(var(--is-bad-rgb), 0.5);
+    background: var(--is-bad-bg);
+    color: var(--is-bad-fg);
+  }
+}

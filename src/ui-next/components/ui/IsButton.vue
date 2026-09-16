@@ -6,7 +6,7 @@
     :disabled="disabled || loading"
     @click="onClick"
   >
-    <is-icon v-if="loading" name="loader" spin class="is-btn__spinner" />
+    <is-pacman v-if="loading" size="xs" :dot-count="2" class="is-btn__spinner" />
     <is-icon v-else-if="icon" :name="icon" />
     <slot />
   </button>
@@ -15,13 +15,14 @@
 <script>
 import anime from 'animejs'
 import IsIcon from './IsIcon.vue'
+import IsPacman from '../IsPacman.vue'
 
 var REDUCED = typeof window !== 'undefined' &&
   window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
 export default {
   name: 'IsButton',
-  components: { IsIcon },
+  components: { IsIcon, IsPacman },
   props: {
     type: { type: String, default: 'default' },
     size: { type: String, default: 'md' },

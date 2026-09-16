@@ -22,7 +22,7 @@
         <is-icon name="x-circle" size="sm" /><is-number-tween :value="failCount" />
       </span>
       <span v-if="runningCount" class="bar-stat is-running" :title="$t('statRunning')">
-        <is-icon name="loader" size="sm" spin /><is-number-tween :value="runningCount" />
+        <is-pacman size="xs" :dot-count="2" :label="$t('statRunning')" /><is-number-tween :value="runningCount" />
       </span>
     </span>
 
@@ -52,9 +52,10 @@
 <script>
 import confetti from '../../ui-next/confetti'
 import IsPet from '../../ui-next/components/IsPet.vue'
+import IsPacman from '../../ui-next/components/IsPacman.vue'
 
 export default {
-  components: { 'is-pet': IsPet },
+  components: { 'is-pet': IsPet, 'is-pacman': IsPacman },
   data () {
     return { pressed: '' }
   },

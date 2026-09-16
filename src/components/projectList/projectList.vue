@@ -104,11 +104,13 @@
           <!-- 状态与四态进度：未处理时整块不出现，避免空图标与空槽位成噪音 -->
           <div v-if="showMeta(project)" class="meta">
             <span class="status" :class="'is-' + stateOf(project.process)">
-              <is-icon
-                :name="statusIcon(project.process)"
-                :spin="stateOf(project.process) === 'running'"
-                size="sm"
+              <is-pacman
+                v-if="stateOf(project.process) === 'running'"
+                size="xs"
+                :dot-count="2"
+                :label="$t('statRunning')"
               />
+              <is-icon v-else :name="statusIcon(project.process)" size="sm" />
               {{ project.process && project.process.text }}
             </span>
             <div class="progress" :class="'is-' + stateOf(project.process)">
@@ -146,6 +148,7 @@ import { ipc } from '../../util/node-env'
 import rightMenu from './menu'
 import DelayDialog from '../delayDialog/index.vue'
 import CompareDialog from '../compareDialog/index.vue'
+import IsPacman from '../../ui-next/components/IsPacman.vue'
 import { f as fsOperate } from '../drag/file.js'
 import { naturalSort } from '../../util/sort'
 import notice from '../../ui-next/notice'
@@ -153,7 +156,8 @@ import notice from '../../ui-next/notice'
 export default {
   components: {
     'dialay-dialog': DelayDialog,
-    'compare-dialog': CompareDialog
+    'compare-dialog': CompareDialog,
+    'is-pacman': IsPacman
   },
   data () {
     return {

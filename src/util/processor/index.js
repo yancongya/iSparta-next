@@ -9,6 +9,8 @@ import { fs, path, os } 	from '../node-env'
 import TYPE 		from '../../store/enum/type'
 import { enforceSizeLimit } from './sizeGate'
 import { resolveOutputPath } from '../outputPath'
+import appLog from '../../ui-next/log'
+import i18n from '../../i18n'
 
 function stat (label) {
   try {
@@ -98,6 +100,7 @@ export default function (store, sameOutputPath, locale) {
   }
 
   var concurrency = Math.max(1, (os.cpus() || [{}]).length)
+  appLog.info(i18n.t('logBatchStart', { n: action.items.length }), i18n.t('logConcurrency') + ' ' + concurrency)
   return runWithConcurrency(taskFactories, concurrency).then(() => {
     for (var i = 0; i < action.items.length; i++) {
       fs.remove(action.items[i].basic.tmpDir);
