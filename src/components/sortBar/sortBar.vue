@@ -26,9 +26,8 @@
       </span>
     </span>
 
-    <!-- 总进度：左侧奔跑小精灵，并行任务越多跑得越快（数据联动拟物） -->
+    <!-- 总进度 -->
     <div v-if="itemCount" class="bar-progress">
-      <is-pet v-if="runningCount > 0" mood="working" :speed="petSpeed" class="bar-pet" />
       <div class="bar-total" :title="$t('totalProgress')">
         <span class="bar-total__fill" :class="{ 'is-shimmer': runningCount > 0 }" :style="{ width: totalPercent + '%' }"></span>
       </div>
@@ -51,11 +50,10 @@
 
 <script>
 import confetti from '../../ui-next/confetti'
-import IsPet from '../../ui-next/components/IsPet.vue'
 import IsPacman from '../../ui-next/components/IsPacman.vue'
 
 export default {
-  components: { 'is-pet': IsPet, 'is-pacman': IsPacman },
+  components: { 'is-pacman': IsPacman },
   data () {
     return { pressed: '' }
   },
@@ -91,11 +89,6 @@ export default {
         if (s > 0 && s < 1) n++
       })
       return n
-    },
-    // 小精灵奔跑周期：1 个任务 1.6s，每多一个并行快 0.25s，最快 0.45s
-    petSpeed () {
-      var s = Math.max(0.45, 1.6 - (this.runningCount - 1) * 0.25)
-      return Math.round(s * 100) / 100
     },
     // 已完成条目按 1 计，进行中按实际 schedule 计，得到整体完成度
     totalPercent () {

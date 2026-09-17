@@ -57,24 +57,13 @@
     &.is-running { color: var(--is-accent-fg); }
   }
 
-  // 总进度行：小精灵 + 进度条（精灵仅在运行中出现，停歇时不占位）
+  // 总进度行
   .bar-progress {
     display: flex;
     align-items: center;
     gap: var(--is-s-2);
     flex: 1 1 120px;
     min-width: 60px;
-  }
-
-  // 底栏小尺寸小精灵：只覆盖尺寸变量
-  .bar-pet {
-    --pet-w: 26px;
-    --pet-body-w: 20px;
-    --pet-body-h: 16px;
-    --pet-eye: 6px;
-    --pet-pupil: 3px;
-    --pet-r: 5px;
-    flex: none;
   }
 
   // 总进度：占据剩余宽度，比逐条进度更早给出「还要多久」的直觉

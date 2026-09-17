@@ -176,8 +176,7 @@ frontend-redesign 工作树 Electron 已升级至 **28.3.3（Chromium 120）**�
   - CompareDialog：done 条目点击缩略图打开（原始帧 vs 输出文件）
   - mock 种子补写 outputPath 文件，浏览器模式可完整走通对比链路
 - M4：人格化彩蛋 + 无障碍核查 ✅（本次提交）
-  - IsPet 胶片小精灵三态：idle（空态右上角漂浮+眨眼）/ excited（拖入蹦跳瞪眼）/
-    working（底栏奔跑，周期 = 1.6s − 0.25×(并行数−1)，最快 0.45s——数据联动，对标仓鼠轮）
+  - ~~IsPet 胶片小精灵~~（已移除：观感不佳，进度条 shimmer 足够表达运行态）
   - prefers-reduced-motion 全量核查：CSS 动画由 tokens.css 全局规则统一降级；
     JS 动画四处显式守卫（confetti / IsNumberTween / IsCompareSlider / IsButton 水波纹）
 
