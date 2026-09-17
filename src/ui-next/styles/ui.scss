@@ -1407,6 +1407,9 @@ body.is-scroll-locked {
   flex-direction: column;
   gap: var(--is-s-3);
   min-height: 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .log__bar {
@@ -1488,6 +1491,8 @@ body.is-scroll-locked {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  width: 100%;
+  max-width: 100%;
   height: 340px;
   padding: 8px;
   overflow-y: auto;
@@ -1498,6 +1503,7 @@ body.is-scroll-locked {
   font-family: var(--is-mono);
   font-size: var(--is-fs-xs);
   outline: none;
+  box-sizing: border-box;
 
   &:focus-visible {
     border-color: var(--is-accent);
@@ -1516,6 +1522,9 @@ body.is-scroll-locked {
   flex-wrap: nowrap;
   align-items: flex-start;
   gap: 10px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   padding: 7px 10px;
   border: 1px solid transparent;
   border-radius: var(--is-r-sm);
@@ -1568,9 +1577,10 @@ body.is-scroll-locked {
 }
 
 .log__msg {
-  flex: 1 1 auto;
+  flex: 1 1 0%;
   min-width: 0;
   color: var(--is-text);
+  white-space: pre-wrap;
   overflow-wrap: anywhere;
   word-break: break-word;
 }
