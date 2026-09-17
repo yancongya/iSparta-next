@@ -31,9 +31,6 @@
       "hero.source": "看源码",
       "hero.m1": "Win / macOS / Linux",
       "hero.m2": "Electron 28",
-      "hero.hint": "把帧拖进小盒子 · 或拖入 / 粘贴你自己的图片",
-      "hero.trayPh": "拖入或 Ctrl+V 粘贴图片",
-      "hero.trayNote": "这里只真实读取你放进来的文件；转换在桌面端完成",
       "convert.eb": "01 · WORKBENCH",
       "convert.h2": "一张任务卡 = 一次完整导出",
       "convert.sub":
@@ -169,9 +166,6 @@
       "hero.source": "Source",
       "hero.m1": "Win / macOS / Linux",
       "hero.m2": "Electron 28",
-      "hero.hint": "Drag a frame into the box · or drop / paste your own images",
-      "hero.trayPh": "Drop files here or press Ctrl+V",
-      "hero.trayNote": "Your files are only read locally — conversion happens in the desktop app",
       "convert.eb": "01 · WORKBENCH",
       "convert.h2": "One card = one full export",
       "convert.sub":

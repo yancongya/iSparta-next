@@ -1111,28 +1111,17 @@
   }
 
 
-  /* ---------- HERO 投喂台：把「DROP · PASTE」变成真体验 ---------- */
-  const FEED_TOTAL = 3      // 演示用的 3 帧
-  const TRAY_MAX = 6        // 真实文件最多展示 6 个，避免撑爆版面
-
-  function fmtBytes(n) {
-    if (!isFinite(n) || n <= 0) return "0 B"
-    if (n < 1024) return n + " B"
-    if (n < 1024 * 1024) return (n / 1024).toFixed(1) + " KB"
-    return (n / 1048576).toFixed(2) + " MB"
-  }
+  /* ---------- HERO 投喂台：演示帧投入收集器 ---------- */
+  const FEED_TOTAL = 3
 
   function setupHeroFeeder() {
     const stage = document.getElementById("hero-stage")
     const packet = document.getElementById("packet")
     const countEl = document.getElementById("packet-count")
-    const tray = document.getElementById("hero-tray")
-    const ph = document.getElementById("hero-tray-ph")
-    if (!stage || !packet || !tray) return
+    if (!stage || !packet) return
 
     let fed = 0
     let resetTimer = null
-    const objectUrls = []
 
     function setCount() {
       if (countEl) countEl.textContent = String(fed)
@@ -1152,7 +1141,6 @@
       fed += 1
       setCount()
       bump(packet, "is-bump")
-      // 攒满后自动复位，让后面的访客能重复这段演示
       window.clearTimeout(resetTimer)
       if (fed >= FEED_TOTAL) {
         cheerPet()
@@ -1168,7 +1156,6 @@
       })
     }
 
-    // 指针拖拽：松手时命中收集器才算投进
     let dragging = null
     function overPacket(x, y) {
       const r = packet.getBoundingClientRect()
@@ -1203,7 +1190,6 @@
         frame.classList.remove("is-ghost")
         packet.classList.remove("is-hot")
       })
-      // 点一下也直接投喂：拖拽不是唯一入口
       frame.addEventListener("click", function (e) {
         if (overPacket(e.clientX, e.clientY)) return
         feed(frame)
@@ -1216,77 +1202,8 @@
       })
     })
 
-    // 收集器本身也可点击复位
     packet.addEventListener("click", function () {
       if (fed > 0) resetFeed()
-    })
-
-    /* ---------- 真实文件：拖入 / 粘贴，只显示真实体积 ---------- */
-    function addFiles(list) {
-      const files = [].slice.call(list || []).filter(function (f) {
-        return f && /^image\//.test(f.type || "")
-      })
-      if (!files.length) return
-      if (ph) ph.hidden = true
-      files.slice(0, Math.max(0, TRAY_MAX - tray.querySelectorAll(".hero-tray__item").length)).forEach(function (f) {
-        const url = URL.createObjectURL(f)
-        objectUrls.push(url)
-        const item = document.createElement("span")
-        item.className = "hero-tray__item"
-        const img = document.createElement("img")
-        img.src = url
-        img.alt = ""
-        img.loading = "lazy"
-        const meta = document.createElement("span")
-        meta.className = "hero-tray__meta"
-        const name = document.createElement("span")
-        name.className = "hero-tray__name"
-        name.textContent = f.name
-        const size = document.createElement("span")
-        size.className = "hero-tray__size"
-        size.textContent = fmtBytes(f.size)
-        meta.appendChild(name)
-        meta.appendChild(size)
-        item.appendChild(img)
-        item.appendChild(meta)
-        tray.appendChild(item)
-      })
-    }
-
-    function hasFiles(e) {
-      const dt = e.dataTransfer
-      if (!dt || !dt.types) return false
-      return [].slice.call(dt.types).indexOf("Files") >= 0
-    }
-
-    ;["dragenter", "dragover"].forEach(function (t) {
-      stage.addEventListener(t, function (e) {
-        if (!hasFiles(e)) return
-        e.preventDefault()
-        tray.classList.add("is-hot")
-      })
-    })
-    ;["dragleave", "drop"].forEach(function (t) {
-      stage.addEventListener(t, function () {
-        tray.classList.remove("is-hot")
-      })
-    })
-    stage.addEventListener("drop", function (e) {
-      if (!hasFiles(e)) return
-      e.preventDefault()
-      addFiles(e.dataTransfer.files)
-    })
-    document.addEventListener("paste", function (e) {
-      const cd = e.clipboardData
-      if (!cd || !cd.files || !cd.files.length) return
-      // 输入框里的粘贴不劫持
-      const t = e.target
-      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return
-      addFiles(cd.files)
-    })
-
-    window.addEventListener("beforeunload", function () {
-      objectUrls.forEach(function (u) { URL.revokeObjectURL(u) })
     })
 
     setCount()
