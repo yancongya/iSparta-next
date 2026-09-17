@@ -1521,7 +1521,7 @@ body.is-scroll-locked {
   display: flex;
   flex-wrap: nowrap;
   align-items: flex-start;
-  gap: 10px;
+  gap: 12px;
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
@@ -1558,22 +1558,24 @@ body.is-scroll-locked {
 }
 
 .log__t {
-  flex: 0 0 64px;
-  width: 64px;
+  flex: 0 0 78px;
+  width: 78px;
   color: var(--is-text-3);
   font-size: 11px;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+  overflow: hidden;
 }
 
 .log__lv {
-  flex: 0 0 52px;
-  width: 52px;
+  flex: 0 0 48px;
+  width: 48px;
   font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   white-space: nowrap;
+  overflow: hidden;
 }
 
 .log__msg {
