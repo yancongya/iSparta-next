@@ -1193,6 +1193,133 @@ html[data-theme="dark"] .author-tools li a {
 }
 
 /* naming panels — closer to setting.vue / PathVars */
+/* runtime log board — mirrors IsLogPanel structure */
+.log-board {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 16px 18px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 360px;
+  max-width: 920px;
+  margin: 0 auto;
+}
+
+.log-board__head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.log-board__title {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.log-board__count {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.log-board__bar,
+.log-board__foot {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.log-board__spacer {
+  flex: 1 1 auto;
+}
+
+.log-board__follow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 12px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.log-board__list {
+  flex: 1 1 auto;
+  min-height: 220px;
+  max-height: 320px;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--paper) 65%, var(--card));
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.log-board__list:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.log-row {
+  display: grid;
+  grid-template-columns: 64px 52px minmax(0, 1fr);
+  gap: 10px;
+  align-items: baseline;
+  padding: 6px 8px;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.45;
+  animation: logIn 0.28s ease;
+}
+
+@keyframes logIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+
+.log-row__t {
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+.log-row__lv {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.log-row__msg {
+  color: var(--ink);
+  min-width: 0;
+  word-break: break-word;
+}
+
+.log-row.is-info .log-row__lv { color: color-mix(in srgb, var(--ink) 55%, var(--muted)); }
+.log-row.is-ok .log-row__lv { color: #1a7f4b; }
+.log-row.is-warn .log-row__lv { color: #b45309; }
+.log-row.is-error .log-row__lv { color: #b91c1c; }
+.log-row.is-ok { background: color-mix(in srgb, #1a7f4b 6%, transparent); }
+.log-row.is-warn { background: color-mix(in srgb, #b45309 7%, transparent); }
+.log-row.is-error { background: color-mix(in srgb, #b91c1c 7%, transparent); }
+
+html[data-theme="dark"] .log-row.is-ok .log-row__lv { color: #4ade80; }
+html[data-theme="dark"] .log-row.is-warn .log-row__lv { color: #fbbf24; }
+html[data-theme="dark"] .log-row.is-error .log-row__lv { color: #f87171; }
+
+.log-board__empty {
+  margin: 24px auto;
+  color: var(--muted);
+  font-size: 13px;
+}
+
 .name-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;

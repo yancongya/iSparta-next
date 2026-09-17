@@ -88,6 +88,7 @@
       <a href="#convert" data-i18n="nav.convert">能力</a>
       <a href="#play" data-i18n="nav.play">阈值</a>
       <a href="#naming" data-i18n="nav.naming">命名</a>
+      <a href="#log" data-i18n="nav.log">日志</a>
       <a href="#compare" data-i18n="nav.compare">对比</a>
       <a href="#shots" data-i18n="nav.shots">界面</a>
       <a href="#lineage" data-i18n="nav.lineage">脉络</a>
@@ -418,10 +419,49 @@
     </div>
   </section>
 
+  <!-- runtime log panel demo -->
+  <section class="section section-log" id="log">
+    <div class="section-head">
+      <p class="eyebrow mono" data-i18n="log.eb">04 · RUN LOG</p>
+      <h2 data-i18n="log.h2">转换过程，一条条摊开给你看</h2>
+      <p class="section-sub" data-i18n="log.sub">
+        工具条一键打开运行日志：按级别筛（信息 / 成功 / 警告 / 错误），自动跟读最新输出。路径不对、编码失败、阈值重压——不用猜，直接翻这一屏。
+      </p>
+    </div>
+
+    <div class="log-board" role="group" aria-label="运行日志演示">
+      <div class="log-board__head">
+        <span class="log-board__title mono" data-i18n="log.title">运行日志</span>
+        <span class="log-board__count mono" id="log-count">0 / 0</span>
+      </div>
+
+      <div class="log-board__bar" role="group" aria-label="日志级别筛选">
+        <button type="button" class="chip chip--sm is-on" data-log-filter="all" data-i18n="log.all">全部</button>
+        <button type="button" class="chip chip--sm" data-log-filter="info" data-i18n="log.info">信息</button>
+        <button type="button" class="chip chip--sm" data-log-filter="ok" data-i18n="log.ok">成功</button>
+        <button type="button" class="chip chip--sm" data-log-filter="warn" data-i18n="log.warn">警告</button>
+        <button type="button" class="chip chip--sm" data-log-filter="error" data-i18n="log.error">错误</button>
+        <span class="log-board__spacer"></span>
+        <label class="log-board__follow">
+          <input type="checkbox" id="log-follow" checked />
+          <span data-i18n="log.follow">自动跟随</span>
+        </label>
+      </div>
+
+      <div class="log-board__list" id="log-list" tabindex="0" aria-live="polite"></div>
+
+      <div class="log-board__foot">
+        <button type="button" class="chip chip--quiet" id="log-replay" data-i18n="log.replay">再播一遍</button>
+        <span class="log-board__spacer"></span>
+        <button type="button" class="chip chip--quiet" id="log-clear" data-i18n="log.clear">清空</button>
+      </div>
+    </div>
+  </section>
+
   <!-- compare: real before/after wipe on repo's own test fixture -->
   <section class="section section-compare" id="compare">
     <div class="section-head">
-      <p class="eyebrow mono" data-i18n="cmp.eb">04 · COMPARE</p>
+      <p class="eyebrow mono" data-i18n="cmp.eb">05 · COMPARE</p>
       <h2 data-i18n="cmp.h2">拖一下，看 GIF 把边缘吃掉了</h2>
       <p class="section-sub" data-i18n="cmp.sub">
         同一帧素材，左边是 PNG 序列原帧，右边是实际导出结果。切换格式后拖动分隔线：GIF 只有 2 级透明，边缘全是锯齿；APNG / WebP 保留了完整的半透明过渡。
@@ -472,7 +512,7 @@
 
   <section class="section" id="shots">
     <div class="section-head">
-      <p class="eyebrow mono" data-i18n="shots.eb">05 · REAL UI</p>
+      <p class="eyebrow mono" data-i18n="shots.eb">06 · REAL UI</p>
       <h2 data-i18n="shots.h2">真实软件界面，不是概念稿</h2>
       <p class="section-sub" data-i18n="shots.sub">应用真实界面：空状态导入、任务胶片列表与输出设置、默认设置（主题 / 路径模板 / 大小阈值）。</p>
     </div>
@@ -502,7 +542,7 @@
   <section class="section section-dl" id="download">
     <div class="dl-panel">
       <div>
-        <p class="eyebrow mono" data-i18n="dl.eb">06 · GET IT</p>
+        <p class="eyebrow mono" data-i18n="dl.eb">07 · GET IT</p>
         <h2 data-i18n="dl.h2">选一个系统，直接开箱</h2>
         <p class="section-sub" data-i18n="dl.sub">安装包由 GitHub Actions 构建。macOS 未签名，首次打开见 Release 说明。</p>
       </div>
@@ -530,7 +570,7 @@
   <!-- lineage + why + authors at the end -->
   <section class="section section-why" id="why">
     <div class="section-head">
-      <p class="eyebrow mono" data-i18n="why.eb">07 · WHY NEXT</p>
+      <p class="eyebrow mono" data-i18n="why.eb">08 · WHY NEXT</p>
       <h2 data-i18n="why.h2">不是旧版补丁，是重做过的工作台</h2>
       <p class="section-sub" data-i18n="why.sub">原版长期停更；本仓库在社区 fork 基建上重写前后端，而不是只修几个按钮。</p>
     </div>
@@ -570,7 +610,7 @@
 
   <section class="section section-lineage" id="lineage">
     <div class="section-head">
-      <p class="eyebrow mono" data-i18n="lineage.eb">08 · LINEAGE</p>
+      <p class="eyebrow mono" data-i18n="lineage.eb">09 · LINEAGE</p>
       <h2 data-i18n="lineage.h2">从原版到 iSparta-next</h2>
       <p class="section-sub" data-i18n="lineage.sub">感谢原作者与每一位社区维护者。本仓库站在他们肩膀上继续改。</p>
     </div>

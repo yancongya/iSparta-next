@@ -1209,9 +1209,141 @@
     setCount()
   }
 
+  /* ---------- 04 · RUN LOG：与 IsLogPanel 同构的演示板 ---------- */
+  const LOG_SCRIPT = [
+    { level: "info", msg: "导入目录 frames · 识别 24 帧 PNG", detail: "" },
+    { level: "info", msg: "输出格式 APNG · 帧频 25 · 循环 ∞" },
+    { level: "ok", msg: "解析帧序完成 · 自然排序" },
+    { level: "info", msg: "开始编码 apngasm…" },
+    { level: "ok", msg: "APNG 生成成功 · 1.86 MB" },
+    { level: "warn", msg: "体积超过阈值 1MB · 自动降质量重压" },
+    { level: "info", msg: "重压 #1 质量 80 → 75" },
+    { level: "ok", msg: "重压完成 · 0.94 MB · 进线" },
+    { level: "info", msg: "写出 {srcPath}/export/{date}/示例贴纸.png" },
+    { level: "error", msg: "示例：路径不存在 D:/missing/frames" },
+    { level: "ok", msg: "任务队列完成 · 成功 1 / 失败 0" }
+  ]
+
+  function setupLogBoard() {
+    const list = document.getElementById("log-list")
+    const countEl = document.getElementById("log-count")
+    const followEl = document.getElementById("log-follow")
+    const replayBtn = document.getElementById("log-replay")
+    const clearBtn = document.getElementById("log-clear")
+    if (!list) return
+
+    let entries = []
+    let filter = "all"
+    let seq = 0
+    let playTimer = null
+
+    function pad(n) {
+      return n < 10 ? "0" + n : String(n)
+    }
+
+    function nowStr() {
+      const d = new Date()
+      return pad(d.getHours()) + ":" + pad(d.getMinutes()) + ":" + pad(d.getSeconds())
+    }
+
+    function matches(e) {
+      return filter === "all" || e.level === filter
+    }
+
+    function updateCount() {
+      if (!countEl) return
+      const shown = entries.filter(matches).length
+      countEl.textContent = shown + " / " + entries.length
+    }
+
+    function render() {
+      list.innerHTML = ""
+      const shown = entries.filter(matches)
+      if (!shown.length) {
+        const p = document.createElement("p")
+        p.className = "log-board__empty"
+        p.textContent = filter === "all" ? "（暂无日志）" : "（当前级别无条目）"
+        list.appendChild(p)
+        updateCount()
+        return
+      }
+      shown.forEach(function (e) {
+        const row = document.createElement("div")
+        row.className = "log-row is-" + e.level
+        row.innerHTML =
+          '<span class="log-row__t mono"></span><span class="log-row__lv mono"></span><span class="log-row__msg"></span>'
+        row.querySelector(".log-row__t").textContent = e.t
+        row.querySelector(".log-row__lv").textContent = e.level
+        row.querySelector(".log-row__msg").textContent = e.msg
+        list.appendChild(row)
+      })
+      if (followEl && followEl.checked) {
+        list.scrollTop = list.scrollHeight
+      }
+      updateCount()
+    }
+
+    function push(entry) {
+      seq += 1
+      entries.push({ id: seq, t: nowStr(), level: entry.level, msg: entry.msg })
+      if (entries.length > 40) entries.shift()
+      render()
+    }
+
+    function play() {
+      if (playTimer) {
+        window.clearInterval(playTimer)
+        playTimer = null
+      }
+      entries = []
+      seq = 0
+      render()
+      let i = 0
+      playTimer = window.setInterval(function () {
+        if (i >= LOG_SCRIPT.length) {
+          window.clearInterval(playTimer)
+          playTimer = null
+          return
+        }
+        push(LOG_SCRIPT[i])
+        i += 1
+      }, reduceMotion ? 0 : 420)
+      if (reduceMotion) {
+        LOG_SCRIPT.forEach(push)
+        window.clearInterval(playTimer)
+        playTimer = null
+      }
+    }
+
+    document.querySelectorAll("[data-log-filter]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        filter = btn.getAttribute("data-log-filter") || "all"
+        document.querySelectorAll("[data-log-filter]").forEach(function (b) {
+          b.classList.toggle("is-on", b === btn)
+        })
+        render()
+      })
+    })
+    if (followEl) followEl.addEventListener("change", render)
+    if (replayBtn) replayBtn.addEventListener("click", play)
+    if (clearBtn) {
+      clearBtn.addEventListener("click", function () {
+        if (playTimer) {
+          window.clearInterval(playTimer)
+          playTimer = null
+        }
+        entries = []
+        render()
+      })
+    }
+
+    play()
+  }
+
   resolveLatestDownloads();
 
   setupCompare();
+  setupLogBoard();
   setupHeroFeeder();
   setupPacket();
   setupScroll();
