@@ -1,6 +1,6 @@
 appId: io.github.isparta-next
-# productName 取 package.json 的 "iSparta-next"（窗口标题、关于面板用它）
-# 产物与 exe 统一 isparta-next 前缀，与落地页/Release 资产名一致
+# productName 来自 package.json（唯一产品显示名）
+# exe / 产物统一用 productName 小写前缀，与落地页下载链一致
 executableName: isparta-next
 artifactName: isparta-next-${os}-${arch}.${ext}
 asar: false

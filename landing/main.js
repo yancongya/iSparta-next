@@ -2,6 +2,28 @@
 (function () {
   "use strict";
 
+  /** 产品标识：与 package.json productName / src/brand.js 保持一致 */
+  var BRAND = {
+    name: "iSparta-next",
+    artifactPrefix: "isparta-next",
+    repo: "yancongya/iSparta-next",
+    get releaseLatestApi() {
+      return "https://api.github.com/repos/" + this.repo + "/releases/latest";
+    },
+    asset: function (osArch) {
+      return this.artifactPrefix + "-" + osArch;
+    },
+    /** latest 固定下载链（静态 HTML 也可用 data-dl 覆盖） */
+    latestDownload: function (osArch) {
+      return (
+        "https://github.com/" +
+        this.repo +
+        "/releases/latest/download/" +
+        this.asset(osArch)
+      );
+    }
+  };
+
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const hasGsap = typeof window.gsap !== "undefined";
 
@@ -884,7 +906,7 @@
 
   /* ---------- resolve latest release asset URLs ---------- */
   function resolveLatestDownloads() {
-    var api = "https://api.github.com/repos/yancongya/iSparta-next/releases/latest";
+    var api = BRAND.releaseLatestApi;
     fetch(api)
       .then(function (r) {
         if (!r.ok) throw new Error("api");

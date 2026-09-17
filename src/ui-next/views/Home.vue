@@ -12,7 +12,7 @@
     <!-- 空态：无任务时全屏导入 -->
     <section v-if="!items.length" class="ib-import">
       <div class="ib-import__top">
-        <span class="ib-brand">iSparta-next</span>
+        <span class="ib-brand">{{ appName }}</span>
         <div class="ib-import__acts">
           <button type="button" class="ib-iconbtn" :title="$t('defaultSetting')" @click="openGlobalSetting">
             <is-icon name="settings" />
@@ -157,6 +157,7 @@ import { naturalSort } from '../../util/sort'
 import ThemeManager from '../theme'
 import { storage } from '../../util/node-env'
 import notice from '../notice'
+import { APP_NAME } from '../../brand'
 
 // 中间工具条列宽（px）
 const RAIL_W = 36
@@ -184,6 +185,7 @@ export default {
   },
   data () {
     return {
+      appName: APP_NAME,
       // dragenter/dragleave 会在子元素间反复触发，用计数器判定真正的进出
       dragDepth: 0,
       dragging: false,

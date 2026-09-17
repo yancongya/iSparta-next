@@ -4,12 +4,17 @@ import { app, protocol, BrowserWindow, ipcMain, dialog, shell, Menu, net } from 
 import {
   createProtocol
 } from 'vue-cli-plugin-electron-builder/lib'
+import { APP_NAME } from './brand'
 const isDevelopment = process.env.NODE_ENV !== 'production'
 const path = require("path");
 const fsp = require('fs');
 const childProcess = require('child_process');
 const os = require('os');
 const { pathToFileURL } = require('url');
+// package.json productName 为显示名唯一来源；开发态若未生效则用 brand 兜底
+if (app.getName() !== APP_NAME) {
+  app.setName(APP_NAME)
+}
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
 

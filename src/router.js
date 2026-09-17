@@ -1,6 +1,7 @@
 import Vue from 'vue'
 import Router from 'vue-router'
 import UiNextHome from './ui-next/views/Home.vue'
+import { APP_NAME } from './brand'
 
 Vue.use(Router)
 
@@ -15,7 +16,7 @@ export default new Router({
       name: 'ui-next',
       component: UiNextHome,
       meta: {
-        title: 'iSparta-next'
+        title: APP_NAME
       }
     },
     {
