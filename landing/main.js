@@ -913,6 +913,22 @@
         return r.json();
       })
       .then(function (rel) {
+        // Hero 版本号：实时取 tag_name（如 v3.3.3）
+        var tag = rel.tag_name || rel.name || "";
+        if (tag) {
+          var verEl = document.getElementById("hero-version");
+          if (verEl) verEl.textContent = tag;
+          // JSON-LD softwareVersion 同步，避免 SEO 硬编码过期
+          var ld = document.querySelector('script[type="application/ld+json"]');
+          if (ld) {
+            try {
+              var data = JSON.parse(ld.textContent);
+              data.softwareVersion = tag.replace(/^v/i, "");
+              ld.textContent = JSON.stringify(data);
+            } catch (e) { /* keep static */ }
+          }
+        }
+
         var assets = rel.assets || [];
         var byName = {};
         assets.forEach(function (a) {
@@ -943,7 +959,7 @@
         }
       })
       .catch(function () {
-        /* 离线或 API 限流时保留静态 latest/download 链接 */
+        /* 离线或 API 限流时保留静态 latest/download 链接与 HTML 默认版本号 */
       });
   }
 
