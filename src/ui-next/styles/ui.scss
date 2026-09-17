@@ -1387,7 +1387,7 @@ body.is-scroll-locked {
 }
 
 // --------------------------------------------------------------------------
-// 运行日志面板（IsLogPanel）
+// 运行日志面板（IsLogPanel）— 对齐落地页 mockup 的精致度
 // --------------------------------------------------------------------------
 .log-title {
   display: inline-flex;
@@ -1398,13 +1398,14 @@ body.is-scroll-locked {
     color: var(--is-text-3);
     font-size: var(--is-fs-xs);
     font-weight: var(--is-fw-medium);
+    font-variant-numeric: tabular-nums;
   }
 }
 
 .log {
   display: flex;
   flex-direction: column;
-  gap: var(--is-s-2);
+  gap: var(--is-s-3);
   min-height: 0;
 }
 
@@ -1412,7 +1413,9 @@ body.is-scroll-locked {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: var(--is-s-1);
+  gap: 6px;
+  padding-bottom: 2px;
+  border-bottom: 1px solid var(--is-border);
 }
 
 .log__bar-spacer {
@@ -1423,56 +1426,75 @@ body.is-scroll-locked {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  height: 24px;
-  padding: 0 10px;
+  height: 26px;
+  padding: 0 11px;
   border: 1px solid var(--is-border);
   border-radius: var(--is-r-pill);
-  background: none;
+  background: var(--is-card-hi);
   color: var(--is-text-2);
   font-family: inherit;
   font-size: var(--is-fs-xs);
+  font-weight: 500;
   cursor: pointer;
   transition: border-color var(--is-dur-fast) var(--is-ease-std),
     background-color var(--is-dur-fast) var(--is-ease-std),
-    color var(--is-dur-fast) var(--is-ease-std);
+    color var(--is-dur-fast) var(--is-ease-std),
+    transform var(--is-dur-fast) var(--is-ease-std);
 
   &:hover {
     border-color: var(--is-border-strong);
     color: var(--is-text);
   }
 
+  &:active {
+    transform: scale(0.97);
+  }
+
   &.is-on {
-    border-color: var(--is-border-hi);
+    border-color: rgba(var(--is-accent-rgb), 0.45);
     background: var(--is-accent-soft);
     color: var(--is-accent);
+    box-shadow: 0 0 0 1px rgba(var(--is-accent-rgb), 0.08) inset;
   }
 
   &-n {
-    color: var(--is-text-3);
+    min-width: 16px;
+    padding: 0 4px;
+    border-radius: var(--is-r-pill);
+    background: rgba(var(--is-accent-rgb), 0.16);
+    color: var(--is-accent);
     font-size: 10px;
+    font-weight: 600;
+    text-align: center;
+    line-height: 16px;
   }
 }
 
 .log__follow {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   color: var(--is-text-3);
   font-size: var(--is-fs-xs);
   cursor: pointer;
   user-select: none;
+
+  input {
+    accent-color: var(--is-accent);
+  }
 }
 
 .log__list {
   display: flex;
   flex-direction: column;
-  gap: 1px;
-  height: 320px;
-  padding: var(--is-s-2);
+  gap: 4px;
+  height: 340px;
+  padding: 8px;
   overflow-y: auto;
   border: 1px solid var(--is-border);
-  border-radius: var(--is-r-sm);
+  border-radius: var(--is-r-md);
   background: var(--is-inset);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.18);
   font-family: var(--is-mono);
   font-size: var(--is-fs-xs);
   outline: none;
@@ -1486,23 +1508,41 @@ body.is-scroll-locked {
   margin: auto;
   color: var(--is-text-3);
   text-align: center;
+  font-size: var(--is-fs-sm);
 }
 
 .log__row {
   display: grid;
-  grid-template-columns: 58px 44px minmax(0, 1fr);
+  grid-template-columns: 64px 52px minmax(0, 1fr);
   align-items: baseline;
-  gap: var(--is-s-2);
-  padding: 3px var(--is-s-1);
-  border-radius: var(--is-r-xs);
+  gap: 10px;
+  padding: 7px 10px;
+  border: 1px solid transparent;
+  border-radius: var(--is-r-sm);
+  background: var(--is-card);
   line-height: 1.45;
+  transition: border-color var(--is-dur-fast) var(--is-ease-std),
+    background-color var(--is-dur-fast) var(--is-ease-std);
 
-  &:nth-child(odd) { background: rgba(255, 255, 255, 0.02); }
+  &.is-ok {
+    border-color: rgba(var(--is-ok-rgb), 0.28);
+    background: linear-gradient(90deg, var(--is-ok-bg), var(--is-card) 55%);
+  }
 
+  &.is-warn {
+    border-color: rgba(var(--is-warn-rgb), 0.3);
+    background: linear-gradient(90deg, var(--is-warn-bg), var(--is-card) 55%);
+  }
+
+  &.is-error {
+    border-color: rgba(var(--is-bad-rgb), 0.3);
+    background: linear-gradient(90deg, var(--is-bad-bg), var(--is-card) 55%);
+  }
+
+  &.is-info .log__lv { color: var(--is-text-3); }
   &.is-ok .log__lv { color: var(--is-ok); }
   &.is-warn .log__lv { color: var(--is-warn); }
   &.is-error .log__lv { color: var(--is-bad); }
-  &.is-info .log__lv { color: var(--is-cool); }
 
   &.is-error .log__msg { color: var(--is-bad-fg); }
   &.is-warn .log__msg { color: var(--is-warn-fg); }
@@ -1510,12 +1550,14 @@ body.is-scroll-locked {
 
 .log__t {
   color: var(--is-text-3);
+  font-size: 11px;
   font-variant-numeric: tabular-nums;
 }
 
 .log__lv {
-  text-transform: uppercase;
   font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
   letter-spacing: 0.04em;
 }
 
@@ -1526,7 +1568,8 @@ body.is-scroll-locked {
 }
 
 .log__detail {
-  grid-column: 3;
+  display: block;
+  margin-top: 2px;
   color: var(--is-text-3);
   font-size: 10px;
   overflow-wrap: anywhere;
@@ -1535,12 +1578,12 @@ body.is-scroll-locked {
 .log__act {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  height: 28px;
+  gap: 5px;
+  height: 30px;
   padding: 0 var(--is-s-3);
   border: 1px solid var(--is-border);
   border-radius: var(--is-r-sm);
-  background: none;
+  background: var(--is-card-hi);
   color: var(--is-text-2);
   font-family: inherit;
   font-size: var(--is-fs-sm);
@@ -1551,7 +1594,7 @@ body.is-scroll-locked {
 
   &:hover {
     border-color: var(--is-border-strong);
-    background: var(--is-hover);
+    background: var(--is-hover, var(--is-card));
     color: var(--is-text);
   }
 
