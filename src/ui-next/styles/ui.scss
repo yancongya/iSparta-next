@@ -1512,9 +1512,9 @@ body.is-scroll-locked {
 }
 
 .log__row {
-  display: grid;
-  grid-template-columns: 64px 52px minmax(0, 1fr);
-  align-items: baseline;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: flex-start;
   gap: 10px;
   padding: 7px 10px;
   border: 1px solid transparent;
@@ -1549,22 +1549,30 @@ body.is-scroll-locked {
 }
 
 .log__t {
+  flex: 0 0 64px;
+  width: 64px;
   color: var(--is-text-3);
   font-size: 11px;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .log__lv {
+  flex: 0 0 52px;
+  width: 52px;
   font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
+  white-space: nowrap;
 }
 
 .log__msg {
+  flex: 1 1 auto;
   min-width: 0;
   color: var(--is-text);
   overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .log__detail {
