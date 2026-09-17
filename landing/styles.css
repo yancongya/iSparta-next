@@ -1193,33 +1193,59 @@ html[data-theme="dark"] .author-tools li a {
 }
 
 /* naming panels — closer to setting.vue / PathVars */
-/* runtime log board — mirrors IsLogPanel structure */
+/* runtime log board — desktop dialog mockup (IsLogPanel) */
+.log-shell {
+  max-width: 860px;
+  margin: 0 auto;
+  perspective: 900px;
+}
+
 .log-board {
   background: var(--card);
   border: 1px solid var(--line);
-  border-radius: 20px;
-  padding: 16px 18px 14px;
+  border-radius: 16px;
+  box-shadow:
+    0 1px 2px color-mix(in srgb, var(--ink) 6%, transparent),
+    0 18px 48px color-mix(in srgb, var(--ink) 10%, transparent);
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  min-height: 360px;
-  max-width: 920px;
-  margin: 0 auto;
+  min-height: 420px;
 }
 
-.log-board__head {
+.log-board__chrome {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--paper) 55%, var(--card));
 }
+
+.log-board__dots {
+  display: flex;
+  gap: 6px;
+}
+
+.log-board__dots i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--line);
+}
+
+.log-board__dots i:nth-child(1) { background: #e07a6a; }
+.log-board__dots i:nth-child(2) { background: #e0c56a; }
+.log-board__dots i:nth-child(3) { background: #7acb8a; }
 
 .log-board__title {
   font-weight: 700;
-  font-size: 14px;
+  font-size: 13px;
   color: var(--ink);
 }
 
 .log-board__count {
+  margin-left: auto;
   color: var(--muted);
   font-size: 12px;
 }
@@ -1230,6 +1256,16 @@ html[data-theme="dark"] .author-tools li a {
   align-items: center;
   flex-wrap: wrap;
   gap: 8px;
+  padding: 10px 14px;
+}
+
+.log-board__bar {
+  border-bottom: 1px solid var(--line);
+}
+
+.log-board__foot {
+  border-top: 1px solid var(--line);
+  background: color-mix(in srgb, var(--paper) 40%, var(--card));
 }
 
 .log-board__spacer {
@@ -1248,32 +1284,33 @@ html[data-theme="dark"] .author-tools li a {
 
 .log-board__list {
   flex: 1 1 auto;
-  min-height: 220px;
-  max-height: 320px;
+  min-height: 240px;
+  max-height: 340px;
   overflow: auto;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--paper) 65%, var(--card));
-  padding: 6px;
+  margin: 0;
+  padding: 8px 10px;
+  background: color-mix(in srgb, var(--paper) 70%, var(--card));
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
 }
 
 .log-board__list:focus-visible {
   outline: 2px solid var(--accent);
-  outline-offset: 2px;
+  outline-offset: -2px;
 }
 
 .log-row {
   display: grid;
-  grid-template-columns: 64px 52px minmax(0, 1fr);
+  grid-template-columns: 70px 56px minmax(0, 1fr);
   gap: 10px;
   align-items: baseline;
-  padding: 6px 8px;
+  padding: 7px 10px;
   border-radius: 8px;
-  font-size: 12px;
+  border: 1px solid transparent;
+  font-size: 12.5px;
   line-height: 1.45;
+  background: var(--card);
   animation: logIn 0.28s ease;
 }
 
@@ -1302,20 +1339,31 @@ html[data-theme="dark"] .author-tools li a {
   word-break: break-word;
 }
 
-.log-row.is-info .log-row__lv { color: color-mix(in srgb, var(--ink) 55%, var(--muted)); }
-.log-row.is-ok .log-row__lv { color: #1a7f4b; }
-.log-row.is-warn .log-row__lv { color: #b45309; }
+.log-row.is-info .log-row__lv { color: var(--muted); }
+.log-row.is-ok {
+  border-color: color-mix(in srgb, var(--ok) 28%, transparent);
+  background: color-mix(in srgb, var(--ok) 7%, var(--card));
+}
+.log-row.is-ok .log-row__lv { color: var(--ok); }
+.log-row.is-warn {
+  border-color: color-mix(in srgb, var(--warn) 30%, transparent);
+  background: color-mix(in srgb, var(--warn) 8%, var(--card));
+}
+.log-row.is-warn .log-row__lv { color: var(--warn); }
+.log-row.is-error {
+  border-color: color-mix(in srgb, #b91c1c 30%, transparent);
+  background: color-mix(in srgb, #b91c1c 7%, var(--card));
+}
 .log-row.is-error .log-row__lv { color: #b91c1c; }
-.log-row.is-ok { background: color-mix(in srgb, #1a7f4b 6%, transparent); }
-.log-row.is-warn { background: color-mix(in srgb, #b45309 7%, transparent); }
-.log-row.is-error { background: color-mix(in srgb, #b91c1c 7%, transparent); }
 
-html[data-theme="dark"] .log-row.is-ok .log-row__lv { color: #4ade80; }
-html[data-theme="dark"] .log-row.is-warn .log-row__lv { color: #fbbf24; }
 html[data-theme="dark"] .log-row.is-error .log-row__lv { color: #f87171; }
+html[data-theme="dark"] .log-row.is-error {
+  border-color: color-mix(in srgb, #f87171 28%, transparent);
+  background: color-mix(in srgb, #f87171 8%, var(--card));
+}
 
 .log-board__empty {
-  margin: 24px auto;
+  margin: 36px auto;
   color: var(--muted);
   font-size: 13px;
 }

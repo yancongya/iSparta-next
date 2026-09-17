@@ -28,7 +28,7 @@
 
   <link rel="icon" href="assets/icon.png" />
   <link rel="apple-touch-icon" href="assets/icon.png" />
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css?v=20260917-log" />
 
   <!-- Structured data -->
   <script type="application/ld+json">
@@ -429,8 +429,10 @@
       </p>
     </div>
 
+    <div class="log-shell">
     <div class="log-board" role="group" aria-label="运行日志演示">
-      <div class="log-board__head">
+      <div class="log-board__chrome">
+        <span class="log-board__dots" aria-hidden="true"><i></i><i></i><i></i></span>
         <span class="log-board__title mono" data-i18n="log.title">运行日志</span>
         <span class="log-board__count mono" id="log-count">0 / 0</span>
       </div>
@@ -455,6 +457,7 @@
         <span class="log-board__spacer"></span>
         <button type="button" class="chip chip--quiet" id="log-clear" data-i18n="log.clear">清空</button>
       </div>
+    </div>
     </div>
   </section>
 
@@ -727,7 +730,7 @@
        本地副本 72KB + 43KB，GreenSock 标准许可允许自托管部署，许可头保留在文件内 -->
   <script src="assets/vendor/gsap.min.js"></script>
   <script src="assets/vendor/ScrollTrigger.min.js"></script>
-  <script src="i18n.js"></script>
-  <script src="main.js"></script>
+  <script src="i18n.js?v=20260917-log"></script>
+  <script src="main.js?v=20260917-log"></script>
 </body>
 </html>
