@@ -1428,12 +1428,11 @@ body.is-scroll-locked {
 .log {
   display: flex;
   flex-direction: column;
-  gap: 0;
+  gap: 10px;
   min-height: 0;
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
-  margin: calc(var(--is-s-5) * -1);
 }
 
 .log__bar {
@@ -1441,9 +1440,8 @@ body.is-scroll-locked {
   align-items: center;
   flex-wrap: wrap;
   gap: 8px;
-  padding: 10px 14px;
+  padding: 0 0 10px;
   border-bottom: 1px solid var(--is-border);
-  background: color-mix(in srgb, var(--is-panel) 55%, var(--is-card));
 }
 
 .log__bar-spacer {
@@ -1520,9 +1518,11 @@ body.is-scroll-locked {
   max-width: 100%;
   min-height: 280px;
   height: 340px;
-  padding: 8px 10px;
+  padding: 8px;
   overflow-y: auto;
-  background: color-mix(in srgb, var(--is-panel) 70%, var(--is-card));
+  border: 1px solid var(--is-border);
+  border-radius: var(--is-r-md);
+  background: var(--is-inset);
   font-family: var(--is-mono);
   font-size: var(--is-fs-xs);
   outline: none;
@@ -1544,17 +1544,17 @@ body.is-scroll-locked {
 .log__row {
   display: flex;
   flex-wrap: nowrap;
-  align-items: baseline;
+  align-items: center;
   gap: 10px;
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
-  padding: 7px 10px;
+  padding: 8px 10px;
   border: 1px solid transparent;
   border-radius: 8px;
   background: var(--is-card);
-  font-size: 12.5px;
-  line-height: 1.45;
+  font-size: 12px;
+  line-height: 1.4;
   animation: is-log-in 0.28s ease;
 
   &.is-ok {
@@ -1586,6 +1586,12 @@ body.is-scroll-locked {
   to { opacity: 1; transform: none; }
 }
 
+.log__t,
+.log__lv,
+.log__msg {
+  line-height: 1.4;
+}
+
 .log__t {
   flex: 0 0 70px;
   width: 70px;
@@ -1594,6 +1600,7 @@ body.is-scroll-locked {
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
   overflow: hidden;
+  text-overflow: clip;
 }
 
 .log__lv {
@@ -1611,6 +1618,7 @@ body.is-scroll-locked {
   flex: 1 1 0%;
   min-width: 0;
   color: var(--is-text);
+  font-size: 12px;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   word-break: break-word;
@@ -1655,10 +1663,10 @@ body.is-scroll-locked {
   }
 }
 
-// 对话框 footer 对齐落地页 foot：浅底 + 分隔
+// 对话框 footer：日志面板用浅底分隔（与落地页 foot 一致）
 .is-dialog__footer {
   &:has(.log__act) {
     border-top: 1px solid var(--is-border);
-    background: color-mix(in srgb, var(--is-panel) 40%, var(--is-card));
+    background: var(--is-card-hi);
   }
 }
