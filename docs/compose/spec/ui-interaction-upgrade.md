@@ -7,7 +7,7 @@ commits: f5c914a, 522496b, b422f84, d922b78, M4
 
 # iSparta 前端交互升级设计文档
 
-> 参考项目：`REDACTED_REF_PROJECT\image-compression`（仿 Recompressor 设计）
+> 参考项目：本地 `image-compression`（仿 Recompressor 设计，路径已脱敏）
 
 ## 1. 背景与目标
 

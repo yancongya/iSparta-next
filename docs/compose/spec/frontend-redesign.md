@@ -14,9 +14,9 @@ commits: TBD
 
 iSparta-next 已完成 Electron 28 + IPC/preload 改造，但 UI 仍是 Element UI 2 的旧三栏布局：任务列表、输出设置、转换状态反馈弱，长期维护成本高。用户要求：**整体重做交互**，**保留接口**（store 语义、`ispartaAPI`、processor），并希望**长期稳定**，可不依赖第三方组件库。
 
-参考项目：
-- `REDACTED_REF_PROJECT\image-compression`：CSS 变量设计 token、暗色卡片、自研控件
-- `REDACTED_REF_PROJECT\image-compression-tool-master`：Vue3 + Vite、Uploader / Controls / Preview 分区、进度与统计清晰
+参考项目（本地参考，路径已脱敏）：
+- `image-compression`：CSS 变量设计 token、暗色卡片、自研控件
+- `image-compression-tool-master`：Vue3 + Vite、Uploader / Controls / Preview 分区、进度与统计清晰
 
 ## [S2] Design
 
@@ -38,7 +38,7 @@ iSparta-next 已完成 Electron 28 + IPC/preload 改造，但 UI 仍是 Element 
 
 **视觉与设计（frontend-design skill）**：
 - **方向**：桌面「生产工具」——**工业/实用向暗色工具台**，避免 SaaS 营销页与通用 AI 风
-- **Token 复用**：从 `REDACTED_REF_PROJECT\image-compression\css\style.css` 抽取 `--primary-*`、`--dark-bg/panel/card`、间距/圆角，落到 `src/ui-next/styles/tokens.css`
+- **Token 复用**：从参考项目 `image-compression` 的 `css/style.css` 抽取 `--primary-*`、`--dark-bg/panel/card`、间距/圆角，落到 `src/ui-next/styles/tokens.css`
 - **交互复用**：`image-compression-tool-master` 的 Uploader 拖放态、Controls 分区、列表 + 进度语义，改为绑定 iSparta store / ispartaAPI
 - **组件**：自研 `DropZone` / `TaskRow` / `FormatToggles` / `Progress` 等，不引 Element
 - **记忆点**：任务列表「胶片帧」缩略图条 + 转换进度光带

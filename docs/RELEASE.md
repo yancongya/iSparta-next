@@ -14,7 +14,7 @@ GitHub Actions  Release 工作流
 https://github.com/yancongya/iSparta-next/releases
 ```
 
-目标仓库：`yancongya/iSparta-next` · 当前工作副本：`<local-repo>`
+目标仓库：`yancongya/iSparta-next` · 本地工作副本：仓库根目录（路径因人而异）
 
 ## 0. 前置
 
@@ -24,7 +24,7 @@ https://github.com/yancongya/iSparta-next/releases
 - 建议 commit 使用 Conventional 前缀（`feat:` / `fix:` / `docs:` / `ci:` / `chore:`），便于自动汇总
 
 ```powershell
-cd <local-repo>
+cd <your-local-repo>
 git status
 git checkout master
 git pull origin master

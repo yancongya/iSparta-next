@@ -23,16 +23,16 @@
 
 | 用途 | 路径 |
 | --- | --- |
-| 主仓库 / master | `<local-repo>` |
-| P1 worktree | `<local-repo>\.worktrees\electron-modern` |
-| P2+ worktree | `<local-repo>\.worktrees\electron-upgrade` |
+| 主仓库 / master | 仓库根目录 |
+| P1 worktree | `.worktrees/electron-modern` |
+| P2+ worktree | `.worktrees/electron-upgrade` |
 
 ## P2b 合入 master 前置
 
-用户在 `iSparta-next`（PORT 8082）完成完整清单（导入/右键/转换/缓存）后：
+在 `iSparta-next`（PORT 8082）完成完整清单（导入/右键/转换/缓存）后：
 
 ```bat
-cd <local-repo>
+cd <your-local-repo>
 git merge feat/electron-upgrade
 git push origin master
 ```

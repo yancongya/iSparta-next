@@ -716,11 +716,11 @@
   const tokenRow = document.getElementById("token-row");
   const nameHint = document.getElementById("name-hint");
   const PATH_CTX = {
-    srcPath: "D:/Assets/demo/demo-sticker-pack/frames",
+    srcPath: "D:/Assets/demo/sticker-pack/frames",
     src: "frames",
     name: "示例贴纸行走循环高清v3",
     type: "PNGs",
-    parent: "D:/Assets/demo/demo-sticker-pack",
+    parent: "D:/Assets/demo/sticker-pack",
     date: "20260915",
   };
   const VAR_KEYS = ["srcPath", "src", "name", "type", "parent", "date"];
