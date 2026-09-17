@@ -1,0 +1,39 @@
+appId: io.github.isparta-next
+# productName 取 package.json 的 "iSparta-next"（窗口标题、关于面板用它）
+# 产物与 exe 统一 isparta-next 前缀，与落地页/Release 资产名一致
+executableName: isparta-next
+artifactName: isparta-next-${os}-${arch}.${ext}
+asar: false
+# 使用本地已安装的 Electron，避免打包时再下载 zip
+electronDist: ./node_modules/electron/dist
+electronVersion: 28.3.3
+publish:
+  - provider: github
+win:
+  # 实测：electron-builder 22.14.13 下该开关是「全有或全无」——置 true 会在
+  # WinPackager.signApp 阶段去下载 winCodeSign 并直接失败（无证书环境）。
+  # 代价是 rcedit 也被跳过，exe 文件图标与版本信息仍是 Electron 默认。
+  # exe 图标改由 scripts/embed-exe-meta.js 在打包后单独写入。
+  signAndEditExecutable: false
+  target:
+    - target: zip
+      arch:
+        - x64
+  icon: ./public/icons/icon.ico
+mac:
+  # CI 无证书环境：不签名、不公证
+  # macos-latest 无 /usr/bin/python，electron-builder@22 的 dmg 会 ENOENT，故用 zip
+  identity: null
+  target:
+    - target: zip
+      arch:
+        - x64
+        - arm64
+  icon: ./public/icons/icon.icns
+linux:
+  target:
+    - target: tar.gz
+      arch:
+        - x64
+  icon: ./public/icons
+

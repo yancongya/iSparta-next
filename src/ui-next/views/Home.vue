@@ -12,7 +12,7 @@
     <!-- 空态：无任务时全屏导入 -->
     <section v-if="!items.length" class="ib-import">
       <div class="ib-import__top">
-        <span class="ib-brand">iSparta</span>
+        <span class="ib-brand">iSparta-next</span>
         <div class="ib-import__acts">
           <button type="button" class="ib-iconbtn" :title="$t('defaultSetting')" @click="openGlobalSetting">
             <is-icon name="settings" />

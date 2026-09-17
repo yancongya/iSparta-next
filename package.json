@@ -1,0 +1,69 @@
+{
+  "name": "isparta",
+  "productName": "iSparta-next",
+  "title": "iSparta-next",
+  "description": "APNG/WebP/GIF sequence converter — iSparta-next",
+  "author": "yancongya",
+  "version": "3.3.2",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yancongya/iSparta-next.git"
+  },
+  "scripts": {
+    "dev": "vue-cli-service electron:serve",
+    "build": "vue-cli-service electron:build -mwl ",
+    "build:windows": "vue-cli-service electron:build --windows",
+    "lint": "vue-cli-service lint",
+    "postinstall": "electron-builder install-app-deps",
+    "postuninstall": "electron-builder install-app-deps"
+  },
+  "main": "background.js",
+  "dependencies": {
+    "animejs": "^3.2.2",
+    "core-js": "^3.8.3",
+    "electron-localstorage": "^1.0.5",
+    "lodash": "^4.17.21",
+    "normalize.css": "^8.0.1",
+    "vue": "^2.6.10",
+    "vue-async-computed": "^3.7.0",
+    "vue-i18n": "^8.14.0",
+    "vue-router": "^3.0.3",
+    "vuex": "^3.0.1"
+  },
+  "devDependencies": {
+    "@vue/cli-plugin-babel": "^4.5.19",
+    "@vue/cli-plugin-eslint": "^4.5.19",
+    "@vue/cli-service": "^4.5.19",
+    "babel-eslint": "^10.1.0",
+    "electron": "^28.3.3",
+    "eslint": "^6.8.0",
+    "eslint-plugin-vue": "^6.2.2",
+    "sass": "^1.32.13",
+    "sass-loader": "^8.0.2",
+    "vue-cli-plugin-electron-builder": "~2.1.1",
+    "vue-template-compiler": "^2.6.10"
+  },
+  "eslintConfig": {
+    "root": true,
+    "env": {
+      "node": true
+    },
+    "extends": [
+      "plugin:vue/essential"
+    ],
+    "rules": {},
+    "parserOptions": {
+      "parser": "babel-eslint"
+    }
+  },
+  "postcss": {
+    "plugins": {
+      "autoprefixer": {}
+    }
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions"
+  ]
+}

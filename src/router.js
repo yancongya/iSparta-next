@@ -15,7 +15,7 @@ export default new Router({
       name: 'ui-next',
       component: UiNextHome,
       meta: {
-        title: 'iSparta'
+        title: 'iSparta-next'
       }
     },
     {

@@ -80,7 +80,7 @@ function createWindow () {
   win.on('closed', () => {
     win = null
   })
-  // 页面 <title> 会覆盖窗口标题，统一锁到 productName（iSparta）
+  // 页面 <title> 会覆盖窗口标题，统一锁到 productName（iSparta-next）
   win.on('page-title-updated', (event) => {
     event.preventDefault()
   })
