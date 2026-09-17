@@ -1387,12 +1387,35 @@ body.is-scroll-locked {
 }
 
 // --------------------------------------------------------------------------
-// 运行日志面板（IsLogPanel）— 对齐落地页 mockup 的精致度
+// 运行日志面板（IsLogPanel）— 视觉对齐落地页 log-board mockup
 // --------------------------------------------------------------------------
 .log-title {
   display: inline-flex;
-  align-items: baseline;
-  gap: var(--is-s-2);
+  align-items: center;
+  gap: 10px;
+
+  &__dots {
+    display: inline-flex;
+    gap: 6px;
+    margin-right: 2px;
+
+    i {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--is-border-strong);
+
+      &:nth-child(1) { background: #e07a6a; }
+      &:nth-child(2) { background: #e0c56a; }
+      &:nth-child(3) { background: #7acb8a; }
+    }
+  }
+
+  &__name {
+    font-weight: 700;
+    font-size: var(--is-fs-sm);
+    color: var(--is-text);
+  }
 
   &__count {
     color: var(--is-text-3);
@@ -1405,20 +1428,22 @@ body.is-scroll-locked {
 .log {
   display: flex;
   flex-direction: column;
-  gap: var(--is-s-3);
+  gap: 0;
   min-height: 0;
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
+  margin: calc(var(--is-s-5) * -1);
 }
 
 .log__bar {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 6px;
-  padding-bottom: 2px;
+  gap: 8px;
+  padding: 10px 14px;
   border-bottom: 1px solid var(--is-border);
+  background: color-mix(in srgb, var(--is-panel) 55%, var(--is-card));
 }
 
 .log__bar-spacer {
@@ -1490,28 +1515,27 @@ body.is-scroll-locked {
 .log__list {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
   width: 100%;
   max-width: 100%;
+  min-height: 280px;
   height: 340px;
-  padding: 8px;
+  padding: 8px 10px;
   overflow-y: auto;
-  border: 1px solid var(--is-border);
-  border-radius: var(--is-r-md);
-  background: var(--is-inset);
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.18);
+  background: color-mix(in srgb, var(--is-panel) 70%, var(--is-card));
   font-family: var(--is-mono);
   font-size: var(--is-fs-xs);
   outline: none;
   box-sizing: border-box;
 
   &:focus-visible {
-    border-color: var(--is-accent);
+    outline: 2px solid var(--is-accent);
+    outline-offset: -2px;
   }
 }
 
 .log__empty {
-  margin: auto;
+  margin: 36px auto;
   color: var(--is-text-3);
   text-align: center;
   font-size: var(--is-fs-sm);
@@ -1520,32 +1544,32 @@ body.is-scroll-locked {
 .log__row {
   display: flex;
   flex-wrap: nowrap;
-  align-items: flex-start;
-  gap: 12px;
+  align-items: baseline;
+  gap: 10px;
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
   padding: 7px 10px;
   border: 1px solid transparent;
-  border-radius: var(--is-r-sm);
+  border-radius: 8px;
   background: var(--is-card);
+  font-size: 12.5px;
   line-height: 1.45;
-  transition: border-color var(--is-dur-fast) var(--is-ease-std),
-    background-color var(--is-dur-fast) var(--is-ease-std);
+  animation: is-log-in 0.28s ease;
 
   &.is-ok {
     border-color: rgba(var(--is-ok-rgb), 0.28);
-    background: linear-gradient(90deg, var(--is-ok-bg), var(--is-card) 55%);
+    background: color-mix(in srgb, var(--is-ok) 7%, var(--is-card));
   }
 
   &.is-warn {
     border-color: rgba(var(--is-warn-rgb), 0.3);
-    background: linear-gradient(90deg, var(--is-warn-bg), var(--is-card) 55%);
+    background: color-mix(in srgb, var(--is-warn) 8%, var(--is-card));
   }
 
   &.is-error {
     border-color: rgba(var(--is-bad-rgb), 0.3);
-    background: linear-gradient(90deg, var(--is-bad-bg), var(--is-card) 55%);
+    background: color-mix(in srgb, var(--is-bad) 7%, var(--is-card));
   }
 
   &.is-info .log__lv { color: var(--is-text-3); }
@@ -1557,9 +1581,14 @@ body.is-scroll-locked {
   &.is-warn .log__msg { color: var(--is-warn-fg); }
 }
 
+@keyframes is-log-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+
 .log__t {
-  flex: 0 0 78px;
-  width: 78px;
+  flex: 0 0 70px;
+  width: 70px;
   color: var(--is-text-3);
   font-size: 11px;
   font-variant-numeric: tabular-nums;
@@ -1568,8 +1597,8 @@ body.is-scroll-locked {
 }
 
 .log__lv {
-  flex: 0 0 48px;
-  width: 48px;
+  flex: 0 0 56px;
+  width: 56px;
   font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
@@ -1602,11 +1631,12 @@ body.is-scroll-locked {
   height: 30px;
   padding: 0 var(--is-s-3);
   border: 1px solid var(--is-border);
-  border-radius: var(--is-r-sm);
+  border-radius: var(--is-r-pill);
   background: var(--is-card-hi);
   color: var(--is-text-2);
   font-family: inherit;
-  font-size: var(--is-fs-sm);
+  font-size: var(--is-fs-xs);
+  font-weight: 500;
   cursor: pointer;
   transition: border-color var(--is-dur-fast) var(--is-ease-std),
     color var(--is-dur-fast) var(--is-ease-std),
@@ -1614,7 +1644,7 @@ body.is-scroll-locked {
 
   &:hover {
     border-color: var(--is-border-strong);
-    background: var(--is-hover, var(--is-card));
+    background: var(--is-card);
     color: var(--is-text);
   }
 
@@ -1622,5 +1652,13 @@ body.is-scroll-locked {
     border-color: rgba(var(--is-bad-rgb), 0.5);
     background: var(--is-bad-bg);
     color: var(--is-bad-fg);
+  }
+}
+
+// 对话框 footer 对齐落地页 foot：浅底 + 分隔
+.is-dialog__footer {
+  &:has(.log__act) {
+    border-top: 1px solid var(--is-border);
+    background: color-mix(in srgb, var(--is-panel) 40%, var(--is-card));
   }
 }

@@ -2,12 +2,13 @@
   <is-dialog
     :visible="visible"
     :title="$t('logTitle')"
-    width="760px"
+    width="800px"
     @close="$emit('close')"
   >
     <template #title>
       <span class="log-title">
-        {{ $t('logTitle') }}
+        <span class="log-title__dots" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span class="log-title__name">{{ $t('logTitle') }}</span>
         <span class="log-title__count mono">{{ shown.length }} / {{ entries.length }}</span>
       </span>
     </template>
