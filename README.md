@@ -78,7 +78,7 @@
    两栏布局（任务列表 + 输出设置）、封面 1:1 缩略图、悬停预览、折叠面板、进度光带、批量统计、设计 token 化，降低第三方组件库耦合。
 
 7. **交互与动效增强**  
-   列表入场、数字滚动、完成彩带、拖放反馈；尊重 `prefers-reduced-motion`；另有像素小精灵彩蛋。
+   列表入场、数字滚动、完成彩带、拖放反馈；尊重 `prefers-reduced-motion`。
 
 8. **逐帧延时配置**  
    PNG 序列可单独调整每帧 delay，不再只能用全局帧频。
@@ -88,6 +88,9 @@
 
 10. **多任务批量工作流强化**  
     多选、批量开始、统一输出到目录、失败/成功统计、打开输出目录等路径更完整。
+
+11. **运行日志面板**  
+    工具条一键打开；按级别筛选（全部 / 信息 / 成功 / 警告 / 错误），支持自动滚动跟读，便于排查转换失败与路径问题。
 
 > 详细阶段说明见 [`docs/compose/ROADMAP-isparta-next.md`](docs/compose/ROADMAP-isparta-next.md) 与 `docs/compose/spec/` 下各特性规格。
 
@@ -226,7 +229,7 @@ gh workflow run release.yml -R yancongya/iSparta-next -f bump=patch -f prereleas
      - `isparta-next-<ver>-mac-x64.zip`
 
 > 说明：发版提交带 `[skip ci]`，避免和日常 CI 重复构建。  
-> macOS 包不在 CI 内产出，需要本地 `npm run build` 后手动补传到同一 Release。  
+> 三端（Win / Linux / macOS x64+arm64）均由 Release 工作流在云端打包并挂到同一 Release。  
 > 若 `master` 开了分支保护禁止 bot 直推，请改用 Personal Access Token 配 `secrets.RELEASE_TOKEN`，或先临时放开保护；当前工作流默认使用 `GITHUB_TOKEN`。
 
 不建议再手动打 `v*` 标签「碰运气」发版：**只有 Release 工作流会创建公开 Release**。

@@ -67,6 +67,7 @@ This repo is **not a small patch**. It is a **full frontend/backend refactor** o
 8. **Per-frame delay** — PNG sequences can set delay per frame  
 9. **Global defaults** — formats, quality, suffix, size limit presets  
 10. **Batch workflow** — multi-select, batch start, unified output dir, success/fail stats  
+11. **Runtime log panel** — open from the toolbar; filter by level (all / info / ok / warn / error) with auto-follow, useful for debugging convert failures and path issues  
 
 Details: [`docs/compose/ROADMAP-isparta-next.md`](docs/compose/ROADMAP-isparta-next.md) and `docs/compose/spec/`.
 
