@@ -11,7 +11,8 @@
 **iSparta-next** 是在停更多年的经典 [iSparta](https://github.com/iSparta/iSparta) 基础上重构的桌面动图转换工具，支持 **APNG / Animated WebP / GIF / PNG 序列** 之间的互转与压缩。
 
 > **[点此前往 Releases 下载安装包 →](https://github.com/yancongya/iSparta-next/releases)**  
-> 产品介绍页：**[https://yancongya.github.io/iSparta-next/](https://yancongya.github.io/iSparta-next/)**  
+> **产品官网 / 落地页：** **[https://yancongya.github.io/iSparta-next/](https://yancongya.github.io/iSparta-next/)**  
+> iSparta-next 是停更 [iSparta](https://github.com/iSparta/iSparta) 的现代维护替代：APNG / Animated WebP / GIF / PNG 序列转换与压缩  
 > 技术栈：Electron 28 + Vue 2 · 支持 Windows / macOS / Linux
 
 ### 更新检查与自动更新

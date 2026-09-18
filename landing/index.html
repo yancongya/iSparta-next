@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>iSparta-next · APNG / WebP / GIF 转换工作台</title>
-  <meta name="description" content="iSparta-next：把 PNG 序列、APNG、Animated WebP、GIF 互转与压缩的开源桌面工具。支持大小阈值自动重压、路径变量、批量导出。Win / macOS / Linux 免费下载。" />
-  <meta name="keywords" content="iSparta,iSparta-next,APNG转GIF,APNG转WebP,GIF转APNG,WebP转APNG,PNG序列合成动图,表情包压缩,动图压缩,APNG工具,Animated WebP,iSparta替代,开源桌面转换工具" />
+  <title>iSparta-next 官网 · APNG / GIF / WebP 动图转换工具（iSparta 维护版替代）</title>
+  <meta name="description" content="iSparta-next 官方产品页：开源桌面动图工作台。PNG 序列、APNG、Animated WebP、GIF 互转与压缩；输出大小阈值、路径变量、批量导出；Windows / macOS / Linux 免费下载。在长期停更的 iSparta 基础上重构维护。" />
+  <meta name="keywords" content="iSparta-next,iSparta-next官网,iSparta替代,iSparta维护版,APNG转GIF,APNG转WebP,GIF转APNG,WebP转APNG,PNG序列合成动图,表情包压缩,动图压缩,APNG工具,Animated WebP,GIF优化,开源桌面转换工具,Electron动图工具" />
   <meta name="author" content="yancongya" />
   <meta name="robots" content="index, follow, max-image-preview:large" />
   <link rel="canonical" href="https://yancongya.github.io/iSparta-next/" />
@@ -13,8 +13,8 @@
   <!-- Open Graph -->
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="iSparta-next" />
-  <meta property="og:title" content="iSparta-next · APNG / WebP / GIF 转换工作台" />
-  <meta property="og:description" content="开源桌面工具：PNG 序列、APNG、WebP、GIF 互转与压缩。大小阈值、路径变量、批量导出。" />
+  <meta property="og:title" content="iSparta-next 官网 · APNG / GIF / WebP 动图转换工具" />
+  <meta property="og:description" content="开源桌面动图工作台：PNG 序列 / APNG / Animated WebP / GIF 互转与压缩。大小阈值、路径变量、批量导出。Win / macOS / Linux。" />
   <meta property="og:url" content="https://yancongya.github.io/iSparta-next/" />
   <meta property="og:image" content="https://yancongya.github.io/iSparta-next/assets/main.png" />
   <meta property="og:locale" content="zh_CN" />
@@ -22,8 +22,8 @@
 
   <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="iSparta-next · APNG / WebP / GIF 转换工作台" />
-  <meta name="twitter:description" content="开源桌面工具：PNG 序列、APNG、WebP、GIF 互转与压缩。" />
+  <meta name="twitter:title" content="iSparta-next 官网 · APNG / GIF / WebP 动图转换工具" />
+  <meta name="twitter:description" content="开源桌面动图工作台：格式互转、体积压缩、批量导出。iSparta 的现代维护版。" />
   <meta name="twitter:image" content="https://yancongya.github.io/iSparta-next/assets/main.png" />
 
   <link rel="icon" href="assets/icon.png" />
@@ -39,10 +39,10 @@
     "alternateName": "iSparta",
     "applicationCategory": "MultimediaApplication",
     "operatingSystem": "Windows, macOS, Linux",
-    "description": "开源桌面动图转换工具：PNG 序列、APNG、Animated WebP、GIF 互转与压缩；支持输出大小阈值、路径变量、批量导出。",
+    "description": "iSparta-next 官方产品页：开源桌面动图转换工具。PNG 序列、APNG、Animated WebP、GIF 互转与压缩；输出大小阈值、路径变量、批量导出。在长期停更的 iSparta 基础上重构。",
     "url": "https://yancongya.github.io/iSparta-next/",
     "downloadUrl": "https://github.com/yancongya/iSparta-next/releases/latest",
-    "softwareVersion": "3.3.6",
+    "softwareVersion": "3.3.8",
     "author": { "@type": "Person", "name": "yancongya", "url": "https://github.com/yancongya" },
     "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
     "sameAs": [
@@ -200,6 +200,40 @@
           </g>
         </g>
       </svg>
+    </div>
+  </section>
+
+  <!-- 可抓取产品说明（SEO 静态正文，不依赖 JS） -->
+  <section class="section section-about" id="about">
+    <div class="section-head">
+      <p class="eyebrow mono">00 · ABOUT</p>
+      <h2>iSparta-next 是什么？iSparta 停更后的现代替代</h2>
+      <p class="section-sub">
+        iSparta-next（官网本页）是一款<strong>开源、跨平台的桌面动图转换工具</strong>，在长期停止维护的经典
+        <a href="https://github.com/iSparta/iSparta" target="_blank" rel="noopener">iSparta</a>
+        基础上重构，面向需要处理 <strong>PNG 序列、APNG、Animated WebP、GIF</strong> 的设计师与前端开发者。
+        与旧版相比，iSparta-next 升级到 Electron 28，重做了工作台 UI，并加入输出大小阈值、路径变量模板、批量导入与前后对比等能力。
+      </p>
+    </div>
+    <div class="about-grid">
+      <article class="about-card">
+        <h3>格式互转</h3>
+        <p>支持 PNG 序列合成 APNG / GIF / Animated WebP，以及 APNG、GIF、WebP 之间的互转与再压缩，适合表情包、贴纸与帧动画导出。</p>
+      </article>
+      <article class="about-card">
+        <h3>体积可控</h3>
+        <p>输出大小阈值可在超出上限时自动按步长降质量重压，适配平台 1MB 等体积限制，减少手动反复试压缩。</p>
+      </article>
+      <article class="about-card">
+        <h3>批量与路径</h3>
+        <p>拖拽 / 粘贴导入多组帧目录；路径变量模板与源目录输出策略，便于按项目批量导出与归档。</p>
+      </article>
+      <article class="about-card">
+        <h3>系统与下载</h3>
+        <p>Windows / macOS / Linux 免费使用。安装包由 GitHub Actions 构建，可在
+          <a href="https://github.com/yancongya/iSparta-next/releases" target="_blank" rel="noopener">GitHub Releases</a>
+          获取最新版；亦可从本页下载区选择对应平台。</p>
+      </article>
     </div>
   </section>
 

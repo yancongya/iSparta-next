@@ -2290,6 +2290,64 @@ html[data-theme="dark"] .log-row.is-error {
 }
 
 /* ==========================================================================
+   About / SEO 静态说明（可抓取正文）
+   ========================================================================== */
+.section-about .section-sub {
+  max-width: 52rem;
+}
+
+.section-about .section-sub a {
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.about-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-top: 8px;
+}
+
+.about-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 18px 16px;
+}
+
+.about-card h3 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+  color: var(--ink);
+}
+
+.about-card p {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.about-card a {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+@media (max-width: 900px) {
+  .about-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .about-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ==========================================================================
    发布面板（rel-*）— 固定高度分栏：左版本轨 + 右详情
    视觉对齐 log-board；版本再多高度也不涨
    ========================================================================== */
