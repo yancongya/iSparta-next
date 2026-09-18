@@ -120,6 +120,33 @@
           <is-input v-model="setting.options.sizeLimit.maxTries" type="number" class="w-80" :max="50" :min="1" number />
           <em class="hint">{{ $t('sizeLimitTriesTip') }}</em>
         </is-form-item>
+
+        <div class="gs-split"></div>
+
+        <!-- 关于 / 更新检查：应用级信息，不放在任务输出设置面板 -->
+        <is-form-item :label="$t('aboutVersion')">
+          <span class="gs-version">v{{ appVersion || '—' }}</span>
+        </is-form-item>
+        <is-form-item :label="$t('updateCheckNow')">
+          <is-button size="sm" :loading="updateChecking" @click="onCheckUpdate">
+            {{ updateChecking ? $t('updateChecking') : $t('updateCheckNow') }}
+          </is-button>
+        </is-form-item>
+        <is-form-item :label="$t('updateAutoCheck')">
+          <is-switch v-model="updateEnabled" />
+          <em class="hint">{{ $t('updatePrivacyTip') }}</em>
+        </is-form-item>
+        <is-form-item v-if="updateAutoSupported" :label="$t('updateRestartNow')">
+          <is-button
+            v-if="updateAutoDownloaded"
+            size="sm"
+            type="primary"
+            @click="onRestartUpdate"
+          >{{ $t('updateRestartNow') }}</is-button>
+          <em v-else class="hint">
+            {{ updateAutoDownloading ? $t('updateDownloading') : $t('updateAutoUnsupported') }}
+          </em>
+        </is-form-item>
       </is-form>
 
       <template #footer>
@@ -145,6 +172,8 @@ import {
   upsertCustomPreset,
   removeCustomPreset
 } from '../../util/outputPresets'
+import updateService from '../../util/updateService'
+import notice from '../../ui-next/notice'
 
 const DEFAULT_SIZE_LIMIT = {
   enabled: false,
@@ -174,10 +203,30 @@ export default {
       // 输出路径预设：与输出设置面板共享同一份 storage 键
       outputPresets: loadPresets(),
       bookmarkOpen: false,
-      bookmarkLabel: ''
+      bookmarkLabel: '',
+      appVersion: '',
+      updateEnabled: true
     }
   },
   computed: {
+    updateUi () {
+      return updateService.getUpdateState()
+    },
+    updateChecking () {
+      return !!(this.updateUi && this.updateUi.checking)
+    },
+    updateAutoSupported () {
+      var a = this.updateUi && this.updateUi.auto
+      return !!(a && a.supported)
+    },
+    updateAutoDownloading () {
+      var a = this.updateUi && this.updateUi.auto
+      return !!(a && a.downloading)
+    },
+    updateAutoDownloaded () {
+      var a = this.updateUi && this.updateUi.auto
+      return !!(a && a.downloaded)
+    },
     languages () {
       return [
         { label: '简体', value: 'zh-cn' },
@@ -243,12 +292,50 @@ export default {
   mounted () {
     this.$root.eventBus.$on('openGlobalSetting', this.showDialog)
     this._unsubTheme = ThemeManager.onChange((d) => { this.themeMode = ThemeManager.getMode() })
+    updateService.bootstrapUpdateFromStorage()
+    var prefs = updateService.loadUpdatePrefs()
+    this.updateEnabled = prefs.enabled !== false
+    updateService.loadMeta().then((meta) => {
+      if (meta && meta.version) { this.appVersion = meta.version }
+    }).catch(() => {})
   },
   beforeDestroy () {
     this.$root.eventBus.$off('openGlobalSetting', this.showDialog)
     if (this._unsubTheme) this._unsubTheme()
   },
   methods: {
+    onCheckUpdate () {
+      var self = this
+      updateService.runUpdateCheck({ force: true }).then(function (result) {
+        if (!result) { return }
+        if (result.state === 'available') {
+          // 对话框由 updateService 打开；这里不重复弹 notice
+          return
+        }
+        if (result.state === 'latest') {
+          notice.success(self.$t('updateLatest'), 'v' + (result.current || ''))
+          return
+        }
+        if (result.state === 'skipped') {
+          notice.info(self.$t('updateSkipVersion'), 'v' + (result.latest || ''))
+          return
+        }
+        if (result.state === 'disabled') {
+          notice.info(self.$t('updateDisabled'))
+          return
+        }
+        if (result.state === 'offline') {
+          notice.warning(self.$t('updateOffline'))
+          return
+        }
+        notice.warning(self.$t('updateFailed'), result.state)
+      }).catch(function (e) {
+        notice.warning(self.$t('updateFailed'), String(e && e.message || e))
+      })
+    },
+    onRestartUpdate () {
+      updateService.restartToUpdate()
+    },
     // ---------- 输出路径预设（与输出设置面板共享同一份存储） ----------
     applyGsTemplate (tpl, mode) {
       if (!this.setting || !this.setting.options) { return }
@@ -354,6 +441,10 @@ export default {
       this.setting = this.loadSetting()
       this.sizeDraft = null
       this.themeMode = ThemeManager.getMode()
+      this.updateEnabled = updateService.loadUpdatePrefs().enabled !== false
+      updateService.loadMeta().then((meta) => {
+        if (meta && meta.version) { this.appVersion = meta.version }
+      }).catch(() => {})
       // 打开弹窗时记录基线，保存时据此判断帧率/循环是否被改动
       this._lastSaved = this.setting && this.setting.options
         ? JSON.parse(JSON.stringify(this.setting.options))
@@ -362,6 +453,7 @@ export default {
     changeVarible () {
       const prev = this._lastSaved || null
       storage.setItem('globalSetting', JSON.stringify(this.setting))
+      updateService.setUpdateEnabled(this.updateEnabled)
       this._lastSaved = JSON.parse(JSON.stringify(this.setting.options))
       this.dialogFormVisible = false
 

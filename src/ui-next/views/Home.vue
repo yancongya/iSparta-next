@@ -16,6 +16,7 @@
         <div class="ib-import__acts">
           <button type="button" class="ib-iconbtn" :title="$t('defaultSetting')" @click="openGlobalSetting">
             <is-icon name="settings" />
+            <span v-if="updateBadge" class="ib-rail__badge" aria-hidden="true" />
           </button>
           <button type="button" class="ib-iconbtn" :title="themeTitle" @click="toggleTheme">
             <is-icon :name="theme === 'dark' ? 'sun' : 'moon'" />
@@ -88,6 +89,7 @@
 
         <button type="button" class="ib-rail__btn" :title="$t('defaultSetting')" @click="openGlobalSetting">
           <is-icon name="settings" size="sm" />
+          <span v-if="updateBadge" class="ib-rail__badge" aria-hidden="true" />
         </button>
 
         <!-- 运行日志：未读时右上角亮小点，warn/error 才计数，普通 info 不打扰 -->
@@ -138,6 +140,15 @@
     </transition>
 
     <is-log-panel :visible="logOpen" @close="logOpen = false" />
+    <is-update-dialog
+      :visible="updateDialogVisible"
+      :result="updateResult"
+      :auto="updateAuto"
+      @later="onUpdateLater"
+      @skip="onUpdateSkip"
+      @download="onUpdateDownload"
+      @restart="onUpdateRestart"
+    />
   </div>
 </template>
 
@@ -148,6 +159,7 @@ import sortBar from '../../components/sortBar/sortBar.vue'
 import globalSetting from '../../components/globalSetting/globalSetting.vue'
 import IsNoticeHost from '../components/IsNoticeHost.vue'
 import IsLogPanel from '../components/IsLogPanel.vue'
+import IsUpdateDialog from '../components/IsUpdateDialog.vue'
 import appLog from '../log'
 import { f as fsOperate } from '../../components/drag/file.js'
 import { naturalSort } from '../../util/sort'
@@ -155,6 +167,7 @@ import ThemeManager from '../theme'
 import { storage } from '../../util/node-env'
 import notice from '../notice'
 import { APP_NAME } from '../../brand'
+import updateService from '../../util/updateService'
 
 // 中间工具条列宽（px）
 const RAIL_W = 36
@@ -177,7 +190,8 @@ export default {
     'sort-bar': sortBar,
     'globalsetting': globalSetting,
     'is-notice-host': IsNoticeHost,
-    'is-log-panel': IsLogPanel
+    'is-log-panel': IsLogPanel,
+    'is-update-dialog': IsUpdateDialog
   },
   data () {
     return {
@@ -198,6 +212,21 @@ export default {
   computed: {
     items () {
       return this.$store.getters.getterItems
+    },
+    updateState () {
+      return updateService.getUpdateState()
+    },
+    updateBadge () {
+      return !!(this.updateState && this.updateState.badge)
+    },
+    updateDialogVisible () {
+      return !!(this.updateState && this.updateState.dialogVisible)
+    },
+    updateResult () {
+      return (this.updateState && this.updateState.lastResult) || null
+    },
+    updateAuto () {
+      return (this.updateState && this.updateState.auto) || null
     },
     isLocked () {
       return this.$store.getters.getterLocked
@@ -268,18 +297,39 @@ export default {
     window.addEventListener('keyup', this.onKeyup)
     // 拖到窗口外缘时浏览器不会补发 dragleave，兜底重置遮罩
     window.addEventListener('blur', this.resetDrag)
+    // 启动延迟自动检查：失败静默，由 updateService 写日志
+    updateService.bootstrapUpdateFromStorage()
+    updateService.bindAutoIpcListener()
+    updateService.refreshAutoUpdateState().catch(() => {})
+    this._updateTimer = setTimeout(() => {
+      updateService.runUpdateCheck({ force: false }).catch(() => {})
+    }, 8000)
   },
   beforeDestroy () {
     window.removeEventListener('paste', this.onPaste)
     window.removeEventListener('keydown', this.onKeydown)
     window.removeEventListener('keyup', this.onKeyup)
     window.removeEventListener('blur', this.resetDrag)
+    if (this._updateTimer) { clearTimeout(this._updateTimer); this._updateTimer = null }
     if (this._unsubTheme) this._unsubTheme()
     if (this._onMove) document.removeEventListener('mousemove', this._onMove)
     if (this._onUp) document.removeEventListener('mouseup', this._onUp)
     if (document.body) document.body.classList.remove('side-narrow')
   },
   methods: {
+    onUpdateLater () {
+      updateService.markLater(this.updateResult && this.updateResult.latest)
+    },
+    onUpdateSkip () {
+      updateService.markSkipVersion(this.updateResult && this.updateResult.latest)
+    },
+    onUpdateDownload () {
+      updateService.openDownload(this.updateResult)
+      updateService.markLater(this.updateResult && this.updateResult.latest)
+    },
+    onUpdateRestart () {
+      updateService.restartToUpdate()
+    },
     // ---------- 右侧面板宽度：拖拽 + 持久化 ----------
     readSideW () {
       try {

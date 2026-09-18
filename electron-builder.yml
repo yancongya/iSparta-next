@@ -2,7 +2,9 @@ appId: io.github.isparta-next
 # productName 来自 package.json（唯一产品显示名）
 # exe / 产物统一用 productName 小写前缀，与落地页下载链一致
 executableName: isparta-next
-artifactName: isparta-next-${os}-${arch}.${ext}
+# 必须带 ${version}：electron-updater 依赖 Release 上 latest*.yml 内的 path 与资产名一致
+# CI 事后再改名会导致 updater 找不到包；稳定别名由 release.yml 额外 copy
+artifactName: isparta-next-${version}-${os}-${arch}.${ext}
 asar: false
 # 使用本地已安装的 Electron，避免打包时再下载 zip
 electronDist: ./node_modules/electron/dist
@@ -10,19 +12,22 @@ electronVersion: 28.3.3
 publish:
   - provider: github
 win:
-  # 实测：electron-builder 22.14.13 下该开关是「全有或全无」——置 true 会在
-  # WinPackager.signApp 阶段去下载 winCodeSign 并直接失败（无证书环境）。
-  # 代价是 rcedit 也被跳过，exe 文件图标与版本信息仍是 Electron 默认。
-  # exe 图标改由 scripts/embed-exe-meta.js 在打包后单独写入。
+  # 实测：electron-builder 22.14.13 下 signAndEditExecutable 是「全有或全无」——置 true 会
+  # 在无证书环境去下载 winCodeSign 并直接失败。
+  # SignPath 接入前保持 false；证书到位后改由 CI 签名步骤处理。
   signAndEditExecutable: false
   target:
-    - target: zip
+    # 自动更新通道：NSIS（zip 便携版 electron-updater 不支持）
+    - target: nsis
       arch:
         - x64
   icon: ./public/icons/icon.ico
+  # SignPath Foundation 免费签名（审核通过后在 CI 注入，勿把密钥写进仓库）：
+  # win:
+  #   sign: SignPath
+  #   signAndEditExecutable: true
 mac:
-  # CI 无证书环境：不签名、不公证
-  # macos-latest 无 /usr/bin/python，electron-builder@22 的 dmg 会 ENOENT，故用 zip
+  # CI 无证书环境：不签名、不公证；mac 不走 electron-updater
   identity: null
   target:
     - target: zip
@@ -32,8 +37,8 @@ mac:
   icon: ./public/icons/icon.icns
 linux:
   target:
-    - target: tar.gz
+    # 自动更新通道：AppImage（tar.gz 无法免提权自动替换）
+    - target: AppImage
       arch:
         - x64
   icon: ./public/icons
-

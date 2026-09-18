@@ -5,11 +5,14 @@ import {
   createProtocol
 } from 'vue-cli-plugin-electron-builder/lib'
 import { APP_NAME } from './brand'
+import { checkUpdate, isAllowedExternalUrl } from './util/updateCheck'
+import { registerAutoUpdateIpc } from './util/autoUpdate'
 const isDevelopment = process.env.NODE_ENV !== 'production'
 const path = require("path");
 const fsp = require('fs');
 const childProcess = require('child_process');
 const os = require('os');
+const https = require('https');
 const { pathToFileURL } = require('url');
 // package.json productName 为显示名唯一来源；开发态若未生效则用 brand 兜底
 if (app.getName() !== APP_NAME) {
@@ -227,6 +230,111 @@ ipcMain.handle('shell:showItemInFolder', async (event, fullPath) => {
     shell.showItemInFolder(fullPath)
   }
 })
+
+// --- 更新检查：主进程注入层 ---
+// 渲染层保持离线，外部请求只发生在这里；判定逻辑全在 util/updateCheck.js（可脱离 Electron 测试）
+const UPDATE_UA = 'isparta-next-updater'
+const UPDATE_TIMEOUT_MS = 12000
+const http = require('http')
+
+// 用 Node http(s) 而不是 Electron net：实测 net 在 redirect:'manual' 下会直接抛
+// "Redirect was cancelled"，拿不到 302 的 Location；Node 的 request 本身不跟随重定向，
+// 正好能直接读到 302 + Location，这是「零 API 配额拿版本号」的前提。
+// 必须按协议分流：fixture 用 http://localhost，只走 https 会直接连不上。
+function httpRequest (method, url, timeoutMs, headers) {
+  return new Promise(function (resolve, reject) {
+    var settled = false
+    var timer = null
+    function finish (fn, arg) {
+      if (settled) { return }
+      settled = true
+      if (timer) { clearTimeout(timer) }
+      fn(arg)
+    }
+    var mod = String(url).indexOf('http://') === 0 ? http : https
+    var hreq = mod.request(url, {
+      method: method,
+      headers: Object.assign({ 'User-Agent': UPDATE_UA, Accept: '*/*' }, headers || {})
+    }, function (res) {
+      var raw = res.headers ? res.headers.location : undefined
+      var location = Array.isArray(raw) ? raw[0] : (raw || null)
+      if (method === 'HEAD') {
+        // HEAD 无 body，等 'end' 会挂住：状态与头到手就结算
+        res.resume()
+        finish(resolve, { status: res.statusCode, location: location, text: '' })
+        return
+      }
+      var body = ''
+      res.setEncoding('utf8')
+      res.on('data', function (c) { body += c })
+      res.on('end', function () { finish(resolve, { status: res.statusCode, location: location, text: body }) })
+      res.on('error', function (e) { finish(reject, e) })
+    })
+    var ms = timeoutMs || UPDATE_TIMEOUT_MS
+    timer = setTimeout(function () {
+      try { hreq.destroy() } catch (e) { /* ignore */ }
+      // destroy 不一定 emit error，必须自己 reject，否则 Promise 永不结算
+      finish(reject, new Error('timeout'))
+    }, ms)
+    hreq.on('timeout', function () { try { hreq.destroy() } catch (e) {} })
+    hreq.on('error', function (e) { finish(reject, e) })
+    hreq.end()
+  })
+}
+
+ipcMain.handle('updater:meta', async () => {
+  return {
+    version: app.getVersion(),
+    platform: process.platform,
+    arch: process.arch,
+    // 仅开发/测试注入时非空；展示层默认仍用 version
+    forcedVersion: process.env.ISPARTA_FORCE_VERSION || ''
+  }
+})
+
+ipcMain.handle('updater:check', async (event, payload) => {
+  var p = payload || {}
+  return checkUpdate({
+    env: process.env,
+    // 允许用 env 覆盖当前版本来模拟旧版，避免为了测试去改 package.json
+    currentVersion: process.env.ISPARTA_FORCE_VERSION || app.getVersion(),
+    platform: process.platform,
+    arch: process.arch,
+    now: Date.now(),
+    timeoutMs: UPDATE_TIMEOUT_MS,
+    force: !!p.force,
+    enabled: p.enabled !== false,
+    lastCheckAt: Number(p.lastCheckAt) || 0,
+    skipVersion: typeof p.skipVersion === 'string' ? p.skipVersion : '',
+    cachedResult: p.cachedResult || null,
+    fetchHead: async function (url) {
+      var r = await httpRequest('HEAD', url, UPDATE_TIMEOUT_MS)
+      return { status: r.status, location: r.location }
+    },
+    fetchJson: async function (url) {
+      // GitHub API 无 UA 直接 403，会被误判成限流
+      var r = await httpRequest('GET', url, UPDATE_TIMEOUT_MS, { Accept: 'application/vnd.github+json' })
+      var json = null
+      try { json = JSON.parse(r.text) } catch (e) { json = null }
+      return { status: r.status, json: json }
+    }
+  })
+})
+
+ipcMain.handle('shell:openExternal', async (event, url) => {
+  if (typeof url !== 'string' || !url) { return { opened: false, reason: 'empty' } }
+  // 白名单：origin + /<repo>/ 前缀，拒绝 .. 与非 http(s)
+  if (!isAllowedExternalUrl(url, process.env)) { return { opened: false, reason: 'not-allowed' } }
+  try {
+    await shell.openExternal(url)
+    return { opened: true }
+  } catch (e) {
+    return { opened: false, reason: 'failed' }
+  }
+})
+
+// electron-updater 自动下载 / 重启安装（Win NSIS / Linux AppImage；dev 与 mac 不启用）
+registerAutoUpdateIpc()
 
 // --- Phase3/4: Node fs / path / os / execFile 均在主进程 ---
 function ensureDir (dir) {

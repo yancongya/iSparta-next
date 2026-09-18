@@ -48,6 +48,7 @@
 }
 
 .ib-iconbtn {
+  position: relative; // 未读/更新小点按按钮定位
   display: inline-flex;
   align-items: center;
   justify-content: center;

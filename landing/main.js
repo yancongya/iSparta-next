@@ -904,62 +904,372 @@
     });
   }
 
-  /* ---------- resolve latest release asset URLs ---------- */
+  /* ---------- resolve latest release asset URLs + changelog board ---------- */
+  function fmtDate(iso) {
+    if (!iso) return "";
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return "";
+    var y = d.getUTCFullYear();
+    var m = String(d.getUTCMonth() + 1).padStart(2, "0");
+    var day = String(d.getUTCDate()).padStart(2, "0");
+    return y + "-" + m + "-" + day;
+  }
+
+  function heroLabel(tag, iso) {
+    var v = tag || "";
+    var d = fmtDate(iso);
+    return d ? v + " · " + d : v;
+  }
+
+  function applyHeroVersion(tag, publishedAt) {
+    if (!tag) return;
+    var verEl = document.getElementById("hero-version");
+    if (verEl) {
+      var d = fmtDate(publishedAt);
+      verEl.innerHTML = "";
+      verEl.appendChild(document.createTextNode(tag));
+      if (d) {
+        var span = document.createElement("span");
+        span.className = "hero-version-date mono";
+        span.textContent = " · " + d;
+        verEl.appendChild(span);
+      }
+    }
+    var ld = document.querySelector('script[type="application/ld+json"]');
+    if (ld) {
+      try {
+        var data = JSON.parse(ld.textContent);
+        data.softwareVersion = tag.replace(/^v/i, "");
+        if (publishedAt) data.datePublished = publishedAt;
+        ld.textContent = JSON.stringify(data);
+      } catch (e) { /* keep static */ }
+    }
+  }
+
+  function tRel(key, fallback) {
+    if (window.LandingI18n && typeof window.LandingI18n.t === "function") {
+      var v = window.LandingI18n.t(key);
+      if (v && v !== key) return v;
+    }
+    var el = document.querySelector('[data-i18n="' + key + '"]');
+    if (el && el.textContent.trim()) return el.textContent.trim();
+    return fallback || key;
+  }
+
+  function parseNotesSections(notes) {
+    var out = { feat: [], fix: [], docs: [], other: [] };
+    if (!notes || typeof notes !== "string") return out;
+    var lines = notes.split(/\r?\n/);
+    var bucket = "other";
+    lines.forEach(function (line) {
+      var t = line.trim();
+      if (!t) return;
+      if (/^#{1,6}\s/.test(t)) {
+        if (/功能|Feature/i.test(t)) bucket = "feat";
+        else if (/修复|Fix/i.test(t)) bucket = "fix";
+        else if (/文档|Doc/i.test(t)) bucket = "docs";
+        else if (/工程|CI|Chore|Other|其他|Installers|安装包/i.test(t)) bucket = "skip";
+        else bucket = "other";
+        return;
+      }
+      if (bucket === "skip") return;
+      if (/^\[skip ci\]|^chore(\(|:)|^ci(\(|:)|^build(\(|:)|^refactor(\(|:)|^perf(\(|:)/i.test(t)) return;
+      if (/github\.com\/.*\/compare\//i.test(t)) return;
+      if (/^>|Gatekeeper|未签名|xattr/i.test(t)) return;
+      var text = t.replace(/^[-*+]\s*/, "").replace(/\s*\(([0-9a-f]{7,})\)\s*$/i, "").trim();
+      if (!text) return;
+      if (out[bucket]) out[bucket].push(text);
+      else out.other.push(text);
+    });
+    return out;
+  }
+
+  function pickPills(sections) {
+    var pills = [];
+    sections.feat.slice(0, 2).forEach(function (t) {
+      pills.push({ mod: "feat", text: t });
+    });
+    sections.fix.slice(0, 2).forEach(function (t) {
+      pills.push({ mod: "fix", text: t });
+    });
+    if (!pills.length) {
+      sections.other.slice(0, 3).forEach(function (t) {
+        pills.push({ mod: "feat", text: t });
+      });
+    }
+    return pills.slice(0, 4);
+  }
+
+  /* 组件：左轨单项 */
+  function RelNavItem(rel, index, active, onSelect) {
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.className =
+      "rel-nav__item" +
+      (index === active ? " is-on" : "") +
+      (index === 0 ? " is-current" : "");
+    btn.setAttribute("role", "tab");
+    btn.setAttribute("aria-selected", index === active ? "true" : "false");
+
+    var ver = document.createElement("span");
+    ver.className = "rel-nav__ver";
+    ver.textContent = rel.tag || rel.name || "";
+    btn.appendChild(ver);
+
+    var meta = document.createElement("span");
+    meta.className = "rel-nav__meta";
+    var date = document.createElement("span");
+    date.className = "rel-nav__date";
+    date.textContent = fmtDate(rel.publishedAt) || "";
+    meta.appendChild(date);
+    var dot = document.createElement("i");
+    dot.className = "rel-nav__dot";
+    dot.setAttribute("aria-hidden", "true");
+    meta.appendChild(dot);
+    btn.appendChild(meta);
+
+    btn.addEventListener("click", function () {
+      onSelect(index);
+    });
+    return btn;
+  }
+
+  /* 组件：统计格 */
+  function RelStat(mod, label, count) {
+    var el = document.createElement("div");
+    el.className = "rel-stat rel-stat--" + mod;
+    var k = document.createElement("p");
+    k.className = "rel-stat__k";
+    var d = document.createElement("span");
+    d.className = "rel-stat__dot";
+    k.appendChild(d);
+    k.appendChild(document.createTextNode(label));
+    var v = document.createElement("p");
+    v.className = "rel-stat__v";
+    v.textContent = String(count || 0);
+    el.appendChild(k);
+    el.appendChild(v);
+    return el;
+  }
+
+  /* 组件：下载 pill */
+  function RelDl(asset, osLabel) {
+    if (!asset || !asset.url) return null;
+    var a = document.createElement("a");
+    a.className = "rel-dl";
+    a.href = asset.url;
+    a.target = "_blank";
+    a.rel = "noopener";
+    var os = document.createElement("span");
+    os.className = "rel-dl__os";
+    os.textContent = osLabel;
+    var file = document.createElement("span");
+    file.className = "rel-dl__file";
+    file.textContent = asset.name || "";
+    a.appendChild(os);
+    if (asset.name) a.appendChild(file);
+    return a;
+  }
+
+  /* 组件：右栏详情 */
+  function RelPane(rel) {
+    var pane = document.createElement("div");
+    var sections = parseNotesSections(rel.notes);
+
+    var head = document.createElement("header");
+    head.className = "rel-pane__head";
+    var ver = document.createElement("h4");
+    ver.className = "rel-pane__ver";
+    ver.textContent = rel.tag || rel.name || "";
+    head.appendChild(ver);
+
+    var isCurrent = relReleases[0] && rel.tag === relReleases[0].tag;
+    if (isCurrent) {
+      var badge = document.createElement("span");
+      badge.className = "rel-badge";
+      badge.textContent = tRel("rel.current", "当前版本");
+      head.appendChild(badge);
+    }
+    var date = document.createElement("span");
+    date.className = "rel-pane__date";
+    date.textContent = fmtDate(rel.publishedAt)
+      ? tRel("rel.published", "发布于") + " " + fmtDate(rel.publishedAt)
+      : "";
+    head.appendChild(date);
+    if (rel.htmlUrl) {
+      var link = document.createElement("a");
+      link.className = "rel-pane__link";
+      link.href = rel.htmlUrl;
+      link.target = "_blank";
+      link.rel = "noopener";
+      link.textContent = "GitHub →";
+      head.appendChild(link);
+    }
+    pane.appendChild(head);
+
+    var stats = document.createElement("div");
+    stats.className = "rel-stats";
+    stats.appendChild(RelStat("feat", tRel("rel.feat", "功能"), sections.feat.length));
+    stats.appendChild(RelStat("fix", tRel("rel.fix", "修复"), sections.fix.length));
+    stats.appendChild(RelStat("docs", tRel("rel.docs", "文档"), sections.docs.length));
+    pane.appendChild(stats);
+
+    var pillsData = pickPills(sections);
+    if (pillsData.length) {
+      var ul = document.createElement("ul");
+      ul.className = "rel-pills";
+      pillsData.forEach(function (p) {
+        var li = document.createElement("li");
+        li.className = "rel-pills__" + p.mod;
+        li.textContent = p.text;
+        li.title = p.text;
+        ul.appendChild(li);
+      });
+      pane.appendChild(ul);
+    } else {
+      var empty = document.createElement("div");
+      empty.className = "rel-pane__empty";
+      empty.textContent = tRel("rel.empty", "暂无版本记录");
+      pane.appendChild(empty);
+    }
+
+    var dls = document.createElement("div");
+    dls.className = "rel-dls";
+    var assets = rel.assets || {};
+    [
+      [assets.win, tRel("rel.dlWin", "Win")],
+      [assets.macArm, tRel("rel.dlMacArm", "macOS ARM")],
+      [assets.macX64, tRel("rel.dlMacX64", "macOS x64")],
+      [assets.linux, tRel("rel.dlLinux", "Linux")]
+    ].forEach(function (pair) {
+      var el = RelDl(pair[0], pair[1]);
+      if (el) dls.appendChild(el);
+    });
+    if (dls.children.length) pane.appendChild(dls);
+    return pane;
+  }
+
+  var relReleases = [];
+  var relActive = 0;
+
+  function selectRel(index) {
+    relActive = index;
+    renderRelBoard(relReleases, true);
+  }
+
+  /* 容器：左轨 + 右栏 */
+  function renderRelBoard(releases, keepActive) {
+    relReleases = releases || [];
+    if (!keepActive) relActive = 0;
+    if (relActive >= relReleases.length) relActive = 0;
+
+    var nav = document.getElementById("rel-nav");
+    var pane = document.getElementById("rel-pane");
+    var count = document.getElementById("rel-count");
+    if (count) count.textContent = String(relReleases.length);
+    if (!nav || !pane) return;
+
+    nav.innerHTML = "";
+    pane.innerHTML = "";
+
+    if (!relReleases.length) {
+      var empty = document.createElement("div");
+      empty.className = "rel-board__empty mono";
+      empty.textContent = tRel("rel.empty", "暂无版本记录");
+      pane.appendChild(empty);
+      return;
+    }
+
+    relReleases.slice(0, 12).forEach(function (rel, idx) {
+      nav.appendChild(RelNavItem(rel, idx, relActive, selectRel));
+    });
+    pane.appendChild(RelPane(relReleases[relActive] || relReleases[0]));
+
+    if (relReleases[0]) applyHeroVersion(relReleases[0].tag, relReleases[0].publishedAt);
+  }
+
   function resolveLatestDownloads() {
     var api = BRAND.releaseLatestApi;
-    fetch(api)
+    // 1) 优先构建期 bake 的静态 JSON（SEO / 离线 / 限流时仍可见）
+    fetch("releases.json")
       .then(function (r) {
-        if (!r.ok) throw new Error("api");
+        if (!r.ok) throw new Error("no-json");
         return r.json();
       })
-      .then(function (rel) {
-        // Hero 版本号：实时取 tag_name（如 v3.3.3）
-        var tag = rel.tag_name || rel.name || "";
-        if (tag) {
-          var verEl = document.getElementById("hero-version");
-          if (verEl) verEl.textContent = tag;
-          // JSON-LD softwareVersion 同步，避免 SEO 硬编码过期
-          var ld = document.querySelector('script[type="application/ld+json"]');
-          if (ld) {
-            try {
-              var data = JSON.parse(ld.textContent);
-              data.softwareVersion = tag.replace(/^v/i, "");
-              ld.textContent = JSON.stringify(data);
-            } catch (e) { /* keep static */ }
-          }
+      .then(function (data) {
+        var releases = (data && data.releases) || [];
+        renderRelBoard(releases);
+        if (releases[0]) applyHeroVersion(releases[0].tag, releases[0].publishedAt);
+        // 用 bake 资产刷新下载卡
+        var map = {};
+        var a0 = releases[0] && releases[0].assets;
+        if (a0) {
+          map.win = a0.win && a0.win.url;
+          map.macArm = a0.macArm && a0.macArm.url;
+          map.macX64 = a0.macX64 && a0.macX64.url;
+          map.linux = a0.linux && a0.linux.url;
         }
-
-        var assets = rel.assets || [];
-        var byName = {};
-        assets.forEach(function (a) {
-          byName[a.name] = a.browser_download_url;
-        });
-        function pick(patterns) {
-          for (var i = 0; i < patterns.length; i++) {
-            var re = patterns[i];
-            for (var n in byName) {
-              if (re.test(n)) return byName[n];
-            }
-          }
-          return null;
-        }
-        var map = {
-          win: pick([/win-x64\.zip$/i]),
-          macArm: pick([/mac-arm64\.zip$/i, /arm64.*\.dmg$/i]),
-          macX64: pick([/mac-x64\.zip$/i, /x64.*\.dmg$/i]),
-          linux: pick([/linux-x64\.tar\.gz$/i]),
-        };
         document.querySelectorAll("a[data-dl]").forEach(function (a) {
           var url = map[a.getAttribute("data-dl")];
           if (url) a.href = url;
         });
-        var hero = document.querySelector(".hero-actions a.btn-primary");
-        if (hero && (map.win || map.linux || map.macArm)) {
-          hero.href = map.win || map.macArm || map.linux || hero.href;
-        }
       })
       .catch(function () {
-        /* 离线或 API 限流时保留静态 latest/download 链接与 HTML 默认版本号 */
+        // 2) 运行时 API 降级：仅 latest 单条 + 运行时尝试列表
+        fetch(api)
+          .then(function (r) {
+            if (!r.ok) throw new Error("api");
+            return r.json();
+          })
+          .then(function (rel) {
+            var tag = rel.tag_name || rel.name || "";
+            applyHeroVersion(tag, rel.published_at);
+            var assets = rel.assets || [];
+            var byName = {};
+            assets.forEach(function (a) {
+              byName[a.name] = a.browser_download_url;
+            });
+            function pick(patterns) {
+              for (var i = 0; i < patterns.length; i++) {
+                var re = patterns[i];
+                for (var n in byName) {
+                  if (re.test(n)) return byName[n];
+                }
+              }
+              return null;
+            }
+            var map = {
+              win: pick([/win-x64\.exe$/i, /win-x64\.zip$/i]),
+              macArm: pick([/mac-arm64\.zip$/i, /arm64.*\.dmg$/i]),
+              macX64: pick([/mac-x64\.zip$/i, /x64.*\.dmg$/i]),
+              linux: pick([/linux-x64\.AppImage$/i, /linux-x64\.tar\.gz$/i])
+            };
+            document.querySelectorAll("a[data-dl]").forEach(function (a) {
+              var url = map[a.getAttribute("data-dl")];
+              if (url) a.href = url;
+            });
+            var hero = document.querySelector(".hero-actions a.btn-primary");
+            if (hero && (map.win || map.linux || map.macArm)) {
+              hero.href = map.win || map.macArm || map.linux || hero.href;
+            }
+            renderRelBoard([
+              {
+                tag: tag,
+                publishedAt: rel.published_at,
+                notes: rel.body,
+                assets: {
+                  win: { url: map.win, name: "" },
+                  macArm: { url: map.macArm, name: "" },
+                  macX64: { url: map.macX64, name: "" },
+                  linux: { url: map.linux, name: "" }
+                },
+                htmlUrl: rel.html_url
+              }
+            ]);
+          })
+          .catch(function () {
+            renderRelBoard([]);
+          });
       });
   }
 

@@ -31,6 +31,12 @@
     font-size: var(--is-fs-md);
   }
 
+  .gs-version {
+    color: var(--is-text);
+    font-family: var(--is-font-mono, ui-monospace, monospace);
+    font-size: var(--is-fs-md);
+  }
+
   .w-80 {
     width: 80px;
     flex: none;

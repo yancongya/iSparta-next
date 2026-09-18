@@ -143,7 +143,7 @@ jobs:
           {
             echo "## 更新说明 / What's Changed"
             echo ""
-            echo "版本 \`${TAG}\` · 由 CI 根据 commit 自动汇总"
+            echo "版本 \`${TAG}\`"
             echo ""
           } > release-notes.md
 
@@ -163,42 +163,38 @@ jobs:
             fi
           }
 
+          # 面向用户的变更：只汇总 feat / fix / docs
+          # 工程向 chore/ci/build/refactor 不进 Release body（应用内更新说明也不展示）
           dump_section "新功能 Features" '^feat(\([^)]+\))?:'
           dump_section "修复 Fixes" '^fix(\([^)]+\))?:'
           dump_section "文档 Docs" '^docs(\([^)]+\))?:'
-          dump_section "工程 / CI" '^(ci|build|chore|refactor|perf|test)(\([^)]+\))?:'
 
-          # 其余（无前缀）
-          if [ -n "$RANGE" ]; then
-            other=$(git log $RANGE --pretty=format:'- %s (%h)' --no-merges --extended-regexp --regexp-ignore-case --invert-grep --grep='^(feat|fix|docs|ci|build|chore|refactor|perf|test)(\([^)]+\))?:' || true)
-          else
-            other=$(git log --pretty=format:'- %s (%h)' --no-merges --extended-regexp --regexp-ignore-case --invert-grep --grep='^(feat|fix|docs|ci|build|chore|refactor|perf|test)(\([^)]+\))?:' || true)
-          fi
-          if [ -n "$other" ]; then
-            echo "### 其他 Other" >> release-notes.md
-            echo "$other" >> release-notes.md
+          # 若三类都为空，补一句占位，避免 Release 页空白
+          if ! grep -q '^### ' release-notes.md; then
+            echo "本版本无用户可见变更（仅工程/依赖调整）。" >> release-notes.md
             echo "" >> release-notes.md
           fi
 
           {
             echo "---"
             echo ""
-            echo "## Installers"
+            echo "## 安装包 Installers"
             echo ""
             echo "| Platform | Asset |"
             echo "| --- | --- |"
-            echo "| Windows x64 | \`isparta-next-${VERSION}-win-x64.zip\` |"
-            echo "| Linux x64 | \`isparta-next-${VERSION}-linux-x64.tar.gz\` |"
-            echo "| macOS arm64 | \`isparta-next-${VERSION}-mac-arm64.zip\` |"
-            echo "| macOS x64 | \`isparta-next-${VERSION}-mac-x64.zip\` |"
+            echo "| Windows x64 (NSIS) | \`isparta-next-${VERSION}-win-x64.exe\` |"
+            echo "| Linux x64 (AppImage) | \`isparta-next-${VERSION}-linux-x64.AppImage\` |"
+            echo "| macOS arm64 (zip) | \`isparta-next-${VERSION}-mac-arm64.zip\` |"
+            echo "| macOS x64 (zip) | \`isparta-next-${VERSION}-mac-x64.zip\` |"
+            echo ""
+            echo "- Windows / Linux 安装版支持应用内自动更新（下载完成后提示重启）。"
+            echo "- macOS 为 CI 未签名构建，不支持自动更新：下载 zip 后解压覆盖；若提示已损坏，到「系统设置 → 隐私与安全性」选择「仍要打开」。"
             echo ""
             if [ -n "$PREV_TAG" ]; then
               echo "**Full Changelog**: https://github.com/${REPO}/compare/${PREV_TAG}...${TAG}"
             else
               echo "**Commits**: https://github.com/${REPO}/commits/${TAG}"
             fi
-            echo ""
-            echo "> macOS 为 CI 未签名构建。若 Gatekeeper 拦截：系统设置 → 隐私与安全性中允许，或对 App 执行 \`xattr -dr com.apple.quarantine\`。"
           } >> release-notes.md
 
           echo "----- notes -----"
@@ -262,7 +258,8 @@ jobs:
           set -euo pipefail
           mkdir -p release
           shopt -s nullglob
-          for f in dist_electron/*.dmg dist_electron/*.zip dist_electron/*.tar.gz dist_electron/*.exe dist_electron/*.AppImage; do
+          # 安装包 + electron-updater 元数据（yml 必须原名上传，禁止改名）
+          for f in dist_electron/*.dmg dist_electron/*.zip dist_electron/*.tar.gz dist_electron/*.exe dist_electron/*.AppImage dist_electron/latest.yml dist_electron/latest-linux.yml dist_electron/latest-mac.yml dist_electron/*.blockmap; do
             cp "$f" release/
           done
           count=$(ls -1 release 2>/dev/null | wc -l | tr -d ' ')
@@ -274,26 +271,33 @@ jobs:
           for f in release/*; do
             base="$(basename "$f")"
             lower="$(echo "$base" | tr '[:upper:]' '[:lower:]')"
+            # latest*.yml / blockmap：保持 electron-builder 原名，供 electron-updater 使用
+            if [[ "$base" == latest*.yml || "$lower" == *.blockmap ]]; then
+              continue
+            fi
             if [[ "$lower" == *.tar.gz ]]; then
               ext="tar.gz"
+            elif [[ "$lower" == *.appimage ]]; then
+              ext="AppImage"
             else
               ext="${base##*.}"
             fi
+            # artifactName 已含 version（isparta-next-${version}-${os}-${arch}.${ext}）
+            # 若已是目标名则跳过，否则规范化
             if [[ "$PLATFORM" == "mac" ]]; then
               if [[ "$lower" == *arm64* ]]; then
-                dest="isparta-next-${VERSION}-mac-arm64.zip"
-              elif [[ "$lower" == *x64* || "$lower" == *x86_64* || "$lower" == *intel* ]]; then
-                dest="isparta-next-${VERSION}-mac-x64.zip"
+                dest="isparta-next-${VERSION}-mac-arm64.${ext}"
               else
-                # electron-builder 的 x64 包常不带架构后缀
-                dest="isparta-next-${VERSION}-mac-x64.zip"
+                dest="isparta-next-${VERSION}-mac-x64.${ext}"
               fi
             elif [[ "$PLATFORM" == "win" ]]; then
               dest="isparta-next-${VERSION}-win-x64.${ext}"
             else
               dest="isparta-next-${VERSION}-linux-x64.${ext}"
             fi
-            mv "$f" "release/$dest"
+            if [[ "$base" != "$dest" ]]; then
+              mv "$f" "release/$dest"
+            fi
           done
           ls -lh release
 
@@ -336,6 +340,7 @@ jobs:
           head -n 20 notes/release-notes.md
 
       # 稳定文件名别名：供落地页 releases/latest/download/<stable> 固定链接
+      # electron-updater 走 latest*.yml 内的 versioned path，不依赖这些别名
       - name: Add stable-named aliases
         env:
           VERSION: ${{ needs.version.outputs.version }}
@@ -349,6 +354,10 @@ jobs:
               echo "alias $src -> $dest"
             fi
           }
+          # 自动更新主通道
+          copy_stable "isparta-next-${VER}-win-x64.exe" "isparta-next-win-x64.exe"
+          copy_stable "isparta-next-${VER}-linux-x64.AppImage" "isparta-next-linux-x64.AppImage"
+          # 过渡：旧链接/未签名说明仍可能引用 zip / tar.gz
           copy_stable "isparta-next-${VER}-win-x64.zip" "isparta-next-win-x64.zip"
           copy_stable "isparta-next-${VER}-linux-x64.tar.gz" "isparta-next-linux-x64.tar.gz"
           copy_stable "isparta-next-${VER}-mac-arm64.zip" "isparta-next-mac-arm64.zip"

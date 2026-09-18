@@ -1673,3 +1673,68 @@ body.is-scroll-locked {
     background: var(--is-card-hi);
   }
 }
+
+// --------------------------------------------------------------------------
+// 更新检查对话框（IsUpdateDialog）— 块前缀 upd-，禁止裸状态类名
+// --------------------------------------------------------------------------
+.upd {
+  display: flex;
+  flex-direction: column;
+  gap: var(--is-s-3);
+}
+
+.upd__head {
+  margin: 0;
+  color: var(--is-text);
+  font-size: var(--is-fs-md);
+  line-height: 1.5;
+}
+
+.upd__hint {
+  margin: 0;
+  padding: var(--is-s-2) var(--is-s-3);
+  border-radius: var(--is-r-sm);
+  background: var(--is-card-hi);
+  color: var(--is-text-2);
+  font-size: var(--is-fs-sm);
+  line-height: 1.5;
+}
+
+.upd__notes {
+  max-height: 200px;
+  overflow: auto;
+  border: 1px solid var(--is-border);
+  border-radius: var(--is-r-sm);
+  background: var(--is-card-hi);
+}
+
+.upd__notes-title {
+  margin: 0;
+  padding: var(--is-s-2) var(--is-s-3) 0;
+  color: var(--is-text-3);
+  font-size: var(--is-fs-xs);
+}
+
+.upd__notes-body {
+  margin: 0;
+  padding: var(--is-s-2) var(--is-s-3) var(--is-s-3);
+  color: var(--is-text-2);
+  font-family: var(--is-font-mono, ui-monospace, monospace);
+  font-size: var(--is-fs-xs);
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.upd__notes-empty {
+  margin: 0;
+  padding: var(--is-s-2) var(--is-s-3) var(--is-s-3);
+  color: var(--is-text-3);
+  font-size: var(--is-fs-xs);
+  line-height: 1.5;
+}
+
+.upd__hint--muted {
+  color: var(--is-text-3);
+  font-size: var(--is-fs-xs);
+}

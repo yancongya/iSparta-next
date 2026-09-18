@@ -138,10 +138,61 @@ function createMockStorage (fs) {
 
 function createMockIpc () {
   return {
-    invoke: (channel) => {
+    invoke: (channel, payload) => {
       // 对话框类返回“用户取消”，与 Electron 真实取消路径一致，UI 已有处理分支
       if (channel === 'dialog:openFiles' || channel === 'dialog:openDirectory') {
         return Promise.resolve({ canceled: true, filePaths: [] })
+      }
+      // 更新检查：浏览器调试时用 window.__updateStub 注入任意 Result
+      if (channel === 'updater:meta') {
+        return Promise.resolve({
+          version: '3.3.4',
+          platform: 'win32',
+          arch: 'x64',
+          forcedVersion: ''
+        })
+      }
+      if (channel === 'updater:check') {
+        const stub = (typeof window !== 'undefined' && window.__updateStub) || {
+          state: 'latest',
+          current: '3.3.4',
+          latest: '3.3.4',
+          notes: null,
+          artifactName: 'isparta-next-win-x64.exe',
+          downloadUrl: 'https://github.com/yancongya/iSparta-next/releases/latest/download/isparta-next-win-x64.exe',
+          fallbackUrl: 'https://github.com/yancongya/iSparta-next/releases',
+          needsGatekeeperHint: false,
+          checkedAt: Date.now(),
+          throttled: false,
+          assetMissing: false
+        }
+        return Promise.resolve(Object.assign({
+          current: '3.3.4',
+          checkedAt: Date.now(),
+          throttled: false,
+          assetMissing: false
+        }, stub, {
+          force: !!(payload && payload.force)
+        }))
+      }
+      if (channel === 'updater:autoState' || channel === 'updater:autoDownload' || channel === 'updater:quitAndInstall') {
+        const autoStub = (typeof window !== 'undefined' && window.__updateAutoStub) || {
+          supported: false,
+          checking: false,
+          downloading: false,
+          downloaded: false,
+          progress: 0,
+          error: null,
+          version: null
+        }
+        if (channel === 'updater:autoState') { return Promise.resolve(autoStub) }
+        if (channel === 'updater:autoDownload') { return Promise.resolve({ ok: true, state: autoStub }) }
+        return Promise.resolve({ ok: !!autoStub.downloaded })
+      }
+      if (channel === 'shell:openExternal') {
+        // eslint-disable-next-line no-console
+        console.info('[mock-ipc] shell:openExternal', payload)
+        return Promise.resolve({ opened: true })
       }
       // eslint-disable-next-line no-console
       console.warn('[mock-ipc] unhandled invoke:', channel)

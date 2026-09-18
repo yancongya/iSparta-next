@@ -14,6 +14,14 @@
 > 产品介绍页：**[https://yancongya.github.io/iSparta-next/](https://yancongya.github.io/iSparta-next/)**  
 > 技术栈：Electron 28 + Vue 2 · 支持 Windows / macOS / Linux
 
+### 更新检查与自动更新
+
+- 应用启动后会向 **GitHub Releases** 发起一次版本检查（仅携带版本号与系统类型，不上传个人数据）；可在 **默认设置 → 自动检查更新** 中关闭。
+- 发现新版本时弹窗展示 **更新说明**（来自该 Release 的 body），并可跳转下载。
+- **Windows（NSIS 安装版）/ Linux（AppImage）** 支持应用内自动更新：后台下载完成后提示「重启以更新」。
+- **macOS** 安装包未签名，不支持自动更新：下载 zip 后解压覆盖；若提示已损坏，打开 **系统设置 → 隐私与安全性 → 仍要打开**。
+- Windows 免费开源签名申请步骤见 [docs/SIGNPATH.md](docs/SIGNPATH.md)。
+
 ### 适合这些场景
 
 - **APNG 转 GIF / APNG 转 WebP**，或反向 **GIF 转 APNG、WebP 转 APNG**
