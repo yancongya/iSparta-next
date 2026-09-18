@@ -1199,6 +1199,32 @@
   }
 
   /** 完全实时：只打 GitHub API，不读 releases.json / 不依赖构建期 bake */
+  // 同一访客短期内缓存，避免狂刷或共享出口 IP 撞 GitHub 匿名 60 次/小时
+  var LIVE_CACHE_TTL_MS = 15 * 60 * 1000
+  var LIVE_CACHE_PREFIX = "isparta-gh-rel:"
+
+  function liveCacheGet (key) {
+    try {
+      var raw = window.sessionStorage.getItem(LIVE_CACHE_PREFIX + key)
+      if (!raw) return null
+      var obj = JSON.parse(raw)
+      if (!obj || !obj.t || !obj.data) return null
+      if (Date.now() - obj.t > LIVE_CACHE_TTL_MS) return null
+      return obj.data
+    } catch (e) {
+      return null
+    }
+  }
+
+  function liveCacheSet (key, data) {
+    try {
+      window.sessionStorage.setItem(
+        LIVE_CACHE_PREFIX + key,
+        JSON.stringify({ t: Date.now(), data: data })
+      )
+    } catch (e) { /* 配额满等忽略 */ }
+  }
+
   function mapApiRelease(rel) {
     if (!rel) return null;
     var assets = rel.assets || [];
@@ -1259,44 +1285,53 @@
   }
 
   function resolveLatestDownloads() {
-    var latestApi = BRAND.releaseLatestApi;
+    var latestApi = BRAND.releaseLatestApi
     var listApi =
-      "https://api.github.com/repos/" + BRAND.repo + "/releases?per_page=" + (BRAND.releaseListCount || 8);
+      "https://api.github.com/repos/" +
+      BRAND.repo +
+      "/releases?per_page=" +
+      (BRAND.releaseListCount || 8)
 
-    function getJson(url) {
+    function getJson(url, cacheKey) {
+      var hit = liveCacheGet(cacheKey)
+      if (hit) {
+        return Promise.resolve(hit)
+      }
       return fetch(url, {
         headers: { Accept: "application/vnd.github+json" }
       }).then(function (r) {
-        if (!r.ok) throw new Error("HTTP " + r.status + " " + url);
-        return r.json();
-      });
+        if (!r.ok) throw new Error("HTTP " + r.status + " " + url)
+        return r.json().then(function (json) {
+          liveCacheSet(cacheKey, json)
+          return json
+        })
+      })
     }
 
-    // 优先列表（含 changelog）；列表失败再退回仅 latest；再失败则保留 HTML 静态兜底并标空
-    getJson(listApi)
+    // 优先列表（含 changelog）；列表失败再退回仅 latest；再失败则保留 HTML 静态兜底
+    getJson(listApi, "list")
       .then(function (list) {
         var releases = (list || [])
           .filter(function (r) { return r && !r.draft && !r.prerelease })
           .map(mapApiRelease)
-          .filter(Boolean);
+          .filter(Boolean)
         if (releases.length) {
-          applyLiveDownloads(releases);
-          return null;
+          applyLiveDownloads(releases)
+          return null
         }
-        return getJson(latestApi);
+        return getJson(latestApi, "latest")
       })
       .catch(function () {
-        return getJson(latestApi);
+        return getJson(latestApi, "latest")
       })
       .then(function (latest) {
-        if (!latest) return;
-        var one = mapApiRelease(latest);
-        if (one) applyLiveDownloads([one]);
+        if (!latest) return
+        var one = mapApiRelease(latest)
+        if (one) applyLiveDownloads([one])
       })
       .catch(function () {
-        // API 全部失败：保留 index.html 静态兜底，面板提示可去 GitHub
-        renderRelBoard([]);
-      });
+        renderRelBoard([])
+      })
   }
 
 
