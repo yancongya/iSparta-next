@@ -39,14 +39,11 @@
           v-for="e in shown"
           :key="e.id"
           class="log__row"
-          :class="'is-' + e.level"
+          :class="'log__row--' + e.level"
         >
-          <div class="log__main">
-            <span class="log__t mono">{{ e.t }}</span>
-            <span class="log__lv mono">{{ e.level }}</span>
-            <span class="log__msg">{{ e.msg }}</span>
-          </div>
-          <div v-if="e.detail" class="log__detail mono">{{ e.detail }}</div>
+          <span class="log__t mono">{{ e.t }}</span>
+          <span class="log__lv mono">{{ e.level }}</span>
+          <span class="log__msg">{{ e.msg }}<span v-if="e.detail" class="log__detail mono">{{ e.detail }}</span></span>
         </div>
       </div>
     </div>
