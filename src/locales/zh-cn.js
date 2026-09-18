@@ -21,6 +21,7 @@ module.exports = {
     "outputName": "输出名字",
     "outputFormat": "输出格式",
     "compressionQuality": "压缩质量",
+    "floyd": "Floyd 抖动",
     "start": "开始",
     "times": "次",
     "needOneFormat":"至少选择一种输出格式",

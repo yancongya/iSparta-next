@@ -30,11 +30,11 @@
         <is-form-item :label="$t('filenameSuffix')">
           <is-input v-model="setting.options.outputSuffix" class="is-input--fluid" :maxlength="10" />
         </is-form-item>
-        <is-form-item label="Floyd">
+        <is-form-item :label="$t('floyd')">
           <is-input v-model="setting.options.floyd.value" type="number" class="w-80" :max="1" :min="0" step="0.05" number />
           <em class="hint">0-1</em>
         </is-form-item>
-        <is-form-item label="Quality">
+        <is-form-item :label="$t('compressionQuality')">
           <is-input v-model="setting.options.quality.value" type="number" class="w-80" :max="100" :min="0" number />
           <em class="hint">0-100</em>
         </is-form-item>

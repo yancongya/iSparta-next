@@ -12,20 +12,24 @@ electronVersion: 28.3.3
 publish:
   - provider: github
 win:
-  # 实测：electron-builder 22.14.13 下 signAndEditExecutable 是「全有或全无」——置 true 会
-  # 在无证书环境去下载 winCodeSign 并直接失败。
-  # SignPath 接入前保持 false；证书到位后改由 CI 签名步骤处理。
-  signAndEditExecutable: false
+  # CI（GitHub Actions）可下载 winCodeSign；开启后 NSIS 会写入 exe 图标与版本资源。
+  # 本地网络无法下载 winCodeSign 时会失败，可临时改回 false 再本地出包。
+  signAndEditExecutable: true
   target:
     # 自动更新通道：NSIS（zip 便携版 electron-updater 不支持）
     - target: nsis
       arch:
         - x64
   icon: ./public/icons/icon.ico
+nsis:
+  # 开始菜单 / 卸载项显示名；安装目录随 package.json name= isparta-next
+  # （默认 %LOCALAPPDATA%\Programs\<name 或 productName>）
+  oneClick: true
+  perMachine: false
+  shortcutName: iSparta-next
+  uninstallDisplayName: iSparta-next
   # SignPath Foundation 免费签名（审核通过后在 CI 注入，勿把密钥写进仓库）：
-  # win:
-  #   sign: SignPath
-  #   signAndEditExecutable: true
+  # win.sign: SignPath
 mac:
   # CI 无证书环境：不签名、不公证；mac 不走 electron-updater
   identity: null

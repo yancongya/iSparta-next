@@ -21,6 +21,7 @@ module.exports = {
     "outputName": "Output name",
     "outputFormat": "Output format",
     "compressionQuality": "Compression quality",
+    "floyd": "Floyd dithering",
     "start": "Start",
     "times": "times",
     "needOneFormat":"Pick at least one output format",
