@@ -258,8 +258,18 @@ jobs:
           set -euo pipefail
           mkdir -p release
           shopt -s nullglob
-          # 安装包 + electron-updater 元数据（yml 必须原名上传，禁止改名）
-          for f in dist_electron/*.dmg dist_electron/*.zip dist_electron/*.tar.gz dist_electron/*.exe dist_electron/*.AppImage dist_electron/latest.yml dist_electron/latest-linux.yml dist_electron/latest-mac.yml dist_electron/*.blockmap; do
+          # 安装包 + electron-updater 元数据
+          # 注意：nullglob 只对通配符生效，不要写死 latest-linux.yml 等具体路径
+          for f in \
+            dist_electron/*.dmg \
+            dist_electron/*.zip \
+            dist_electron/*.tar.gz \
+            dist_electron/*.exe \
+            dist_electron/*.AppImage \
+            dist_electron/latest*.yml \
+            dist_electron/*.blockmap
+          do
+            [ -f "$f" ] || continue
             cp "$f" release/
           done
           count=$(ls -1 release 2>/dev/null | wc -l | tr -d ' ')
