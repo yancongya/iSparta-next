@@ -110,17 +110,14 @@ function formatDate (iso) {
 function bakeHtmlFallbacks (latest) {
   if (!fs.existsSync(INDEX)) { return }
   let html = fs.readFileSync(INDEX, 'utf8')
-  const ver = (latest.tag || '').replace(/^v/i, '') || '3.3.4'
+  const ver = (latest.tag || '').replace(/^v/i, '') || '3.3.6'
   const date = formatDate(latest.publishedAt) || '2026-09-18'
   html = html.replace(/"softwareVersion"\s*:\s*"[^"]*"/, '"softwareVersion": "' + ver + '"')
+  // 整段替换 hero li 内部，兼容纯文本或已含日期 span 的旧结构
+  const heroInner = 'v' + ver + '<span class="hero-version-date mono"> · ' + date + '</span>'
   html = html.replace(
-    /(<li id="hero-version"[^>]*>)[^<]*(<\/li>)/,
-    '$1v' + ver + '<span class="hero-version-date mono"> · ' + date + '</span>$2'
-  )
-  // 兼容纯文本形式
-  html = html.replace(
-    /(<li id="hero-version"[^>]*>)v[\d.]+(<\/li>)/,
-    '$1v' + ver + '<span class="hero-version-date mono"> · ' + date + '</span>$2'
+    /(<li id="hero-version"[^>]*>)[\s\S]*?(<\/li>)/,
+    '$1' + heroInner + '$2'
   )
   fs.writeFileSync(INDEX, html, 'utf8')
   console.log('index.html fallback:', 'v' + ver, date)

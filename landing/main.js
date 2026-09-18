@@ -1190,87 +1190,115 @@
 
   function resolveLatestDownloads() {
     var api = BRAND.releaseLatestApi;
-    // 1) 优先构建期 bake 的静态 JSON（SEO / 离线 / 限流时仍可见）
-    fetch("releases.json")
-      .then(function (r) {
-        if (!r.ok) throw new Error("no-json");
-        return r.json();
-      })
-      .then(function (data) {
-        var releases = (data && data.releases) || [];
-        renderRelBoard(releases);
-        if (releases[0]) applyHeroVersion(releases[0].tag, releases[0].publishedAt);
-        // 用 bake 资产刷新下载卡
-        var map = {};
-        var a0 = releases[0] && releases[0].assets;
-        if (a0) {
-          map.win = a0.win && a0.win.url;
-          map.macArm = a0.macArm && a0.macArm.url;
-          map.macX64 = a0.macX64 && a0.macX64.url;
-          map.linux = a0.linux && a0.linux.url;
-        }
-        document.querySelectorAll("a[data-dl]").forEach(function (a) {
-          var url = map[a.getAttribute("data-dl")];
-          if (url) a.href = url;
+
+    function loadBaked() {
+      return fetch("releases.json")
+        .then(function (r) {
+          if (!r.ok) throw new Error("no-json");
+          return r.json();
+        })
+        .catch(function () {
+          return null;
         });
+    }
+
+    function loadLatestApi() {
+      return fetch(api)
+        .then(function (r) {
+          if (!r.ok) throw new Error("api");
+          return r.json();
+        })
+        .catch(function () {
+          return null;
+        });
+    }
+
+    function mergeReleases(bakedList, latest) {
+      var list = (bakedList || []).slice();
+      if (latest && latest.tag_name) {
+        var tag = latest.tag_name;
+        var idx = -1;
+        for (var i = 0; i < list.length; i++) {
+          if (list[i].tag === tag) { idx = i; break }
+        }
+        var assets = latest.assets || [];
+        var byName = {};
+        assets.forEach(function (a) { byName[a.name] = a.browser_download_url });
+        function pick(patterns) {
+          for (var i = 0; i < patterns.length; i++) {
+            for (var n in byName) if (patterns[i].test(n)) return byName[n]
+          }
+          return null
+        }
+        var live = {
+          tag: tag,
+          name: latest.name || tag,
+          publishedAt: latest.published_at || latest.created_at || "",
+          notes: latest.body || null,
+          assets: {
+            win: { url: pick([/win-x64\.exe$/i, /win-x64\.zip$/i]), name: "" },
+            macArm: { url: pick([/mac-arm64\.zip$/i]), name: "" },
+            macX64: { url: pick([/mac-x64\.zip$/i]), name: "" },
+            linux: { url: pick([/linux-x64\.AppImage$/i, /linux-x64\.tar\.gz$/i]), name: "" }
+          },
+          htmlUrl: latest.html_url
+        };
+        if (idx === 0) {
+          list[0] = Object.assign({}, list[0], live, {
+            notes: (list[0] && list[0].notes) || live.notes,
+            assets: {
+              win: (list[0].assets && list[0].assets.win) || live.assets.win,
+              macArm: (list[0].assets && list[0].assets.macArm) || live.assets.macArm,
+              macX64: (list[0].assets && list[0].assets.macX64) || live.assets.macX64,
+              linux: (list[0].assets && list[0].assets.linux) || live.assets.linux
+            }
+          })
+        } else if (idx > 0) {
+          // bake 落后：把 API 最新版插到最前
+          if (list[idx]) {
+            live.notes = list[idx].notes || live.notes
+            live.assets = {
+              win: (list[idx].assets && list[idx].assets.win) || live.assets.win,
+              macArm: (list[idx].assets && list[idx].assets.macArm) || live.assets.macArm,
+              macX64: (list[idx].assets && list[idx].assets.macX64) || live.assets.macX64,
+              linux: (list[idx].assets && list[idx].assets.linux) || live.assets.linux
+            }
+          }
+          list.splice(idx, 1)
+          list.unshift(live)
+        } else if (latest) {
+          list.unshift(live)
+        }
+      }
+      return list
+    }
+
+    Promise.all([loadBaked(), loadLatestApi()]).then(function (pair) {
+      var baked = pair[0]
+      var latest = pair[1]
+      var bakedList = (baked && baked.releases) || []
+      var releases = mergeReleases(bakedList, latest)
+      renderRelBoard(releases)
+      if (releases[0]) {
+        applyHeroVersion(releases[0].tag, releases[0].publishedAt)
+      }
+      var a0 = releases[0] && releases[0].assets
+      var map = {}
+      if (a0) {
+        map.win = a0.win && a0.win.url
+        map.macArm = a0.macArm && a0.macArm.url
+        map.macX64 = a0.macX64 && a0.macX64.url
+        map.linux = a0.linux && a0.linux.url
+      }
+      document.querySelectorAll("a[data-dl]").forEach(function (a) {
+        var url = map[a.getAttribute("data-dl")]
+        if (url) a.href = url
       })
-      .catch(function () {
-        // 2) 运行时 API 降级：仅 latest 单条 + 运行时尝试列表
-        fetch(api)
-          .then(function (r) {
-            if (!r.ok) throw new Error("api");
-            return r.json();
-          })
-          .then(function (rel) {
-            var tag = rel.tag_name || rel.name || "";
-            applyHeroVersion(tag, rel.published_at);
-            var assets = rel.assets || [];
-            var byName = {};
-            assets.forEach(function (a) {
-              byName[a.name] = a.browser_download_url;
-            });
-            function pick(patterns) {
-              for (var i = 0; i < patterns.length; i++) {
-                var re = patterns[i];
-                for (var n in byName) {
-                  if (re.test(n)) return byName[n];
-                }
-              }
-              return null;
-            }
-            var map = {
-              win: pick([/win-x64\.exe$/i, /win-x64\.zip$/i]),
-              macArm: pick([/mac-arm64\.zip$/i, /arm64.*\.dmg$/i]),
-              macX64: pick([/mac-x64\.zip$/i, /x64.*\.dmg$/i]),
-              linux: pick([/linux-x64\.AppImage$/i, /linux-x64\.tar\.gz$/i])
-            };
-            document.querySelectorAll("a[data-dl]").forEach(function (a) {
-              var url = map[a.getAttribute("data-dl")];
-              if (url) a.href = url;
-            });
-            var hero = document.querySelector(".hero-actions a.btn-primary");
-            if (hero && (map.win || map.linux || map.macArm)) {
-              hero.href = map.win || map.macArm || map.linux || hero.href;
-            }
-            renderRelBoard([
-              {
-                tag: tag,
-                publishedAt: rel.published_at,
-                notes: rel.body,
-                assets: {
-                  win: { url: map.win, name: "" },
-                  macArm: { url: map.macArm, name: "" },
-                  macX64: { url: map.macX64, name: "" },
-                  linux: { url: map.linux, name: "" }
-                },
-                htmlUrl: rel.html_url
-              }
-            ]);
-          })
-          .catch(function () {
-            renderRelBoard([]);
-          });
-      });
+      var hero = document.querySelector(".hero-actions a.btn-primary")
+      if (hero && (map.win || map.linux || map.macArm)) {
+        hero.href = map.win || map.macArm || map.linux || hero.href
+      }
+    })
   }
 
 

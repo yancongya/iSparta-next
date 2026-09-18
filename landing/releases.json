@@ -1,7 +1,40 @@
 {
-  "generatedAt": "2026-09-18T06:45:21.462Z",
+  "generatedAt": "2026-09-18T07:56:30.391Z",
   "repo": "yancongya/iSparta-next",
   "releases": [
+    {
+      "tag": "v3.3.6",
+      "name": "v3.3.6",
+      "publishedAt": "2026-09-18T07:48:44Z",
+      "notes": "版本 `v3.3.6`\n\n### 修复 Fixes\n- fix(ci): Release 收集资产时不对不存在的 latest*.yml 显式路径报错 (930b36a)",
+      "assets": {
+        "win": {
+          "name": "isparta-next-3.3.6-win-x64.exe",
+          "url": "https://github.com/yancongya/iSparta-next/releases/download/v3.3.6/isparta-next-3.3.6-win-x64.exe",
+          "size": 87585644,
+          "downloadCount": 0
+        },
+        "macArm": {
+          "name": "isparta-next-3.3.6-mac-arm64.zip",
+          "url": "https://github.com/yancongya/iSparta-next/releases/download/v3.3.6/isparta-next-3.3.6-mac-arm64.zip",
+          "size": 104689115,
+          "downloadCount": 0
+        },
+        "macX64": {
+          "name": "isparta-next-3.3.6-mac-x64.zip",
+          "url": "https://github.com/yancongya/iSparta-next/releases/download/v3.3.6/isparta-next-3.3.6-mac-x64.zip",
+          "size": 104689115,
+          "downloadCount": 0
+        },
+        "linux": {
+          "name": "isparta-next-3.3.6-linux-x64.AppImage",
+          "url": "https://github.com/yancongya/iSparta-next/releases/download/v3.3.6/isparta-next-3.3.6-linux-x64.AppImage",
+          "size": 117887017,
+          "downloadCount": 0
+        }
+      },
+      "htmlUrl": "https://github.com/yancongya/iSparta-next/releases/tag/v3.3.6"
+    },
     {
       "tag": "v3.3.4",
       "name": "v3.3.4",

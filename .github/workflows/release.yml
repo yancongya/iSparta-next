@@ -387,3 +387,13 @@ jobs:
           draft: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # 发版提交带 [skip ci]，Pages 不会自动重建；发版后主动 dispatch 一次
+      - name: Trigger landing Pages deploy
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          gh workflow run pages.yml --repo "${{ github.repository }}" || true
+          echo "pages.yml dispatch requested (bake 将拉取 ${{ needs.version.outputs.tag }})"
+
