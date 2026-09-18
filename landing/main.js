@@ -7,8 +7,18 @@
     name: "iSparta-next",
     artifactPrefix: "isparta-next",
     repo: "yancongya/iSparta-next",
+    /** 更新日志实时拉取条数 */
+    releaseListCount: 8,
     get releaseLatestApi() {
       return "https://api.github.com/repos/" + this.repo + "/releases/latest";
+    },
+    get releaseListApi() {
+      return (
+        "https://api.github.com/repos/" +
+        this.repo +
+        "/releases?per_page=" +
+        (this.releaseListCount || 8)
+      );
     },
     asset: function (osArch) {
       return this.artifactPrefix + "-" + osArch;
@@ -1188,117 +1198,105 @@
     if (relReleases[0]) applyHeroVersion(relReleases[0].tag, relReleases[0].publishedAt);
   }
 
+  /** 完全实时：只打 GitHub API，不读 releases.json / 不依赖构建期 bake */
+  function mapApiRelease(rel) {
+    if (!rel) return null;
+    var assets = rel.assets || [];
+    var byName = {};
+    assets.forEach(function (a) {
+      byName[a.name] = a;
+    });
+    function pick(patterns) {
+      for (var i = 0; i < patterns.length; i++) {
+        var re = patterns[i];
+        for (var n in byName) {
+          if (re.test(n)) {
+            return {
+              url: byName[n].browser_download_url,
+              name: n,
+              size: byName[n].size || 0,
+              downloadCount: byName[n].download_count || 0
+            };
+          }
+        }
+      }
+      return null;
+    }
+    return {
+      tag: rel.tag_name || rel.name || "",
+      name: rel.name || rel.tag_name || "",
+      publishedAt: rel.published_at || rel.created_at || "",
+      notes: typeof rel.body === "string" ? rel.body : "",
+      assets: {
+        win: pick([/win-x64\.exe$/i, /win-x64\.zip$/i]),
+        macArm: pick([/mac-arm64\.zip$/i, /arm64.*\.dmg$/i]),
+        macX64: pick([/mac-x64\.zip$/i]),
+        linux: pick([/linux-x64\.AppImage$/i, /linux-x64\.tar\.gz$/i])
+      },
+      htmlUrl: rel.html_url || ""
+    };
+  }
+
+  function applyLiveDownloads(releases) {
+    if (!releases || !releases.length) return;
+    renderRelBoard(releases);
+    applyHeroVersion(releases[0].tag, releases[0].publishedAt);
+    var a0 = releases[0].assets || {};
+    var map = {
+      win: a0.win && a0.win.url,
+      macArm: a0.macArm && a0.macArm.url,
+      macX64: a0.macX64 && a0.macX64.url,
+      linux: a0.linux && a0.linux.url
+    };
+    document.querySelectorAll("a[data-dl]").forEach(function (a) {
+      var url = map[a.getAttribute("data-dl")];
+      if (url) a.href = url;
+    });
+    var hero = document.querySelector(".hero-actions a.btn-primary");
+    if (hero && (map.win || map.linux || map.macArm)) {
+      hero.href = map.win || map.macArm || map.linux || hero.href;
+    }
+  }
+
   function resolveLatestDownloads() {
-    var api = BRAND.releaseLatestApi;
+    var latestApi = BRAND.releaseLatestApi;
+    var listApi =
+      "https://api.github.com/repos/" + BRAND.repo + "/releases?per_page=" + (BRAND.releaseListCount || 8);
 
-    function loadBaked() {
-      return fetch("releases.json")
-        .then(function (r) {
-          if (!r.ok) throw new Error("no-json");
-          return r.json();
-        })
-        .catch(function () {
+    function getJson(url) {
+      return fetch(url, {
+        headers: { Accept: "application/vnd.github+json" }
+      }).then(function (r) {
+        if (!r.ok) throw new Error("HTTP " + r.status + " " + url);
+        return r.json();
+      });
+    }
+
+    // 优先列表（含 changelog）；列表失败再退回仅 latest；再失败则保留 HTML 静态兜底并标空
+    getJson(listApi)
+      .then(function (list) {
+        var releases = (list || [])
+          .filter(function (r) { return r && !r.draft && !r.prerelease })
+          .map(mapApiRelease)
+          .filter(Boolean);
+        if (releases.length) {
+          applyLiveDownloads(releases);
           return null;
-        });
-    }
-
-    function loadLatestApi() {
-      return fetch(api)
-        .then(function (r) {
-          if (!r.ok) throw new Error("api");
-          return r.json();
-        })
-        .catch(function () {
-          return null;
-        });
-    }
-
-    function mergeReleases(bakedList, latest) {
-      var list = (bakedList || []).slice();
-      if (latest && latest.tag_name) {
-        var tag = latest.tag_name;
-        var idx = -1;
-        for (var i = 0; i < list.length; i++) {
-          if (list[i].tag === tag) { idx = i; break }
         }
-        var assets = latest.assets || [];
-        var byName = {};
-        assets.forEach(function (a) { byName[a.name] = a.browser_download_url });
-        function pick(patterns) {
-          for (var i = 0; i < patterns.length; i++) {
-            for (var n in byName) if (patterns[i].test(n)) return byName[n]
-          }
-          return null
-        }
-        var live = {
-          tag: tag,
-          name: latest.name || tag,
-          publishedAt: latest.published_at || latest.created_at || "",
-          notes: latest.body || null,
-          assets: {
-            win: { url: pick([/win-x64\.exe$/i, /win-x64\.zip$/i]), name: "" },
-            macArm: { url: pick([/mac-arm64\.zip$/i]), name: "" },
-            macX64: { url: pick([/mac-x64\.zip$/i]), name: "" },
-            linux: { url: pick([/linux-x64\.AppImage$/i, /linux-x64\.tar\.gz$/i]), name: "" }
-          },
-          htmlUrl: latest.html_url
-        };
-        if (idx === 0) {
-          list[0] = Object.assign({}, list[0], live, {
-            notes: (list[0] && list[0].notes) || live.notes,
-            assets: {
-              win: (list[0].assets && list[0].assets.win) || live.assets.win,
-              macArm: (list[0].assets && list[0].assets.macArm) || live.assets.macArm,
-              macX64: (list[0].assets && list[0].assets.macX64) || live.assets.macX64,
-              linux: (list[0].assets && list[0].assets.linux) || live.assets.linux
-            }
-          })
-        } else if (idx > 0) {
-          // bake 落后：把 API 最新版插到最前
-          if (list[idx]) {
-            live.notes = list[idx].notes || live.notes
-            live.assets = {
-              win: (list[idx].assets && list[idx].assets.win) || live.assets.win,
-              macArm: (list[idx].assets && list[idx].assets.macArm) || live.assets.macArm,
-              macX64: (list[idx].assets && list[idx].assets.macX64) || live.assets.macX64,
-              linux: (list[idx].assets && list[idx].assets.linux) || live.assets.linux
-            }
-          }
-          list.splice(idx, 1)
-          list.unshift(live)
-        } else if (latest) {
-          list.unshift(live)
-        }
-      }
-      return list
-    }
-
-    Promise.all([loadBaked(), loadLatestApi()]).then(function (pair) {
-      var baked = pair[0]
-      var latest = pair[1]
-      var bakedList = (baked && baked.releases) || []
-      var releases = mergeReleases(bakedList, latest)
-      renderRelBoard(releases)
-      if (releases[0]) {
-        applyHeroVersion(releases[0].tag, releases[0].publishedAt)
-      }
-      var a0 = releases[0] && releases[0].assets
-      var map = {}
-      if (a0) {
-        map.win = a0.win && a0.win.url
-        map.macArm = a0.macArm && a0.macArm.url
-        map.macX64 = a0.macX64 && a0.macX64.url
-        map.linux = a0.linux && a0.linux.url
-      }
-      document.querySelectorAll("a[data-dl]").forEach(function (a) {
-        var url = map[a.getAttribute("data-dl")]
-        if (url) a.href = url
+        return getJson(latestApi);
       })
-      var hero = document.querySelector(".hero-actions a.btn-primary")
-      if (hero && (map.win || map.linux || map.macArm)) {
-        hero.href = map.win || map.macArm || map.linux || hero.href
-      }
-    })
+      .catch(function () {
+        return getJson(latestApi);
+      })
+      .then(function (latest) {
+        if (!latest) return;
+        var one = mapApiRelease(latest);
+        if (one) applyLiveDownloads([one]);
+      })
+      .catch(function () {
+        // API 全部失败：保留 index.html 静态兜底，面板提示可去 GitHub
+        renderRelBoard([]);
+      });
   }
 
 

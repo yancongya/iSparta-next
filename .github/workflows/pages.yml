@@ -6,8 +6,6 @@ on:
     paths:
       - 'landing/**'
       - '.github/workflows/pages.yml'
-      # 发版 bump 会改 package.json，触发落地页重建以刷新兜底版本
-      - 'package.json'
   workflow_dispatch:
 
 permissions:
@@ -28,13 +26,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
-
-      - name: Bake landing releases.json
-        continue-on-error: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ISPARTA_UPDATE_REPO: ${{ github.repository }}
-        run: node scripts/bake-landing.js
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
