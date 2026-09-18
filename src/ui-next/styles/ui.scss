@@ -1544,7 +1544,8 @@ body.is-scroll-locked {
 .log__row {
   display: flex;
   flex-wrap: nowrap;
-  align-items: center;
+  /* 顶对齐：时间/级别始终贴齐消息首行；有 detail 时也不会被两行内容带偏 */
+  align-items: flex-start;
   gap: 10px;
   width: 100%;
   max-width: 100%;
@@ -1586,6 +1587,7 @@ body.is-scroll-locked {
   to { opacity: 1; transform: none; }
 }
 
+/* 首行统一行高，避免字号不同导致顶对齐后仍“飘” */
 .log__t,
 .log__lv,
 .log__msg {
@@ -1595,17 +1597,20 @@ body.is-scroll-locked {
 .log__t {
   flex: 0 0 70px;
   width: 70px;
+  margin-top: 0;
+  padding-top: 0;
   color: var(--is-text-3);
   font-size: 11px;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: clip;
 }
 
 .log__lv {
   flex: 0 0 56px;
   width: 56px;
+  margin-top: 0;
+  padding-top: 0;
   font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
