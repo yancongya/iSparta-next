@@ -41,12 +41,12 @@
           class="log__row"
           :class="'is-' + e.level"
         >
-          <span class="log__t mono">{{ e.t }}</span>
-          <span class="log__lv mono">{{ e.level }}</span>
-          <span class="log__msg">
-            {{ e.msg }}
-            <span v-if="e.detail" class="log__detail mono">{{ e.detail }}</span>
-          </span>
+          <div class="log__main">
+            <span class="log__t mono">{{ e.t }}</span>
+            <span class="log__lv mono">{{ e.level }}</span>
+            <span class="log__msg">{{ e.msg }}</span>
+          </div>
+          <div v-if="e.detail" class="log__detail mono">{{ e.detail }}</div>
         </div>
       </div>
     </div>

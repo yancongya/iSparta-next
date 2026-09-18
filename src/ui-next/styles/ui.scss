@@ -1543,10 +1543,8 @@ body.is-scroll-locked {
 
 .log__row {
   display: flex;
-  flex-wrap: nowrap;
-  /* 顶对齐：时间/级别始终贴齐消息首行；有 detail 时也不会被两行内容带偏 */
-  align-items: flex-start;
-  gap: 10px;
+  flex-direction: column;
+  gap: 2px;
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
@@ -1582,25 +1580,27 @@ body.is-scroll-locked {
   &.is-warn .log__msg { color: var(--is-warn-fg); }
 }
 
+/* 首行：时间 | 级别 | 消息，始终单行垂直居中，不受 detail 影响 */
+.log__main {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+}
+
 @keyframes is-log-in {
   from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: none; }
 }
 
-/* 首行统一行高，避免字号不同导致顶对齐后仍“飘” */
-.log__t,
-.log__lv,
-.log__msg {
-  line-height: 1.4;
-}
-
 .log__t {
   flex: 0 0 70px;
   width: 70px;
-  margin-top: 0;
-  padding-top: 0;
   color: var(--is-text-3);
   font-size: 11px;
+  line-height: 1.4;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
   overflow: hidden;
@@ -1609,9 +1609,8 @@ body.is-scroll-locked {
 .log__lv {
   flex: 0 0 56px;
   width: 56px;
-  margin-top: 0;
-  padding-top: 0;
   font-size: 10px;
+  line-height: 1.4;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -1624,9 +1623,19 @@ body.is-scroll-locked {
   min-width: 0;
   color: var(--is-text);
   font-size: 12px;
-  white-space: pre-wrap;
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* detail 独立第二行，缩进与消息列对齐 */
+.log__detail {
+  margin-left: calc(70px + 10px + 56px + 10px);
+  color: var(--is-text-3);
+  font-size: 10px;
+  line-height: 1.4;
   overflow-wrap: anywhere;
-  word-break: break-word;
 }
 
 .log__detail {
