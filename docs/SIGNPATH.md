@@ -31,8 +31,12 @@
 
 ## 代码侧预留位置
 
-- `electron-builder.yml`：`win.target = nsis`，`signAndEditExecutable: false`（无证书时避免 builder 去下 winCodeSign 失败）。
-- 签名接入后：优先 **CI 对产物签名**，不必强开 builder 内置 sign（可减少本地/CI 环境差异）。
+- `electron-builder.yml`：
+  - `win.target = nsis`
+  - 当前 `signAndEditExecutable: true`（CI 写入 exe 图标/版本；**签名仍由 SignPath 等在 CI 步骤完成**）
+  - 本地网络无法下载 winCodeSign 时，可临时改回 `false` 再出包
+- 签名接入后：优先 **CI 对产物签名**，密钥/Token 只放 GitHub Secrets，**不要**写进仓库
+- Release 上传前若做二次签名，注意保持文件名与 `latest.yml` 中 `path` 一致
 
 ## 验收
 

@@ -2,26 +2,32 @@
 
 **架构约定：本地只触发，打包发版全部由 GitHub CI/CD 完成。**
 
+更新/自动更新架构说明见 [UPDATER.md](./UPDATER.md)。
+
 ```text
 本地 CLI（gh / scripts/release.ps1）
         │  只发指令，不构建安装包
         ▼
 GitHub Actions  Release 工作流
         │  bump 版本 → commit + tag
-        │  → 自动汇总本次迭代 commit 生成 Release Notes
-        │  → Win / Linux / macOS 打包 → 挂 Release
+        │  → 汇总 feat / fix / docs 生成 Release Notes
+        │  → Win NSIS / Linux AppImage / macOS zip → 挂 Release
+        │  → 上传 latest*.yml（electron-updater）
         ▼
 https://github.com/yancongya/iSparta-next/releases
 ```
 
 目标仓库：`yancongya/iSparta-next` · 本地工作副本：仓库根目录（路径因人而异）
 
+> 发版提交为 `chore(release): vX.Y.Z [skip ci]`，**不会**自动触发 Pages。  
+> 落地页版本/更新日志为**运行时读 GitHub API**，发版后一般无需再部署落地页。
+
 ## 0. 前置
 
 - 已登录 `gh`：`gh auth status` 显示 `yancongya`
 - 在 `master`，工作区干净（无未提交改动）
 - 要发的代码已合入并推送
-- 建议 commit 使用 Conventional 前缀（`feat:` / `fix:` / `docs:` / `ci:` / `chore:`），便于自动汇总
+- 建议 commit 使用 Conventional 前缀（`feat:` / `fix:` / `docs:`），便于自动汇总
 
 ```powershell
 cd <your-local-repo>
@@ -38,15 +44,15 @@ git commit -m "feat|fix|chore: 简述"
 git push origin master
 ```
 
-只触发日常 CI 构建 Artifact，不升版本、不发 Release。
+只触发日常 CI 构建校验（Artifact），不升版本、不发 Release。
 
 ## 2. 正式发版（本地 CLI 触发云端打包）
 
 ### 推荐：一键脚本
 
 ```powershell
-.\scripts\release.ps1                 # patch，例如 3.3.0 -> 3.3.1
-.\scripts\release.ps1 -Bump minor     # minor，例如 3.3.0 -> 3.4.0
+.\scripts\release.ps1                 # patch，例如 3.3.8 -> 3.3.9
+.\scripts\release.ps1 -Bump minor     # minor，例如 3.3.x -> 3.4.0
 .\scripts\release.ps1 -Bump major
 .\scripts\release.ps1 -DryRun         # 只试跑，不发版
 .\scripts\release.ps1 -Bump patch -Prerelease
@@ -66,29 +72,35 @@ gh run watch --repo yancongya/iSparta-next <run-id>
 
 Actions → **Release** → Run workflow → 选 bump / prerelease / dry_run。
 
-### 成功后产物命名
+### 成功后产物命名（以 CI 实际为准）
 
-| 平台 | 资产名 |
+| 平台 | 主资产 | updater 元数据 |
+| --- | --- | --- |
+| Windows x64 | `isparta-next-<ver>-win-x64.exe`（NSIS） | `latest.yml` |
+| Linux x64 | `isparta-next-<ver>-linux-x64.AppImage` | `latest-linux.yml` |
+| macOS arm64 | `isparta-next-<ver>-mac-arm64.zip` | `latest-mac.yml`（不自动更新） |
+| macOS x64 | `isparta-next-<ver>-mac-x64.zip` | 同上 |
+
+CI 会额外写入**稳定别名**（无版本号），供落地页 `releases/latest/download/...`：
+
+- `isparta-next-win-x64.exe`
+- `isparta-next-linux-x64.AppImage`
+- 以及 mac zip 别名等  
+
+> `latest*.yml` 的 `path` 必须与 **版本化** 资产名一致，供 electron-updater 定位安装包；**不要**改名或删除这些 yml。  
+> macOS 仍为 CI **未签名** zip，不走应用内自动更新。
+
+### Release Notes 汇总规则
+
+工作流只汇总用户可见变更（便于应用内弹窗展示）：
+
+| 类型 | 是否写入 Notes |
 | --- | --- |
-| Windows x64 | `isparta-next-<ver>-win-x64.zip` |
-| Linux x64 | `isparta-next-<ver>-linux-x64.tar.gz` |
-| macOS arm64 | `isparta-next-<ver>-mac-arm64.zip` |
-| macOS x64 | `isparta-next-<ver>-mac-x64.zip` |
+| `feat` / `fix` / `docs` | **是** |
+| `chore` / `ci` / `build` / `refactor` / `perf` / `test` 等 | **否**（工程项不进正文） |
+| 无前缀 commit | 默认不进主列表 |
 
-> macOS 用 zip（runner 无 `/usr/bin/python`，旧 electron-builder 的 dmg 会失败）。包为**未签名**构建。
-
-### 自动版本说明（bot 汇总）
-
-Release 工作流会把上个 tag 到当前 HEAD 的 commit **自动分类汇总**进 Release Notes：
-
-- `feat` → 新功能  
-- `fix` → 修复  
-- `docs` / `ci` / `build` / `refactor` / `perf` / `test` → 其他  
-- 其余无前缀 commit → 其他  
-
-并附带 compare 链接与安装表。无需手写 changelog；若某次要改文案，直接在 GitHub 上 Edit release 即可。
-
-> macOS 为 CI **未签名** 构建。用户若被 Gatekeeper 拦截，见 Release 页说明（系统设置放行或 `xattr -dr com.apple.quarantine`）。
+仍会附安装包表与 changelog 链接。若某次要改文案，在 GitHub 上 Edit release 即可。
 
 ## 3. 版本号怎么选
 
@@ -103,10 +115,11 @@ Release 工作流会把上个 tag 到当前 HEAD 的 commit **自动分类汇总
 ## 4. 失败时
 
 1. `gh run view <id> --repo yancongya/iSparta-next --log-failed`
-2. **Bump version** 失败 → 分支保护禁止 bot 直推，或版本格式异常
-3. **Build** 失败 → 先本地 `npm run build:windows` / 看 electron 二进制安装
-4. **Publish** 失败 → tag 是否已推、Artifact 是否非空
-5. 错误 tag 需删除后再发：
+2. **Bump version** 失败 → 分支保护禁止 bot 直推，或版本/tag 冲突
+3. **Collect & rename assets** 失败 → 检查 `latest*.yml` / 安装包是否生成；收集脚本须用通配符，勿写死不存在的文件名
+4. **Build** 失败 → 本地 `npm run build:windows`；本机网络无法下载 NSIS 工具时可用本地缓存/ELECTRON_BUILDER_NSIS_DIR（CI 通常无此问题）
+5. **Publish** 失败 → tag 是否已推、Artifact 是否非空
+6. 错误 tag 需删除后再发：
 
 ```powershell
 git push origin :refs/tags/vX.Y.Z
@@ -116,9 +129,10 @@ git tag -d vX.Y.Z
 ## 5. 不要做的事
 
 - 不要在未合并进 `master` 时发版
-- 不要在本地 `npm run build` 后手动上传当正式发版（除非补 macOS）
+- 不要在本地构建后手动上传当正式发版
 - 不要手打 `v*` tag 指望自动出包（只有 Release 工作流会创建公开 Release）
 - 不要对同一版本号连点两次
+- 不要删改 Release 上的 `latest*.yml`
 
 ## 6. 给 Agent 的最短路径
 
@@ -128,11 +142,11 @@ git tag -d vX.Y.Z
 若只改代码：commit + push origin master（结束）
     ↓
 若要发版且用户已授权：
-    .\scripts\release.ps1 -Bump patch
-    gh run watch <最新 release run>
+    gh workflow run release.yml -f bump=patch -f prerelease=false -f dry_run=false
+    gh run watch <run-id>
     gh release view --repo yancongya/iSparta-next
     ↓
-向用户报告：新版本号、Release 链接、资产文件名、mac 需补传
+向用户报告：版本号、Release 链接、关键资产（exe / AppImage / latest.yml）
 ```
 
-成功后资产应包含 **win-x64** 与 **linux-x64** 两份；若页面只看到 Windows，请检查 linux 资产是否命名含 `linux-x64`（历史 v3.3.0 的 tar.gz 曾无平台后缀，已可重命名）。
+发版后：用户可用已安装的 **NSIS/AppImage** 做「应用内热更新」验收；macOS 仍手动下载 zip。

@@ -2,7 +2,9 @@
 
 > 产品页：https://yancongya.github.io/iSparta-next/  
 > 仓库：https://github.com/yancongya/iSparta-next  
-> 状态：页面 meta / robots / sitemap / JSON-LD 已具备；**收录依赖搜索引擎提交与外链**。
+> 状态：页面 meta / robots / sitemap / JSON-LD / About 静态文案已具备  
+> **GSC 所有权**：已用 HTML 文件验证通过（`landing/google24f9d7ecb775f573.html`，勿删）  
+> 版本与更新日志：**运行时读 GitHub API**（sessionStorage 约 15 分钟），不依赖 Pages bake
 
 ## 为什么搜不到（结论）
 
@@ -17,14 +19,15 @@
 
 ## 一、Google Search Console（必做）
 
-1. 打开 [Search Console](https://search.google.com/search-console) → 添加资源  
-2. 选择 **URL 前缀** → 填入：`https://yancongya.github.io/iSparta-next/`  
-3. 验证方式（任选其一）：  
-   - **HTML tag**：把 Google 给的 `<meta name="google-site-verification" ...>` 加到 `landing/index.html` 的 `<head>` 后重新部署 Pages  
-   - 或 DNS / 其它方式（子域路径站常用 HTML tag）  
-4. 提交 Sitemap：`https://yancongya.github.io/iSparta-next/sitemap.xml`  
-5. 使用 **URL 检查** → 对首页执行 **请求编入索引 / Request Indexing**  
-6. 数日后用下面命令查看是否收录  
+1. 打开 [Search Console](https://search.google.com/search-console) → 添加资源（若已验证可跳过）  
+2. 选择 **URL 前缀** → `https://yancongya.github.io/iSparta-next/`  
+3. 验证（已选 HTML 文件时保持文件在 Pages 根路径）：  
+   - 文件：`https://yancongya.github.io/iSparta-next/google24f9d7ecb775f573.html`  
+   - 对应仓库：`landing/google24f9d7ecb775f573.html`  
+4. 提交 Sitemap：`https://yancongya.github.io/iSparta-next/sitemap.xml`（输入框填 `sitemap.xml` 即可）  
+5. 若显示 **无法抓取**：多数为首次排队失败，**等待后在 sitemap 列表 ⋮ → 重新提交**；文件本身应为 200 + `application/xml`  
+6. 使用 **URL 检查** → 对首页执行 **请求编入索引 / Request Indexing**  
+7. 数日后用下面命令查看是否收录  
 
 ```text
 site:yancongya.github.io/iSparta-next
@@ -55,8 +58,8 @@ site:yancongya.github.io "iSparta-next"
 | 动作 | 说明 |
 | --- | --- |
 | GitHub About → Website | 保持为落地页 URL |
-| README / README.en 顶部 | 产品页链接（已有，可再加「官网」字样） |
-| Release Notes | 每条可附产品页链接 |
+| README / README.en 顶部 | 产品官网链接（已有） |
+| Release Notes | 可附产品页链接 |
 | 技术社区 | 掘金 / 知乎 / CSDN / V2EX 等介绍文里贴完整 URL |
 | 其它仓库 / 列表 | Awesome 列表、工具导航站（符合其收录规则时） |
 
@@ -77,16 +80,19 @@ https://yancongya.github.io/iSparta-next/
 - JSON-LD `SoftwareApplication`  
 - `robots.txt` → `sitemap.xml`  
 - **静态 About 区块**（`#about`）：不依赖 JS 的产品说明正文  
+- Google **HTML 文件验证**已部署于 Pages  
 
-版本号与更新日志为**运行时读 GitHub API**，利于实时性；SEO 主要依赖上述静态文案与收录提交。
+版本号与更新日志为**运行时读 GitHub API**；SEO 主要依赖静态文案 + 搜索引擎提交 + 外链。
 
 ---
 
 ## 六、验证清单（做完勾选）
 
-- [ ] Google Search Console 已验证并提交 sitemap  
+- [x] Google Search Console 所有权验证（HTML 文件）  
+- [ ] Sitemap 已提交且状态变为成功（若「无法抓取」则重新提交并等待）  
+- [ ] 首页 URL 检查 → 已请求编入索引  
 - [ ] Bing 已提交  
-- [ ] `site:yancongya.github.io/iSparta-next` 有结果（或已 Request Indexing）  
+- [ ] `site:yancongya.github.io/iSparta-next` 有结果（或持续观察）  
 - [ ] README / 社区至少一处外链到落地页  
 - [ ] 搜索 `iSparta-next` 时能观察到落地页或仓库（持续优化）  
 
@@ -96,4 +102,6 @@ https://yancongya.github.io/iSparta-next/
 
 - 自定义域名绑定 GitHub Pages（品牌词与信任度更好）  
 - 保持发版与 Release Notes 更新，增加「新鲜度」信号  
-- 不要在客户端暴露任何 API Token（当前匿名 API + 会话缓存，符合安全实践）  
+- 不要在客户端暴露任何 API Token（当前匿名 API + 会话缓存）  
+- **勿删除** `landing/google24f9d7ecb775f573.html`，否则 GSC 验证可能失效  
+

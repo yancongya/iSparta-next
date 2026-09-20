@@ -1,43 +1,52 @@
 # 更新检查方案（Update Check）
 
-> 状态：**批次 A/B 完成 + 批次 C 本地自动化已通过** ｜ 编制：2026-09-18 ｜ 修订：2026-09-18
-> 基线提交：`60f7db6 chore(release): v3.3.4 [skip ci]`
-> 目标仓库：`yancongya/iSparta-next` ｜ 当前已发布版本：**v3.3.4**
+> ## ⚠️ 历史规划文档（部分已过时）
 >
-> **验证结果（2026-09-18 本地）**：
-> - L1 `node scripts/updateCheck.l1.js`：**33/33**
-> - L3 Node+fixture `node scripts/l3-run.js`：**19/19**（含 http、二跳资产、offline/rate-limit/timeout/skip/throttle）
-> - L3 Electron IPC `scripts/l3-electron.js`：**pass**（`updater:meta` / `updater:check` / 白名单拒绝 evil / skipVersion）
-> - 批次 C 仍待：`npm run dev` 一次 + 浏览器 8090 mock UI 目检 + 真机弹窗截图
-> - 批次 D 未做：清理临时文件、提交、README
+> **维护请改看：[UPDATER.md](./UPDATER.md)（现状）· [RELEASE.md](./RELEASE.md)（发版）**
 >
-> 测试入口：
+> 本文保留早期调研、分批执行与风险分析，**不以文内状态为准**。与现实不符的要点：
+>
+> | 本文旧说法 | 当前现实 |
+> | --- | --- |
+> | 版本停在 v3.3.4；批次 C/D 未做 | 已发版至 **v3.3.8+**（以 `package.json` 为准） |
+> | 不做自动安装、不引入 electron-updater | **已引入** `electron-updater@4.6.5`；Win **NSIS** / Linux **AppImage** 可应用内更新 |
+> | 产物为 zip / tar.gz | CI 主产物为 **exe / AppImage / mac zip**，并上传 `latest*.yml` |
+> | 落地页以构建期 bake 为主 | **已改为运行时读 GitHub API**（session 缓存）；无 bake 依赖 |
+> | 批次 B 未开始 | 渲染层 UI / 存储 / 三语文案已合入并发布 |
+>
+> 以下正文为 **2026-09-18 前后** 的规划与验收记录，供追溯决策。
+
+> 编制：2026-09-18 ｜ 基线：`60f7db6` ｜ 目标仓库：`yancongya/iSparta-next`
+>
+> 历史测试入口（仍可用）：
 > - `node scripts/updateCheck.l1.js`
-> - `node scripts/fixture-github.js`（FIXTURE_MODE=available|latest|offline|asset-missing|prerelease|timeout|rate-limit）
 > - `node scripts/l3-run.js`
-> - fixture 运行中：`electron scripts/l3-electron.js`（设 ISPARTA_UPDATE_BASE_URL/API_URL）
->
-> 本文档是一次性规划，不随代码自动更新。执行时以符号名搜索为准。
+> - `node scripts/fixture-github.js` + `electron scripts/l3-electron.js`
 
 ---
 
 ## 1. 目标与非目标
 
-### 1.1 目标
+### 1.1 目标（早期规划）
 
 1. 应用启动后自动检查一次远端最新版本，发现新版时以**非阻断对话框**提示。
 2. 提供**手动「检查更新」**入口（设置面板内），手动触发不受节流限制。
 3. 提示对话框可一键**跳转浏览器下载**当前平台的最新安装包。
-4. 三端（Windows / macOS / Linux）统一走「检查 + 提示 + 跳转下载」，**不做自动安装**。
-5. 远端**只依赖 GitHub**（Releases 的 302 与固定资产下载链），不自建清单域名、不引入对象存储镜像、不引入任何新 npm 依赖。
-6. **不需要任何证书**：不买 Apple Developer，不申请 Windows 代码签名。
-7. 检查失败（断网、被墙、限流）必须**完全静默**，绝不打扰正在干活的用户。
+4. 三端（Windows / macOS / Linux）统一走「检查 + 提示 + 跳转下载」，**首期不做自动安装**（后续 §12 已扩展自动更新）。
+5. 远端**只依赖 GitHub**，不自建清单域名、不引入对象存储镜像。
+6. **不需要 Apple / Windows 付费证书**也能先上检查与下载引导。
+7. 检查失败（断网、被墙、限流）必须**完全静默**。
 
-### 1.2 非目标（明确排除，防止范围漂移）
+### 1.2 非目标（早期明确排除；与现实对照见文首）
 
-| 排除项 | 排除理由 |
-| --- | --- |
-| 自动下载并安装更新 | 三端产物是 zip / tar.gz，electron-updater 的更新通道要求 win=NSIS、mac=签名+公证、linux=AppImage，当前全不满足 |
+| 排除项 | 早期理由 | 现状 |
+| --- | --- | --- |
+| 自动下载并安装更新 | zip/tar.gz 不满足 updater 通道 | **Win/Linux 已做**；mac 仍排除 |
+| 增量 / delta 更新 | 依赖 blockmap/zsync | 仍排除 |
+| 热替换渲染层 JS / asar | 安全与签名风险 | **仍排除** |
+| 自建 latest.json / CDN | 用户拍板纯 GitHub | 仍排除 |
+| macOS 签名与公证 | 成本 | 仍排除，手册指引 |
+| 引入 electron-updater | 见 §12 | **已落地**（见 UPDATER.md） |
 | 增量 / delta 更新 | 依赖 NSIS blockmap 或 AppImage zsync，同上 |
 | 只热替换渲染层 JS / asar | 官方零支持；mac 上改 bundle 会使签名失效；已存在 app.asar 后门注入工具与国产 Electron 供应链攻击真实案例，等于自开远程代码执行通道 |
 | 自建 latest.json / 对象存储镜像 / CDN | 用户已拍板「纯 GitHub 接管」 |
