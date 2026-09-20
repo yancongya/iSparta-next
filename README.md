@@ -21,6 +21,7 @@
 - 发现新版本时弹窗展示 **更新说明**（来自该 Release 的 body），并可跳转下载。
 - **Windows（NSIS 安装版）/ Linux（AppImage）** 支持应用内自动更新：后台下载完成后提示「重启以更新」。
 - **macOS** 安装包未签名，不支持自动更新：下载 zip 后解压覆盖；若提示已损坏，打开 **系统设置 → 隐私与安全性 → 仍要打开**。
+- 架构、限制与测试入口：[`docs/UPDATER.md`](docs/UPDATER.md)；发版步骤：[`docs/RELEASE.md`](docs/RELEASE.md)。
 - Windows 免费开源签名申请步骤见 [docs/SIGNPATH.md](docs/SIGNPATH.md)。
 
 ### 适合这些场景
