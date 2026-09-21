@@ -1,7 +1,10 @@
 ﻿// ==========================================================================
-// 搴旂敤澶栧３锛圚ome.vue锛?// --------------------------------------------------------------------------
-// 鍘熷厛杩欓噷鍫嗕簡涓€鎵?:deep(.mod-list .item)銆?deep(.mod-setting .el-input__inner)
-// 涔嬬被鐨勮ˉ涓侊紝鐢ㄦ潵鎶婃棫缁勪欢寮鸿鍒锋垚涓婚鑹诧紱瀛愮粍浠惰嚜缁樺悗鍏ㄩ儴鍒犻櫎锛?// 鍙繚鐣欑函绮圭殑甯冨眬鑱岃矗銆?// ==========================================================================
+// 应用外壳（Home.vue）
+// --------------------------------------------------------------------------
+// 原先这里堆了一批 :deep(.mod-list .item)、:deep(.mod-setting .el-input__inner)
+// 之类的补丁，用来把旧组件强行刷成主题色；子组件自绘后全部删除，
+// 只保留纯粹的布局职责。
+// ==========================================================================
 
 .ib {
   position: fixed;
@@ -15,7 +18,8 @@
 }
 
 // --------------------------------------------------------------------------
-// 绌烘€?// --------------------------------------------------------------------------
+// 空态
+// --------------------------------------------------------------------------
 .ib-import {
   display: flex;
   height: 100%;
@@ -44,7 +48,8 @@
 }
 
 .ib-iconbtn {
-  position: relative; // 鏈/鏇存柊灏忕偣鎸夋寜閽畾浣?  display: inline-flex;
+  position: relative; // 未读/更新小点按按钮定位
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 30px;
@@ -100,7 +105,7 @@
     transform: translateY(-2px);
   }
 
-  // 鎷栨嫿鎮仠锛氭暣鍧楀尯鍩熴€屾帴浣忋€嶆枃浠剁殑鍙嶉
+  // 拖拽悬停：整块区域「接住」文件的反馈
   &.is-hot {
     border-color: var(--is-accent);
     border-style: solid;
@@ -108,7 +113,8 @@
     box-shadow: var(--is-glow);
     transform: scale(1.005);
 
-    // 鍥炬爣鎸佺画涓婁笅寮硅烦 + 鎺ヤ綇鏃舵暣浣撹繃鍐叉斁澶э細鎷栧叆绛夊緟鏈熺殑銆屾椿鍔涙劅銆?    animation: is-drop-catch var(--is-dur-slow) var(--is-ease-overshoot);
+    // 图标持续上下弹跳 + 接住时整体过冲放大：拖入等待期的「活力感」
+    animation: is-drop-catch var(--is-dur-slow) var(--is-ease-overshoot);
 
     .ib-drop__icon {
       transform: translateY(4px) scale(1.12);
@@ -133,7 +139,8 @@
       background-color var(--is-dur-base) var(--is-ease-std);
   }
 
-  // 绌烘€佸畧鏈涜€咃細灏忕簿鐏佃共鍦ㄦ嫋鏀惧尯鍙充笂瑙掞紝鎷栧叆鏃跺彉鍏村鎬?  &__pet {
+  // 空态守望者：小精灵蹲在拖放区右上角，拖入时变兴奋态
+  &__pet {
     position: absolute;
     top: var(--is-s-3);
     right: var(--is-s-4);
@@ -179,7 +186,8 @@
 }
 
 // --------------------------------------------------------------------------
-// 宸ヤ綔鍖猴細涓垪琛?+ 鍙宠缃?// --------------------------------------------------------------------------
+// 工作区：中列表 + 右设置
+// --------------------------------------------------------------------------
 .ib-ws {
   display: flex;
   height: 100%;
@@ -202,7 +210,8 @@
 }
 
 // --------------------------------------------------------------------------
-// 涓棿鍒楋細宸ュ叿鏉?+ 鍙嫋鎷藉垎闅?// --------------------------------------------------------------------------
+// 中间列：工具条 + 可拖拽分隔
+// --------------------------------------------------------------------------
 .ib-rail {
   position: relative;
   display: flex;
@@ -217,7 +226,7 @@
   user-select: none;
 
   &__btn {
-    position: relative; // 鏈灏忕偣鎸夋寜閽畾浣嶏紝鑰屼笉鏄暣鏉?rail
+    position: relative; // 未读小点按按钮定位，而不是整条 rail
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -239,8 +248,8 @@
     }
   }
 
-  // 鎷栨嫿鎵嬫焺锛氬弻绔栫嚎锛宧over 鎻愮ず鍙嫋
-  // 鏃ュ織鎸夐挳锛氶潰鏉挎墦寮€鏃朵繚鎸佺偣浜紝鏈鐨?warn/error 鐢ㄥ彸涓婅灏忕偣鎻愮ず
+  // 拖拽手柄：双竖线，hover 提示可拖
+  // 日志按钮：面板打开时保持点亮，未读的 warn/error 用右上角小点提示
   &__btn.is-active {
     background: var(--is-accent-dim);
     color: var(--is-accent);
@@ -270,7 +279,7 @@
     border-top: 1px solid var(--is-divider);
     transition: background-color var(--is-dur-fast) var(--is-ease-std);
 
-    // 涓ゆ潯绔栫嚎
+    // 两条竖线
     &::before,
     &::after {
       content: '';
@@ -301,7 +310,7 @@
     }
   }
 
-  // ---------- 璇█寮瑰嚭鑿滃崟 ----------
+  // ---------- 语言弹出菜单 ----------
   &__lang {
     position: relative;
     display: flex;
@@ -352,14 +361,17 @@
   }
 }
 
-// 鎷栨嫿璋冨鏃剁姝㈠叏灞€閫夊尯锛岄伩鍏嶈閫夋枃鏈?body.is-column-resizing {
+// 拖拽调宽时禁止全局选区，避免误选文本
+body.is-column-resizing {
   cursor: col-resize !important;
   user-select: none !important;
 }
 
 .ib-side {
   display: flex;
-  // 涓嶅弬涓庝几缂╋細瀹藉害瀹屽叏鐢?Home.vue 鐨勮鍐?width 鍐冲畾锛堝惈鎶樺彔鏃剁殑 0px锛夈€?  // 鍙啓 min-width:0 浼氫繚鐣欓粯璁?flex-shrink:1锛屽鑷撮潰鏉胯宸︿晶鎸夊唴瀹规尋鎵併€?  flex: 0 0 auto;
+  // 不参与伸缩：宽度完全由 Home.vue 的行内 width 决定（含折叠时的 0px）。
+  // 只写 min-width:0 会保留默认 flex-shrink:1，导致面板被左侧按内容挤扁。
+  flex: 0 0 auto;
   min-height: 0;
   flex-direction: column;
   border-left: 1px solid var(--is-border);
@@ -375,20 +387,22 @@
     display: flex;
     width: 100%;
     min-width: 0;
-    // 鍏抽敭锛氬垪鍚?flex 瀛愰」榛樿 min-height:auto锛屼笉鍐?0 灏变細琚唴瀹规拺鍒板叏楂橈紝
-    // 涓嬫父 .mod-form 鐨?overflow-y:auto 姘歌繙涓嶄細瑙﹀彂锛岄潰鏉胯〃鐜颁负銆屾粴涓嶅姩銆?    min-height: 0;
+    // 关键：列向 flex 子项默认 min-height:auto，不写 0 就会被内容撑到全高，
+    // 下游 .mod-form 的 overflow-y:auto 永远不会触发，面板表现为「滚不动」
+    min-height: 0;
     flex: 1;
     flex-direction: column;
   }
 }
 
-// 鎷栨嫿杩涜涓叧鎺夊彸渚х殑杩囨浮锛岄伩鍏嶅搴﹁窡涓嶄笂鎵?body.is-column-resizing .ib-side {
+// 拖拽进行中关掉右侧的过渡，避免宽度跟不上手
+body.is-column-resizing .ib-side {
   transition: none !important;
 }
 
 
 // --------------------------------------------------------------------------
-// 鍏ㄥ眬鎷栨嫿閬僵锛堟湁浠诲姟鏃讹級
+// 全局拖拽遮罩（有任务时）
 // --------------------------------------------------------------------------
 .ib-dragover {
   position: absolute;
@@ -417,6 +431,10 @@
   }
 }
 
+.ib-rail__btn--danger {
+  position: relative;
+}
+
 .ib-rail__btn--danger:hover {
   color: var(--is-bad-fg);
 }
@@ -434,9 +452,5 @@
   font-size: 9px;
   line-height: 12px;
   text-align: center;
-}
-
-.ib-rail__btn--danger {
-  position: relative;
 }
 
