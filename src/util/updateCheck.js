@@ -262,32 +262,105 @@ export async function checkUpdate (deps) {
   return Object.assign({}, result, { state: 'available', notes: notes })
 }
 
-/** 渲染层展示用：去掉 CI 噪音行，保留 feat/fix 等用户可读条目 */
+/**
+ * 渲染层展示用：GitHub Release body → 应用内可读纯文本。
+ * 去掉 Markdown 井号 / `<details>` / 安装包表等，弹窗只展示用户可感知条目。
+ */
 export function formatReleaseNotes (body) {
   if (typeof body !== 'string' || !body.trim()) { return null }
-  var lines = body.split(/\r?\n/)
-  var out = []
-  var skipSection = false
+  var text = String(body)
+    .replace(/<\/?details[^>]*>/gi, '\n')
+    .replace(/<summary[^>]*>[\s\S]*?<\/summary>/gi, '\n')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/?(p|div|ul|ol|li|h[1-6]|tr|td|th|table|thead|tbody)[^>]*>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+
+  function cleanLine (raw) {
+    return String(raw)
+      .replace(/\*\*/g, '')
+      .replace(/`/g, '')
+      .replace(/^\s*[-*+]\s+/, '· ')
+      .replace(/^\s*\d+\.\s+/, '· ')
+      .replace(/^\s*#{1,6}\s*/, '')
+      .replace(/^\s*\|.*\|\s*$/, '')
+      .replace(/^\s*[-:|\s]+$/, '')
+      .trim()
+  }
+
+  function isNoise (s) {
+    if (!s) return true
+    var t = s.replace(/^·\s*/, '').trim()
+    if (!t) return true
+    if (/^\[skip ci\]/i.test(t)) return true
+    if (/^(chore|ci|build|refactor|perf)(\(|:)/i.test(t)) return true
+    if (/github\.com\/.*\/(compare|commits)\//i.test(t)) return true
+    if (/^Full Changelog/i.test(t) || /^Commits\b/i.test(t)) return true
+    if (/^更新说明\s*\/\s*What's Changed/i.test(t)) return true
+    if (/安装包|Installers|NSIS|AppImage|latest\.yml|blockmap/i.test(t)) return true
+    if (/未签名|SmartScreen|应用内自动更新|Auto-update|macOS 为 CI/i.test(t) &&
+        /安装|zip|macOS|Windows|Linux/i.test(t)) return true
+    return false
+  }
+
+  var lines = text.split(/\r?\n/)
+  var highlight = []
+  var groups = { feat: [], fix: [], docs: [] }
+  var bucket = 'highlight'
+  var inInstallers = false
+
   for (var i = 0; i < lines.length; i++) {
-    var line = lines[i]
-    var t = line.trim()
-    if (/^#{1,6}\s/.test(t)) {
-      // 跳过工程向小节标题及其内容
-      skipSection = /工程|CI|Chore|chore|Other|其他|Commits|Full Changelog/i.test(t)
-      // 保留功能/修复类标题
-      if (/功能|修复|Features|Fixes|Docs|文档/i.test(t) && !skipSection) {
-        out.push(line)
-        skipSection = false
-      }
+    var raw = lines[i]
+    var t = cleanLine(raw)
+    if (!t) continue
+    if (/^安装包|^Installers/i.test(t)) { inInstallers = true; continue }
+    if (inInstallers) {
+      if (/^修复|^新增|^功能|^文档|^Features|^Fixes|^Docs/i.test(t)) { inInstallers = false } else { continue }
+    }
+    if (isNoise(t)) continue
+    if (/^更新到\s+v|^Update to\s+v/i.test(t)) continue
+
+    var head = raw.trim().replace(/^#{1,6}\s*/, '')
+    if (/^修复|^Fixes/i.test(head)) { bucket = 'fix'; continue }
+    if (/^新增|^功能|^Features/i.test(head)) { bucket = 'feat'; continue }
+    if (/^文档|^Docs/i.test(head)) { bucket = 'docs'; continue }
+    if (/^工程|^CI|^Chore|^Other|^其他|^Commits/i.test(head)) { bucket = 'skip'; continue }
+    if (/^#{1,6}\s/.test(raw.trim())) continue
+    if (bucket === 'skip') continue
+
+    var payload = t.replace(/^·\s*/, '')
+    if (/^(chore|ci|build|refactor|perf)(\(|:)/i.test(payload)) continue
+    if (bucket === 'highlight') {
+      if (highlight.length < 8) highlight.push(t)
       continue
     }
-    if (skipSection) { continue }
-    if (/^\[skip ci\]|^chore(\(|:)|^ci(\(|:)|^build(\(|:)|^refactor(\(|:)|^perf(\(|:)/i.test(t)) { continue }
-    if (/github\.com\/.*\/compare\//i.test(t)) { continue }
-    out.push(line)
+    if (groups[bucket] && groups[bucket].length < 12) {
+      if (/^docs(\(|:)|AGENTS|CHANGELOG|README/i.test(payload) && bucket === 'docs') {
+        groups[bucket].push(t)
+      } else if (!/^docs(\(|:)|AGENTS|CHANGELOG|README/i.test(payload) || bucket === 'feat') {
+        groups[bucket].push(t)
+      }
+    }
   }
-  var text = out.join('\n').replace(/\n{3,}/g, '\n\n').trim()
-  return text || null
+
+  if (!highlight.length) {
+    highlight = groups.feat.concat(groups.fix).slice(0, 6)
+    groups = { feat: [], fix: [], docs: [] }
+  }
+
+  var out = []
+  highlight.forEach(function (h) { out.push(h) })
+  function appendGroup (label, arr) {
+    if (!arr.length) return
+    if (out.length) out.push('')
+    out.push(label)
+    arr.forEach(function (x) { out.push(x) })
+  }
+  appendGroup('【新增】', groups.feat)
+  appendGroup('【修复】', groups.fix)
+  appendGroup('【文档】', groups.docs)
+
+  var finalText = out.join('\n').replace(/\n{3,}/g, '\n\n').trim()
+  return finalText || null
 }
 
 /** 渲染层/测试用：该 URL 是否允许 shell.openExternal */

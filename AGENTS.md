@@ -111,6 +111,8 @@ CI：`release.yml` 负责 bump、打包、挂 Release（notes 模板见该 workf
 - 大小阈值 tip：`sizeLimitEnableTip` / `sizeLimitMaxTip` / `sizeLimitAutoQualityTip` / `sizeLimitAutoDeleteTip` / `sizeLimitStepTip` / `sizeLimitTriesTip`；单位用 `sizeLimitUnitTimes`
 - Floyd / 质量：`floydTip` / `qualityTip`
 
+- **应用内更新说明**：`formatReleaseNotes`（`src/util/updateCheck.js`）必须输出**纯文本**（已去掉 Markdown 井号/`<details>`/安装包表）；弹窗用普通 `div` + `pre-wrap`，禁止 `v-html`。Release 正文在 GitHub 网页上仍可是 Markdown + `<details>`。
+
 ## 7. 文档与变更记录
 
 - **重要版本摘要**维护在 [`docs/CHANGELOG.md`](docs/CHANGELOG.md)（中文单语）：抽取关键 `feat`/`fix` commit 与 Release 结果，按版本写「用户可感知」短列表；不要粘贴琐碎 chore

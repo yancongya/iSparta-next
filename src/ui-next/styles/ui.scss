@@ -1719,8 +1719,8 @@ body.is-scroll-locked {
   margin: 0;
   padding: var(--is-s-2) var(--is-s-3) var(--is-s-3);
   color: var(--is-text-2);
-  font-family: var(--is-font-mono, ui-monospace, monospace);
-  font-size: var(--is-fs-xs);
+  font-family: inherit;
+  font-size: var(--is-fs-sm);
   line-height: 1.55;
   white-space: pre-wrap;
   word-break: break-word;

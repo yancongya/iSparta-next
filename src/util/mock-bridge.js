@@ -346,7 +346,7 @@ function installMockBridge () {
       state: 'available',
       current: '3.3.8',
       latest: '3.3.9',
-      notes: '### 功能\n- 新增应用内更新 Dock\n- 下载进度可视化\n### 修复\n- 修复列表偶发排序错位',
+      notes: '· 阈值递减/重试等共用 Tip 文案，两端面板 info 提示统一\n\n【修复】\n· fix(setting): 阈值递减/重试等共用 Tip 文案',
       artifactName: 'isparta-next-win-x64.exe',
       downloadUrl: 'https://github.com/yancongya/iSparta-next/releases/latest/download/isparta-next-win-x64.exe',
       fallbackUrl: 'https://github.com/yancongya/iSparta-next/releases',

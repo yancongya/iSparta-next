@@ -12,7 +12,7 @@
       <p v-if="needsGatekeeperHint" class="upd__hint">{{ $t('updateMacHint') }}</p>
       <div class="upd__notes">
         <p class="upd__notes-title">{{ $t('updateNotesTitle') }}</p>
-        <pre v-if="notes" class="upd__notes-body">{{ notes }}</pre>
+        <div v-if="notes" class="upd__notes-body">{{ notes }}</div>
         <p v-else class="upd__notes-empty">{{ $t('updateNotesEmpty') }}</p>
       </div>
       <div v-if="autoSupported && autoDownloading" class="upd__progress-block">
