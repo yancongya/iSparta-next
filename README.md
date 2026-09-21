@@ -18,11 +18,17 @@
 ### 更新检查与自动更新
 
 - 应用启动后会向 **GitHub Releases** 发起一次版本检查（仅携带版本号与系统类型，不上传个人数据）；可在 **默认设置 → 自动检查更新** 中关闭。
-- 发现新版本时弹窗展示 **更新说明**（来自该 Release 的 body），并可跳转下载。
-- **Windows（NSIS 安装版）/ Linux（AppImage）** 支持应用内自动更新：后台下载完成后提示「重启以更新」。
-- **macOS** 安装包未签名，不支持自动更新：下载 zip 后解压覆盖；若提示已损坏，打开 **系统设置 → 隐私与安全性 → 仍要打开**。
-- 架构、限制与测试入口：[`docs/UPDATER.md`](docs/UPDATER.md)；发版步骤：[`docs/RELEASE.md`](docs/RELEASE.md)。
+- 发现新版本时在**应用内右下角**弹出非阻断提示（Dock）：可查看详情说明，点 **立即更新** 后再下载；下载完成后提示 **重启以更新**。手动「检查更新」会打开完整说明对话框。
+- **Windows（NSIS 安装版）/ Linux（AppImage）** 支持应用内自动更新通道；**macOS** 未签名，下载 zip 后解压覆盖（系统设置 → 隐私与安全性 → 仍要打开）。
+- 架构、限制与测试入口：[`docs/UPDATER.md`](docs/UPDATER.md)；发版步骤：[`docs/RELEASE.md`](docs/RELEASE.md)；版本摘要：[`docs/CHANGELOG.md`](docs/CHANGELOG.md)。
 - Windows 免费开源签名申请步骤见 [docs/SIGNPATH.md](docs/SIGNPATH.md)。
+
+### 近期体验更新（v3.3.9+）
+
+- 列表：空白拖拽**框选**、双击全选、单击取消、Delete 删除所选；运行中右键可终止/删除。
+- 多选时右侧仍显示**完整共享输出设置**，输出名可逐项**拆词**；路径/质量等写入所有选中任务。
+- 底栏快捷键收为键盘图标展开说明；中栏提供删除所选；品牌图标与站点 favicon 已统一。
+- 详细版本摘要见 [`docs/CHANGELOG.md`](docs/CHANGELOG.md)。
 
 ### 适合这些场景
 

@@ -18,8 +18,8 @@
 
 **图标唯一源**：`public/icons/icon-brand.svg`（品牌色 `#c8f542` + 深色播放标，**无文字**，图形居中并占满画布约 92%）。改 SVG 后再生成 png/ico/icns；同步：
 
-- 应用：`public/icons/icon.png|ico|icns` + 多尺寸 png  
-- Web：`public/favicon.ico`、`public/favicon.svg`、`public/index.html` 引用  
+- 应用：`public/icons/icon.png|ico|icns` + 多尺寸 png
+- Web：`public/favicon.ico`、`public/favicon.svg`、`public/index.html` 引用
 - 落地页：`landing/assets/icon.png`（`landing/index.html` 的 `rel=icon`）
 
 ## 2. Commit 与 Release 必须分开
@@ -80,7 +80,7 @@ feat(list): 空白处框选任务；Delete 删除所选
 # 等价：gh workflow run release.yml -R yancongya/iSparta-next -f bump=patch …
 ```
 
-CI：`release.yml` 负责 bump、打包、挂 Release；`build.yml` 仅日常构建 Artifact；`pages.yml` 部署落地页。若 workflow 自动汇总的 notes 与上述结构不一致，应在 workflow 里套模板，而不是让维护者每次手写全文。
+CI：`release.yml` 负责 bump、打包、挂 Release（notes 模板见该 workflow）；`build.yml` 仅日常构建 Artifact；`pages.yml` 部署落地页。
 
 ## 3. 更新体验（产品约定）
 
@@ -94,19 +94,42 @@ CI：`release.yml` 负责 bump、打包、挂 Release；`build.yml` 仅日常构
 - 右键：运行中可 **终止任务**；**删除项目** 运行中也可用
 - `Delete` / `Backspace`：删除所选（非输入框）
 - `Ctrl+A`：全选；空白 **单击** 取消选择，**双击** 全选
-- 空白 **拖拽**：框选任务
-- 底栏快捷键常驻键帽已改为 **键盘图标** 点开说明
+- 空白 **拖拽**：框选任务（`user-select:none` + preventDefault，避免选中文字/缩略图）
+- 底栏快捷键为 **键盘图标** 点开说明；全局设置与**删除所选**在中栏
 
-## 5. Agent 行为
+## 5. 输出设置（产品约定）
 
-- 先搜代码/文档/脚本再改；架构与交互以本文、`docs/UPDATER.md`、`docs/RELEASE.md` 为准
+- 多选：右侧仍显示完整设置；顶部横幅「已选 N 项」；路径/质量/格式/阈值等**共享**写入所有选中项
+- 输出名：多选时**多行**分别编辑，支持与单选相同的**拆词**与「只留文字」
+- 参数区尽量**两列对齐**（label / 输入 / info 图标同一节奏）
+
+## 6. 设置说明文案（强制）
+
+- **设置说明只维护一份**：`src/locales/*` 里的 `*Tip` 键
+- 默认设置（globalSetting）与输出设置（setting）的 info 图标**必须**引用同一 `$t('xxxTip')`
+- 禁止两边各写一份文案；禁止把单位（如「次」）当 tip
+- 大小阈值 tip：`sizeLimitEnableTip` / `sizeLimitMaxTip` / `sizeLimitAutoQualityTip` / `sizeLimitAutoDeleteTip` / `sizeLimitStepTip` / `sizeLimitTriesTip`；单位用 `sizeLimitUnitTimes`
+- Floyd / 质量：`floydTip` / `qualityTip`
+
+## 7. 文档与变更记录
+
+- **重要版本摘要**维护在 [`docs/CHANGELOG.md`](docs/CHANGELOG.md)（中文单语）：抽取关键 `feat`/`fix` commit 与 Release 结果，按版本写「用户可感知」短列表；不要粘贴琐碎 chore
+- **README**（`README.md` / `README.en.md`）只保留：产品能力、更新机制、近期体验要点、文档链接；细节放 CHANGELOG / UPDATER，避免与 CHANGELOG 整段重复
+- 新发版若含**用户可见**变化：更新 CHANGELOG 对应版本段 → 同步 README 中已过时描述 → 再 push；功能 commit 与 `docs` commit 可分开
+
+## 8. Agent 行为
+
+- 先搜代码/文档/脚本再改；架构与交互以本文、`docs/UPDATER.md`、`docs/RELEASE.md`、`docs/CHANGELOG.md` 为准
 - 优先 `scripts\` 与 `npm run *`；不要为 lint/发版/图标另起临时流程
 - 主树（`master`）大范围写入前按会话规则确认 worktree；发版后 `git pull` 同步 bump
-- 完成后：lint 通过 → commit（规范见上）→ 需要发版时用 `release.ps1`
+- 完成后：lint 通过 → commit（规范见上）→ 更新 CHANGELOG/README（如有用户可见变化）→ 需要发版时用 `release.ps1` / `release.yml`
 
-## 6. 交互补充约定
+## 9. 文档索引
 
-- 多选时右侧仍显示完整输出设置：顶部横幅标明「已选 N 项」；路径/质量/格式/阈值等**共享**写入所有选中项；**输出名**按条目多行分别编辑
-- 右侧面板底部不再放全局设置/删除；全局设置与**删除所选**在中栏工具条
-- 框选：列表 `user-select:none`，mousedown preventDefault，避免拖选文字/缩略图
-- Web favicon / 落地页 icon / 桌面 icon 同源 `public/icons/icon-brand.svg`
+| 文档 | 用途 |
+| --- | --- |
+| `AGENTS.md` | 开发约定（本文） |
+| `docs/CHANGELOG.md` | 版本摘要（中文） |
+| `docs/UPDATER.md` | 更新检查 / 自动更新现状 |
+| `docs/RELEASE.md` | 发版操作 |
+| `README.md` | 中文产品说明 |

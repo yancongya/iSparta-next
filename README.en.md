@@ -14,13 +14,15 @@
 > Product page: **[https://yancongya.github.io/iSparta-next/](https://yancongya.github.io/iSparta-next/)**  
 > Stack: Electron 28 + Vue 2 · Platforms: Windows / macOS / Linux  
 >  
-> **Docs:** [Update & auto-update (current)](docs/UPDATER.md) · [Release process](docs/RELEASE.md) · [SEO checklist](docs/SEO_SUBMIT.md)
+> **Docs:** [Update & auto-update (current)](docs/UPDATER.md) · [Release process](docs/RELEASE.md) · [Changelog](docs/CHANGELOG.md) · [SEO checklist](docs/SEO_SUBMIT.md)
 
 ### Updates & auto-update
 
-On startup the app checks GitHub Releases (version + OS type only; you can turn this off in **Settings → Automatic update check**). Release notes appear in a non-blocking dialog.
+On startup the app checks GitHub Releases (version + OS type only; you can turn this off in **Settings → Automatic update check**). A non-blocking in-app corner toast (dock) appears when an update exists; click **Update now** to download, then **Restart to update**. Manual **Check for updates** opens a full notes dialog.
 
-- **Windows (NSIS installer) / Linux (AppImage):** in-app auto-update — background download, then **Restart to update**
+- **Windows (NSIS installer) / Linux (AppImage):** in-app auto-update channel after you confirm download
+- **macOS:** unsigned zip — extract over the app; if macOS blocks it, **System Settings → Privacy & Security → Open Anyway**
+- Docs: [UPDATER.md](docs/UPDATER.md) · [RELEASE.md](docs/RELEASE.md) · [CHANGELOG.md](docs/CHANGELOG.md)
 - **macOS (unsigned zip):** manual download and replace; see Release notes for Gatekeeper
 - Architecture and limitations: **[docs/UPDATER.md](docs/UPDATER.md)**
 
