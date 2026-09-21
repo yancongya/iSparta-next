@@ -21,7 +21,9 @@ module.exports = {
     "outputName": "Output name",
     "outputFormat": "Output format",
     "compressionQuality": "Compression quality",
-    "floyd": "Floyd dithering",
+    "floyd": "Dithering",
+    "floydTip": "Floyd–Steinberg dither strength for color reduction (0–1). Higher keeps gradients smoother and may enlarge the file; 0 nearly disables dithering and can band.",
+    "qualityTip": "Compression quality 0–100. Lower means smaller files and more loss; only applied when compression is enabled.",
     "start": "Start",
     "times": "times",
     "needOneFormat":"Pick at least one output format",
@@ -76,7 +78,9 @@ module.exports = {
     "sizeLimitEnable": "Enable size limit",
     "sizeLimitMax": "Limit",
     "sizeLimitAutoQuality": "Auto lower quality if over",
+    "sizeLimitAutoQualityTip": "If output exceeds the limit, automatically lower compression quality and retry to keep the file within the cap.",
     "sizeLimitAutoDelete": "Auto delete if over",
+    "sizeLimitAutoDeleteTip": "If still over the limit, automatically delete that output so an oversized file is not left behind.",
     "sizeLimitStep": "Quality step",
     "sizeLimitTries": "Max retries",
     "sizeLimitTriesTip": "tries",
@@ -189,5 +193,10 @@ module.exports = {
     "updateDownloading":"Downloading update in the background…",
     "updateDownloaded":"Update downloaded. Restart to apply.",
     "updateAutoUnsupported":"Auto-update isn't available for this install. Use Download instead.",
-    "updateAutoDev":"Dev preview (npm run dev) does not auto-update. Packaged Windows NSIS and Linux AppImage builds can. Use Download for now."
+    "updateAutoDev":"Dev preview (npm run dev) does not auto-update. Packaged Windows NSIS and Linux AppImage builds can. Use Download for now.",
+    "updateDockDetails":"View details",
+    "updateDockUpdate":"Update now",
+    "updateDockContinue":"You can keep using the app",
+    "updateReadyTitle":"Update ready",
+    "updateDownloadFailed":"Update download failed"
 }

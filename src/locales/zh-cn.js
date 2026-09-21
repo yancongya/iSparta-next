@@ -21,7 +21,9 @@ module.exports = {
     "outputName": "输出名字",
     "outputFormat": "输出格式",
     "compressionQuality": "压缩质量",
-    "floyd": "Floyd 抖动",
+    "floyd": "抖动",
+    "floydTip": "减色时的 Floyd–Steinberg 抖动强度（0–1）。越大渐变越自然，文件可能略大；0 接近不抖动，易出色带。",
+    "qualityTip": "压缩质量 0–100。数值越低体积越小、画质损失越大；需启用压缩后才会传给编码器。",
     "start": "开始",
     "times": "次",
     "needOneFormat":"至少选择一种输出格式",
@@ -76,7 +78,9 @@ module.exports = {
     "sizeLimitEnable":"启用大小阈值",
     "sizeLimitMax":"阈值",
     "sizeLimitAutoQuality":"超出后自动降质量",
+    "sizeLimitAutoQualityTip":"输出超过阈值时，自动降低压缩质量再重试，尽量在限制内保留文件。",
     "sizeLimitAutoDelete":"超出后自动删除",
+    "sizeLimitAutoDeleteTip":"仍超出阈值时，自动删除该输出文件，避免留下过大结果。",
     "sizeLimitStep":"每次递减",
     "sizeLimitTries":"最多重试",
     "sizeLimitTriesTip":"次",
@@ -189,5 +193,10 @@ module.exports = {
     "updateDownloading":"正在后台下载更新…",
     "updateDownloaded":"更新包已下载完成，重启后即可生效。",
     "updateAutoUnsupported":"当前安装形态不支持自动更新，请使用「前往下载」。",
-    "updateAutoDev":"开发预览模式（npm run dev）不走自动更新。正式版 Windows 安装包与 Linux AppImage 安装后可自动更新；此处请用「前往下载」。"
+    "updateAutoDev":"开发预览模式（npm run dev）不走自动更新。正式版 Windows 安装包与 Linux AppImage 安装后可自动更新；此处请用「前往下载」。",
+    "updateDockDetails":"查看说明",
+    "updateDockUpdate":"立即更新",
+    "updateDockContinue":"可继续使用应用",
+    "updateReadyTitle":"更新已就绪",
+    "updateDownloadFailed":"更新下载失败"
 }

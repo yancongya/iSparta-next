@@ -12,6 +12,7 @@
   },
   "scripts": {
     "dev": "vue-cli-service electron:serve",
+    "serve": "vue-cli-service serve --port 8081",
     "build": "vue-cli-service electron:build -mwl ",
     "build:windows": "vue-cli-service electron:build --windows",
     "lint": "vue-cli-service lint",

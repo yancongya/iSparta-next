@@ -140,6 +140,15 @@
     </transition>
 
     <is-log-panel :visible="logOpen" @close="logOpen = false" />
+    <is-update-dock
+      :visible="updateDockVisible"
+      :result="updateResult"
+      :auto="updateAuto"
+      @later="onUpdateDockLater"
+      @details="onUpdateDockDetails"
+      @update="onUpdateDockUpdate"
+      @restart="onUpdateRestart"
+    />
     <is-update-dialog
       :visible="updateDialogVisible"
       :result="updateResult"
@@ -160,6 +169,7 @@ import globalSetting from '../../components/globalSetting/globalSetting.vue'
 import IsNoticeHost from '../components/IsNoticeHost.vue'
 import IsLogPanel from '../components/IsLogPanel.vue'
 import IsUpdateDialog from '../components/IsUpdateDialog.vue'
+import IsUpdateDock from '../components/IsUpdateDock.vue'
 import appLog from '../log'
 import { f as fsOperate } from '../../components/drag/file.js'
 import { naturalSort } from '../../util/sort'
@@ -191,7 +201,8 @@ export default {
     'globalsetting': globalSetting,
     'is-notice-host': IsNoticeHost,
     'is-log-panel': IsLogPanel,
-    'is-update-dialog': IsUpdateDialog
+    'is-update-dialog': IsUpdateDialog,
+    'is-update-dock': IsUpdateDock
   },
   data () {
     return {
@@ -221,6 +232,9 @@ export default {
     },
     updateDialogVisible () {
       return !!(this.updateState && this.updateState.dialogVisible)
+    },
+    updateDockVisible () {
+      return !!(this.updateState && this.updateState.dockVisible)
     },
     updateResult () {
       return (this.updateState && this.updateState.lastResult) || null
@@ -326,6 +340,15 @@ export default {
     onUpdateDownload () {
       updateService.openDownload(this.updateResult)
       updateService.markLater(this.updateResult && this.updateResult.latest)
+    },
+    onUpdateDockLater () {
+      updateService.markLater(this.updateResult && this.updateResult.latest)
+    },
+    onUpdateDockDetails () {
+      updateService.openUpdateDialog()
+    },
+    onUpdateDockUpdate () {
+      updateService.startUpdateFromDock(this.updateResult)
     },
     onUpdateRestart () {
       updateService.restartToUpdate()

@@ -30,14 +30,30 @@
         <is-form-item :label="$t('filenameSuffix')">
           <is-input v-model="setting.options.outputSuffix" class="is-input--fluid" :maxlength="10" />
         </is-form-item>
-        <is-form-item :label="$t('floyd')">
-          <is-input v-model="setting.options.floyd.value" type="number" class="w-80" :max="1" :min="0" step="0.05" number />
-          <em class="hint">0-1</em>
-        </is-form-item>
-        <is-form-item :label="$t('compressionQuality')">
-          <is-input v-model="setting.options.quality.value" type="number" class="w-80" :max="100" :min="0" number />
-          <em class="hint">0-100</em>
-        </is-form-item>
+        <div class="gs-pair">
+          <div class="gs-pair__cell">
+            <span class="gs-pair__label">
+              {{ $t('floyd') }}
+              <button type="button" class="is-info" :aria-label="$t('floyd')" v-tip="$t('floydTip')">
+                <is-icon name="info" size="sm" />
+              </button>
+            </span>
+            <div class="gs-pair__ctrl">
+              <is-input v-model="setting.options.floyd.value" type="number" class="w-80" :max="1" :min="0" step="0.05" number />
+            </div>
+          </div>
+          <div class="gs-pair__cell">
+            <span class="gs-pair__label">
+              {{ $t('compressionQuality') }}
+              <button type="button" class="is-info" :aria-label="$t('compressionQuality')" v-tip="$t('qualityTip')">
+                <is-icon name="info" size="sm" />
+              </button>
+            </span>
+            <div class="gs-pair__ctrl">
+              <is-input v-model="setting.options.quality.value" type="number" class="w-80" :max="100" :min="0" number />
+            </div>
+          </div>
+        </div>
 
         <div class="gs-split"></div>
 
@@ -96,56 +112,101 @@
           <is-switch v-model="setting.options.sizeLimit.enabled" />
         </is-form-item>
         <is-form-item :label="$t('sizeLimitMax')">
-          <is-input
-            class="w-80"
-            :value="sizeDraft !== null ? sizeDraft : sizeValueText"
-            inputmode="decimal"
-            placeholder="1"
-            @focus="onSizeFocus"
-            @input="onSizeDraftInput"
-            @blur="onSizeBlur"
-          />
-          <is-segmented v-model="sizeUnit" :options="['MB', 'KB']" size="sm" />
+          <div class="gs-size-row">
+            <is-input
+              class="w-80"
+              :value="sizeDraft !== null ? sizeDraft : sizeValueText"
+              inputmode="decimal"
+              placeholder="1"
+              @focus="onSizeFocus"
+              @input="onSizeDraftInput"
+              @blur="onSizeBlur"
+            />
+            <is-segmented v-model="sizeUnit" :options="['MB', 'KB']" size="sm" />
+          </div>
         </is-form-item>
-        <is-form-item :label="$t('sizeLimitAutoQuality')">
-          <is-switch v-model="setting.options.sizeLimit.autoQuality" />
-        </is-form-item>
-        <is-form-item :label="$t('sizeLimitAutoDelete')">
-          <is-switch v-model="setting.options.sizeLimit.autoDelete" />
-        </is-form-item>
-        <is-form-item v-if="setting.options.sizeLimit.autoQuality" :label="$t('sizeLimitStep')">
-          <is-input v-model="setting.options.sizeLimit.step" type="number" class="w-80" :max="100" :min="1" number />
-        </is-form-item>
-        <is-form-item v-if="setting.options.sizeLimit.autoQuality" :label="$t('sizeLimitTries')">
-          <is-input v-model="setting.options.sizeLimit.maxTries" type="number" class="w-80" :max="50" :min="1" number />
-          <em class="hint">{{ $t('sizeLimitTriesTip') }}</em>
-        </is-form-item>
+
+        <div class="gs-pair">
+          <div class="gs-pair__cell">
+            <span class="gs-pair__label">
+              {{ $t('sizeLimitAutoQuality') }}
+              <button type="button" class="is-info" :aria-label="$t('sizeLimitAutoQuality')" v-tip="$t('sizeLimitAutoQualityTip')">
+                <is-icon name="info" size="sm" />
+              </button>
+            </span>
+            <div class="gs-pair__ctrl">
+              <is-switch v-model="setting.options.sizeLimit.autoQuality" />
+            </div>
+          </div>
+          <div class="gs-pair__cell">
+            <span class="gs-pair__label">
+              {{ $t('sizeLimitAutoDelete') }}
+              <button type="button" class="is-info" :aria-label="$t('sizeLimitAutoDelete')" v-tip="$t('sizeLimitAutoDeleteTip')">
+                <is-icon name="info" size="sm" />
+              </button>
+            </span>
+            <div class="gs-pair__ctrl">
+              <is-switch v-model="setting.options.sizeLimit.autoDelete" />
+            </div>
+          </div>
+        </div>
+
+        <div v-if="setting.options.sizeLimit.autoQuality" class="gs-pair">
+          <div class="gs-pair__cell">
+            <span class="gs-pair__label">{{ $t('sizeLimitStep') }}</span>
+            <div class="gs-pair__ctrl">
+              <is-input v-model="setting.options.sizeLimit.step" type="number" class="w-80" :max="100" :min="1" number />
+            </div>
+          </div>
+          <div class="gs-pair__cell">
+            <span class="gs-pair__label">{{ $t('sizeLimitTries') }}</span>
+            <div class="gs-pair__ctrl">
+              <is-input v-model="setting.options.sizeLimit.maxTries" type="number" class="w-80" :max="50" :min="1" number />
+              <span class="unit">{{ $t('sizeLimitTriesTip') }}</span>
+            </div>
+          </div>
+        </div>
 
         <div class="gs-split"></div>
 
         <!-- 关于 / 更新检查：应用级信息，不放在任务输出设置面板 -->
-        <is-form-item :label="$t('aboutVersion')">
-          <span class="gs-version">v{{ appVersion || '—' }}</span>
-        </is-form-item>
-        <is-form-item :label="$t('updateCheckNow')">
-          <is-button size="sm" :loading="updateChecking" @click="onCheckUpdate">
-            {{ updateChecking ? $t('updateChecking') : $t('updateCheckNow') }}
-          </is-button>
-        </is-form-item>
+        <div class="gs-pair">
+          <div class="gs-pair__cell">
+            <span class="gs-pair__label">{{ $t('aboutVersion') }}</span>
+            <div class="gs-pair__ctrl">
+              <span class="gs-version">v{{ appVersion || '—' }}</span>
+            </div>
+          </div>
+          <div class="gs-pair__cell">
+            <span class="gs-pair__label">{{ $t('updateCheckNow') }}</span>
+            <div class="gs-pair__ctrl">
+              <is-button size="sm" :loading="updateChecking" @click="onCheckUpdate">
+                {{ updateChecking ? $t('updateChecking') : $t('updateCheckNow') }}
+              </is-button>
+            </div>
+          </div>
+        </div>
         <is-form-item :label="$t('updateAutoCheck')">
           <is-switch v-model="updateEnabled" />
           <em class="hint">{{ $t('updatePrivacyTip') }}</em>
         </is-form-item>
         <is-form-item v-if="updateAutoSupported" :label="$t('updateRestartNow')">
-          <is-button
-            v-if="updateAutoDownloaded"
-            size="sm"
-            type="primary"
-            @click="onRestartUpdate"
-          >{{ $t('updateRestartNow') }}</is-button>
-          <em v-else class="hint">
-            {{ updateAutoDownloading ? $t('updateDownloading') : $t('updateAutoUnsupported') }}
-          </em>
+          <div v-if="updateAutoDownloading || updateAutoDownloaded" class="gs-update-progress">
+            <is-progress
+              :percent="updateAutoProgress"
+              :active="updateAutoDownloading"
+              :done="updateAutoDownloaded"
+              :label="$t('updateDownloading')"
+            />
+            <is-button
+              v-if="updateAutoDownloaded"
+              size="sm"
+              type="primary"
+              @click="onRestartUpdate"
+            >{{ $t('updateRestartNow') }}</is-button>
+            <em v-else class="hint">{{ $t('updateDownloading') }}</em>
+          </div>
+          <em v-else class="hint">{{ $t('updateAutoUnsupported') }}</em>
         </is-form-item>
       </is-form>
 
@@ -173,6 +234,7 @@ import {
   removeCustomPreset
 } from '../../util/outputPresets'
 import updateService from '../../util/updateService'
+import IsProgress from '../../ui-next/components/ui/IsProgress.vue'
 import notice from '../../ui-next/notice'
 
 const DEFAULT_SIZE_LIMIT = {
@@ -193,7 +255,7 @@ const DEFAULT_OUTPUT_TO = {
 }
 
 export default {
-  components: { PathVars, IsPresetBar },
+  components: { PathVars, IsPresetBar, IsProgress },
   data () {
     return {
       setting: this.loadSetting(),
@@ -226,6 +288,10 @@ export default {
     updateAutoDownloaded () {
       var a = this.updateUi && this.updateUi.auto
       return !!(a && a.downloaded)
+    },
+    updateAutoProgress () {
+      var a = this.updateUi && this.updateUi.auto
+      return (a && a.progress) || 0
     },
     languages () {
       return [

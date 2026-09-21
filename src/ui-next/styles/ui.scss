@@ -1738,3 +1738,190 @@ body.is-scroll-locked {
   color: var(--is-text-3);
   font-size: var(--is-fs-xs);
 }
+
+.upd__progress-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--is-s-2);
+}
+
+// --------------------------------------------------------------------------
+// 进度条（更新下载等）— 块前缀 is-progress
+// --------------------------------------------------------------------------
+.is-progress {
+  display: flex;
+  align-items: center;
+  gap: var(--is-s-2);
+  width: 100%;
+  min-width: 0;
+
+  &__track {
+    position: relative;
+    flex: 1;
+    height: 6px;
+    border-radius: var(--is-r-pill);
+    background: var(--is-track);
+    overflow: hidden;
+  }
+
+  &__fill {
+    position: relative;
+    height: 100%;
+    border-radius: var(--is-r-pill);
+    background: var(--is-accent);
+    transition: width var(--is-dur-base) var(--is-ease-std);
+    overflow: hidden;
+  }
+
+  &__shimmer {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 40%;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.35),
+      transparent
+    );
+    animation: is-shimmer 1.2s linear infinite;
+  }
+
+  &__pct {
+    flex: none;
+    min-width: 2.4em;
+    color: var(--is-text-2);
+    font-size: var(--is-fs-xs);
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+  }
+
+  &.is-done .is-progress__fill {
+    background: var(--is-ok);
+    animation: is-progress-done var(--is-dur-slow) var(--is-ease-spring);
+  }
+
+  &.is-done .is-progress__pct {
+    color: var(--is-ok-fg);
+  }
+}
+
+// --------------------------------------------------------------------------
+// 更新 Dock（右下角非阻断提示）— 块前缀 is-update-dock
+// --------------------------------------------------------------------------
+.is-update-dock {
+  position: fixed;
+  right: var(--is-s-4);
+  bottom: var(--is-s-4);
+  z-index: calc(var(--is-z-dialog) - 10);
+  display: flex;
+  flex-direction: column;
+  gap: var(--is-s-3);
+  width: 340px;
+  max-width: calc(100vw - var(--is-s-8));
+  padding: var(--is-s-3) var(--is-s-4) var(--is-s-4);
+  border: 1px solid var(--is-border-strong);
+  border-radius: var(--is-r-md);
+  background: var(--is-elevated);
+  box-shadow: var(--is-shadow-md);
+
+  &__head {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--is-s-3);
+  }
+
+  &__icon {
+    flex: none;
+    margin-top: 2px;
+    color: var(--is-text-2);
+  }
+
+  &--available &__icon { color: var(--is-accent); }
+  &--downloaded &__icon { color: var(--is-ok); }
+  &--downloading &__icon { color: var(--is-cool); }
+  &--error &__icon { color: var(--is-bad); }
+
+  &__head-text {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__title {
+    display: block;
+    color: var(--is-text);
+    font-size: var(--is-fs-md);
+    font-weight: var(--is-fw-semi);
+  }
+
+  &__sub {
+    margin: 2px 0 0;
+    color: var(--is-text-2);
+    font-size: var(--is-fs-sm);
+    line-height: 1.45;
+    word-break: break-word;
+  }
+
+  &__close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: 22px;
+    height: 22px;
+    margin: -2px -4px 0 0;
+    padding: 0;
+    border: none;
+    border-radius: var(--is-r-xs);
+    background: transparent;
+    color: var(--is-text-3);
+    cursor: pointer;
+
+    &:hover {
+      background: var(--is-hover);
+      color: var(--is-text);
+    }
+  }
+
+  &__progress {
+    margin-top: 0;
+  }
+
+  &__acts {
+    display: flex;
+    align-items: center;
+    gap: var(--is-s-1);
+  }
+
+  &__spacer {
+    flex: 1;
+  }
+}
+
+.is-update-dock-enter-active {
+  transition: transform var(--is-dur-slow) var(--is-ease-overshoot),
+    opacity var(--is-dur-base) var(--is-ease-out);
+}
+
+.is-update-dock-leave-active {
+  transition: transform var(--is-dur-base) var(--is-ease-std),
+    opacity var(--is-dur-base) var(--is-ease-std);
+}
+
+.is-update-dock-enter {
+  opacity: 0;
+  transform: translateY(16px) scale(0.96);
+}
+
+.is-update-dock-leave-to {
+  opacity: 0;
+  transform: translateY(8px) scale(0.98);
+}
+
+// 默认设置里「下载更新」进度块
+.gs-update-progress {
+  display: flex;
+  flex-direction: column;
+  gap: var(--is-s-2);
+  width: 100%;
+  min-width: 0;
+}

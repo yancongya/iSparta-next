@@ -47,6 +47,53 @@
     width: 112px;
     flex-basis: 112px;
   }
+
+  // 双列并排字段：统一「左标签 + 右控件」，与上方 is-form-item 对齐节奏
+  .gs-pair {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: var(--is-s-4);
+    row-gap: var(--is-s-3);
+    margin: 0 0 var(--is-s-4);
+  }
+
+  .gs-pair__cell {
+    display: flex;
+    align-items: center;
+    gap: var(--is-s-2);
+    min-width: 0;
+    min-height: 28px;
+  }
+
+  .gs-pair__label {
+    flex: 0 1 auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    min-width: 0;
+    max-width: 52%;
+    color: var(--is-text-2);
+    font-size: var(--is-fs-sm);
+    line-height: 1.35;
+  }
+
+  .gs-pair__ctrl {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--is-s-2);
+  }
+
+  // 阈值：输入框左、单位切换右对齐
+  .gs-size-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--is-s-3);
+    width: 100%;
+  }
 }
 
 // --------------------------------------------------------------------------

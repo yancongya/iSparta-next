@@ -19,7 +19,9 @@ const state = Vue.observable({
   checking: false,
   meta: null,
   lastResult: null,
+  // 自动检查：右下角非阻断 dock；手动检查/详情：模态 dialog
   dialogVisible: false,
+  dockVisible: false,
   badge: false,
   auto: {
     supported: false,
@@ -99,7 +101,14 @@ export async function runUpdateCheck (opts) {
     if (result.state === 'available' && o.openDialog !== false) {
       var prompt = o.force || shouldAutoPrompt(result, prefsAfter)
       if (prompt) {
-        state.dialogVisible = true
+        // 手动检查或显式要求：开完整 Dialog；自动检查：只出角落 Dock
+        if (o.force || o.openDialog === true) {
+          state.dialogVisible = true
+          state.dockVisible = false
+        } else {
+          state.dockVisible = true
+          state.dialogVisible = false
+        }
         patchUpdatePrefs({ lastNotifiedVersion: result.latest })
         state.lastResult = result
         refreshBadge()
@@ -131,6 +140,15 @@ async function maybeStartAutoDownload () {
 function applyAutoState (snap) {
   if (!snap || typeof snap !== 'object') { return }
   state.auto = Object.assign({}, state.auto, snap)
+  // 下载中 / 已完成：即使用户关过「有新版」卡片，也重新露出 dock（重启 CTA 不能埋掉）
+  if (snap.downloading || snap.downloaded) {
+    var last = state.lastResult
+    var prefs = loadUpdatePrefs()
+    if (last && last.state === 'available' &&
+        !(prefs.skipVersion && prefs.skipVersion === last.latest)) {
+      state.dockVisible = true
+    }
+  }
 }
 
 export async function refreshAutoUpdateState () {
@@ -159,15 +177,40 @@ export function closeUpdateDialog () {
   state.dialogVisible = false
 }
 
+/** 打开完整更新对话框（dock「查看说明」/ 手动检查） */
+export function openUpdateDialog () {
+  state.dialogVisible = true
+  state.dockVisible = false
+}
+
+export function closeUpdateDock () {
+  state.dockVisible = false
+}
+
+/** dock 主操作：支持自动更新则后台下载，否则打开浏览器下载页 */
+export async function startUpdateFromDock (result) {
+  var snap = await ipc.invoke('updater:autoState').catch(function () { return null })
+  applyAutoState(snap)
+  if (state.auto && state.auto.supported) {
+    state.dockVisible = true
+    return maybeStartAutoDownload()
+  }
+  await openDownload(result)
+  markLater(result && result.latest)
+  return null
+}
+
 export function markLater (latest) {
   if (latest) { patchUpdatePrefs({ lastNotifiedVersion: latest }) }
   state.dialogVisible = false
+  state.dockVisible = false
   refreshBadge()
 }
 
 export function markSkipVersion (latest) {
   if (latest) { patchUpdatePrefs({ skipVersion: latest, lastNotifiedVersion: latest }) }
   state.dialogVisible = false
+  state.dockVisible = false
   refreshBadge()
 }
 
@@ -220,6 +263,9 @@ export default {
   state,
   runUpdateCheck,
   closeUpdateDialog,
+  openUpdateDialog,
+  closeUpdateDock,
+  startUpdateFromDock,
   markLater,
   markSkipVersion,
   setUpdateEnabled,

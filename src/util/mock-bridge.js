@@ -137,6 +137,20 @@ function createMockStorage (fs) {
 /* ---------- ipc / childProcess ---------- */
 
 function createMockIpc () {
+  const listeners = {}
+
+  function emit (channel, payload) {
+    const list = listeners[channel] || []
+    list.forEach(function (fn) {
+      try { fn(payload) } catch (e) { /* listener error isolated */ }
+    })
+  }
+
+  // 供 __updateSimulate 推送 autoState 到 updateService.bindAutoIpcListener
+  window.__updateEmitAutoState = function (snap) {
+    emit('updater:autoState', snap)
+  }
+
   return {
     invoke: (channel, payload) => {
       // 对话框类返回“用户取消”，与 Electron 真实取消路径一致，UI 已有处理分支
@@ -146,7 +160,7 @@ function createMockIpc () {
       // 更新检查：浏览器调试时用 window.__updateStub 注入任意 Result
       if (channel === 'updater:meta') {
         return Promise.resolve({
-          version: '3.3.4',
+          version: '3.3.8',
           platform: 'win32',
           arch: 'x64',
           forcedVersion: ''
@@ -155,8 +169,8 @@ function createMockIpc () {
       if (channel === 'updater:check') {
         const stub = (typeof window !== 'undefined' && window.__updateStub) || {
           state: 'latest',
-          current: '3.3.4',
-          latest: '3.3.4',
+          current: '3.3.8',
+          latest: '3.3.8',
           notes: null,
           artifactName: 'isparta-next-win-x64.exe',
           downloadUrl: 'https://github.com/yancongya/iSparta-next/releases/latest/download/isparta-next-win-x64.exe',
@@ -167,7 +181,7 @@ function createMockIpc () {
           assetMissing: false
         }
         return Promise.resolve(Object.assign({
-          current: '3.3.4',
+          current: '3.3.8',
           checkedAt: Date.now(),
           throttled: false,
           assetMissing: false
@@ -183,11 +197,18 @@ function createMockIpc () {
           downloaded: false,
           progress: 0,
           error: null,
-          version: null
+          version: null,
+          reason: 'dev'
         }
         if (channel === 'updater:autoState') { return Promise.resolve(autoStub) }
-        if (channel === 'updater:autoDownload') { return Promise.resolve({ ok: true, state: autoStub }) }
-        return Promise.resolve({ ok: !!autoStub.downloaded })
+        if (channel === 'updater:autoDownload') {
+          // 浏览器模拟：若已注入 supported 的 auto stub，则启动进度模拟
+          if (autoStub.supported && window.__updateSimulate) {
+            window.__updateSimulate('download')
+          }
+          return Promise.resolve({ ok: true, state: window.__updateAutoStub || autoStub })
+        }
+        return Promise.resolve({ ok: !!(window.__updateAutoStub && window.__updateAutoStub.downloaded) })
       }
       if (channel === 'shell:openExternal') {
         // eslint-disable-next-line no-console
@@ -202,7 +223,11 @@ function createMockIpc () {
       // eslint-disable-next-line no-console
       console.debug('[mock-ipc] send (no-op):', channel)
     },
-    on: () => {}
+    on: (channel, fn) => {
+      if (!channel || typeof fn !== 'function') { return }
+      if (!listeners[channel]) { listeners[channel] = [] }
+      listeners[channel].push(fn)
+    }
   }
 }
 
@@ -294,8 +319,129 @@ function installMockBridge () {
     console.info('[mock] 已清空，刷新页面将重新播种')
   }
 
+  // 浏览器调试：注入更新状态，用于预览右下角 Dock / 进度 UI
+  //   window.__updateStub     — Result（state/latest/notes…）
+  //   window.__updateAutoStub — electron-updater 状态快照
+  //   window.__updateSimulate('available'|'download'|'done'|'error'|'clear')
+  window.__updateSimulate = function (mode) {
+    // 预览前清掉节流/已通知，保证 dock 会弹
+    try {
+      storage.setItem('updateCheck', JSON.stringify({
+        enabled: true,
+        autoDownload: true,
+        autoInstallOnAppQuit: false,
+        lastAt: 0,
+        skipVersion: '',
+        lastNotifiedVersion: '',
+        lastResult: null
+      }))
+    } catch (e) { /* ignore */ }
+    const base = {
+      state: 'available',
+      current: '3.3.8',
+      latest: '3.3.9',
+      notes: '### 功能\n- 新增应用内更新 Dock\n- 下载进度可视化\n### 修复\n- 修复列表偶发排序错位',
+      artifactName: 'isparta-next-win-x64.exe',
+      downloadUrl: 'https://github.com/yancongya/iSparta-next/releases/latest/download/isparta-next-win-x64.exe',
+      fallbackUrl: 'https://github.com/yancongya/iSparta-next/releases',
+      needsGatekeeperHint: false,
+      checkedAt: Date.now(),
+      throttled: false,
+      assetMissing: false
+    }
+    if (mode === 'clear') {
+      window.__updateStub = Object.assign({}, base, { state: 'latest', latest: '3.3.8' })
+      window.__updateAutoStub = {
+        supported: false,
+        checking: false,
+        downloading: false,
+        downloaded: false,
+        progress: 0,
+        error: null,
+        version: null,
+        reason: 'dev'
+      }
+      return
+    }
+    if (mode === 'error') {
+      window.__updateStub = Object.assign({}, base)
+      window.__updateAutoStub = {
+        supported: true,
+        checking: false,
+        downloading: false,
+        downloaded: false,
+        progress: 12,
+        error: 'network',
+        version: '3.3.9',
+        reason: 'ok'
+      }
+      return
+    }
+    if (mode === 'done') {
+      window.__updateStub = Object.assign({}, base)
+      window.__updateAutoStub = {
+        supported: true,
+        checking: false,
+        downloading: false,
+        downloaded: true,
+        progress: 100,
+        error: null,
+        version: '3.3.9',
+        reason: 'ok'
+      }
+      return
+    }
+    if (mode === 'download') {
+      window.__updateStub = Object.assign({}, base)
+      window.__updateAutoStub = {
+        supported: true,
+        checking: false,
+        downloading: true,
+        downloaded: false,
+        progress: 36,
+        error: null,
+        version: '3.3.9',
+        reason: 'ok'
+      }
+      // 模拟进度推进
+      if (window.__updateProgressTimer) { clearInterval(window.__updateProgressTimer) }
+      window.__updateProgressTimer = setInterval(function () {
+        const s = window.__updateAutoStub
+        if (!s || !s.downloading) {
+          clearInterval(window.__updateProgressTimer)
+          window.__updateProgressTimer = null
+          return
+        }
+        s.progress = Math.min(100, (s.progress || 0) + 7)
+        if (s.progress >= 100) {
+          s.downloading = false
+          s.downloaded = true
+          clearInterval(window.__updateProgressTimer)
+          window.__updateProgressTimer = null
+        }
+        if (typeof window.__updateEmitAutoState === 'function') {
+          window.__updateEmitAutoState(s)
+        }
+      }, 400)
+      return
+    }
+    // available
+    window.__updateStub = Object.assign({}, base)
+    window.__updateAutoStub = {
+      supported: false,
+      checking: false,
+      downloading: false,
+      downloaded: false,
+      progress: 0,
+      error: null,
+      version: null,
+      reason: 'dev'
+    }
+  }
+
   // eslint-disable-next-line no-console
   console.info('[mock-bridge] 浏览器调试桥已启用（Electron 下自动失效）')
+  console.info('[mock-bridge] 更新 UI 预览：先 window.__updateSimulate("available")，再在应用内触发检查，或调用 updateService')
 }
 
 // 生产构建或 Electron（preload 已注入）时不做任何事

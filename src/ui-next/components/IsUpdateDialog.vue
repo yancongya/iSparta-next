@@ -15,11 +15,18 @@
         <pre v-if="notes" class="upd__notes-body">{{ notes }}</pre>
         <p v-else class="upd__notes-empty">{{ $t('updateNotesEmpty') }}</p>
       </div>
-      <p v-if="autoSupported && autoDownloaded" class="upd__hint">{{ $t('updateDownloaded') }}</p>
-      <p v-else-if="autoSupported && autoDownloading" class="upd__hint">
-        {{ $t('updateDownloading') }}
-        <span v-if="autoProgress > 0"> {{ Math.round(autoProgress) }}%</span>
-      </p>
+      <div v-if="autoSupported && autoDownloading" class="upd__progress-block">
+        <p class="upd__hint">{{ $t('updateDownloading') }}</p>
+        <is-progress
+          :percent="autoProgress"
+          :active="true"
+          :label="$t('updateDownloading')"
+        />
+      </div>
+      <div v-else-if="autoSupported && autoDownloaded" class="upd__progress-block">
+        <p class="upd__hint">{{ $t('updateDownloaded') }}</p>
+        <is-progress :percent="100" :done="true" :show-percent="true" :label="$t('updateDownloaded')" />
+      </div>
       <p v-else-if="autoReason === 'dev'" class="upd__hint upd__hint--muted">{{ $t('updateAutoDev') }}</p>
       <p v-else-if="!autoSupported" class="upd__hint upd__hint--muted">{{ $t('updateAutoUnsupported') }}</p>
     </div>
@@ -42,10 +49,11 @@
 
 <script>
 import IsDialog from './ui/IsDialog.vue'
+import IsProgress from './ui/IsProgress.vue'
 
 export default {
   name: 'IsUpdateDialog',
-  components: { IsDialog },
+  components: { IsDialog, IsProgress },
   props: {
     visible: { type: Boolean, default: false },
     result: { type: Object, default: null },
