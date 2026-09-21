@@ -219,7 +219,12 @@
       <div class="mod-form__group">
         <div class="mod-form__capline">
           <p class="mod-form__caption mod-form__caption--flush">{{ $t("sizeLimit") }}</p>
-          <is-switch v-model="sizeEnabled" v-tip="$t('sizeLimitEnable')" />
+          <span class="capline-act">
+            <is-switch v-model="sizeEnabled" />
+            <button type="button" class="is-info" :aria-label="$t('sizeLimitEnable')" v-tip="$t('sizeLimitEnableTip')">
+              <is-icon name="info" size="sm" />
+            </button>
+          </span>
         </div>
 
         <div v-show="sizeEnabled" class="size-limit">
@@ -235,6 +240,9 @@
               @blur="onSizeBlur"
             />
             <is-segmented v-model="sizeUnit" :options="['MB', 'KB']" size="sm" />
+            <button type="button" class="is-info" :aria-label="$t('sizeLimitMax')" v-tip="$t('sizeLimitMaxTip')">
+              <is-icon name="info" size="sm" />
+            </button>
           </div>
           <!-- 两个复选框并为一行 -->
           <div class="size-limit__row size-limit__row--checks">
@@ -252,7 +260,7 @@
                 <div class="mod-form__row">
                   <span class="row-label">{{ $t('sizeLimitStep') }}</span>
                   <is-input v-model="sizeStep" type="number" class="num" :max="100" :min="1" number />
-                  <button type="button" class="is-info" v-tip="'0-100'">
+                  <button type="button" class="is-info" :aria-label="$t('sizeLimitStep')" v-tip="$t('sizeLimitStepTip')">
                     <is-icon name="info" size="sm" />
                   </button>
                 </div>
@@ -261,7 +269,8 @@
                 <div class="mod-form__row">
                   <span class="row-label">{{ $t('sizeLimitTries') }}</span>
                   <is-input v-model="sizeMaxTries" type="number" class="num" :max="50" :min="1" number />
-                  <button type="button" class="is-info" v-tip="$t('sizeLimitTriesTip')">
+                  <span class="unit">{{ $t('sizeLimitUnitTimes') }}</span>
+                  <button type="button" class="is-info" :aria-label="$t('sizeLimitTries')" v-tip="$t('sizeLimitTriesTip')">
                     <is-icon name="info" size="sm" />
                   </button>
                 </div>

@@ -109,7 +109,12 @@
         <div class="gs-split"></div>
 
         <is-form-item :label="$t('sizeLimit')">
-          <is-switch v-model="setting.options.sizeLimit.enabled" />
+          <span class="gs-pair__label">
+            <is-switch v-model="setting.options.sizeLimit.enabled" />
+            <button type="button" class="is-info" :aria-label="$t('sizeLimitEnable')" v-tip="$t('sizeLimitEnableTip')">
+              <is-icon name="info" size="sm" />
+            </button>
+          </span>
         </is-form-item>
         <is-form-item :label="$t('sizeLimitMax')">
           <div class="gs-size-row">
@@ -122,7 +127,12 @@
               @input="onSizeDraftInput"
               @blur="onSizeBlur"
             />
-            <is-segmented v-model="sizeUnit" :options="['MB', 'KB']" size="sm" />
+            <span class="gs-size-row__right">
+              <is-segmented v-model="sizeUnit" :options="['MB', 'KB']" size="sm" />
+              <button type="button" class="is-info" :aria-label="$t('sizeLimitMax')" v-tip="$t('sizeLimitMaxTip')">
+                <is-icon name="info" size="sm" />
+              </button>
+            </span>
           </div>
         </is-form-item>
 
@@ -153,16 +163,26 @@
 
         <div v-if="setting.options.sizeLimit.autoQuality" class="gs-pair">
           <div class="gs-pair__cell">
-            <span class="gs-pair__label">{{ $t('sizeLimitStep') }}</span>
+            <span class="gs-pair__label">
+              {{ $t('sizeLimitStep') }}
+              <button type="button" class="is-info" :aria-label="$t('sizeLimitStep')" v-tip="$t('sizeLimitStepTip')">
+                <is-icon name="info" size="sm" />
+              </button>
+            </span>
             <div class="gs-pair__ctrl">
               <is-input v-model="setting.options.sizeLimit.step" type="number" class="w-80" :max="100" :min="1" number />
             </div>
           </div>
           <div class="gs-pair__cell">
-            <span class="gs-pair__label">{{ $t('sizeLimitTries') }}</span>
+            <span class="gs-pair__label">
+              {{ $t('sizeLimitTries') }}
+              <button type="button" class="is-info" :aria-label="$t('sizeLimitTries')" v-tip="$t('sizeLimitTriesTip')">
+                <is-icon name="info" size="sm" />
+              </button>
+            </span>
             <div class="gs-pair__ctrl">
               <is-input v-model="setting.options.sizeLimit.maxTries" type="number" class="w-80" :max="50" :min="1" number />
-              <span class="unit">{{ $t('sizeLimitTriesTip') }}</span>
+              <span class="unit">{{ $t('sizeLimitUnitTimes') }}</span>
             </div>
           </div>
         </div>

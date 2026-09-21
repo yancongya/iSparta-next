@@ -560,6 +560,12 @@
   .multi-names__row .name-row {
     width: 100%;
   }
+
+  .capline-act {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--is-s-1);
+  }
 }
 
 // --------------------------------------------------------------------------

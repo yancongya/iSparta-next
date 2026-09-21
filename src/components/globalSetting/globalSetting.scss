@@ -94,6 +94,12 @@
     gap: var(--is-s-3);
     width: 100%;
   }
+
+  .gs-size-row__right {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--is-s-2);
+  }
 }
 
 // --------------------------------------------------------------------------
