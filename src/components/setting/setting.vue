@@ -582,6 +582,7 @@ export default {
       this.start(path[0])
     })
     this.syncPathUI()
+    this.syncMultiNameTokens()
   },
   mounted () {
     this._onKey = (e) => { this.pressed = e.key }
