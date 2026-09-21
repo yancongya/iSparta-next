@@ -100,16 +100,73 @@
     }
   }
 
-  .bar-shortcuts {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--is-s-3);
+  .bar-kbd {
+    position: relative;
     flex: none;
     margin-left: auto;
   }
+
+  .bar-kbd__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: var(--is-r-sm);
+    background: transparent;
+    color: var(--is-text-3);
+    cursor: pointer;
+    transition: color var(--is-dur-fast) var(--is-ease-std),
+      background-color var(--is-dur-fast) var(--is-ease-std),
+      border-color var(--is-dur-fast) var(--is-ease-std);
+
+    &:hover,
+    &.is-on {
+      background: var(--is-hover);
+      border-color: var(--is-border);
+      color: var(--is-text);
+    }
+  }
+
+  .bar-kbd__panel {
+    position: absolute;
+    right: 0;
+    bottom: calc(100% + 8px);
+    z-index: var(--is-z-dropdown);
+    min-width: 220px;
+    padding: var(--is-s-2) var(--is-s-3);
+    border: 1px solid var(--is-border-strong);
+    border-radius: var(--is-r-sm);
+    background: var(--is-elevated);
+    box-shadow: var(--is-shadow-md);
+    color: var(--is-text-2);
+    font-size: var(--is-fs-sm);
+  }
+
+  .bar-kbd__row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--is-s-3);
+    padding: 4px 0;
+
+    & + .bar-kbd__row {
+      border-top: 1px solid var(--is-divider);
+    }
+
+    &--plain {
+      display: block;
+      color: var(--is-text-3);
+      line-height: 1.45;
+    }
+  }
 }
 
-// 窄屏优先保住进度与统计，隐藏键帽提示
+// 窄屏仍保留键盘图标（可点开说明），不再常驻键帽
 @media (max-width: 820px) {
-  .mod-bar .bar-shortcuts { display: none; }
+  .mod-bar .bar-kbd__panel {
+    min-width: 200px;
+  }
 }

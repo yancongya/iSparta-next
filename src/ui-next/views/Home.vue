@@ -92,6 +92,18 @@
           <span v-if="updateBadge" class="ib-rail__badge" aria-hidden="true" />
         </button>
 
+        <!-- 删除所选任务：有选中时才可用 -->
+        <button
+          type="button"
+          class="ib-rail__btn ib-rail__btn--danger"
+          :title="$t('shortcutDelete')"
+          :disabled="isLocked || !selectedCount"
+          @click="onDeleteSelected"
+        >
+          <is-icon name="trash" size="sm" />
+          <span v-if="selectedCount" class="ib-rail__count" aria-hidden="true">{{ selectedCount }}</span>
+        </button>
+
         <!-- 运行日志：未读时右上角亮小点，warn/error 才计数，普通 info 不打扰 -->
         <button
           type="button"
@@ -423,6 +435,10 @@ export default {
     openGlobalSetting () {
       this.$root.eventBus.$emit('openGlobalSetting')
     },
+    onDeleteSelected () {
+      if (this.isLocked || !this.selectedCount) return
+      this.$store.dispatch('removeSelectedForce')
+    },
 
     // ---------- 拖拽反馈 ----------
     onDragEnter (e) {
@@ -459,18 +475,27 @@ export default {
 
     // ---------- 快捷键 ----------
     onKeydown (e) {
-      var mod = e.ctrlKey || e.metaKey
-      if (!mod) return
-      // 输入框里要保留 Ctrl+A 的原生全选行为
+      // 输入框里保留原生编辑行为
       if (this.isTyping(e.target)) return
 
+      var mod = e.ctrlKey || e.metaKey
       var key = (e.key || '').toLowerCase()
-      if (key === 'a') {
+
+      if (mod && key === 'a') {
         e.preventDefault()
-        this.$store.dispatch('allSelect')
-      } else if ((key === 'delete' || key === 'backspace') && !this.isLocked) {
+        if (!this.isLocked) this.$store.dispatch('allSelect')
+        return
+      }
+      // Delete / Backspace：删除所选（运行中也可用，走强制移除）
+      if (!mod && (e.key === 'Delete' || e.key === 'Backspace')) {
         e.preventDefault()
-        this.$store.dispatch('remove')
+        if (this.selectedCount) this.$store.dispatch('removeSelectedForce')
+        return
+      }
+      // 兼容旧习惯：Ctrl+Delete
+      if (mod && (key === 'delete' || key === 'backspace')) {
+        e.preventDefault()
+        if (this.selectedCount) this.$store.dispatch('removeSelectedForce')
       }
     },
     onKeyup (e) { this.pressed = e.key },

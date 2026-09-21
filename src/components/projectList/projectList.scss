@@ -7,6 +7,9 @@
   // 撑满滚动区，条目下方的空白才落在本容器上（供取消全选判定）
   min-height: 100%;
   position: relative;
+  // 框选时避免选中列表里的文字/缩略图
+  user-select: none;
+  -webkit-user-select: none;
 
   &__inner {
     // 独立卡片流：每条任务一张卡，间距分隔代替贴底细线
@@ -14,6 +17,16 @@
     flex-direction: column;
     gap: var(--is-s-2);
     padding: var(--is-s-3) var(--is-s-3) var(--is-s-1);
+  }
+
+  // 空白拖拽框选
+  &__marquee {
+    position: absolute;
+    z-index: var(--is-z-sticky);
+    pointer-events: none;
+    border: 1px solid var(--is-accent);
+    border-radius: 2px;
+    background: var(--is-accent-dim);
   }
 
   .item {

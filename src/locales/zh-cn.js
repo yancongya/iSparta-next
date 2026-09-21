@@ -50,6 +50,9 @@ module.exports = {
     "stopItem":"终止任务",
     //multi
     "multiText":"目前为多选状态，使用各自的配置输出",
+    "multiBanner":"已选 {n} 项 · 路径与质量等设置将应用到全部所选任务",
+    "multiNameHint":"（每项可单独命名）",
+    "multiPathHint":"多选时此处为示例路径；生成时各任务按自身文件名解析变量。",
     "batchStart":"批量开始",
     "outputTofolder":"输出到目录",
     "inputItems":"输入的项目",
@@ -153,6 +156,9 @@ module.exports = {
     "expandSettings":"展开输出设置",
     // 快捷键与拖拽
     "shortcutSelectAll":"全选",
+    "shortcutTip":"快捷操作",
+    "shortcutDelete":"删除所选",
+    "shortcutBlankClick":"双击空白全选 · 单击空白取消选择",
     "pasteHint":"或直接粘贴截图",
     "dropToImport":"松手即可导入",
     // 底栏统计

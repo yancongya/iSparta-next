@@ -50,6 +50,9 @@ module.exports = {
     "stopItem":"Stop task",
     //multi
     "multiText":"Multiple items selected — each uses its own settings",
+    "multiBanner":"{n} selected · Path and quality settings apply to all selected tasks",
+    "multiNameHint":"(name each item separately)",
+    "multiPathHint":"Example path for multi-select; each task resolves variables from its own file name.",
     "batchStart":"Batch start",
     "outputTofolder":"Output to folder",
     "inputItems":"Items",
@@ -153,6 +156,9 @@ module.exports = {
     "expandSettings":"Expand output settings",
     // shortcuts & drag
     "shortcutSelectAll":"Select all",
+    "shortcutTip":"Shortcuts",
+    "shortcutDelete":"Delete selected",
+    "shortcutBlankClick":"Double-click blank to select all · click blank to clear",
     "pasteHint":"or paste an image directly",
     "dropToImport":"Drop to import",
     // status bar

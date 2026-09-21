@@ -477,6 +477,57 @@
   }
 }
 
+.mod-setting {
+  .mod-multi-banner {
+    display: flex;
+    align-items: center;
+    gap: var(--is-s-2);
+    margin: var(--is-s-2) var(--is-s-3) 0;
+    padding: var(--is-s-2) var(--is-s-3);
+    border: 1px solid var(--is-border);
+    border-radius: var(--is-r-sm);
+    background: var(--is-accent-soft);
+    color: var(--is-text-2);
+    font-size: var(--is-fs-sm);
+    flex: none;
+  }
+
+  .mod-form__cap-extra {
+    margin-left: var(--is-s-2);
+    color: var(--is-text-3);
+    font-size: var(--is-fs-xs);
+    font-weight: 400;
+  }
+
+  .mod-form__hint {
+    margin: var(--is-s-1) 0 0;
+    color: var(--is-text-3);
+    font-size: var(--is-fs-xs);
+    line-height: 1.45;
+  }
+
+  .multi-names {
+    display: flex;
+    flex-direction: column;
+    gap: var(--is-s-2);
+  }
+
+  .multi-names__row {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .multi-names__meta {
+    color: var(--is-text-3);
+    font-size: var(--is-fs-xs);
+  }
+
+  .multi-names__in {
+    width: 100%;
+  }
+}
+
 // --------------------------------------------------------------------------
 // 输出名行：输入框 + 右侧「只留文字」漏斗按钮
 // --------------------------------------------------------------------------

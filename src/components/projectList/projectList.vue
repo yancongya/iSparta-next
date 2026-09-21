@@ -1,5 +1,10 @@
 <template>
-  <section class="mod-list" @click="onBlankClick">
+  <section
+    class="mod-list"
+    @click="onBlankClick"
+    @dblclick="onBlankDblclick"
+    @mousedown="onListMouseDown"
+  >
     <!-- 注意：不加 appear —— Vue 2 transition-group 初始挂载时 enter-active 类
          不会挂上（enter-to 残留），实测动画不生效且留脏类；stagger 仅在
          「向已有列表追加」的常规 enter 路径上生效（已实测验证） -->
@@ -125,6 +130,13 @@
       </div>
     </transition-group>
 
+    <div
+      v-if="marquee.active && marquee.moved"
+      class="mod-list__marquee"
+      :style="marqueeStyle"
+      aria-hidden="true"
+    ></div>
+
     <dialay-dialog
       v-if="dialogFormVisible"
       :project="delayProject"
@@ -168,7 +180,10 @@ export default {
       thumbCache: {},
       hoverIdx: -1,
       hoverFrame: 0,
-      hoverTimer: null
+      hoverTimer: null,
+      // 空白处框选
+      marquee: { active: false, moved: false, x: 0, y: 0, w: 0, h: 0, startX: 0, startY: 0 },
+      suppressBlankClick: false
     }
   },
 
@@ -184,6 +199,7 @@ export default {
   },
   beforeDestroy () {
     this.stopHover()
+    this.unbindMarquee()
   },
   computed: {
     selectedList () {
@@ -197,6 +213,14 @@ export default {
     },
     isLocked () {
       return this.$store.getters.getterLocked
+    },
+    marqueeStyle () {
+      return {
+        left: this.marquee.x + 'px',
+        top: this.marquee.y + 'px',
+        width: this.marquee.w + 'px',
+        height: this.marquee.h + 'px'
+      }
     }
   },
   methods: {
@@ -383,14 +407,113 @@ export default {
         this.$store.dispatch('singleSelect', index)
       }
     },
-    // 点击列表空白处 = 取消全部选中
+    // 单击列表空白处 = 取消全部选中
     onBlankClick (e) {
+      if (this.suppressBlankClick) {
+        this.suppressBlankClick = false
+        return
+      }
       if (this.isLocked || !this.projectList.length) return
       var t = e.target
       if (!t || !t.closest) return
       // 条目与底部按钮有自己的交互，不算空白
       if (t.closest('.item') || t.closest('.open-folder')) return
       this.$store.dispatch('noneSelect')
+    },
+    // 双击列表空白处 = 全选（dblclick 前会有两次 click，最终状态以全选为准）
+    onBlankDblclick (e) {
+      if (this.isLocked || !this.projectList.length) return
+      var t = e.target
+      if (!t || !t.closest) return
+      if (t.closest('.item') || t.closest('.open-folder')) return
+      this.$store.dispatch('allSelect')
+    },
+    // 空白处按下 → 拖拽框选
+    onListMouseDown (e) {
+      if (this.isLocked || !this.projectList.length) return
+      if (e.button !== 0) return
+      var t = e.target
+      if (!t || !t.closest) return
+      if (t.closest('.item') || t.closest('.open-folder') || t.closest('.mod-list__marquee')) return
+      // 立刻抑制原生文字/图片拖选
+      e.preventDefault()
+      var rect = this.$el.getBoundingClientRect()
+      this.marquee = {
+        active: true,
+        moved: false,
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top,
+        w: 0,
+        h: 0,
+        startX: e.clientX,
+        startY: e.clientY
+      }
+      this._onMarqueeMove = (ev) => this.onMarqueeMove(ev)
+      this._onMarqueeUp = (ev) => this.onMarqueeUp(ev)
+      window.addEventListener('mousemove', this._onMarqueeMove)
+      window.addEventListener('mouseup', this._onMarqueeUp)
+    },
+    onMarqueeMove (e) {
+      if (!this.marquee.active) return
+      // 拖拽过程中持续禁止原生选区
+      if (e.preventDefault) e.preventDefault()
+      var host = this.$el
+      var rect = host.getBoundingClientRect()
+      var sx = this.marquee.startX - rect.left
+      var sy = this.marquee.startY - rect.top
+      var ex = e.clientX - rect.left
+      var ey = e.clientY - rect.top
+      if (Math.abs(e.clientX - this.marquee.startX) > 4 ||
+          Math.abs(e.clientY - this.marquee.startY) > 4) {
+        this.marquee.moved = true
+      }
+      this.marquee.x = Math.min(sx, ex)
+      this.marquee.y = Math.min(sy, ey)
+      this.marquee.w = Math.abs(ex - sx)
+      this.marquee.h = Math.abs(ey - sy)
+      if (this.marquee.moved) this.applyMarqueeSelect()
+    },
+    applyMarqueeSelect () {
+      var host = this.$el
+      var listRect = host.getBoundingClientRect()
+      var boxL = this.marquee.x
+      var boxT = this.marquee.y
+      var boxR = boxL + this.marquee.w
+      var boxB = boxT + this.marquee.h
+      var indexes = []
+      var nodes = host.querySelectorAll('.mod-list__inner > .item')
+      for (var i = 0; i < nodes.length; i++) {
+        var el = nodes[i]
+        var r = el.getBoundingClientRect()
+        var l = r.left - listRect.left
+        var t = r.top - listRect.top
+        var rr = l + r.width
+        var bb = t + r.height
+        if (rr >= boxL && l <= boxR && bb >= boxT && t <= boxB) {
+          var idx = Number(el.getAttribute('data-index'))
+          if (isFinite(idx)) indexes.push(idx)
+        }
+      }
+      this.$store.dispatch('setMultiSelected', indexes)
+    },
+    onMarqueeUp () {
+      this.unbindMarquee()
+      if (!this.marquee.active) return
+      var moved = this.marquee.moved
+      this.marquee = { active: false, moved: false, x: 0, y: 0, w: 0, h: 0, startX: 0, startY: 0 }
+      if (moved) {
+        this.suppressBlankClick = true
+      }
+    },
+    unbindMarquee () {
+      if (this._onMarqueeMove) {
+        window.removeEventListener('mousemove', this._onMarqueeMove)
+        this._onMarqueeMove = null
+      }
+      if (this._onMarqueeUp) {
+        window.removeEventListener('mouseup', this._onMarqueeUp)
+        this._onMarqueeUp = null
+      }
     },
     toggleSelect (index) {
       if (this.isLocked) {

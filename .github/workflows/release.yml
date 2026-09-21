@@ -135,50 +135,60 @@ jobs:
           REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
-          # 自动汇总上一 tag → 本次 HEAD（不含版本号提交本身，取父提交区间）
+          # 结构约定（见 AGENTS.md）：首屏「更新到 vX」+ 用户可见短列表；详细说明放 <details> 折叠
           RANGE="${PREV_TAG}..HEAD^"
           if [ -z "$PREV_TAG" ]; then
             RANGE=""
           fi
-          {
-            echo "## 更新说明 / What's Changed"
-            echo ""
-            echo "版本 \`${TAG}\`"
-            echo ""
-          } > release-notes.md
 
-          dump_section () {
-            local title="$1"
-            local pattern="$2"
-            local body
+          collect_lines () {
+            local pattern="$1"
             if [ -n "$RANGE" ]; then
-              body=$(git log $RANGE --pretty=format:'- %s (%h)' --no-merges --extended-regexp --regexp-ignore-case --grep="$pattern" || true)
+              git log $RANGE --pretty=format:'- %s' --no-merges --extended-regexp --regexp-ignore-case --grep="$pattern" || true
             else
-              body=$(git log --pretty=format:'- %s (%h)' --no-merges --extended-regexp --regexp-ignore-case --grep="$pattern" || true)
-            fi
-            if [ -n "$body" ]; then
-              echo "### $title" >> release-notes.md
-              echo "$body" >> release-notes.md
-              echo "" >> release-notes.md
+              git log --pretty=format:'- %s' --no-merges --extended-regexp --regexp-ignore-case --grep="$pattern" || true
             fi
           }
 
-          # 面向用户的变更：只汇总 feat / fix / docs
-          # 工程向 chore/ci/build/refactor 不进 Release body（应用内更新说明也不展示）
-          dump_section "新功能 Features" '^feat(\([^)]+\))?:'
-          dump_section "修复 Fixes" '^fix(\([^)]+\))?:'
-          dump_section "文档 Docs" '^docs(\([^)]+\))?:'
+          FEAT=$(collect_lines '^feat(\([^)]+\))?:')
+          FIX=$(collect_lines '^fix(\([^)]+\))?:')
+          DOCS=$(collect_lines '^docs(\([^)]+\))?:')
 
-          # 若三类都为空，补一句占位，避免 Release 页空白
-          if ! grep -q '^### ' release-notes.md; then
-            echo "本版本无用户可见变更（仅工程/依赖调整）。" >> release-notes.md
-            echo "" >> release-notes.md
+          # 首屏简述：取 feat/fix 主题行（去掉 scope 前缀噪声），最多 6 条
+          HIGHLIGHT=$(
+            {
+              printf '%s\n' "$FEAT"
+              printf '%s\n' "$FIX"
+            } | sed -E 's/^- (feat|fix)(\([^)]+\))?: /- /' | awk 'NF' | head -n 6
+          )
+          if [ -z "$HIGHLIGHT" ]; then
+            HIGHLIGHT="- 本版本无用户可见功能变更（仅工程/依赖调整）。"
           fi
 
           {
-            echo "---"
+            echo "## 更新到 ${TAG}"
             echo ""
-            echo "## 安装包 Installers"
+            echo "$HIGHLIGHT"
+            echo ""
+            echo "<details>"
+            echo "<summary>详细说明</summary>"
+            echo ""
+            if [ -n "$FEAT" ]; then
+              echo "### 新增 Features"
+              echo "$FEAT"
+              echo ""
+            fi
+            if [ -n "$FIX" ]; then
+              echo "### 修复 Fixes"
+              echo "$FIX"
+              echo ""
+            fi
+            if [ -n "$DOCS" ]; then
+              echo "### 文档 Docs"
+              echo "$DOCS"
+              echo ""
+            fi
+            echo "### 安装包 Installers"
             echo ""
             echo "| Platform | Asset |"
             echo "| --- | --- |"
@@ -195,7 +205,9 @@ jobs:
             else
               echo "**Commits**: https://github.com/${REPO}/commits/${TAG}"
             fi
-          } >> release-notes.md
+            echo ""
+            echo "</details>"
+          } > release-notes.md
 
           echo "----- notes -----"
           cat release-notes.md

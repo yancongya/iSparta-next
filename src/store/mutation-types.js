@@ -41,6 +41,9 @@ export const SET_SELECTED = 'SET_SELECTED'
 // 设置全选
 export const ALL_SELECTED = 'ALL_SELECTED'
 
+// 按索引集合设置选中（框选）
+export const ITEMS_SET_SELECTED = 'ITEMS_SET_SELECTED'
+
 // 取消全选
 export const NONE_SELECTED = 'NONE_SELECTED'
 

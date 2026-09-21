@@ -292,12 +292,11 @@ const mutations = {
     if (state.locked) {
       return false
     }
-    var selectedItem = _.filter(state.items, { isSelected: true })
-    if (!selectedItem.length) {
-      return false
-    }
-    var selectedBasic = selectedItem[0].basic
-    _.extend(selectedBasic, keyValue)
+    // 多选时同样写入全部选中项（输出目录等）
+    _.each(state.items, function (item) {
+      if (!item.isSelected) { return }
+      _.extend(item.basic, keyValue)
+    })
     persistItems()
   },
   [types.ITEMS_EDIT_OPTIONS](state, keyValue) {
@@ -318,7 +317,9 @@ const mutations = {
     if (state.locked) {
       return false
     }
+    // 共享设置只写到「当前选中」项，避免未选中的任务被误改
     _.each(state.items, function (item) {
+      if (!item.isSelected) { return }
       _.extend(item.options, keyValue)
     })
     persistItems()
@@ -360,6 +361,19 @@ const mutations = {
     }
     _.each(state.items, function (item) {
       item.isSelected = true
+    })
+    persistItems()
+  },
+  [types.ITEMS_SET_SELECTED](state, indexes) {
+    if (state.locked) {
+      return false
+    }
+    var set = {}
+    _.each(indexes || [], function (i) {
+      set[i] = true
+    })
+    _.each(state.items, function (item, i) {
+      item.isSelected = !!set[i]
     })
     persistItems()
   },
@@ -435,6 +449,29 @@ const actions = {
   editMultiOptions(context, keyValue) {
     context.commit('ITEMS_EDIT_MULTI_OPTIONS', keyValue)
   },
+  /** 多选：按模板写 outputTo，并为每项解析 outputPath */
+  applyOutputTemplate(context, payload) {
+    var patch = payload || {}
+    var items = _.filter(context.rootState.items, { isSelected: true })
+    if (!items.length) { return }
+    var nextTo = patch.outputTo || {}
+    _.each(items, function (item) {
+      if (!item.options) { item.options = {} }
+      item.options.outputTo = Object.assign({}, item.options.outputTo, nextTo)
+      if (!item.basic) { item.basic = {} }
+      item.basic.outputPath = resolveOutputPath(item, item.options)
+    })
+    context.commit('ITEMS_EDIT_MULTI_OPTIONS', { outputTo: nextTo })
+  },
+  /** 多选：只改某一项的 outputName（按 items 全列表 index） */
+  editOutputNameAt(context, payload) {
+    if (!payload || context.rootState.locked) { return }
+    var item = context.rootState.items[payload.index]
+    if (!item) { return }
+    if (!item.options) { item.options = {} }
+    item.options.outputName = payload.name
+    persistItems()
+  },
   editProcess(context, keyValue) {
     context.commit('ITEMS_EDIT_PROCESS', keyValue)
   },
@@ -449,6 +486,10 @@ const actions = {
   },
   allSelect(context) {
     context.commit('ALL_SELECTED')
+  },
+  /** 框选：按索引集合覆盖选中态 */
+  setMultiSelected(context, indexes) {
+    context.commit('ITEMS_SET_SELECTED', indexes)
   },
   noneSelect(context) {
     context.commit('NONE_SELECTED')

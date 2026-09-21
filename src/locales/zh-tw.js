@@ -50,6 +50,9 @@ module.exports = {
     "stopItem":"終止任務",
     //multi
     "multiText":"目前為多選狀態，使用各自的配置輸出",
+    "multiBanner":"已選 {n} 項 · 路徑與質量等設置將應用到全部所選任務",
+    "multiNameHint":"（每項可單獨命名）",
+    "multiPathHint":"多選時此處為示例路徑；生成時各任務按自身檔名解析變量。",
     "batchStart":"批量開始",
     "outputTofolder":"輸出到目錄",
     "inputItems":"輸入的項目",
@@ -153,6 +156,9 @@ module.exports = {
     "expandSettings":"展開輸出設置",
     // shortcuts & drag
     "shortcutSelectAll":"全選",
+    "shortcutTip":"快捷操作",
+    "shortcutDelete":"刪除所選",
+    "shortcutBlankClick":"雙擊空白全選 · 單擊空白取消選擇",
     "pasteHint":"或直接貼上截圖",
     "dropToImport":"鬆手即可導入",
     // status bar

@@ -33,18 +33,43 @@
       </div>
     </div>
 
-    <span class="bar-shortcuts">
-      <span class="is-kbd-group">
-        <kbd class="is-kbd" :class="{ 'is-pressed': pressed === 'Control' }">Ctrl</kbd>
-        <span>+</span>
-        <kbd class="is-kbd" :class="{ 'is-pressed': pressed === 'a' }">A</kbd>
-      </span>
-      <span class="is-kbd-group">
-        <kbd class="is-kbd" :class="{ 'is-pressed': pressed === 'Control' }">Ctrl</kbd>
-        <span>+</span>
-        <kbd class="is-kbd" :class="{ 'is-pressed': isDelKey }">Del</kbd>
-      </span>
-    </span>
+    <div class="bar-kbd">
+      <button
+        type="button"
+        class="bar-kbd__btn"
+        :class="{ 'is-on': shortcutsOpen }"
+        :title="$t('shortcutTip')"
+        :aria-expanded="shortcutsOpen ? 'true' : 'false'"
+        @click.stop="shortcutsOpen = !shortcutsOpen"
+      >
+        <is-icon name="keyboard" size="sm" />
+      </button>
+      <transition name="is-fade">
+        <div v-if="shortcutsOpen" class="bar-kbd__panel" @click.stop>
+          <div class="bar-kbd__row">
+            <span class="is-kbd-group">
+              <kbd class="is-kbd">Ctrl</kbd><span>+</span><kbd class="is-kbd">A</kbd>
+            </span>
+            <span>{{ $t('selectAll') }}</span>
+          </div>
+          <div class="bar-kbd__row">
+            <span class="is-kbd-group">
+              <kbd class="is-kbd">Delete</kbd>
+            </span>
+            <span>{{ $t('shortcutDelete') }}</span>
+          </div>
+          <div class="bar-kbd__row">
+            <span class="is-kbd-group">
+              <kbd class="is-kbd">Ctrl</kbd><span>+</span><kbd class="is-kbd">V</kbd>
+            </span>
+            <span>{{ $t('pasteHint') }}</span>
+          </div>
+          <div class="bar-kbd__row bar-kbd__row--plain">
+            <span>{{ $t('shortcutBlankClick') }}</span>
+          </div>
+        </div>
+      </transition>
+    </div>
   </section>
 </template>
 
@@ -55,7 +80,10 @@ import IsPacman from '../../ui-next/components/IsPacman.vue'
 export default {
   components: { 'is-pacman': IsPacman },
   data () {
-    return { pressed: '' }
+    return {
+      pressed: '',
+      shortcutsOpen: false
+    }
   },
   computed: {
     items () {
@@ -100,16 +128,17 @@ export default {
         else if (s > 0 && s < 1) sum += s
       })
       return Math.round((sum / this.itemCount) * 100)
-    },
-    isDelKey () {
-      return this.pressed === 'Delete' || this.pressed === 'Backspace'
     }
   },
   mounted () {
-    this._onKey = (e) => { this.pressed = e.key }
-    this._onKeyUp = () => { this.pressed = '' }
-    window.addEventListener('keydown', this._onKey)
-    window.addEventListener('keyup', this._onKeyUp)
+    this._onDocClick = (e) => {
+      if (!this.shortcutsOpen) return
+      var host = this.$el
+      if (host && host.contains && !host.contains(e.target)) {
+        this.shortcutsOpen = false
+      }
+    }
+    document.addEventListener('click', this._onDocClick)
   },
   watch: {
     // 彩带防误触发：只有本会话里真的有任务跑起来过才庆祝。
@@ -128,8 +157,10 @@ export default {
     }
   },
   beforeDestroy () {
-    window.removeEventListener('keydown', this._onKey)
-    window.removeEventListener('keyup', this._onKeyUp)
+    if (this._onDocClick) {
+      document.removeEventListener('click', this._onDocClick)
+      this._onDocClick = null
+    }
   },
   methods: {
     countBy (schedule) {

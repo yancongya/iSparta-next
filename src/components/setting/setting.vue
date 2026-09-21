@@ -14,19 +14,65 @@
       </div>
     </section>
 
-    <!-- 多选：各自配置，批量输出 -->
-    <section v-else-if="isArraySetting" class="mod-multi">
-      <p>{{ $t("multiText") }}</p>
-      <is-button type="primary" block :disabled="isStarted" icon="play" @click="start('')">
-        {{ $t("batchStart") }}
-      </is-button>
-      <is-button block :disabled="isStarted" icon="folder" @click="changeOutput">
-        {{ $t("outputTofolder") }}
-      </is-button>
-    </section>
+    <!-- 多选横幅：共用同一套输出设置 -->
+    <div v-if="isArraySetting" class="mod-multi-banner">
+      <is-icon name="layers" size="sm" />
+      <span>{{ $t('multiBanner', { n: selectedList.length }) }}</span>
+    </div>
 
-    <!-- 单选：完整输出配置 -->
-    <section v-else class="mod-form">
+    <!-- 完整输出配置：单选/多选共用；多选时写入所有选中项 -->
+    <section v-if="curtSetting" class="mod-form">
+      <div v-if="isArraySetting" class="mod-form__group">
+        <p class="mod-form__caption">
+          {{ $t('outputName') }}
+          <span class="mod-form__cap-extra">{{ $t('multiNameHint') }}</span>
+        </p>
+        <div class="multi-names">
+          <div
+            v-for="(item, i) in selectedList"
+            :key="'mn-' + itemKeyOf(item, i)"
+            class="multi-names__row"
+          >
+            <span class="multi-names__meta is-ellipsis" :title="srcLabelOf(item)">
+              {{ srcLabelOf(item) }}
+            </span>
+            <is-input
+              class="multi-names__in"
+              :value="item.options.outputName"
+              placeholder="output"
+              @input="onMultiNameInput(i, $event)"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- 单选：完整输出名 + 拆词 -->
+      <div v-else class="mod-form__group">
+        <p class="mod-form__caption">{{ $t('outputName') }}</p>
+        <div class="name-row">
+          <is-input v-model="outputName" class="is-input--fluid" placeholder="output" />
+          <button
+            v-if="nameTokens.length"
+            type="button"
+            class="name-row__filter"
+            :class="{ 'is-on': wordsOnly }"
+            v-tip="wordsOnly ? $t('restoreAll') : $t('keepWordsOnly')"
+            @click.stop="toggleWordsOnly"
+          ><is-icon name="filter" size="sm" /></button>
+        </div>
+        <div v-if="nameTokens.length" class="name-tokens">
+          <button
+            v-for="(t, i) in nameTokens"
+            :key="'tok-' + i"
+            type="button"
+            class="tok"
+            :class="tokClass(t, i)"
+            v-tip="tokTip(t)"
+            @click.stop="toggleNameToken(i)"
+          >{{ tokText(t) }}</button>
+        </div>
+      </div>
+
       <!-- 帧频 + 循环：同一行；循环说明改为 info 图标 hover，不再占一整行 -->
       <div v-if="showFrame" class="mod-form__group">
         <div class="mod-form__row">
@@ -59,33 +105,6 @@
           <button type="button" class="is-info" v-tip="'0-100'">
             <is-icon name="info" size="sm" />
           </button>
-        </div>
-      </div>
-
-      <!-- 输出名字：标题在上、输入框在下；右侧漏斗=只留文字切换，下方是可点选取消的拆词胶囊 -->
-      <div class="mod-form__group">
-        <p class="mod-form__caption">{{ $t('outputName') }}</p>
-        <div class="name-row">
-          <is-input v-model="outputName" class="is-input--fluid" placeholder="output" />
-          <button
-            v-if="nameTokens.length"
-            type="button"
-            class="name-row__filter"
-            :class="{ 'is-on': wordsOnly }"
-            v-tip="wordsOnly ? $t('restoreAll') : $t('keepWordsOnly')"
-            @click.stop="toggleWordsOnly"
-          ><is-icon name="filter" size="sm" /></button>
-        </div>
-        <div v-if="nameTokens.length" class="name-tokens">
-          <button
-            v-for="(t, i) in nameTokens"
-            :key="'tok-' + i"
-            type="button"
-            class="tok"
-            :class="tokClass(t, i)"
-            v-tip="tokTip(t)"
-            @click.stop="toggleNameToken(i)"
-          >{{ tokText(t) }}</button>
         </div>
       </div>
 
@@ -128,6 +147,8 @@
               @click.stop="pickOutputDir"
             ><is-icon name="folder" size="sm" /></button>
           </div>
+
+          <p v-if="isArraySetting" class="mod-form__hint">{{ $t('multiPathHint') }}</p>
 
           <!-- 变量路径 + 彩色变量胶囊：与默认设置共用同一组件。
                append 插槽挂「存为预设」书签：调好路径一键收藏，无需进编辑器 -->
@@ -221,31 +242,26 @@
         type="primary"
         size="lg"
         block
-        icon="play"
+        :icon="isArraySetting ? 'layers' : 'play'"
         :disabled="isStarted || !canStart"
         :loading="isStarted"
         @click="start('')"
-      >{{ $t("start") }}</is-button>
+      >{{ isArraySetting ? $t("batchStart") : $t("start") }}</is-button>
+
+      <is-button
+        v-if="isArraySetting"
+        block
+        icon="folder"
+        :disabled="isStarted"
+        @click="changeOutput"
+      >{{ $t("outputTofolder") }}</is-button>
 
       <p v-if="!canStart" class="mod-form__warn">
         <is-icon name="alert" size="sm" /> {{ $t('needOneFormat') }}
       </p>
     </section>
 
-    <section class="mod-toolbox">
-      <button type="button" class="mod-toolbox__btn" :title="$t('defaultSetting')" @click="openGlobalSetting">
-        <is-icon name="settings" />
-      </button>
-      <button
-        type="button"
-        class="mod-toolbox__btn mod-toolbox__btn--danger"
-        :title="$t('clearAll')"
-        :disabled="isLocked || !projectCount"
-        @click="onDeleteAll"
-      >
-        <is-icon name="trash" />
-      </button>
-    </section>
+    <!-- 底部工具条已迁至中栏（设置/删除所选），避免双入口 -->
   </section>
 </template>
 <script>
@@ -294,17 +310,15 @@ export default {
     isLocked () {
       return this.$store.getters.getterLocked
     },
-    // 多选时 curtSetting 返回数组，用它区分两种形态
+    // 多选时仍用「第一项」作为表单基值；setter 统一写到所有选中项
     isArraySetting () {
-      return Array.isArray(this.curtSetting)
+      return this.selectedList.length > 1
     },
     curtSetting () {
       if (this.selectedList.length === 0) {
         return false
-      } else if (this.selectedList.length === 1) {
-        return this.selectedList[0].options
       }
-      return this.selectedList
+      return this.selectedList[0].options
     },
     selectedIndex () {
       return this.$store.getters.getterSelectedIndex
@@ -313,28 +327,38 @@ export default {
       if (!this.selectedList.length) {
         return false
       }
-      var schedule = this.selectedList[0].process.schedule
-      return schedule > 0 && schedule < 1
+      var anyRunning = this.selectedList.some(function (it) {
+        var s = it.process && it.process.schedule
+        return s > 0 && s < 1
+      })
+      return anyRunning
     },
-    // 至少勾选一种输出格式才能开始
+    // 至少勾选一种输出格式才能开始（多选时要求每一项都有格式）
     canStart () {
-      if (this.selectedList.length !== 1) {
-        return true
-      }
-      var fmt = this.curtSetting && this.curtSetting.outputFormat
-      return !!(fmt && fmt.length)
+      if (!this.selectedList.length) return false
+      return this.selectedList.every(function (it) {
+        var fmt = it.options && it.options.outputFormat
+        return !!(fmt && fmt.length)
+      })
     },
     showFrame () {
       if (!this.selectedList.length) {
         return false
       }
-      return this.selectedList[0].basic.type === 'PNGs'
+      // 多选时只要有一项是 PNGs 就展示帧频（写入所有选中项）
+      return this.selectedList.some(function (it) {
+        return it.basic && it.basic.type === 'PNGs'
+      })
     },
     formatStatic () {
       if (!this.selectedList.length) {
         return ['APNG', 'GIF', 'WEBP']
       }
-      if (this.selectedList[0].basic.type === 'GIF') {
+      // 源全是 GIF 时不提供 GIF 输出；混合类型保留完整选项
+      var allGif = this.selectedList.every(function (it) {
+        return it.basic && it.basic.type === 'GIF'
+      })
+      if (allGif) {
         return ['APNG', 'WEBP']
       }
       return ['APNG', 'GIF', 'WEBP']
@@ -350,7 +374,8 @@ export default {
     },
     // ---------- 变量标签的当前取值 ----------
     pathContext () {
-      if (this.selectedList.length !== 1) { return null }
+      if (!this.selectedList.length) { return null }
+      // 多选：以第一项作示例展开；各任务仍按自己的 src/name 解析
       return outputContext(this.selectedList[0])
     },
     varChips () {
@@ -399,7 +424,7 @@ export default {
         return (this.curtSetting && this.curtSetting.outputFormat) || []
       },
       set (value) {
-        this.$store.dispatch('editOptions', { outputFormat: value })
+        this.$store.dispatch('editMultiOptions', { outputFormat: value })
       }
     },
     qualityCheck: {
@@ -608,25 +633,18 @@ export default {
       })
     },
     pushOutputTo (patch) {
-      if (this.selectedList.length !== 1) { return }
-      // 确保当前项为唯一选中
-      const idx = this.selectedIndex
-      if (idx >= 0) {
-        this.$store.dispatch('singleSelect', idx)
-      }
-      const item = this.selectedList[0]
-      const base = normalizeOutputTo(item.options)
+      if (!this.selectedList.length) { return }
+      const base = normalizeOutputTo(this.curtSetting)
       const next = Object.assign({}, base, patch)
-      this.$store.dispatch('editOptions', { outputTo: next })
-      const merged = Object.assign({}, item.options, { outputTo: next })
-      this.$store.dispatch('editBasic', { outputPath: resolveOutputPath(item, merged) })
+      this.$store.dispatch('applyOutputTemplate', { outputTo: next })
+      this.syncPathUI()
     },
     syncPathUI () {
-      if (this.selectedList.length !== 1) {
+      if (!this.selectedList.length) {
         this.pathPreviewUI = ''
         return
       }
-      // 「真实路径」行：模板展开结果
+      // 多选显示首项示例路径；生成时各任务各自解析模板
       this.pathPreviewUI = resolveOutputPath(this.selectedList[0], this.selectedList[0].options)
     },
     // ---------- 输出路径预设 ----------
@@ -676,7 +694,7 @@ export default {
       notice.success(this.$t('presetSaved'), this.$t('presetSavedTip'))
     },
     pickOutputDir () {
-      if (this.selectedList.length !== 1) { return }
+      if (!this.selectedList.length) { return }
       const cur = this.pathPreviewUI || ''
       ipc.invoke('dialog:openDirectory', {
         defaultPath: cur
@@ -704,9 +722,32 @@ export default {
         step: 5,
         maxTries: 10
       }
-      this.$store.dispatch('editOptions', {
+      this.$store.dispatch('editMultiOptions', {
         sizeLimit: Object.assign({}, base, patch)
       })
+    },
+    // ---------- 多选输出名 ----------
+    itemKeyOf (item, i) {
+      var basic = item && item.basic
+      if (basic && basic.inputPath) {
+        return basic.inputPath + '|' + (basic.type || '') + '|' + i
+      }
+      return 'i-' + i
+    },
+    srcLabelOf (item) {
+      var basic = item && item.basic
+      var type = (basic && basic.type) || ''
+      var path = (basic && (basic.inputPath || '')) || ''
+      var name = path.split(/[\\/]/).filter(Boolean).pop() || '—'
+      return type ? type + ' · ' + name : name
+    },
+    onMultiNameInput (selectedIdx, value) {
+      var item = this.selectedList[selectedIdx]
+      if (!item) { return }
+      var all = this.$store.getters.getterItems
+      var index = all.indexOf(item)
+      if (index < 0) { return }
+      this.$store.dispatch('editOutputNameAt', { index: index, name: value })
     },
     changeOutput () {
       var outputPath = this.selectedList[0].basic.outputPath
