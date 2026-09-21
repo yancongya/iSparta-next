@@ -40,6 +40,40 @@
     overflow-y: auto;
     padding: var(--is-s-2) var(--is-s-3) 60px;
   }
+
+  // 两列参数区：帧频/循环 | 压缩质量；递减 | 重试
+  .mod-form__pairwrap {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--is-s-2) var(--is-s-3);
+    padding: var(--is-s-3) 0;
+    border-bottom: 1px solid var(--is-divider);
+  }
+
+  .mod-form__paircell {
+    min-width: 0;
+  }
+
+  .mod-form__paircell .mod-form__row {
+    min-height: 30px;
+  }
+
+  .row-label {
+    flex: none;
+    min-width: 56px;
+    color: var(--is-text-2);
+    font-size: var(--is-fs-sm);
+    white-space: nowrap;
+  }
+
+  .row-label--gap {
+    margin-left: 0;
+  }
+
+  .num {
+    width: 54px;
+    flex: none;
+  }
 }
 
 // --------------------------------------------------------------------------
@@ -523,7 +557,7 @@
     font-size: var(--is-fs-xs);
   }
 
-  .multi-names__in {
+  .multi-names__row .name-row {
     width: 100%;
   }
 }

@@ -144,6 +144,7 @@ module.exports = {
     "tipInputDir":"Input folder",
     "tipOutputDir":"Output folder",
     "tipDelay":"Per-frame delay",
+    "framePanelTip":"Frame preview / sequence",
     "tipChangeOutput":"Change output folder",
     // appearance
     "appearance":"Appearance",

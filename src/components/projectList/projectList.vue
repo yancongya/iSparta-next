@@ -96,13 +96,13 @@
           </div>
         </div>
 
-        <!-- 右侧：延时设置（齿轮）在状态区左边 -->
+        <!-- 右侧：帧预览/延时（有序列帧时）在状态区左边 -->
         <div class="side">
           <button
-            v-if="project.basic && project.basic.type == 'PNGs'"
+            v-if="canOpenFramePanel(project)"
             type="button"
             class="iconbtn"
-            :title="$t('tipDelay')"
+            :title="framePanelTitle(project)"
             @click.stop="onDelaySetting(project)"
           ><is-icon name="settings" size="sm" /></button>
 
@@ -238,6 +238,17 @@ export default {
         'is-running': this.stateOf(project.process) === 'running',
         'is-fail': this.stateOf(project.process) === 'fail'
       }
+    },
+    canOpenFramePanel (project) {
+      if (!project || !project.basic) return false
+      var files = project.basic.fileList
+      // PNGs 序列 / 任意带多帧或可拆帧的任务都可打开预览面板
+      return !!(files && files.length)
+    },
+    framePanelTitle (project) {
+      var type = project && project.basic && project.basic.type
+      if (type === 'PNGs') return this.$t('tipDelay')
+      return this.$t('framePanelTip')
     },
     frameCount (project) {
       var list = project && project.basic && project.basic.fileList

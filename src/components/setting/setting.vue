@@ -22,12 +22,14 @@
 
     <!-- 完整输出配置：单选/多选共用；多选时写入所有选中项 -->
     <section v-if="curtSetting" class="mod-form">
-      <div v-if="isArraySetting" class="mod-form__group">
+      <!-- 输出名：单选整段拆词；多选每项同样支持拆词与漏斗 -->
+      <div class="mod-form__group">
         <p class="mod-form__caption">
           {{ $t('outputName') }}
-          <span class="mod-form__cap-extra">{{ $t('multiNameHint') }}</span>
+          <span v-if="isArraySetting" class="mod-form__cap-extra">{{ $t('multiNameHint') }}</span>
         </p>
-        <div class="multi-names">
+
+        <div v-if="isArraySetting" class="multi-names">
           <div
             v-for="(item, i) in selectedList"
             :key="'mn-' + itemKeyOf(item, i)"
@@ -36,75 +38,100 @@
             <span class="multi-names__meta is-ellipsis" :title="srcLabelOf(item)">
               {{ srcLabelOf(item) }}
             </span>
-            <is-input
-              class="multi-names__in"
-              :value="item.options.outputName"
-              placeholder="output"
-              @input="onMultiNameInput(i, $event)"
-            />
+            <div class="name-row">
+              <is-input
+                class="is-input--fluid"
+                :value="item.options.outputName"
+                placeholder="output"
+                @input="onMultiNameInput(i, $event)"
+              />
+              <button
+                v-if="tokensOf(i).length"
+                type="button"
+                class="name-row__filter"
+                :class="{ 'is-on': multiWordsOnly(i) }"
+                v-tip="multiWordsOnly(i) ? $t('restoreAll') : $t('keepWordsOnly')"
+                @click.stop="toggleMultiWordsOnly(i)"
+              ><is-icon name="filter" size="sm" /></button>
+            </div>
+            <div v-if="tokensOf(i).length" class="name-tokens">
+              <button
+                v-for="(t, ti) in tokensOf(i)"
+                :key="'mtok-' + ti"
+                type="button"
+                class="tok"
+                :class="tokClass(t, ti)"
+                v-tip="tokTip(t)"
+                @click.stop="toggleMultiNameToken(i, ti)"
+              >{{ tokText(t) }}</button>
+            </div>
+          </div>
+        </div>
+
+        <div v-else>
+          <div class="name-row">
+            <is-input v-model="outputName" class="is-input--fluid" placeholder="output" />
+            <button
+              v-if="nameTokens.length"
+              type="button"
+              class="name-row__filter"
+              :class="{ 'is-on': wordsOnly }"
+              v-tip="wordsOnly ? $t('restoreAll') : $t('keepWordsOnly')"
+              @click.stop="toggleWordsOnly"
+            ><is-icon name="filter" size="sm" /></button>
+          </div>
+          <div v-if="nameTokens.length" class="name-tokens">
+            <button
+              v-for="(t, i) in nameTokens"
+              :key="'tok-' + i"
+              type="button"
+              class="tok"
+              :class="tokClass(t, i)"
+              v-tip="tokTip(t)"
+              @click.stop="toggleNameToken(i)"
+            >{{ tokText(t) }}</button>
           </div>
         </div>
       </div>
 
-      <!-- 单选：完整输出名 + 拆词 -->
-      <div v-else class="mod-form__group">
-        <p class="mod-form__caption">{{ $t('outputName') }}</p>
-        <div class="name-row">
-          <is-input v-model="outputName" class="is-input--fluid" placeholder="output" />
-          <button
-            v-if="nameTokens.length"
-            type="button"
-            class="name-row__filter"
-            :class="{ 'is-on': wordsOnly }"
-            v-tip="wordsOnly ? $t('restoreAll') : $t('keepWordsOnly')"
-            @click.stop="toggleWordsOnly"
-          ><is-icon name="filter" size="sm" /></button>
+      <!-- 帧频/循环 与 压缩质量：两列对齐，label/输入/说明图标同一节奏 -->
+      <div class="mod-form__pairwrap">
+        <div v-if="showFrame" class="mod-form__paircell">
+          <div class="mod-form__row">
+            <span class="row-label">{{ $t('fps') }}</span>
+            <is-input v-model="frameRate" type="number" class="num" :max="100" :min="0" number placeholder="25" />
+            <button type="button" class="is-info" v-tip="$t('fpsUnit')">
+              <is-icon name="info" size="sm" />
+            </button>
+          </div>
+          <div class="mod-form__row">
+            <span class="row-label">{{ $t('loop') }}</span>
+            <is-input v-model="loop" type="number" class="num" number placeholder="0" />
+            <span class="unit">{{ $t('times') }}</span>
+            <button type="button" class="is-info" v-tip="$t('loopTips')">
+              <is-icon name="info" size="sm" />
+            </button>
+          </div>
         </div>
-        <div v-if="nameTokens.length" class="name-tokens">
-          <button
-            v-for="(t, i) in nameTokens"
-            :key="'tok-' + i"
-            type="button"
-            class="tok"
-            :class="tokClass(t, i)"
-            v-tip="tokTip(t)"
-            @click.stop="toggleNameToken(i)"
-          >{{ tokText(t) }}</button>
-        </div>
-      </div>
 
-      <!-- 帧频 + 循环：同一行；循环说明改为 info 图标 hover，不再占一整行 -->
-      <div v-if="showFrame" class="mod-form__group">
-        <div class="mod-form__row">
-          <span class="row-label">{{ $t('fps') }}</span>
-          <is-input v-model="frameRate" type="number" class="num" :max="100" :min="0" number placeholder="25" />
-          <span class="row-label row-label--gap">{{ $t('loop') }}</span>
-          <is-input v-model="loop" type="number" class="num" number placeholder="0" />
-          <span class="unit">{{ $t('times') }}</span>
-          <button type="button" class="is-info" v-tip="$t('loopTips')">
-            <is-icon name="info" size="sm" />
-          </button>
-        </div>
-      </div>
-
-      <!-- 压缩质量：与帧频/循环同一套排版，数值框同宽 -->
-      <div class="mod-form__group">
-        <div class="mod-form__row">
-          <span class="row-label">{{ $t('compressionQuality') }}</span>
-          <is-checkbox v-model="qualityCheck">{{ $t('enable') }}</is-checkbox>
-          <is-input
-            v-model="quality"
-            type="number"
-            class="num"
-            :disabled="!qualityCheck"
-            :max="100"
-            :min="0"
-            number
-            placeholder="100"
-          />
-          <button type="button" class="is-info" v-tip="'0-100'">
-            <is-icon name="info" size="sm" />
-          </button>
+        <div class="mod-form__paircell">
+          <div class="mod-form__row">
+            <span class="row-label">{{ $t('compressionQuality') }}</span>
+            <is-checkbox v-model="qualityCheck">{{ $t('enable') }}</is-checkbox>
+            <is-input
+              v-model="quality"
+              type="number"
+              class="num"
+              :disabled="!qualityCheck"
+              :max="100"
+              :min="0"
+              number
+              placeholder="100"
+            />
+            <button type="button" class="is-info" v-tip="'0-100'">
+              <is-icon name="info" size="sm" />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -220,19 +247,25 @@
           </div>
 
           <template v-if="sizeAutoQuality">
-            <div class="size-limit__row">
-              <span class="size-limit__label">{{ $t('sizeLimitStep') }}</span>
-              <is-input v-model="sizeStep" type="number" class="num" :max="100" :min="1" number />
-              <button type="button" class="is-info" v-tip="'0-100'">
-                <is-icon name="info" size="sm" />
-              </button>
-            </div>
-            <div class="size-limit__row">
-              <span class="size-limit__label">{{ $t('sizeLimitTries') }}</span>
-              <is-input v-model="sizeMaxTries" type="number" class="num" :max="50" :min="1" number />
-              <button type="button" class="is-info" v-tip="$t('sizeLimitTriesTip')">
-                <is-icon name="info" size="sm" />
-              </button>
+            <div class="mod-form__pairwrap">
+              <div class="mod-form__paircell">
+                <div class="mod-form__row">
+                  <span class="row-label">{{ $t('sizeLimitStep') }}</span>
+                  <is-input v-model="sizeStep" type="number" class="num" :max="100" :min="1" number />
+                  <button type="button" class="is-info" v-tip="'0-100'">
+                    <is-icon name="info" size="sm" />
+                  </button>
+                </div>
+              </div>
+              <div class="mod-form__paircell">
+                <div class="mod-form__row">
+                  <span class="row-label">{{ $t('sizeLimitTries') }}</span>
+                  <is-input v-model="sizeMaxTries" type="number" class="num" :max="50" :min="1" number />
+                  <button type="button" class="is-info" v-tip="$t('sizeLimitTriesTip')">
+                    <is-icon name="info" size="sm" />
+                  </button>
+                </div>
+              </div>
             </div>
           </template>
         </div>
@@ -293,6 +326,8 @@ export default {
       pressed: '',
       // 输出名的拆词胶囊：[{ text, sep, on }]
       nameTokens: [],
+      // 多选：每项独立拆词，key = inputPath|type
+      nameTokenMap: {},
       // 输出路径预设（内置覆盖 + 用户自定义），独立 storage 键持久化
       outputPresets: loadPresets(),
       // 「将当前路径存为预设」的内联命名框
@@ -516,6 +551,7 @@ export default {
   watch: {
     selectedList () {
       this.syncPathUI()
+      this.syncMultiNameTokens()
     },
     // 书签命名行展开即聚焦，少一次点击
     bookmarkOpen (v) {
@@ -748,6 +784,74 @@ export default {
       var index = all.indexOf(item)
       if (index < 0) { return }
       this.$store.dispatch('editOutputNameAt', { index: index, name: value })
+      // 输入后按新名字重建该项拆词
+      var k = this.itemKeyOf(item, selectedIdx)
+      this.$set(this.nameTokenMap, k, this.buildTokens(value))
+    },
+    tokensOf (selectedIdx) {
+      var item = this.selectedList[selectedIdx]
+      if (!item) return []
+      var k = this.itemKeyOf(item, selectedIdx)
+      return this.nameTokenMap[k] || []
+    },
+    multiWordsOnly (selectedIdx) {
+      var tokens = this.tokensOf(selectedIdx)
+      if (!tokens.length) return false
+      var sepOff = 0
+      for (var i = 0; i < tokens.length; i++) {
+        if (!tokens[i].sep && !tokens[i].on) return false
+        if (tokens[i].sep && !tokens[i].on) sepOff++
+      }
+      return sepOff > 0
+    },
+    buildTokens (name) {
+      return tokenizeName(name || '').map(function (t) {
+        return { text: t.text, sep: t.sep, on: true }
+      })
+    },
+    syncMultiNameTokens () {
+      var map = {}
+      var self = this
+      this.selectedList.forEach(function (item, i) {
+        var k = self.itemKeyOf(item, i)
+        var prev = self.nameTokenMap[k]
+        var name = (item.options && item.options.outputName) || ''
+        // 词形未变时保留用户点选状态
+        if (prev && prev.length && joinTokens(prev) === name) {
+          map[k] = prev
+        } else {
+          map[k] = self.buildTokens(name)
+        }
+      })
+      this.nameTokenMap = map
+    },
+    toggleMultiNameToken (selectedIdx, ti) {
+      var item = this.selectedList[selectedIdx]
+      if (!item) return
+      var k = this.itemKeyOf(item, selectedIdx)
+      var tokens = (this.nameTokenMap[k] || []).slice()
+      var t = tokens[ti]
+      if (!t) return
+      tokens.splice(ti, 1, { text: t.text, sep: t.sep, on: !t.on })
+      this.$set(this.nameTokenMap, k, tokens)
+      var all = this.$store.getters.getterItems
+      var index = all.indexOf(item)
+      if (index < 0) return
+      this.$store.dispatch('editOutputNameAt', { index: index, name: joinTokens(tokens) })
+    },
+    toggleMultiWordsOnly (selectedIdx) {
+      var item = this.selectedList[selectedIdx]
+      if (!item) return
+      var k = this.itemKeyOf(item, selectedIdx)
+      var toWordsOnly = !this.multiWordsOnly(selectedIdx)
+      var tokens = (this.nameTokenMap[k] || []).map(function (t) {
+        return { text: t.text, sep: t.sep, on: toWordsOnly ? !t.sep : true }
+      })
+      this.$set(this.nameTokenMap, k, tokens)
+      var all = this.$store.getters.getterItems
+      var index = all.indexOf(item)
+      if (index < 0) return
+      this.$store.dispatch('editOutputNameAt', { index: index, name: joinTokens(tokens) })
     },
     changeOutput () {
       var outputPath = this.selectedList[0].basic.outputPath

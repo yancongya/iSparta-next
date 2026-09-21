@@ -144,6 +144,7 @@ module.exports = {
     "tipInputDir":"輸入目錄",
     "tipOutputDir":"輸出目錄",
     "tipDelay":"逐幀延時",
+    "framePanelTip":"幀預覽 / 序列查看",
     "tipChangeOutput":"修改輸出目錄",
     // appearance
     "appearance":"外觀",

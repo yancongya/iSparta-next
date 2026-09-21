@@ -144,6 +144,7 @@ module.exports = {
     "tipInputDir":"输入目录",
     "tipOutputDir":"输出目录",
     "tipDelay":"逐帧延时",
+    "framePanelTip":"帧预览 / 序列查看",
     "tipChangeOutput":"修改输出目录",
     // 外观与主题
     "appearance":"外观",
