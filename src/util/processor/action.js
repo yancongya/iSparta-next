@@ -85,13 +85,16 @@ export default class Action {
         console.warn(result && result.error)
         store.dispatch('editProcess', {
           index: item.index,
-          text: locale.convertFail,
+          text: result && result.cancelled
+            ? (locale.noticeConvertAborted || 'Conversion aborted')
+            : locale.convertFail,
           schedule: -1
         })
         store.dispatch('setLock', false)
         return Promise.reject({
           command: command,
           args: cleanArgs,
+          cancelled: !!(result && result.cancelled),
           err: result && result.error
         })
       }

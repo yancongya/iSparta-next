@@ -47,6 +47,7 @@ module.exports = {
     "openDist":"Open output folder",
     "changeDist":"Change output folder",
     "delItem":"Delete item",
+    "stopItem":"Stop task",
     //multi
     "multiText":"Multiple items selected — each uses its own settings",
     "batchStart":"Batch start",
@@ -198,5 +199,6 @@ module.exports = {
     "updateDockUpdate":"Update now",
     "updateDockContinue":"You can keep using the app",
     "updateReadyTitle":"Update ready",
-    "updateDownloadFailed":"Update download failed"
+    "updateDownloadFailed":"Update download failed",
+    "updateCheckFirst":"After a check finds a new version, start the update here"
 }

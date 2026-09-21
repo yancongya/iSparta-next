@@ -23,8 +23,11 @@ function bindMenuClicked () {
       case 'changeDist':
         ipc.send('change-item-fold', payload.outputPath, payload.index)
         break
+      case 'stopItem':
+        if (storeRef) { storeRef.dispatch('stopSelectedTasks') }
+        break
       case 'delItem':
-        if (storeRef) { storeRef.dispatch('remove') }
+        if (storeRef) { storeRef.dispatch('removeSelectedForce') }
         break
       default:
         break
@@ -33,21 +36,24 @@ function bindMenuClicked () {
 }
 
 class rightMenu {
-  static init (store, option, index, isMultiItems, locale) {
+  static init (store, payload, index, isMultiItems, locale) {
     storeRef = store
     bindMenuClicked()
+    const p = payload || {}
     ipc.send('menu:popup', {
       menuId: 'project-item',
       payload: {
         isMultiItems: !!isMultiItems,
-        inputPath: option && option.inputPath,
-        outputPath: option && option.outputPath,
+        isRunning: !!p.isRunning,
+        inputPath: p.inputPath,
+        outputPath: p.outputPath,
         index: index,
         locale: {
           openOriginal: locale && locale.openOriginal,
           openDist: locale && locale.openDist,
           changeDist: locale && locale.changeDist,
-          delItem: locale && locale.delItem
+          delItem: locale && locale.delItem,
+          stopItem: locale && locale.stopItem
         }
       }
     })

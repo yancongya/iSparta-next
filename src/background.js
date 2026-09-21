@@ -480,31 +480,68 @@ ipcMain.handle('fs:writeFile', async (event, p, data) => {
 ipcMain.handle('fs:remove', async (event, p) => {
   try { fsp.rmSync(p, { recursive: true, force: true }) } catch (e) { /* ignore */ }
 })
+// 运行中的转换子进程：用于右键「终止任务」
+const runningJobs = new Set()
+
 ipcMain.handle('job:execFile', async (event, command, args, options) => {
   return new Promise((resolve) => {
     const opts = Object.assign({ maxBuffer: 1024 * 1024 * 64 }, options || {})
-    childProcess.execFile(command, args || [], opts, (err, stdout, stderr) => {
+    let child = null
+    let settled = false
+    const finish = (payload) => {
+      if (settled) { return }
+      settled = true
+      if (child) { runningJobs.delete(child) }
+      resolve(payload)
+    }
+    child = childProcess.execFile(command, args || [], opts, (err, stdout, stderr) => {
       if (err) {
-        resolve({ ok: false, error: String(err.message || err), stdout: String(stdout || ''), stderr: String(stderr || '') })
+        const msg = String(err.message || err)
+        finish({
+          ok: false,
+          cancelled: /killed|terminated|abort/i.test(msg),
+          error: msg,
+          stdout: String(stdout || ''),
+          stderr: String(stderr || '')
+        })
       } else {
-        resolve({ ok: true, stdout: String(stdout || ''), stderr: String(stderr || '') })
+        finish({ ok: true, stdout: String(stdout || ''), stderr: String(stderr || '') })
       }
     })
+    if (child) { runningJobs.add(child) }
   })
+})
+
+ipcMain.handle('job:cancelAll', async () => {
+  let killed = 0
+  runningJobs.forEach((child) => {
+    try {
+      if (child && !child.killed) {
+        child.kill('SIGTERM')
+        killed++
+      }
+    } catch (e) { /* ignore */ }
+  })
+  runningJobs.clear()
+  return { ok: true, killed }
 })
 
 const menuTemplates = {
   'project-item': (payload) => {
     const items = []
-    if (!payload.isMultiItems) {
+    const locale = (payload && payload.locale) || {}
+    if (!payload.isMultiItems && !payload.isRunning) {
       items.push(
-        { id: 'openOriginal', label: payload.locale.openOriginal },
-        { id: 'openDist', label: payload.locale.openDist },
-        { id: 'changeDist', label: payload.locale.changeDist },
+        { id: 'openOriginal', label: locale.openOriginal },
+        { id: 'openDist', label: locale.openDist },
+        { id: 'changeDist', label: locale.changeDist },
         { type: 'separator' }
       )
     }
-    items.push({ id: 'delItem', label: payload.locale.delItem })
+    if (payload.isRunning) {
+      items.push({ id: 'stopItem', label: locale.stopItem || 'Stop task' })
+    }
+    items.push({ id: 'delItem', label: locale.delItem })
     return items
   }
 }

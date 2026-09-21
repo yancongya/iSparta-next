@@ -113,9 +113,13 @@ export async function runUpdateCheck (opts) {
         state.lastResult = result
         refreshBadge()
       }
-      // 支持自动更新且用户未关闭自动下载时，后台拉 electron-updater
-      if (prefsAfter.autoDownload !== false && o.autoDownload !== false) {
-        maybeStartAutoDownload()
+      // 检查本身不触发下载：有新版只出 UI（Dock/Dialog），由用户点「立即更新」再拉包
+      // 避免设置里一点「检查更新」就后台下完只丢一个「重启」
+      if (!o.force) {
+        try {
+          var snap = await ipc.invoke('updater:autoState')
+          applyAutoState(snap)
+        } catch (eSnap) { /* 忽略 */ }
       }
     }
     return result

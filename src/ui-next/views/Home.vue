@@ -156,6 +156,7 @@
       @later="onUpdateLater"
       @skip="onUpdateSkip"
       @download="onUpdateDownload"
+      @update="onUpdateDockUpdate"
       @restart="onUpdateRestart"
     />
   </div>
@@ -338,6 +339,7 @@ export default {
       updateService.markSkipVersion(this.updateResult && this.updateResult.latest)
     },
     onUpdateDownload () {
+      // 不支持应用内更新时才走浏览器；支持时主按钮是「立即更新」
       updateService.openDownload(this.updateResult)
       updateService.markLater(this.updateResult && this.updateResult.latest)
     },

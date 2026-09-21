@@ -210,6 +210,12 @@ function createMockIpc () {
         }
         return Promise.resolve({ ok: !!(window.__updateAutoStub && window.__updateAutoStub.downloaded) })
       }
+      if (channel === 'job:cancelAll') {
+        return Promise.resolve({ ok: true, killed: 0 })
+      }
+      if (channel === 'job:execFile') {
+        return Promise.resolve({ ok: false, error: 'mock 桥：浏览器调试模式不支持执行转换', cancelled: false })
+      }
       if (channel === 'shell:openExternal') {
         // eslint-disable-next-line no-console
         console.info('[mock-ipc] shell:openExternal', payload)

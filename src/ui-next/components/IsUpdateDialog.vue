@@ -39,6 +39,16 @@
         @click="onRestart"
       >{{ $t('updateRestartNow') }}</is-button>
       <is-button
+        v-else-if="autoSupported && autoDownloading"
+        type="primary"
+        :disabled="true"
+      >{{ $t('updateDownloading') }}</is-button>
+      <is-button
+        v-else-if="autoSupported"
+        type="primary"
+        @click="onUpdate"
+      >{{ $t('updateDockUpdate') }}</is-button>
+      <is-button
         v-else
         type="primary"
         @click="onDownload"
@@ -100,6 +110,9 @@ export default {
     },
     onDownload () {
       this.$emit('download')
+    },
+    onUpdate () {
+      this.$emit('update')
     },
     onRestart () {
       this.$emit('restart')

@@ -10,7 +10,7 @@
         class="item"
         :class="itemClass(project)"
         :data-index="index"
-        @contextmenu="itemRightClick(project.basic, index)"
+        @contextmenu.prevent="itemRightClick(project, index)"
         @click="onItemClick(index)"
       >
         <!-- 勾选：多选切换，阻止冒泡以免触发单选 -->
@@ -398,12 +398,20 @@ export default {
       }
       this.$store.dispatch('multiSelect', index)
     },
-    itemRightClick (currentItem, index) {
+    itemRightClick (project, index) {
       var locale = this.$i18n.messages[this.$i18n.locale]
+      var procState = this.stateOf(project && project.process)
+      var isRunning = procState === 'running'
       this.$store.dispatch('setSelected', index)
       // 让 store 先完成选中态更新，再取当前选中数量构建菜单
       window.setTimeout(() => {
-        rightMenu.init(this.$store, currentItem, index, this.isMultiItems, locale)
+        rightMenu.init(
+          this.$store,
+          Object.assign({}, project && project.basic, { isRunning: isRunning }),
+          index,
+          this.isMultiItems,
+          locale
+        )
       }, 10)
     },
     changeFold (outputPath, index) {

@@ -4,7 +4,7 @@ import Vuex from 'vuex'
 import modules from './modules'
 
 import * as types from './mutation-types'
-import { fs, storage, os, path, getProcessBridge } from '../util/node-env'
+import { fs, storage, os, path, getProcessBridge, ipc } from '../util/node-env'
 import { resolveOutputPath } from '../util/outputPath'
 import appLog from '../ui-next/log'
 import i18n from '../i18n'
@@ -257,6 +257,29 @@ const mutations = {
     }
     persistItems()
   },
+  // 任务运行中也可删除：先终止再移除；不检查 locked
+  [types.ITEMS_REMOVE_FORCE](state) {
+    var remainList = _.remove(state.items, {
+      isSelected: false
+    })
+    state.items = remainList
+    if (state.items.length && !_.some(state.items, { isSelected: true })) {
+      state.items[0].isSelected = true
+    }
+    persistItems()
+  },
+  [types.ITEMS_MARK_ABORTED](state) {
+    var abortedText = i18n.t('noticeConvertAborted')
+    _.each(state.items, function (item) {
+      if (!item.isSelected) { return }
+      var s = item.process && item.process.schedule
+      if (typeof s === 'number' && s > 0 && s < 1 && item.process) {
+        item.process.schedule = -1
+        item.process.text = abortedText
+      }
+    })
+    // 进度不写 storage
+  },
   [types.ALL_REMOVE](state) {
     if (state.locked) {
       return false
@@ -302,12 +325,12 @@ const mutations = {
   },
   [types.ITEMS_EDIT_PROCESS](state, keyValue) {
     var selectedItem = _.filter(state.items, { isSelected: true })
-    // console.warn(keyValue)
-    var selectedProcess = selectedItem[keyValue.index].process
-    _.extend(selectedProcess, keyValue)
-
-    // 进度不记录在localstore里
-    // storage.setItem("iSparta-item",JSON.stringify(state.items));
+    var target = selectedItem && selectedItem[keyValue.index]
+    // 运行中删除/改选后 index 可能越界：静默跳过，避免整条转换链崩溃
+    if (!target || !target.process) {
+      return
+    }
+    _.extend(target.process, keyValue)
   },
   [types.SINGLE_SELECT](state, index) {
     if (state.locked) {
@@ -320,11 +343,9 @@ const mutations = {
     persistItems()
   },
   [types.SET_SELECTED](state, index) {
-    if (state.locked) {
-      return false
-    }
+    // 锁定态也要能选中：右键菜单依赖当前项定位（删除/终止）
+    if (!state.items[index]) { return }
     state.items[index].isSelected = true
-    persistItems()
   },
   [types.MULTI_SELECT](state, index) {
     if (state.locked) {
@@ -367,6 +388,40 @@ const actions = {
   },
   remove(context) {
     context.commit('ITEMS_REMOVE')
+  },
+  /** 运行中删除：杀掉子进程 → 标记中断 → 强制移除选中项 */
+  removeSelectedForce(context) {
+    return Promise.resolve()
+      .then(function () {
+        return ipc.invoke('job:cancelAll')
+      })
+      .catch(function () { return null })
+      .then(function () {
+        context.commit('ITEMS_MARK_ABORTED')
+        return new Promise(function (r) { setTimeout(r, 40) })
+      })
+      .then(function () {
+        context.commit('ITEMS_REMOVE_FORCE')
+        context.commit('SET_LOCK', false)
+      })
+  },
+  /** 只终止当前选中任务，不删除 */
+  stopSelectedTasks(context) {
+    context.commit('ITEMS_MARK_ABORTED')
+    return Promise.resolve()
+      .then(function () {
+        return ipc.invoke('job:cancelAll')
+      })
+      .catch(function () { return null })
+      .then(function () {
+        var anyRunning = _.some(context.rootState.items, function (it) {
+          var s = it.process && it.process.schedule
+          return typeof s === 'number' && s > 0 && s < 1
+        })
+        if (!anyRunning) {
+          context.commit('SET_LOCK', false)
+        }
+      })
   },
   removeAll(context) {
     context.commit('ALL_REMOVE')

@@ -8,6 +8,12 @@ export const ITEMS_ADD = 'ITEMS_ADD'
 // 删除一项
 export const ITEMS_REMOVE = 'ITEMS_REMOVE'
 
+// 运行中强制删除选中项
+export const ITEMS_REMOVE_FORCE = 'ITEMS_REMOVE_FORCE'
+
+// 将选中且进行中的任务标记为已中断
+export const ITEMS_MARK_ABORTED = 'ITEMS_MARK_ABORTED'
+
 // 删除所有
 export const ALL_REMOVE = 'ALL_REMOVE'
 

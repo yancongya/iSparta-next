@@ -206,7 +206,16 @@
             >{{ $t('updateRestartNow') }}</is-button>
             <em v-else class="hint">{{ $t('updateDownloading') }}</em>
           </div>
-          <em v-else class="hint">{{ $t('updateAutoUnsupported') }}</em>
+          <is-button
+            v-else-if="updateHasNewVersion"
+            size="sm"
+            type="primary"
+            @click="onStartUpdate"
+          >{{ $t('updateDockUpdate') }}</is-button>
+          <em v-else class="hint">{{ $t('updateCheckFirst') }}</em>
+        </is-form-item>
+        <is-form-item v-else-if="updateHasNewVersion" :label="$t('updateRestartNow')">
+          <em class="hint">{{ $t('updateAutoUnsupported') }}</em>
         </is-form-item>
       </is-form>
 
@@ -293,6 +302,10 @@ export default {
       var a = this.updateUi && this.updateUi.auto
       return (a && a.progress) || 0
     },
+    updateHasNewVersion () {
+      var r = this.updateUi && this.updateUi.lastResult
+      return !!(r && r.state === 'available' && r.latest)
+    },
     languages () {
       return [
         { label: '简体', value: 'zh-cn' },
@@ -373,9 +386,11 @@ export default {
     onCheckUpdate () {
       var self = this
       updateService.runUpdateCheck({ force: true }).then(function (result) {
+        return updateService.refreshAutoUpdateState().then(function () { return result })
+      }).then(function (result) {
         if (!result) { return }
         if (result.state === 'available') {
-          // 对话框由 updateService 打开；这里不重复弹 notice
+          // 对话框由 updateService 打开；设置面板出「立即更新」，不自动下载
           return
         }
         if (result.state === 'latest') {
@@ -398,6 +413,9 @@ export default {
       }).catch(function (e) {
         notice.warning(self.$t('updateFailed'), String(e && e.message || e))
       })
+    },
+    onStartUpdate () {
+      updateService.startUpdateFromDock(this.updateUi && this.updateUi.lastResult)
     },
     onRestartUpdate () {
       updateService.restartToUpdate()

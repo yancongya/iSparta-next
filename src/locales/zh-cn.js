@@ -47,6 +47,7 @@ module.exports = {
     "openDist":"打开输出目录",
     "changeDist":"修改输出目录",
     "delItem":"删除项目",
+    "stopItem":"终止任务",
     //multi
     "multiText":"目前为多选状态，使用各自的配置输出",
     "batchStart":"批量开始",
@@ -198,5 +199,6 @@ module.exports = {
     "updateDockUpdate":"立即更新",
     "updateDockContinue":"可继续使用应用",
     "updateReadyTitle":"更新已就绪",
-    "updateDownloadFailed":"更新下载失败"
+    "updateDownloadFailed":"更新下载失败",
+    "updateCheckFirst":"检查到新版本后可在此启动更新"
 }

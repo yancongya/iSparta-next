@@ -47,6 +47,7 @@ module.exports = {
     "openDist":"打開輸出目錄",
     "changeDist":"修改輸出目錄",
     "delItem":"刪除項目",
+    "stopItem":"終止任務",
     //multi
     "multiText":"目前為多選狀態，使用各自的配置輸出",
     "batchStart":"批量開始",
@@ -198,5 +199,6 @@ module.exports = {
     "updateDockUpdate":"立即更新",
     "updateDockContinue":"可繼續使用應用",
     "updateReadyTitle":"更新已就緒",
-    "updateDownloadFailed":"更新下載失敗"
+    "updateDownloadFailed":"更新下載失敗",
+    "updateCheckFirst":"檢查到新版本後可在此啟動更新"
 }
