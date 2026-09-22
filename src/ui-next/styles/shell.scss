@@ -1,4 +1,4 @@
-﻿// ==========================================================================
+// ==========================================================================
 // 应用外壳（Home.vue）
 // --------------------------------------------------------------------------
 // 原先这里堆了一批 :deep(.mod-list .item)、:deep(.mod-setting .el-input__inner)
@@ -91,9 +91,10 @@
   margin: 0 var(--is-s-4) var(--is-s-4);
   padding: var(--is-s-8);
   text-align: center;
-  border: 1px dashed var(--is-border-hi);
-  border-radius: var(--is-r-lg);
-  background: var(--is-panel);
+  overflow: hidden;
+  border: 2px solid rgba(var(--is-accent-rgb), 0.28);
+  border-radius: var(--is-r-xl);
+  background: rgba(var(--is-accent-rgb), 0.04);
   cursor: pointer;
   transition: border-color var(--is-dur-base) var(--is-ease-std),
     background-color var(--is-dur-base) var(--is-ease-std),
@@ -101,25 +102,52 @@
     transform var(--is-dur-base) var(--is-ease-out);
 
   &:hover {
+    border-color: var(--is-accent);
     box-shadow: var(--is-glow);
     transform: translateY(-2px);
+
+    .ib-folder {
+      transform: translateY(-5px);
+      filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.15));
+    }
+
+    .ib-folder__front {
+      transform: rotateX(-40deg) skewX(15deg);
+    }
+
+    .ib-folder__back::before {
+      transform: rotateX(-5deg) skewX(5deg);
+    }
+
+    .ib-folder__back::after {
+      transform: rotateX(-15deg) skewX(12deg);
+    }
   }
 
-  // 拖拽悬停：整块区域「接住」文件的反馈
+  // 拖拽悬停：整块区域「接住」文件，文件夹弹开并上下弹跳
   &.is-hot {
     border-color: var(--is-accent);
-    border-style: solid;
-    background: var(--is-accent-soft);
+    background: rgba(var(--is-accent-rgb), 0.1);
     box-shadow: var(--is-glow);
-    transform: scale(1.005);
-
-    // 图标持续上下弹跳 + 接住时整体过冲放大：拖入等待期的「活力感」
+    transform: scale(1.02);
     animation: is-drop-catch var(--is-dur-slow) var(--is-ease-overshoot);
 
-    .ib-drop__icon {
-      transform: translateY(4px) scale(1.12);
-      background: var(--is-accent-dim);
+    .ib-folder {
+      transform: translateY(-8px) scale(1.15);
+      filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.2));
       animation: is-drop-bounce 0.5s var(--is-ease-std) infinite alternate;
+    }
+
+    .ib-folder__front {
+      transform: rotateX(-40deg) skewX(15deg);
+    }
+
+    .ib-folder__back::before {
+      transform: rotateX(-5deg) skewX(5deg);
+    }
+
+    .ib-folder__back::after {
+      transform: rotateX(-15deg) skewX(12deg);
     }
   }
 
@@ -127,61 +155,322 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 56px;
-    height: 56px;
+    width: 70px;
+    height: 70px;
     margin-bottom: var(--is-s-2);
-    border: 1px solid var(--is-border);
-    border-radius: 50%;
-    background: var(--is-card);
-    color: var(--is-accent);
-    font-size: 22px;
-    transition: transform var(--is-dur-slow) var(--is-ease-spring),
-      background-color var(--is-dur-base) var(--is-ease-std);
-  }
-
-  // 空态守望者：小精灵蹲在拖放区右上角，拖入时变兴奋态
-  &__pet {
-    position: absolute;
-    top: var(--is-s-3);
-    right: var(--is-s-4);
-    opacity: 0.9;
-  }
-
-  &__kicker {
-    color: var(--is-accent);
-    font-family: var(--is-mono);
-    font-size: var(--is-fs-xs);
-    letter-spacing: 0.2em;
+    flex-shrink: 0;
   }
 
   h1 {
-    color: var(--is-text);
-    font-size: var(--is-fs-2xl);
-    font-weight: var(--is-fw-black);
-    letter-spacing: -0.01em;
+    margin: 0 0 0.2rem 0;
+    font-size: clamp(1.1rem, 4vw, 1.3rem);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    background: linear-gradient(120deg, #4a6cf7, #6c757d);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    overflow-wrap: break-word;
   }
 
   &__rule {
     max-width: 420px;
+    margin: 0;
     color: var(--is-text-3);
     font-size: var(--is-fs-md);
     line-height: 1.7;
   }
 
-  &__cta {
-    margin-top: var(--is-s-3);
-    padding: 10px var(--is-s-5);
-    border-radius: var(--is-r-pill);
-    background: var(--is-accent);
-    color: var(--is-on-accent);
-    font-size: var(--is-fs-md);
-    font-weight: var(--is-fw-bold);
+  /* ---- 以下键盘样式原样复制自 image-compression #drop-area ---- */
+  .keyboard-hint {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.8rem;
+    color: var(--text-secondary, var(--is-text-2));
+    width: 100%;
   }
 
-  &__kbd {
-    margin-top: var(--is-s-4);
-    color: var(--is-text-3);
-    font-size: var(--is-fs-xs);
+  .keyboard-hint p {
+    margin: 0;
+    color: var(--text-secondary, var(--is-text-2));
+    font-size: 0.9rem;
+    opacity: 0.7;
+  }
+
+  .keyboard-keys {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.3rem;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+  }
+
+  /* 立体机械键帽：原样复制自 image-compression css/style.css .keyboard-key */
+  .keyboard-key {
+    background-color: #000;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    border: 0.5px solid rgba(0, 0, 0, 0.1);
+    padding: 5px 8px;
+    min-width: 40px;
+    height: 34px;
+    border-radius: 6px 6px 4px 4px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    will-change: transform;
+    transition: all 0.1s ease-in-out 0s;
+    user-select: none;
+    background-image: linear-gradient(
+        to right,
+        rgba(0, 0, 0, 0.8),
+        rgba(0, 0, 0, 0)
+      ),
+      linear-gradient(to bottom, rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0));
+    background-position: bottom right, bottom right;
+    background-size: 100% 100%, 100% 100%;
+    background-repeat: no-repeat;
+    box-shadow: inset -2px -4px 0px rgba(255, 255, 255, 0.4),
+      inset -2px -4px 0px rgba(0, 0, 0, 0.3), 0px 1px 1px rgba(0, 0, 0, 0.3),
+      0px 1px 1px rgba(255, 255, 255, 0.1);
+    transform: perspective(40px) rotateX(5deg) rotateY(5deg);
+  }
+
+  .keyboard-key::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background-image: linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.2),
+      rgba(0, 0, 0, 0.5)
+    );
+    z-index: -1;
+    border-radius: 6px;
+    box-shadow: inset 2px 0px 0px rgba(255, 255, 255, 0.1),
+      inset 2px -4px 0px rgba(0, 0, 0, 0.3);
+    transition: all 0.1s ease-in-out 0s;
+  }
+
+  .keyboard-key::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background-image: linear-gradient(
+        to right,
+        rgba(0, 0, 0, 0.8),
+        rgba(0, 0, 0, 0)
+      ),
+      linear-gradient(to bottom, rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0));
+    background-position: bottom right, bottom right;
+    background-size: 100% 100%, 100% 100%;
+    background-repeat: no-repeat;
+    z-index: -1;
+    border-radius: 6px;
+    transition: all 0.1s ease-in-out 0s;
+  }
+
+  .keyboard-key:active {
+    will-change: transform;
+    transform: perspective(40px) rotateX(5deg) rotateY(1deg) translateY(2px)
+      scale(0.97);
+    height: 32px;
+    border: 0.25px solid rgba(0, 0, 0, 0.2);
+    box-shadow: inset -2px -3px 0px rgba(255, 255, 255, 0.2),
+      inset -2px -3px 0px rgba(0, 0, 0, 0.8), 0px 1px 0px rgba(0, 0, 0, 0.9),
+      0px 1px 0px rgba(255, 255, 255, 0.2);
+    transition: all 0.1s ease-in-out 0s;
+  }
+
+  /* 按下：下沉 + 蓝光（对齐 index.html .key-pressed） */
+  .keyboard-key.key-pressed {
+    transform: perspective(40px) rotateX(5deg) rotateY(1deg) translateY(2px)
+      scale(0.97);
+    color: #288ef7;
+    text-shadow: 0 0 10px rgba(40, 142, 247, 0.5);
+    border-color: rgba(40, 142, 247, 0.3);
+    box-shadow: 0 0 15px rgba(40, 142, 247, 0.3);
+  }
+
+  .keyboard-key.key-pressed::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle at center, rgba(40, 142, 247, 0.2), transparent 70%);
+    animation: glow 0.5s ease-out;
+    pointer-events: none;
+    z-index: 1;
+    border-radius: 6px;
+    box-shadow: none;
+  }
+
+  /* 悬浮效果 */
+  .keyboard-keys:hover .keyboard-key {
+    transform: perspective(40px) rotateX(2deg) rotateY(2deg) translateY(-2px);
+    box-shadow: 0 4px 12px rgba(40, 142, 247, 0.2),
+      inset -2px -4px 0px rgba(255, 255, 255, 0.4),
+      inset -2px -4px 0px rgba(0, 0, 0, 0.3);
+    border-color: rgba(40, 142, 247, 0.2);
+  }
+
+  /* 加号样式 */
+  .plus {
+    color: var(--plus-color);
+    display: inline-block;
+    transform-origin: center;
+    font-size: clamp(0.9rem, 3vw, 1rem);
+    margin: 0 2px;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    opacity: 0.7;
+  }
+
+  /* 悬浮时加号动画 */
+  .keyboard-keys:hover .plus {
+    transform: scale(1.2) rotate(90deg);
+    color: #288ef7;
+    opacity: 1;
+  }
+
+  /* 暗色模式下的按键样式 */
+  .dark-mode .keyboard-key {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .dark-mode .keyboard-key.key-pressed {
+    background: rgba(40, 142, 247, 0.1);
+    box-shadow: 0 0 15px rgba(40, 142, 247, 0.3);
+  }
+
+  /* 亮色模式下的按键样式 */
+  .light-mode .keyboard-key {
+    background: rgba(255, 255, 255, 0.9);
+    border-color: rgba(0, 0, 0, 0.1);
+  }
+
+  .light-mode .keyboard-key.key-pressed {
+    background: rgba(40, 142, 247, 0.05);
+    box-shadow: 0 0 15px rgba(40, 142, 247, 0.2);
+  }
+}
+
+/* 键帽 CSS 变量（原样复制，主题类名映射到 iSparta） */
+.ib-drop {
+  --key-bg: rgba(255, 255, 255, 0.05);
+  --key-color: rgba(255, 255, 255, 0.9);
+  --plus-color: rgba(255, 255, 255, 0.5);
+  --key-border-color: rgba(255, 255, 255, 0.1);
+  --key-shadow-color: rgba(0, 0, 0, 0.2);
+}
+
+body.is-theme-light .ib-drop {
+  --key-bg: #ffffff;
+  --key-color: #333333;
+  --plus-color: #666666;
+  --key-border-color: rgba(0, 0, 0, 0.1);
+  --key-shadow-color: rgba(0, 0, 0, 0.1);
+}
+
+/* 亮色模式键帽：原样对齐 style.css .light-mode .keyboard-key */
+body.is-theme-light .ib-drop .keyboard-key {
+  background-color: #222;
+  color: #fff;
+}
+
+@keyframes glow {
+  0% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(2);
+  }
+}
+
+// CSS 文件夹图标：hover / 拖入时前盖翻开，露出内页
+.ib-folder {
+  --folder-w: 70px;
+  --folder-h: 52.5px;
+  position: relative;
+  width: var(--folder-w);
+  height: var(--folder-h);
+  transition: transform 0.35s ease-in-out, filter 0.35s ease-in-out;
+
+  &__front,
+  &__back {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    transform-origin: bottom center;
+    transition: transform 350ms;
+  }
+
+  &__front {
+    z-index: 1;
+  }
+
+  // 后页两张「纸」
+  &__back::before,
+  &__back::after {
+    content: '';
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.55);
+    transform-origin: bottom center;
+    transition: transform 350ms;
+  }
+
+  &__tip {
+    position: absolute;
+    top: -10px;
+    left: 10px;
+    z-index: 2;
+    width: 60px;
+    height: 15px;
+    border-radius: 8px 8px 0 0;
+    background: linear-gradient(135deg, #ff9a56, #ff6f56);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.18);
+    transition: box-shadow 0.35s ease-in-out;
+  }
+
+  &__cover {
+    width: 100%;
+    height: 100%;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #ffe563, #ffc663);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.22);
+    transition: box-shadow 0.35s ease-in-out;
+  }
+
+  // 后页本体也用封面色垫底（与 tip / cover 同一套）
+  &__back {
+    background: linear-gradient(135deg, #ffe563, #ffc663);
+    border-radius: 10px;
   }
 }
 

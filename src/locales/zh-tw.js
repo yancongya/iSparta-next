@@ -165,6 +165,8 @@ module.exports = {
     "shortcutDelete":"刪除所選",
     "shortcutBlankClick":"雙擊空白全選 · 單擊空白取消選擇",
     "pasteHint":"或直接貼上截圖",
+    "noticePasteEmpty":"剪貼簿中沒有圖片",
+    "noticePasteNeedShortcut":"無法讀取剪貼簿，請直接按 Ctrl+V",
     "dropToImport":"鬆手即可導入",
     // status bar
     "statDone":"成功",

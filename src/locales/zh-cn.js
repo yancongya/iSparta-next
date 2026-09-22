@@ -165,6 +165,8 @@ module.exports = {
     "shortcutDelete":"删除所选",
     "shortcutBlankClick":"双击空白全选 · 单击空白取消选择",
     "pasteHint":"或直接粘贴截图",
+    "noticePasteEmpty":"剪贴板中没有图片",
+    "noticePasteNeedShortcut":"无法读取剪贴板，请直接按 Ctrl+V",
     "dropToImport":"松手即可导入",
     // 底栏统计
     "statDone":"成功",

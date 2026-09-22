@@ -427,8 +427,8 @@ button {
 
 /* 拖放区图标等待弹跳（alternate 往复） */
 @keyframes is-drop-bounce {
-  from { transform: translateY(4px) scale(1.12); }
-  to { transform: translateY(-6px) scale(1.18); }
+  from { transform: translateY(-6px) scale(1.15); }
+  to { transform: translateY(-14px) scale(1.2); }
 }
 
 /* 进度条完成确认：轻放大回落 */

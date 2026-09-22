@@ -29,19 +29,23 @@
         @click="onPick"
       >
         <div class="ib-drop__icon">
-          <is-icon :name="dragging ? 'download' : 'film'" size="xl" />
+          <div class="ib-folder">
+            <div class="ib-folder__front">
+              <div class="ib-folder__tip"></div>
+              <div class="ib-folder__cover"></div>
+            </div>
+            <div class="ib-folder__back"></div>
+          </div>
         </div>
-        <p class="ib-drop__kicker">DROP · PASTE · CLICK</p>
         <h1>{{ $t('uploadTips') }}</h1>
         <p class="ib-drop__rule">{{ $t('uploadRule') }}</p>
-        <span class="ib-drop__cta">{{ $t('openFolder') }}</span>
-        <div class="ib-drop__kbd">
-          <span class="is-kbd-group">
-            <kbd class="is-kbd" :class="{ 'is-pressed': pressed === 'Control' }">Ctrl</kbd>
-            <span>+</span>
-            <kbd class="is-kbd" :class="{ 'is-pressed': pressed === 'v' }">V</kbd>
-            <span>{{ $t('pasteHint') }}</span>
-          </span>
+        <div class="keyboard-hint">
+          <p>{{ $t('pasteHint') }}</p>
+          <div class="keyboard-keys">
+            <span class="keyboard-key" id="ctrl-key" :class="{ 'key-pressed': pressed === 'Control' }" @click.stop="onKeyClick('Control')">CTRL</span>
+            <span class="plus">+</span>
+            <span class="keyboard-key" id="v-key" :class="{ 'key-pressed': pressed === 'v' }" @click.stop="onKeyClick('v')">V</span>
+          </div>
         </div>
       </div>
     </section>
@@ -478,6 +482,13 @@ export default {
       // 输入框里保留原生编辑行为
       if (this.isTyping(e.target)) return
 
+      // 空态键帽按下反馈（CTRL / V），对齐原版 key-pressed
+      if (e.key === 'Control') {
+        this.pressed = 'Control'
+      } else if (e.key === 'v' || e.key === 'V') {
+        this.pressed = 'v'
+      }
+
       var mod = e.ctrlKey || e.metaKey
       var key = (e.key || '').toLowerCase()
 
@@ -498,7 +509,46 @@ export default {
         if (this.selectedCount) this.$store.dispatch('removeSelectedForce')
       }
     },
-    onKeyup (e) { this.pressed = e.key },
+    onKeyup (e) {
+      if (e.key === 'Control' && this.pressed === 'Control') this.pressed = ''
+      if ((e.key === 'v' || e.key === 'V') && this.pressed === 'v') this.pressed = ''
+    },
+
+    // 点击键帽：闪一下 + 触发粘贴（对齐原版 handleKeyClick）
+    onKeyClick (key) {
+      this.flashKey(key)
+      this.triggerPaste()
+    },
+    flashKey (key) {
+      this.pressed = key
+      setTimeout(() => {
+        if (this.pressed === key) this.pressed = ''
+      }, 150)
+    },
+    async triggerPaste () {
+      try {
+        if (!navigator.clipboard || !navigator.clipboard.read) {
+          notice.info(this.$t('noticePasteNeedShortcut'))
+          return
+        }
+        const items = await navigator.clipboard.read()
+        const files = []
+        for (const item of items) {
+          const type = item.types.find((t) => t.indexOf('image/') === 0)
+          if (!type) continue
+          const blob = await item.getType(type)
+          const ext = type.split('/')[1] || 'png'
+          files.push(new File([blob], 'pasted-image.' + ext, { type }))
+        }
+        if (!files.length) {
+          notice.info(this.$t('noticePasteEmpty'))
+          return
+        }
+        this.importPaths(files)
+      } catch (err) {
+        notice.warning(this.$t('noticePasteNeedShortcut'))
+      }
+    },
     isTyping (el) {
       if (!el || !el.tagName) return false
       var tag = el.tagName.toLowerCase()

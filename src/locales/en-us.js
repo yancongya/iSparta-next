@@ -165,6 +165,8 @@ module.exports = {
     "shortcutDelete":"Delete selected",
     "shortcutBlankClick":"Double-click blank to select all · click blank to clear",
     "pasteHint":"or paste an image directly",
+    "noticePasteEmpty":"No image in the clipboard",
+    "noticePasteNeedShortcut":"Cannot read the clipboard — press Ctrl+V instead",
     "dropToImport":"Drop to import",
     // status bar
     "statDone":"Succeeded",
