@@ -147,9 +147,18 @@ a {
 }
 
 .brand-mark {
-  color: var(--accent);
+  /* 品牌标固定用 icon-brand 色（#c8f542 + #0c0f0e），不跟随主题 accent（亮色为橙） */
   display: grid;
   place-items: center;
+  width: 28px;
+  height: 28px;
+  flex: none;
+}
+
+.brand-mark svg {
+  display: block;
+  width: 28px;
+  height: 28px;
 }
 
 .brand-text {
