@@ -10,6 +10,11 @@ node_modules
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+*.log
+.*.log
+.*-run.log
+.ssr-*.log
+*.err
 
 # Editor directories and files
 .idea
