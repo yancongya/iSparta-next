@@ -20,6 +20,10 @@ yarn-error.log*
 *.sln
 *.sw?
 
+# 本地临时清单 / 草稿（不入库）
+cep-playground-待裁决清单.md
+*.待裁决清单.md
+
 #Electron-builder output
 /dist_electron
 test
