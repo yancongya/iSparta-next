@@ -33,7 +33,7 @@
         </label>
       </div>
 
-      <div ref="list" class="log__list" tabindex="0" :aria-label="$t('logTitle')">
+      <is-scroll-fade ref="list" class="log__list" tabindex="0" :aria-label="$t('logTitle')">
         <p v-if="!shown.length" class="log__empty">{{ $t('logEmpty') }}</p>
         <div
           v-for="e in shown"
@@ -45,7 +45,7 @@
           <span class="log__lv mono">{{ e.level }}</span>
           <span class="log__msg">{{ e.msg }}<span v-if="e.detail" class="log__detail mono">{{ e.detail }}</span></span>
         </div>
-      </div>
+      </is-scroll-fade>
     </div>
 
     <template #footer>
@@ -117,8 +117,10 @@ export default {
       return { all: 'logLvAll', info: 'logLvInfo', ok: 'logLvOk', warn: 'logLvWarn', error: 'logLvError' }[f] || 'logLvAll'
     },
     scrollToEnd () {
-      var el = this.$refs.list
-      if (el) { el.scrollTop = el.scrollHeight }
+      var host = this.$refs.list
+      var el = host && (host.$el || host)
+      if (el && el.scrollTop !== undefined) { el.scrollTop = el.scrollHeight }
+      if (host && typeof host.scrollToBottom === 'function') { host.scrollToBottom() }
     },
     clear () {
       log.clear()

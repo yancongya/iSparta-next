@@ -23,6 +23,8 @@ import IsSegmented from './IsSegmented.vue'
 import IsSwitch from './IsSwitch.vue'
 import IsNumberTween from './IsNumberTween.vue'
 import IsProgress from './IsProgress.vue'
+import IsScrollFade from './IsScrollFade.vue'
+import IsAlert from './IsAlert.vue'
 
 export {
   IsIcon,
@@ -38,7 +40,9 @@ export {
   IsSegmented,
   IsSwitch,
   IsNumberTween,
-  IsProgress
+  IsProgress,
+  IsScrollFade,
+  IsAlert
 }
 
 const components = [
@@ -55,7 +59,9 @@ const components = [
   ['IsSegmented', IsSegmented],
   ['IsSwitch', IsSwitch],
   ['IsNumberTween', IsNumberTween],
-  ['IsProgress', IsProgress]
+  ['IsProgress', IsProgress],
+  ['IsScrollFade', IsScrollFade],
+  ['IsAlert', IsAlert]
 ]
 
 export default {
