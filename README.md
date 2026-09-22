@@ -23,7 +23,12 @@
 - 架构、限制与测试入口：[`docs/UPDATER.md`](docs/UPDATER.md)；发版步骤：[`docs/RELEASE.md`](docs/RELEASE.md)；版本摘要：[`docs/CHANGELOG.md`](docs/CHANGELOG.md)。
 - Windows 免费开源签名申请步骤见 [docs/SIGNPATH.md](docs/SIGNPATH.md)。
 
-### 近期体验更新（v3.4.0）
+### 近期体验更新
+
+- 空态导入面板：文件夹开合动画 + 立体键帽粘贴提示
+- 空态标题蓝渐变，支持点击 / 拖拽 / Ctrl+V 导入
+
+### 历史体验更新（v3.4.0）
 
 - **更新弹窗**改为「新版已就绪」布局：品牌标、要点列表与安装说明更清晰。
 - 落地页导航 **logo** 与应用图标统一；右侧面板窄窗下单列排布、不再横向溢出。
