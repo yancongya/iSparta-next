@@ -37,6 +37,8 @@
   .mod-empty {
     flex: 1;
     min-height: 0;
+    min-width: 0;
+    overflow-x: hidden;
     overflow-y: auto;
     padding: var(--is-s-2) var(--is-s-3) 60px;
   }
@@ -48,6 +50,7 @@
     gap: var(--is-s-2) var(--is-s-3);
     padding: var(--is-s-3) 0;
     border-bottom: 1px solid var(--is-divider);
+    min-width: 0;
   }
 
   .mod-form__paircell {
@@ -59,10 +62,13 @@
   }
 
   .row-label {
-    flex: none;
-    min-width: 56px;
+    flex: 0 1 auto;
+    min-width: 36px;
+    max-width: 8.5em;
     color: var(--is-text-2);
     font-size: var(--is-fs-sm);
+    overflow: hidden;
+    text-overflow: ellipsis;
     white-space: nowrap;
   }
 
@@ -74,7 +80,15 @@
     width: 54px;
     flex: none;
   }
+
+  // 窄栏：两列收成单列，避免横向溢出与控件互相挤压
+  body.side-narrow & {
+    .mod-form__pairwrap {
+      grid-template-columns: 1fr;
+    }
+  }
 }
+
 
 // --------------------------------------------------------------------------
 // 空态
@@ -146,7 +160,8 @@
     display: flex;
     align-items: center;
     gap: var(--is-s-2);
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
+    min-width: 0;
     min-height: 30px;
   }
 
@@ -283,7 +298,7 @@
     align-items: center;
     gap: var(--is-s-2);
     // 窄屏靠元素自身压缩（label 省略/分段缩小），不允许整行折行
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
     min-width: 0;
   }
 
