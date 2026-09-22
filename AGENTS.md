@@ -33,6 +33,7 @@
 - **不要**把 release 号、安装包下载说明写进业务 commit
 - 业务改动与发版 bump（`chore(release): vX.Y.Z [skip ci]`）分开：bump 由 CI 生成，本地只提交功能 commit
 - 提交前跑 `npm run lint`；不要 commit 本地日志（`dev.log`、`.g*-run.log` 等）
+- **禁止**在 commit / Release / CHANGELOG / README 中出现 **ZCode** 或「参考某某项目/仓库」等来源表述；只写 iSparta-next 自身的行为与收益
 
 示例：
 
@@ -45,6 +46,7 @@ feat(list): 空白处框选任务；Delete 删除所选
 - **仅当用户明确要求发布/发版/release 时才触发** `release.yml` / `scripts/release.ps1`
 - 修完 bug、改完 UI、补完文档：**只 commit / push**，不要自动发版
 - 用户未点名发版时，最多说「已提交，需要发版再说」
+- Release 正文、应用内更新说明、CHANGELOG **一律不提** ZCode / 对照仓库 / 「参考了…」；对照材料仅存本地临时笔记，**不进仓库**
 
 ### 2.3 Release 说明结构（用户可见）
 
