@@ -10,6 +10,7 @@
 | 浏览器 UI 预览 | `npm run serve`（默认 8081） |
 | 依赖安装 | `scripts\dev\run-npm-install.cmd` / `run-clean-install.cmd` / `run-electron-install.cmd` |
 | Lint | `npm run lint` |
+| 出包前自检 | `npm run doctor:pack`（图标 / 向导图 / builder 引用；CI 构建前会跑） |
 | 本地打包 Windows | `npm run build:windows` |
 | 更新逻辑测试 | `node scripts\updateCheck.l1.js`；fixture：`scripts\fixture-github.js` |
 | 图标再生 | 见 `scripts\build-app-icons.js`、`scripts\make-icons-from-png.py`、`scripts\make-installer-images.py`（勿手改位图当源） |

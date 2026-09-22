@@ -16,6 +16,8 @@
     "build": "vue-cli-service electron:build -mwl ",
     "build:windows": "vue-cli-service electron:build --windows",
     "lint": "vue-cli-service lint",
+    "doctor:pack": "node scripts/doctor-packaging.js",
+    "prepare": "node -e \"try{require('husky')}catch(e){process.exit(0)}\" && husky || exit 0",
     "postinstall": "electron-builder install-app-deps",
     "postuninstall": "electron-builder install-app-deps"
   },
@@ -41,6 +43,8 @@
     "electron": "^28.3.3",
     "eslint": "^6.8.0",
     "eslint-plugin-vue": "^6.2.2",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.2.10",
     "sass": "^1.32.13",
     "sass-loader": "^8.0.2",
     "vue-cli-plugin-electron-builder": "~2.1.1",
