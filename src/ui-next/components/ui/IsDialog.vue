@@ -9,14 +9,15 @@
       <div class="is-dialog__mask" @click="onMaskClick"></div>
       <div
         class="is-dialog__panel"
+        :class="panelClass"
         role="dialog"
         aria-modal="true"
-        :aria-label="title"
+        :aria-label="title || undefined"
         :style="panelStyle"
         tabindex="-1"
         ref="panel"
       >
-        <header class="is-dialog__header">
+        <header v-if="!hideHeader" class="is-dialog__header">
           <h3 class="is-dialog__title">
             <slot name="title">{{ title }}</slot>
           </h3>
@@ -28,6 +29,13 @@
             @click="close"
           ><is-icon name="close" /></button>
         </header>
+        <button
+          v-else-if="showClose"
+          type="button"
+          class="is-dialog__close is-dialog__close--float"
+          :aria-label="$t('close')"
+          @click="close"
+        ><is-icon name="close" /></button>
 
         <div class="is-dialog__body">
           <slot />
@@ -54,6 +62,8 @@ export default {
     title: { type: String, default: '' },
     width: { type: String, default: '520px' },
     top: { type: String, default: '' },
+    hideHeader: { type: Boolean, default: false },
+    panelClass: { type: [String, Array, Object], default: '' },
     showClose: { type: Boolean, default: true },
     closeOnClickModal: { type: Boolean, default: true },
     closeOnEsc: { type: Boolean, default: true },

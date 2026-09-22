@@ -212,6 +212,7 @@ module.exports = {
     "updateDockUpdate":"Update now",
     "updateDockContinue":"You can keep using the app",
     "updateReadyTitle":"Update ready",
+    "updateReadyHead":"Version {ver} is ready",
     "updateDownloadFailed":"Update download failed",
     "updateCheckFirst":"After a check finds a new version, start the update here"
 }

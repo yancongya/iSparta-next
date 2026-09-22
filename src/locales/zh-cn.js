@@ -212,6 +212,7 @@ module.exports = {
     "updateDockUpdate":"立即更新",
     "updateDockContinue":"可继续使用应用",
     "updateReadyTitle":"更新已就绪",
+    "updateReadyHead":"新版 {ver} 已就绪",
     "updateDownloadFailed":"更新下载失败",
     "updateCheckFirst":"检查到新版本后可在此启动更新"
 }

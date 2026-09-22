@@ -141,7 +141,29 @@ async function maybeStartAutoDownload () {
   }
 }
 
+/**
+ * UI 预览用（开发调试）：挂 window.__updateAutoStub 或
+ * localStorage.ispartaPreviewAuto 后，合并覆盖 auto 快照，
+ * 便于在 dev 下看「立即更新 / 重启以更新」形态。未设置时零影响。
+ */
+function previewAutoStub () {
+  if (typeof window === 'undefined') { return null }
+  if (window.__updateAutoStub && typeof window.__updateAutoStub === 'object') {
+    return window.__updateAutoStub
+  }
+  try {
+    var raw = window.localStorage && window.localStorage.getItem('ispartaPreviewAuto')
+    if (raw) {
+      var parsed = JSON.parse(raw)
+      if (parsed && typeof parsed === 'object') { return parsed }
+    }
+  } catch (e) { /* ignore */ }
+  return null
+}
+
 function applyAutoState (snap) {
+  var stub = previewAutoStub()
+  if (stub) { snap = Object.assign({}, snap || {}, stub) }
   if (!snap || typeof snap !== 'object') { return }
   state.auto = Object.assign({}, state.auto, snap)
   // 下载中 / 已完成：即使用户关过「有新版」卡片，也重新露出 dock（重启 CTA 不能埋掉）
