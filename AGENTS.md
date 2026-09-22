@@ -40,7 +40,13 @@
 feat(list): 空白处框选任务；Delete 删除所选
 ```
 
-### 2.2 Release 说明结构（用户可见）
+### 2.2 Release 触发策略（强制）
+
+- **仅当用户明确要求发布/发版/release 时才触发** `release.yml` / `scripts/release.ps1`
+- 修完 bug、改完 UI、补完文档：**只 commit / push**，不要自动发版
+- 用户未点名发版时，最多说「已提交，需要发版再说」
+
+### 2.3 Release 说明结构（用户可见）
 
 发版正文用 GitHub Markdown，**结构固定**：
 
@@ -125,8 +131,9 @@ CI：`release.yml` 负责 bump、打包、挂 Release（notes 模板见该 workf
 
 - 先搜代码/文档/脚本再改；架构与交互以本文、`docs/UPDATER.md`、`docs/RELEASE.md`、`docs/CHANGELOG.md` 为准
 - 优先 `scripts\` 与 `npm run *`；不要为 lint/发版/图标另起临时流程
+- **未经用户明确要求，禁止 commit 以外的发版/release**（见 §2.2）
 - 主树（`master`）大范围写入前按会话规则确认 worktree；发版后 `git pull` 同步 bump
-- 完成后：lint 通过 → commit（规范见上）→ 更新 CHANGELOG/README（如有用户可见变化）→ 需要发版时用 `release.ps1` / `release.yml`
+- 完成后：lint 通过 → commit（规范见上）→ 更新 CHANGELOG/README（如有用户可见变化）→ **等用户点名再 release**
 
 ## 9. 文档索引
 
