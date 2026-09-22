@@ -147,12 +147,34 @@ export async function startAutoDownload () {
   }
 }
 
-export function quitAndInstall () {
+export function quitAndInstall (opts) {
   const u = loadUpdater()
   if (!u || !state.downloaded) { return { ok: false, reason: 'not-downloaded' } }
   try {
-    // isSilent=false：Windows 上让用户看到安装界面；Linux AppImage 替换后重启
-    u.quitAndInstall(false, true)
+    const o = opts || {}
+    // 安装前系统 Toast（Windows）；mac/Linux 自动更新路径很少走到这里
+    try {
+      const { Notification } = require('electron')
+      if (Notification.isSupported && Notification.isSupported()) {
+        const n = new Notification({
+          title: o.title || 'iSparta-next',
+          body: o.body || '正在安装更新…',
+          silent: true
+        })
+        n.show()
+      }
+    } catch (eNotify) { /* 通知失败不阻断安装 */ }
+
+    // 略等一拍让 Toast 露出，再关应用进安装向导
+    const run = () => {
+      // isSilent=false：显示 NSIS 向导；isForceRunAfter=true：装完自动启动
+      u.quitAndInstall(false, true)
+    }
+    if (o.delayMs > 0) {
+      setTimeout(run, o.delayMs)
+    } else {
+      run()
+    }
     return { ok: true }
   } catch (e) {
     return { ok: false, reason: String(e && e.message || e) }
@@ -166,7 +188,7 @@ export function getAutoUpdateState () {
 export function registerAutoUpdateIpc () {
   ipcMain.handle('updater:autoState', async () => snapshot())
   ipcMain.handle('updater:autoDownload', async () => startAutoDownload())
-  ipcMain.handle('updater:quitAndInstall', async () => quitAndInstall())
+  ipcMain.handle('updater:quitAndInstall', async (event, opts) => quitAndInstall(opts))
 }
 
 export default {

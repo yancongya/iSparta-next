@@ -84,8 +84,10 @@ CI：`release.yml` 负责 bump、打包、挂 Release（notes 模板见该 workf
 
 ## 3. 更新体验（产品约定）
 
-- 启动自动检查 → **应用内** Dock（右下角），**不**用系统通知
+- 启动自动检查 → **应用内** Dock（右下角），**不**用系统通知（「有新版」提示）
 - **检查更新不自动下载**；UI 出「立即更新」，用户确认后再拉包；完成后「重启以更新」
+- **安装阶段**可使用系统 Toast（Windows）：文案 `updateInstallingApp` / `updateInstallingBody`
+- Windows NSIS 为**完整向导**（`oneClick: false` + `perMachine: false`）：自带「安装选项」页；侧栏图 `build/installerSidebar.bmp`（164×314）、页眉 `build/installerHeader.bmp`（150×57）
 - 设置面板与 Dialog 与 Dock 状态一致；mac/Dev 显示「前往下载」
 - 文案键见 `src/locales/*`，新增 UI 必须三语齐全
 

@@ -202,6 +202,8 @@ module.exports = {
     "updateNotesTitle":"What's new",
     "updateNotesEmpty":"No release notes for this version. See the GitHub Releases page for the full changelog.",
     "updateRestartNow":"Restart to update",
+    "updateInstallingApp":"iSparta-next is installing an update",
+    "updateInstallingBody":"The app will close to finish installing. It will reopen automatically when setup completes — this may take a few minutes.",
     "updateDownloading":"Downloading update in the background…",
     "updateDownloaded":"Update downloaded. Restart to apply.",
     "updateAutoUnsupported":"Auto-update isn't available for this install. Use Download instead.",

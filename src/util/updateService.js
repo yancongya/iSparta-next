@@ -167,7 +167,16 @@ export async function refreshAutoUpdateState () {
 
 export async function restartToUpdate () {
   try {
-    return await ipc.invoke('updater:quitAndInstall')
+    // 文案走渲染层 i18n，主进程 Toast 用这份文案
+    var i18nMod = null
+    try { i18nMod = require('../i18n').default } catch (e) { i18nMod = null }
+    var title = (i18nMod && i18nMod.t('updateInstallingApp')) || 'iSparta-next'
+    var body = (i18nMod && i18nMod.t('updateInstallingBody')) || '正在安装更新…'
+    return await ipc.invoke('updater:quitAndInstall', {
+      title: title,
+      body: body,
+      delayMs: 500
+    })
   } catch (e) {
     return { ok: false, reason: String(e && e.message || e) }
   }

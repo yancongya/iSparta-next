@@ -22,12 +22,20 @@ win:
         - x64
   icon: ./public/icons/icon.ico
 nsis:
-  # 开始菜单 / 卸载项显示名；安装目录随 package.json name= isparta-next
-  # （默认 %LOCALAPPDATA%\Programs\<name 或 productName>）
-  oneClick: true
+  # 完整安装向导（含「安装选项」：所有用户 / 仅当前用户）
+  # oneClick:false + perMachine:false → electron-builder 自带 install mode 页（zh_CN）
+  oneClick: false
   perMachine: false
+  allowToChangeInstallationDirectory: true
+  # 完成页「运行 iSparta-next」勾选
+  runAfterFinish: true
+  # 开始菜单 / 卸载项显示名；安装目录随 package.json name= isparta-next
   shortcutName: iSparta-next
   uninstallDisplayName: iSparta-next
+  # 向导侧栏（164×314 BMP）/ 页眉（150×57 BMP）— 品牌色
+  installerSidebar: ./build/installerSidebar.bmp
+  uninstallerSidebar: ./build/installerSidebar.bmp
+  installerHeader: ./build/installerHeader.bmp
   # SignPath Foundation 免费签名（审核通过后在 CI 注入，勿把密钥写进仓库）：
   # win.sign: SignPath
 mac:

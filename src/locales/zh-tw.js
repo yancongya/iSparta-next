@@ -202,6 +202,8 @@ module.exports = {
     "updateNotesTitle":"更新說明",
     "updateNotesEmpty":"該版本暫無更新說明，可前往 Release 頁查看完整變更。",
     "updateRestartNow":"重啟以更新",
+    "updateInstallingApp":"iSparta-next 正在安裝更新",
+    "updateInstallingBody":"應用將關閉以完成安裝。安裝結束後會自動重新打開，可能需要幾分鐘。",
     "updateDownloading":"正在背景下載更新…",
     "updateDownloaded":"更新包已下載完成，重啟後即可生效。",
     "updateAutoUnsupported":"目前安裝形態不支援自動更新，請使用「前往下載」。",
