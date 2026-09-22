@@ -12,7 +12,7 @@
 | Lint | `npm run lint` |
 | 本地打包 Windows | `npm run build:windows` |
 | 更新逻辑测试 | `node scripts\updateCheck.l1.js`；fixture：`scripts\fixture-github.js` |
-| 图标再生 | 见 `scripts\build-app-icons.js`、`scripts\make-icons-from-png.py`（勿手改位图当源） |
+| 图标再生 | 见 `scripts\build-app-icons.js`、`scripts\make-icons-from-png.py`、`scripts\make-installer-images.py`（勿手改位图当源） |
 
 环境：Node 经 `MIMO_NODE` / `MIMO_NPM` 时用 `& $env:MIMO_NODE $env:MIMO_NPM run <script>`。Windows 上不要用 Unix 登录 shell。
 
