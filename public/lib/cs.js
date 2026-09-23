@@ -66,11 +66,32 @@
     return false
   }
 
+  /** 收 jsx CSXSEvent（__adobe_cep__.addEventListener）；无宿主返回 false */
+  function addEventListener (type, listener) {
+    var a = adobe()
+    if (a && typeof a.addEventListener === 'function') {
+      a.addEventListener(String(type), listener)
+      return true
+    }
+    return false
+  }
+
+  function removeEventListener (type, listener) {
+    var a = adobe()
+    if (a && typeof a.removeEventListener === 'function') {
+      a.removeEventListener(String(type), listener)
+      return true
+    }
+    return false
+  }
+
   return {
     getSystemPath: getSystemPath,
     getExtensionPath: getExtensionPath,
     evalScript: evalScript,
     evalJson: evalJson,
-    openURLInDefaultBrowser: openURLInDefaultBrowser
+    openURLInDefaultBrowser: openURLInDefaultBrowser,
+    addEventListener: addEventListener,
+    removeEventListener: removeEventListener
   }
 })

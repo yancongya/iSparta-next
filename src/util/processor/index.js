@@ -85,8 +85,19 @@ export default function (store, sameOutputPath, locale) {
     taskFactories.push(function (currentItem) {
       return function () {
         // Comp：转换前渲序列填 fileList，再走 PNGs 同链
-        var prepare = currentItem.basic && currentItem.basic.type === TYPE.Comp
-          ? hostAdapter.prepareItem(currentItem)
+        // 渲染进度经 store.editProcess；schedule 限制在 0.15–0.38，不得超过 analysing 0.4
+        // 桌面（无 prepareSequence / 不 supportsCompImport）不出现「渲染」文案
+        var isComp = currentItem.basic && currentItem.basic.type === TYPE.Comp
+        var willRender = isComp && !!(hostAdapter && hostAdapter.supportsCompImport)
+        if (willRender) {
+          store.dispatch('editProcess', {
+            index: currentItem.index,
+            text: (locale.renderingComp || 'Rendering composition') + '...',
+            schedule: 0.15
+          })
+        }
+        var prepare = isComp
+          ? hostAdapter.prepareItem(currentItem, { store: store, locale: locale })
           : Promise.resolve(currentItem)
 
         return prepare.then(function (ready) {
@@ -110,6 +121,16 @@ export default function (store, sameOutputPath, locale) {
             default:
               return Promise.resolve()
           }
+        }).catch(function (err) {
+          // Comp 渲序列失败：与 action.exec 失败一致（convertFail / -1）；桌面无渲染阶段不写
+          if (willRender) {
+            store.dispatch('editProcess', {
+              index: currentItem.index,
+              text: locale.convertFail || 'Failed',
+              schedule: -1
+            })
+          }
+          return Promise.reject(err)
         })
       }
     }(item))

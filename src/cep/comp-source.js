@@ -115,15 +115,95 @@ export function toCompItem (comp, optionsOverride) {
   }
   // 与 file.js 非 PNGs 分支一致：inputPath = 目录 + '/' + 名（无扩展）
   temp.basic.inputPath = address + '/' + node.name
+  // 帧数：渲染进度分母（0.15–0.38）
+  temp.basic.frameCount = Number(node.frames) || 0
+  // CEP 默认输出 = 项目旁「合成名」子目录（对应桌面输出到文件夹）
+  if (!temp.options.outputTo || !temp.options.outputTo.template) {
+    temp.options.outputTo = Object.assign({}, temp.options.outputTo, {
+      mode: 'custom',
+      template: '{srcPath}/{srcName}'
+    })
+  }
+  // 输出路径与 tokenizeName / outputPath 同函数展开
   temp.basic.outputPath = resolveOutputPath(temp, temp.options)
   return temp
 }
 
 /**
+ * 渲染阶段 schedule 映射：0.15–0.38（绝不能超过 analysing 0.4）
+ */
+const RENDER_SCHEDULE_START = 0.15
+const RENDER_SCHEDULE_END = 0.38
+
+function renderScheduleOf (done, total) {
+  const d = Number(done) || 0
+  const t = Number(total) || 0
+  if (t <= 0) { return RENDER_SCHEDULE_START }
+  const ratio = Math.max(0, Math.min(1, d / t))
+  return RENDER_SCHEDULE_START + (RENDER_SCHEDULE_END - RENDER_SCHEDULE_START) * ratio
+}
+
+function localeOf (opts) {
+  return (opts && opts.locale) || {}
+}
+
+/** 渲染进度 → store.editProcess（或 onProgress）；失败 schedule:-1 与 action.js 一致 */
+function emitRenderProgress (item, opts, payload) {
+  const loc = localeOf(opts)
+  const phase = (payload && payload.phase) || 'progress'
+  let text
+  let schedule
+  if (phase === 'error') {
+    text = loc.convertFail || 'Failed'
+    schedule = -1
+  } else if (phase === 'done') {
+    text = (loc.renderingComp || 'Rendering composition') + '...'
+    schedule = RENDER_SCHEDULE_END
+  } else {
+    const done = payload && payload.done
+    const total = payload && payload.total
+    const label = loc.renderingComp || 'Rendering composition'
+    text = (done != null && total) ? (label + ' ' + done + '/' + total + '...') : (label + '...')
+    schedule = (phase === 'start')
+      ? RENDER_SCHEDULE_START
+      : renderScheduleOf(payload && payload.done, payload && payload.total)
+  }
+  const frame = { text: text, schedule: schedule, phase: phase }
+  if (opts && typeof opts.onProgress === 'function') {
+    try { opts.onProgress(frame) } catch (e) { /* progress 失败不挡转换 */ }
+  }
+  if (opts && opts.store && item && item.index != null) {
+    try {
+      opts.store.dispatch('editProcess', {
+        index: item.index,
+        text: text,
+        schedule: schedule
+      })
+    } catch (e2) { /* ignore */ }
+  }
+  return frame
+}
+
+const RENDER_EVENT = 'isparta.render.progress'
+
+/** 事件 data → payload（兼容 CEP event 对象 / 字符串） */
+function parseRenderEventData (ev) {
+  if (!ev) { return null }
+  const raw = (typeof ev === 'string') ? ev : (ev.data != null ? ev.data : '')
+  if (!raw) { return null }
+  try {
+    return typeof raw === 'object' ? raw : JSON.parse(raw)
+  } catch (e) {
+    return null
+  }
+}
+
+/**
  * 转换前渲 PNG 序列并填 fileList（fileNameList）。
  * 路径变量 {srcName} 始终取合成名；fileList 只作输入帧，不改源目录。
+ * opts: { store, locale, onProgress } — 绑定 jsx 渲染进度事件，结束/失败解绑。
  */
-export function prepareCompSequence (item) {
+export function prepareCompSequence (item, opts) {
   const basic = (item && item.basic) || {}
   if (basic.type !== 'Comp') {
     return Promise.resolve(item)
@@ -138,6 +218,7 @@ export function prepareCompSequence (item) {
   const idx = Number(basic.compIndex)
   const name = basic.compName || ''
   // 临时帧目录：用 tmpDir 或系统临时下的 isparta-comp-*
+  // 只作渲染中间帧，不得覆盖用户 outputTo 输出目录语义
   const tmpRoot = (basic.tmpDir || basic.tmpOutputDir) || ''
   const outDir = tmpRoot || ('ae-comp-tmp-' + (idx != null ? idx : 'x'))
   try {
@@ -146,6 +227,91 @@ export function prepareCompSequence (item) {
     }
   } catch (e) { /* ensure 失败交由 jsx 报错 */ }
   const location = outDir + (String(outDir).slice(-1) === '/' ? '' : (path.sep || '/'))
+  const expectedFrames = Number(basic.frameCount) || 0
+
+  // —— 绑定 jsx 渲染进度事件（渲前/渲后/错误）；结束时解绑避免泄漏 ——
+  let onRenderEvent = null
+  let pollTimer = null
+  let maxDone = 0
+  const eventToken = location
+
+  function countPngs (folder) {
+    try {
+      if (fs && typeof fs.readdirSync === 'function') {
+        return fs.readdirSync(folder)
+          .filter(function (n) { return /\.png$/i.test(n) })
+          .length
+      }
+    } catch (e) { /* ignore */ }
+    return 0
+  }
+
+  function applyProgress (done, total, phase) {
+    const t = Number(total) || expectedFrames || 0
+    const d = Number(done) || 0
+    if (d > maxDone) { maxDone = d }
+    emitRenderProgress(item, opts, {
+      phase: phase || 'progress',
+      done: maxDone,
+      total: t
+    })
+  }
+
+  function teardownProgress () {
+    if (pollTimer) {
+      try { clearInterval(pollTimer) } catch (e) { /* ignore */ }
+      pollTimer = null
+    }
+    if (onRenderEvent) {
+      try {
+        if (host && typeof host.removeEventListener === 'function') {
+          host.removeEventListener(RENDER_EVENT, onRenderEvent)
+        }
+      } catch (e2) { /* ignore */ }
+      onRenderEvent = null
+    }
+  }
+
+  if (host && typeof host.addEventListener === 'function') {
+    onRenderEvent = function (ev) {
+      const p = parseRenderEventData(ev)
+      if (!p) { return }
+      // 多任务并发：compIndex 明确不匹配则忽略；token 仅在无 compIndex 时作目录前缀辅助过滤
+      if (p.compIndex != null && idx != null && isFinite(idx) && Number(p.compIndex) !== idx) {
+        return
+      }
+      if (p.token && eventToken && (p.compIndex == null || !isFinite(idx))) {
+        const tok = String(p.token)
+        const base = String(eventToken)
+        const tokenHit = tok === base || tok.indexOf(base) === 0 || base.indexOf(tok) === 0
+        if (!tokenHit) { return }
+      }
+      const phase = p.phase || 'progress'
+      if (phase === 'error') {
+        emitRenderProgress(item, opts, { phase: 'error', done: p.done, total: p.total })
+        return
+      }
+      applyProgress(p.done, p.total, phase)
+    }
+    try { host.addEventListener(RENDER_EVENT, onRenderEvent) } catch (e) { onRenderEvent = null }
+  }
+
+  // 可轮询进度：渲序列 PNG 落盘时按文件数推进 0.15–0.38
+  // （renderQueue.render 阻塞 jsx，中途无法再 evalScript，只能从面板侧计数）
+  try {
+    if (typeof setInterval === 'function') {
+      pollTimer = setInterval(function () {
+        applyProgress(countPngs(outDir), expectedFrames, 'progress')
+      }, 200)
+    }
+  } catch (e) { pollTimer = null }
+
+  emitRenderProgress(item, opts, {
+    phase: 'start',
+    done: 0,
+    total: expectedFrames
+  })
+
   const script = isFinite(idx)
     ? 'ispartaExportPngSequenceByIndex(' + idx + ',' + JSON.stringify(location) + ')'
     : 'ispartaMatchComps(' + JSON.stringify([{ name: name }]) + ')'
@@ -181,12 +347,27 @@ export function prepareCompSequence (item) {
         }
         basic.fileList = files
         if (!basic.sourceFile) { basic.sourceFile = files[0] }
-        // 序列目录只作输入帧；outputPath 继续按 outputTo/模板解析
+        // 序列目录只作输入帧；outputPath 继续按 outputTo/模板解析（tokenizeName/outputPath 同函数）
         if (item.options) {
           item.basic.outputPath = resolveOutputPath(item, item.options)
         }
+        emitRenderProgress(item, opts, {
+          phase: 'done',
+          done: files.length,
+          total: files.length
+        })
         return item
       })
+  }).catch((err) => {
+    // 失败 schedule:-1，与 action.js 失败一致
+    emitRenderProgress(item, opts, { phase: 'error' })
+    return Promise.reject(err)
+  }).then((ready) => {
+    teardownProgress()
+    return ready
+  }, (err) => {
+    teardownProgress()
+    return Promise.reject(err)
   })
 }
 
@@ -272,6 +453,61 @@ export function toItems (selected, options) {
     out.push(toCompItem(list[i], options))
   }
   return out
+}
+
+/** 启动/刷新时读工程状态；仅异常时由 UI 提示 */
+export function getProjectStatus () {
+  return evalJson('ispartaGetProjectStatus()').then(function (res) {
+    if (res && res.ok) {
+      return res
+    }
+    return { ok: false, code: 'error', message: (res && res.message) || 'error' }
+  }).catch(function (e) {
+    return { ok: false, code: 'error', message: String(e && e.message || e) }
+  })
+}
+
+/**
+ * 为 Comp 任务异步补首帧封面（不阻塞勾选/列表）。
+ * onChange(storeIndex, thumbPath) 由调用方写回 store。
+ */
+export function ensureThumbs (items, onChange) {
+  if (!enabled() || typeof onChange !== 'function') return
+  const list = items || []
+  const pending = []
+  for (let i = 0; i < list.length; i++) {
+    const it = list[i]
+    const b = it && it.basic
+    if (!b || b.type !== 'Comp') continue
+    if (b.thumbPath) continue
+    const idx = Number(b.compIndex)
+    if (!isFinite(idx)) continue
+    pending.push({ storeIndex: i, compIndex: idx, name: b.compName || 'comp' })
+  }
+  if (!pending.length) return
+
+  const osBridge = require('../util/node-env').os
+  const pathBridge = require('../util/node-env').path
+  let thumbDir = ''
+  try {
+    thumbDir = pathBridge.join(osBridge.tmpdir(), 'iSparta', 'comp-thumbs')
+  } catch (e) {
+    return
+  }
+
+  // 串行：render queue 同时只能跑一个
+  let p = Promise.resolve()
+  pending.forEach(function (job) {
+    p = p.then(function () {
+      const file = pathBridge.join(thumbDir, 'c' + job.compIndex + '-' + Date.now() + '.png')
+      const script = 'ispartaExportCompThumbByIndex(' + job.compIndex + ',' + JSON.stringify(file) + ')'
+      return evalJson(script).then(function (res) {
+        if (res && res.ok && res.path) {
+          onChange(job.storeIndex, res.path)
+        }
+      }).catch(function () { /* 封面失败不挡任务 */ })
+    })
+  })
 }
 
 export const sourceAdapter = {
@@ -361,12 +597,14 @@ export const sourceAdapter = {
     return matchAndToItems(specs, options)
   },
 
-  /** 转换前渲序列并填 fileList */
-  prepareSequence (item) {
-    return prepareCompSequence(item)
+  /** 转换前渲序列并填 fileList；opts:{ store, locale, onProgress } 绑定渲染进度 */
+  prepareSequence (item, opts) {
+    return prepareCompSequence(item, opts)
   },
 
   createItem: toCompItem,
+  ensureThumbs,
+  getProjectStatus,
   COMP_MIME
 }
 
@@ -381,6 +619,8 @@ registerHostSource({
   onDrop: function () { return sourceAdapter.onDrop.apply(sourceAdapter, arguments) },
   onPaste: function () { return sourceAdapter.onPaste.apply(sourceAdapter, arguments) },
   toItems: function () { return sourceAdapter.toItems.apply(sourceAdapter, arguments) },
+  ensureThumbs: function () { return sourceAdapter.ensureThumbs.apply(sourceAdapter, arguments) },
+  getProjectStatus: function () { return sourceAdapter.getProjectStatus.apply(sourceAdapter, arguments) },
   openSource: function () { return sourceAdapter.openSource.apply(sourceAdapter, arguments) },
   addByIdentifiers: function () { return sourceAdapter.addByIdentifiers.apply(sourceAdapter, arguments) },
   prepareSequence: function () { return sourceAdapter.prepareSequence.apply(sourceAdapter, arguments) },

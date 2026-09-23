@@ -46,6 +46,39 @@ function ispartaErr (message) {
     return ispartaToJson({ ok: false, error: String(message) });
 }
 
+/**
+ * 渲染进度事件 → 面板（type: isparta.render.progress）
+ * 优先 CSXSEvent；无 CSXSEvent 时写临时文件/挂全局兑底（面板可轮询，注释说明）。
+ * payload: { phase: start|progress|done|error, token, compIndex, compName, done, total, error? }
+ */
+function ispartaDispatchRenderProgress (payload) {
+    var json = ispartaToJson(payload);
+    try {
+        if (typeof CSXSEvent !== 'undefined') {
+            var evt = new CSXSEvent();
+            evt.type = 'isparta.render.progress';
+            evt.data = json;
+            evt.dispatch();
+            return true;
+        }
+    } catch (e1) {
+        // fall through to file/global fallback
+    }
+    // 兑底：无 CSXSEvent（调试/宿主差异）时挂 $.global + 写临时进度文件
+    try {
+        $.global.__ispartaRenderProgress = json;
+    } catch (e2) { /* ignore */ }
+    try {
+        var pf = new File(Folder.temp.fsName + '/isparta-render-progress.json');
+        pf.encoding = 'UTF-8';
+        if (pf.open('w')) {
+            pf.write(json);
+            pf.close();
+        }
+    } catch (e3) { /* ignore */ }
+    return false;
+}
+
 function ispartaHasActiveComp () {
     var item = app.project.activeItem;
     return !!(item && item instanceof CompItem);
@@ -475,9 +508,20 @@ function ispartaSavePngSequence (theComp, theLocation) {
     }
 
     theLocation = decodeURIComponent(theLocation);
+    var renderToken = theLocation;
+    var renderTotal = Math.round(dur / theComp.frameDuration) || 0;
     var RQbackup = ispartaStoreRenderQueue();
     if (RQbackup.length > 0 && RQbackup[RQbackup.length - 1] == 'rendering') {
         theComp.resolutionFactor = res;
+        ispartaDispatchRenderProgress({
+            phase: 'error',
+            token: renderToken,
+            compIndex: theComp.index,
+            compName: theComp.name,
+            done: 0,
+            total: renderTotal,
+            error: 'render queue is busy'
+        });
         return 'RENDERING';
     }
 
@@ -506,7 +550,26 @@ function ispartaSavePngSequence (theComp, theLocation) {
         om.setSettings(outputSettings);
 
         var finalpath = om.file.fsName;
+        // 渲前事件：面板据此把状态置为「正在渲染合成」
+        ispartaDispatchRenderProgress({
+            phase: 'start',
+            token: renderToken,
+            compIndex: theComp.index,
+            compName: theComp.name,
+            done: 0,
+            total: renderTotal
+        });
+        // renderQueue.render() 为阻塞调用，中途无法派发 CSXSEvent；
+        // 中间进度由面板轮询输出目录 PNG 数（0.15–0.38）补齐。
         app.project.renderQueue.render();
+        ispartaDispatchRenderProgress({
+            phase: 'done',
+            token: renderToken,
+            compIndex: theComp.index,
+            compName: theComp.name,
+            done: renderTotal,
+            total: renderTotal
+        });
         rqItem.remove();
         if (RQbackup !== null && RQbackup !== undefined) {
             ispartaRestoreRenderQueue(RQbackup);
@@ -515,6 +578,15 @@ function ispartaSavePngSequence (theComp, theLocation) {
         theComp.resolutionFactor = res;
         return finalpath;
     } catch (e) {
+        ispartaDispatchRenderProgress({
+            phase: 'error',
+            token: renderToken,
+            compIndex: theComp.index,
+            compName: theComp.name,
+            done: 0,
+            total: renderTotal,
+            error: String(e)
+        });
         try {
             theComp.resolutionFactor = res;
         } catch (e2) {
@@ -600,6 +672,127 @@ function ispartaExportCompPngSequence (comp, location) {
         width: comp.width,
         height: comp.height
     });
+}
+
+/**
+ * 工程状态：启动扫描前判定是否已打开/已保存。
+ * code: ok | noProject | unsaved
+ */
+function ispartaGetProjectStatus () {
+    try {
+        if (!app.project) {
+            return ispartaOk({ code: 'noProject', hasProject: false, isSaved: false, projectPath: '', compCount: 0 });
+        }
+        var file = app.project.file;
+        var isSaved = !!file;
+        var projectPath = file ? decodeURIComponent(file.fsName) : '';
+        var compCount = 0;
+        var n = app.project.numItems;
+        for (var i = 1; i <= n; i++) {
+            var it = app.project.item(i);
+            if (it && (it instanceof CompItem || (it.typeName && it.typeName === 'Composition'))) {
+                compCount++;
+            }
+        }
+        if (!isSaved) {
+            return ispartaOk({ code: 'unsaved', hasProject: true, isSaved: false, projectPath: '', compCount: compCount });
+        }
+        return ispartaOk({ code: 'ok', hasProject: true, isSaved: true, projectPath: projectPath, compCount: compCount });
+    } catch (e) {
+        return ispartaErr(e);
+    }
+}
+
+/**
+ * 导出合成首帧 PNG 静帧（任务封面）
+ * filePath: 完整输出路径（.png）
+ */
+function ispartaExportCompThumbByIndex (compIndex, filePath) {
+    try {
+        var comp = ispartaGetCompByIndex(compIndex);
+        if (!comp) {
+            return ispartaErr('composition not found at index ' + compIndex);
+        }
+        return ispartaExportCompThumb(comp, filePath);
+    } catch (e) {
+        return ispartaErr(e);
+    }
+}
+
+/** 合成 → 单帧 PNG 封面（内部共用） */
+function ispartaExportCompThumb (comp, filePath) {
+    if (!filePath) {
+        return ispartaErr('filePath required');
+    }
+    filePath = decodeURIComponent(filePath);
+    var target = new File(filePath);
+    if (!target.parent.exists) {
+        ispartaNewFolder(target.parent.fsName);
+    }
+
+    var res = [1, 1];
+    var start = comp.workAreaStart;
+    // 只渲 1 帧作为封面
+    var dur = comp.frameDuration;
+    if (comp.resolutionFactor != '1,1') {
+        res = comp.resolutionFactor;
+        comp.resolutionFactor = [1, 1];
+    }
+
+    var RQbackup = ispartaStoreRenderQueue();
+    if (RQbackup.length > 0 && RQbackup[RQbackup.length - 1] == 'rendering') {
+        comp.resolutionFactor = res;
+        return ispartaErr('render queue is busy');
+    }
+
+    try {
+        app.project.renderQueue.showWindow(false);
+        comp.openInViewer();
+        app.executeCommand(2104);
+        var rqItem = app.project.renderQueue.item(app.project.renderQueue.numItems);
+        rqItem.render = true;
+        var om = rqItem.outputModule(1);
+        var templateTemp = om.templates;
+        var setPNG = templateTemp[templateTemp.length - 1];
+        om.applyTemplate(setPNG);
+        om.file = target;
+
+        var rednerSettings = {
+            'Time Span Duration': dur,
+            'Time Span Start': start
+        };
+        var outputSettings = {
+            'Use Comp Frame Number': false,
+            'Starting #': '0'
+        };
+        rqItem.setSettings(rednerSettings);
+        om.setSettings(outputSettings);
+
+        var finalpath = om.file.fsName;
+        app.project.renderQueue.render();
+        rqItem.remove();
+        if (RQbackup !== null && RQbackup !== undefined) {
+            ispartaRestoreRenderQueue(RQbackup);
+        }
+        try { app.activeViewer.setActive(); } catch (ev) {}
+        comp.resolutionFactor = res;
+
+        // 序列模板可能落成 thumb_00000.png，收敛到指定 filePath
+        var outFile = new File(finalpath);
+        if (!outFile.exists) {
+            var parent = outFile.parent;
+            var base = outFile.name.replace(/\.png$/i, '');
+            var files = parent.getFiles(base + '*.png');
+            if (files && files.length) {
+                files[0].rename(outFile.name);
+                finalpath = outFile.fsName;
+            }
+        }
+        return ispartaOk({ path: decodeURIComponent(finalpath) });
+    } catch (e) {
+        try { comp.resolutionFactor = res; } catch (e2) {}
+        return ispartaErr(e);
+    }
 }
 
 /**

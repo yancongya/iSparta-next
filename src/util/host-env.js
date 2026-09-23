@@ -73,11 +73,15 @@ export const hostAdapter = {
     return Promise.resolve(null)
   },
 
-  /** 转换前准备（Comp→渲序列填 fileList）；无 sourceAdapter 时原样返回 */
-  prepareItem (item) {
+  /**
+   * 转换前准备（Comp→渲序列填 fileList）；无 sourceAdapter 时原样返回。
+   * opts 可选：{ store, locale, onProgress } — 渲染进度经 store.editProcess 回写；
+   * onProgress({ text, schedule }) 优先，便于 processor 直接绑 editProcess。
+   */
+  prepareItem (item, opts) {
     const impl = _sourceAdapter
     if (impl && typeof impl.prepareSequence === 'function') {
-      return impl.prepareSequence(item)
+      return impl.prepareSequence(item, opts)
     }
     return Promise.resolve(item)
   },
