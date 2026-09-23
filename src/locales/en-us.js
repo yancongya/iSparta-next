@@ -160,6 +160,7 @@ module.exports = {
     "tipDelay":"Per-frame delay",
     "framePanelTip":"Frame preview / sequence",
     "tipChangeOutput":"Change output folder",
+    "tipTaskSetting":"Output settings (this task only)",
     // appearance
     "appearance":"Appearance",
     "themeLight":"Light",

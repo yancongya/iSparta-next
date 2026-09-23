@@ -51,30 +51,35 @@
         </div>
 
         <div class="info">
-          <!-- 第一行：类型标签 + 输出目录（桌面）；CEP 只留类型，不显示路径 -->
+          <!-- 第一行：类型标签 + 主标题（合成名/输出名）；路径降为次要行 -->
           <div class="input">
-            <is-tag v-if="showOutPath" :tone="tagTone(project.basic && project.basic.type)">
+            <is-tag :tone="tagTone(project.basic && project.basic.type)">
               {{ project.basic && project.basic.type }}
             </is-tag>
-            <!-- 桌面：点击改输出目录；CEP：只读展示（项目旁/合成名） -->
-            <button
-              v-if="showOutPath"
-              type="button"
-              class="outpath is-ellipsis"
-              v-tip="$t('tipChangeOutput') + '：' + outPathOf(project)"
-              @click.stop="changeFold(project.basic && project.basic.outputPath, index)"
-            >
-              <is-icon name="folder" size="xs" />
-              <span class="is-ellipsis">{{ outPathOf(project) | basePath }}</span>
-            </button>
-            <span
-              v-else
-              class="outpath outpath--static is-ellipsis"
-              :title="outPathOf(project)"
-            >
-              <is-icon name="folder" size="xs" />
-              <span class="is-ellipsis">{{ outPathOf(project) | basePath }}</span>
-            </span>
+            <div class="item-names">
+              <div class="item-title is-ellipsis" v-tip="titleTipOf(project)">
+                {{ displayTitleOf(project, index) }}
+              </div>
+              <!-- 桌面：点击改输出目录；CEP：只读短路径（勿把 ae-comp/路径当名字） -->
+              <button
+                v-if="showOutPath"
+                type="button"
+                class="outpath is-ellipsis"
+                v-tip="$t('tipChangeOutput') + '：' + outPathOf(project)"
+                @click.stop="changeFold(project.basic && project.basic.outputPath, index)"
+              >
+                <is-icon name="folder" size="xs" />
+                <span class="is-ellipsis">{{ pathLabelOf(project) }}</span>
+              </button>
+              <span
+                v-else
+                class="outpath outpath--static is-ellipsis"
+                v-tip="titleTipOf(project)"
+              >
+                <is-icon name="folder" size="xs" />
+                <span class="is-ellipsis">{{ pathLabelOf(project) }}</span>
+              </span>
+            </div>
           </div>
           <!-- 第二行：默认参数摘要（帧频/循环/格式/阈值） -->
           <div class="summary">
@@ -106,8 +111,16 @@
           </div>
         </div>
 
-        <!-- 右侧：帧预览/延时（有序列帧时）在状态区左边 -->
+        <!-- 右侧：输出设置（单选打开）+ 帧预览/延时（二者独立，勿合并） -->
         <div class="side">
+          <button
+            type="button"
+            class="iconbtn iconbtn--flat"
+            :title="$t('tipTaskSetting')"
+            :disabled="isLocked"
+            @click.stop="onTaskSetting(project, index)"
+          ><is-icon name="sliders" size="sm" /></button>
+
           <button
             v-if="canOpenFramePanel(project)"
             type="button"
@@ -303,6 +316,54 @@ export default {
       if (s.autoQuality !== false) { extra.push(this.$t('sizeLimitAutoQuality')) }
       if (s.autoDelete) { extra.push(this.$t('sizeLimitAutoDelete')) }
       return shown + (extra.length ? ' · ' + extra.join(' / ') : '')
+    },
+    // ---------- 标题与路径 ----------
+    // 主标题 = 合成名 / 输出名（禁止把 ae-comp 或 basePath(outputPath) 当名字）
+    titleOf (project) {
+      var b = (project && project.basic) || {}
+      var o = (project && project.options) || {}
+      var name = String(b.compName || o.outputName || '').trim()
+      if (name) return name
+      return this.baseNameOf(b.inputPath) || b.type || '—'
+    },
+    // 同名多条时追加短路径区分（清单：多条同名可区分）
+    displayTitleOf (project, index) {
+      var title = this.titleOf(project)
+      var same = 0
+      for (var i = 0; i < this.projectList.length; i++) {
+        if (this.titleOf(this.projectList[i]) === title) same++
+      }
+      if (same <= 1) return title
+      var extra = this.shortPathOf(this.outPathOf(project) ||
+        ((project && project.basic && project.basic.inputPath) || ''))
+      if (extra && extra !== title) return title + ' · ' + extra
+      return title + ' · #' + (index + 1)
+    },
+    baseNameOf (p) {
+      var segs = String(p || '').split(/[\\/]/).filter(Boolean)
+      return segs.length ? segs[segs.length - 1] : ''
+    },
+    // 路径作次要信息：末两段，多条同名也可区分
+    shortPathOf (p) {
+      var segs = String(p || '').split(/[\\/]/).filter(Boolean)
+      if (segs.length >= 2) return segs.slice(-2).join('/')
+      return segs[0] || ''
+    },
+    pathLabelOf (project) {
+      var out = this.outPathOf(project)
+      var input = (project && project.basic && project.basic.inputPath) || ''
+      return this.shortPathOf(out || input) || '—'
+    },
+    titleTipOf (project) {
+      var b = (project && project.basic) || {}
+      var lines = []
+      if (b.compName) lines.push(b.compName)
+      if (b.inputPath) lines.push(this.$t('tipInputDir') + '：' + b.inputPath)
+      var out = this.outPathOf(project)
+      if (out) lines.push(this.$t('tipOutputDir') + '：' + out)
+      var name = this.outNameOf(project)
+      if (name) lines.push(this.$t('outputName') + '：' + name)
+      return lines.join('\n')
     },
     // ---------- 第二/三行摘要取值 ----------
     outPathOf (project) {
@@ -633,6 +694,17 @@ export default {
       if (hostAdapter && hostAdapter.supportsFrameDelay === false) return
       this.delayProject = project
       this.dialogFormVisible = true
+    },
+    /**
+     * 输出设置入口：先 singleSelect 只留该条，再打开设置。
+     * 桌面右栏由选中态驱动展示；CEP 覆盖层靠 open-task-setting（Home 监听）。
+     */
+    onTaskSetting (project, index) {
+      if (this.isLocked) return
+      this.$store.dispatch('selectOnlyAt', index)
+      if (this.$root && this.$root.eventBus) {
+        this.$root.eventBus.$emit('open-task-setting')
+      }
     }
   }
 }

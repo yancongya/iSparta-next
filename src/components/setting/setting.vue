@@ -446,19 +446,19 @@ export default {
     frameRate: {
       get () { return this.curtSetting.frameRate },
       set (value) {
-        this.$store.dispatch('editMultiOptions', { frameRate: value })
+        this.writeOptions({ frameRate: value })
       }
     },
     loop: {
       get () { return this.curtSetting.loop },
       set (value) {
-        this.$store.dispatch('editMultiOptions', { loop: value })
+        this.writeOptions({ loop: value })
       }
     },
     outputName: {
       get () { return (this.curtSetting && this.curtSetting.outputName) || '' },
       set (value) {
-        this.$store.dispatch('editOptions', { outputName: value })
+        this.writeOptions({ outputName: value })
       }
     },
     // 「只留文字」态：文字全选且至少一个分隔符被取消
@@ -477,13 +477,13 @@ export default {
         return (this.curtSetting && this.curtSetting.outputFormat) || []
       },
       set (value) {
-        this.$store.dispatch('editMultiOptions', { outputFormat: value })
+        this.writeOptions({ outputFormat: value })
       }
     },
     qualityCheck: {
       get () { return this.curtSetting.quality.checked },
       set (value) {
-        this.$store.dispatch('editMultiOptions', {
+        this.writeOptions({
           quality: { checked: value, value: this.quality }
         })
       }
@@ -494,7 +494,7 @@ export default {
         if (value > 100 || value < 0) {
           return false
         }
-        this.$store.dispatch('editMultiOptions', {
+        this.writeOptions({
           quality: { checked: this.qualityCheck, value: value }
         })
       }
@@ -613,6 +613,22 @@ export default {
     window.removeEventListener('keyup', this._onKeyUp)
   },
   methods: {
+    /**
+     * 写入选中项的 options：
+     * - 单选（含设置按钮进入的单项）只写该 item，禁止串到全部
+     * - 多选才批量写所有选中项（横幅语义）
+     */
+    writeOptions (patch) {
+      if (!patch || !this.selectedList.length) { return }
+      if (this.selectedList.length === 1) {
+        var all = this.$store.getters.getterItems
+        var index = all.indexOf(this.selectedList[0])
+        if (index < 0) { return }
+        this.$store.dispatch('editOptionsAt', { index: index, patch: patch })
+        return
+      }
+      this.$store.dispatch('editMultiOptions', patch)
+    },
     // ---------- 输出名拆词胶囊 ----------
     syncNameTokens (v) {
       // 由点选胶囊自己改出来的名字不重建，否则取消状态会被立刻冲掉
@@ -777,7 +793,7 @@ export default {
         step: 5,
         maxTries: 10
       }
-      this.$store.dispatch('editMultiOptions', {
+      this.writeOptions({
         sizeLimit: Object.assign({}, base, patch)
       })
     },

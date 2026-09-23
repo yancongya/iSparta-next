@@ -309,24 +309,24 @@ const mutations = {
     if (state.locked) {
       return false
     }
+    // 单项写入：只命中当前选中的那一项（单选=1）；多选请用 ITEMS_EDIT_MULTI_OPTIONS
     var selectedItem = _.filter(state.items, { isSelected: true })
-    if (!selectedItem.length) {
+    if (selectedItem.length !== 1) {
       return false
     }
-    var selectedOption = selectedItem[0].options
-    _.extend(selectedOption, keyValue)
+    if (!selectedItem[0].options) { selectedItem[0].options = {} }
+    _.extend(selectedItem[0].options, _.cloneDeep(keyValue))
     persistItems()
-    // var new = _.merge(selectedOption,keyValue)
-    // console.log(keyValue)
   },
   [types.ITEMS_EDIT_MULTI_OPTIONS](state, keyValue) {
     if (state.locked) {
       return false
     }
-    // 共享设置只写到「当前选中」项，避免未选中的任务被误改
+    // 共享设置只写到「当前选中」项，避免未选中的任务被误改；
+    // 每项独立深拷贝，防止 quality/sizeLimit 等嵌套对象被多项共用
     _.each(state.items, function (item) {
       if (!item.isSelected) { return }
-      _.extend(item.options, keyValue)
+      _.extend(item.options, _.cloneDeep(keyValue))
     })
     persistItems()
   },
@@ -466,11 +466,12 @@ const actions = {
     var nextTo = patch.outputTo || {}
     _.each(items, function (item) {
       if (!item.options) { item.options = {} }
-      item.options.outputTo = Object.assign({}, item.options.outputTo, nextTo)
+      // 每项独立拷贝，避免共享同一 outputTo 引用
+      item.options.outputTo = Object.assign({}, item.options.outputTo, _.cloneDeep(nextTo))
       if (!item.basic) { item.basic = {} }
       item.basic.outputPath = resolveOutputPath(item, item.options)
     })
-    context.commit('ITEMS_EDIT_MULTI_OPTIONS', { outputTo: nextTo })
+    persistItems()
   },
   /** 多选：只改某一项的 outputName（按 items 全列表 index） */
   editOutputNameAt(context, payload) {
@@ -479,6 +480,15 @@ const actions = {
     if (!item) { return }
     if (!item.options) { item.options = {} }
     item.options.outputName = payload.name
+    persistItems()
+  },
+  /** 单项写入 options（按 items 全列表 index）：单任务设置只命中该项 */
+  editOptionsAt(context, payload) {
+    if (!payload || context.rootState.locked) { return }
+    var item = context.rootState.items[payload.index]
+    if (!item) { return }
+    if (!item.options) { item.options = {} }
+    _.extend(item.options, _.cloneDeep(payload.patch || {}))
     persistItems()
   },
   /** 按 items 下标改 basic（如 thumbPath），不影响其他项 */
@@ -510,6 +520,10 @@ const actions = {
     context.commit('SET_SELECTED', index)
   },
   singleSelect(context, index) {
+    context.commit('SINGLE_SELECT', index)
+  },
+  /** 设置按钮：只选中该项（与 singleSelect 同义，语义更明确） */
+  selectOnlyAt(context, index) {
     context.commit('SINGLE_SELECT', index)
   },
   multiSelect(context, index) {

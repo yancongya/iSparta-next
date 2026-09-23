@@ -160,6 +160,7 @@ module.exports = {
     "tipDelay":"逐幀延時",
     "framePanelTip":"幀預覽 / 序列查看",
     "tipChangeOutput":"修改輸出目錄",
+    "tipTaskSetting":"輸出設置（僅本任務）",
     // appearance
     "appearance":"外觀",
     "themeLight":"亮色",
