@@ -1,0 +1,138 @@
+/* iSparta CEP 面板 — 精简单栏（宽 480–720） */
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: #1e1e22;
+  color: #e8e8ec;
+  font: 13px/1.45 "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+.wrap {
+  padding: 16px 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 100%;
+}
+.hd {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.title {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.sub {
+  color: #9a9aa3;
+  font-size: 12px;
+}
+.row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.grid2 > div {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.lbl {
+  color: #b8b8c2;
+  font-size: 12px;
+}
+input[type="text"],
+input[type="number"],
+select {
+  width: 100%;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid #3a3a44;
+  border-radius: 6px;
+  background: #2a2a31;
+  color: #f0f0f4;
+  outline: none;
+}
+input[type="text"]:focus,
+input[type="number"]:focus,
+select:focus {
+  border-color: #c8f542;
+}
+.with-btn {
+  display: flex;
+  gap: 8px;
+}
+.with-btn input {
+  flex: 1;
+  min-width: 0;
+}
+button {
+  height: 32px;
+  padding: 0 14px;
+  border-radius: 6px;
+  border: 1px solid #3a3a44;
+  background: #2a2a31;
+  color: #e8e8ec;
+  cursor: pointer;
+}
+button:hover { border-color: #6a6a78; }
+button.primary {
+  width: 100%;
+  height: 38px;
+  background: #c8f542;
+  border-color: #c8f542;
+  color: #141414;
+  font-weight: 600;
+}
+button.primary:hover { filter: brightness(1.05); }
+button.primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+button.ghost {
+  flex-shrink: 0;
+}
+.check-line {
+  justify-content: flex-end;
+  color: #b8b8c2;
+}
+.check-line label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  height: 32px;
+}
+.status-box {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.progress {
+  min-height: 20px;
+  color: #c8f542;
+  font-size: 12px;
+}
+.progress.err { color: #ff7b72; }
+.progress.ok { color: #7ee787; }
+.log {
+  margin: 0;
+  max-height: 140px;
+  overflow: auto;
+  padding: 10px;
+  border-radius: 6px;
+  background: #16161a;
+  border: 1px solid #2c2c34;
+  color: #9a9aa3;
+  font: 11px/1.4 Consolas, Menlo, monospace;
+  white-space: pre-wrap;
+  word-break: break-all;
+}

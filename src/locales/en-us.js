@@ -1,6 +1,10 @@
 module.exports = {
     "uploadTips": "Drop files here or click to open",
     "uploadRule": "Supports PNG sequences, APNG, WEBP and GIF",
+    "uploadCompTips": "Drop or paste comps, or pick compositions",
+    "uploadCompRule": "AE extension: drop/paste comps, or select them in the composition tree",
+    "pickComps": "Pick comps…",
+    "compImportPending": "Composition import coming soon",
     //function
     "confrim":"Confirm",
     "cancel":"Cancel",
@@ -9,6 +13,7 @@ module.exports = {
     "openFolder":"Open folder…",
     //global setting
     "defaultSetting": "Default settings",
+    "helpTip": "Help / open website",
     "language":"Language",
     "filenameSuffix":"Filename suffix",
     //setting
@@ -168,6 +173,24 @@ module.exports = {
     "noticePasteEmpty":"No image in the clipboard",
     "noticePasteNeedShortcut":"Cannot read the clipboard — press Ctrl+V instead",
     "dropToImport":"Drop to import",
+    // AE composition source
+    "uploadTipsComp":"Drop, paste, or pick comps from the tree",
+    "uploadRuleComp":"Drag comps from the project/timeline, or select and Ctrl+C / Ctrl+V",
+    "pasteHintComp":"or paste a comp (copy it in AE first)",
+    "dropCompToImport":"Drop to add comps",
+    "compTree":"Composition tree",
+    "compTreeRefresh":"Refresh",
+    "compTreeOpen":"Comps",
+    "compTreeAdd":"Add to list ({n})",
+    "compTreeHint":"Check comps to add them as tasks; drag a row into the list to add",
+    "compTreeEmpty":"No compositions (open a project, then refresh)",
+    "compTreeLoading":"Loading compositions…",
+    "compTreeNested":"precomp ×{n}",
+    "noticeCompPasteEmpty":"No recognisable comp in the clipboard — copy a comp in AE first",
+    "noticeCompNotFound":"Composition not found in this project",
+    "noticeCompAdded":"Added {n} composition(s)",
+    "noticeCompImportFailed":"Failed to add compositions",
+    "openSourceComp":"Reveal composition",
     // status bar
     "statDone":"Succeeded",
     "statFail":"Failed",

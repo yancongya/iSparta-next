@@ -29,6 +29,10 @@ export function sourceDirOf (item) {
   if (item.basic.type === 'PNGs') {
     return input
   }
+  // Comp：fileList 是渲序列临时帧，源目录始终取 inputPath 上级（工程目录或 ae-comp）
+  if (item.basic.type === 'Comp') {
+    return npath.dirname(input)
+  }
   // 单文件：inputPath 为 address + '/' + base（无扩展），取其上级目录
   const list = item.basic.fileList
   if (list && list[0]) {
@@ -42,6 +46,8 @@ export function resolveVars (text, ctx) {
   return String(text).replace(/\{([a-zA-Z]+)\}/g, (m, key) => {
     if (key === 'name') { return ctx.name || '' }
     if (key === 'src') { return ctx.src || '' }
+    // srcName：Comp=合成名；文件源=与 src 同（目录基名）
+    if (key === 'srcName') { return ctx.srcName || ctx.src || '' }
     if (key === 'type') { return ctx.type || '' }
     if (key === 'srcPath') { return ctx.srcPath || '' }
     if (key === 'parent') { return ctx.parent || '' }
@@ -58,13 +64,15 @@ export function outputContext (item) {
   const name = (item && item.options && item.options.outputName) || ''
   const type = (item && item.basic && item.basic.type) || ''
   const src = srcPath ? npath.basename(srcPath) : ''
+  // Comp 用合成名；文件源退回源目录基名
+  const srcName = (item && item.basic && (item.basic.compName || item.basic.sourceName)) || src
   const parent = srcPath ? npath.dirname(srcPath) : ''
   const d = new Date()
   const date = d.getFullYear() +
     String(d.getMonth() + 1).padStart(2, '0') +
     String(d.getDate()).padStart(2, '0')
 
-  return { name, src, type, srcPath, parent, date }
+  return { name, src, srcName, type, srcPath, parent, date }
 }
 
 /**

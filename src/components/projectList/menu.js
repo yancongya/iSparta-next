@@ -12,6 +12,24 @@ function bindMenuClicked () {
     const payload = msg.payload || {}
     switch (msg.action) {
       case 'openOriginal': {
+        // AE 合成项：定位合成；文件项：显示源目录
+        if (payload && (payload.type === 'Comp' || payload.compIndex != null || payload.compName)) {
+          try {
+            const hostEnv = require('../../util/host-env')
+            const src = hostEnv.getSourceAdapter && hostEnv.getSourceAdapter()
+            if (src && typeof src.openSource === 'function') {
+              src.openSource({
+                basic: {
+                  type: 'Comp',
+                  compIndex: payload.compIndex,
+                  compName: payload.compName,
+                  inputPath: payload.inputPath
+                }
+              })
+              break
+            }
+          } catch (e) { /* fall through */ }
+        }
         // 兼容 Windows 反斜杠与 POSIX
         const srcPath = String(payload.inputPath || '').replace(/[\\/][^\\/]*$/, '')
         ipc.invoke('shell:showItemInFolder', srcPath)
@@ -47,6 +65,9 @@ class rightMenu {
         isRunning: !!p.isRunning,
         inputPath: p.inputPath,
         outputPath: p.outputPath,
+        type: p.type,
+        compIndex: p.compIndex,
+        compName: p.compName,
         index: index,
         locale: {
           openOriginal: locale && locale.openOriginal,

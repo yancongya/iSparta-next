@@ -7,6 +7,7 @@ import {
 import { APP_NAME } from './brand'
 import { checkUpdate, isAllowedExternalUrl } from './util/updateCheck'
 import { registerAutoUpdateIpc } from './util/autoUpdate'
+import { ensureCepExtension } from './util/cepSync'
 const isDevelopment = process.env.NODE_ENV !== 'production'
 const path = require("path");
 const fsp = require('fs');
@@ -335,6 +336,22 @@ ipcMain.handle('shell:openExternal', async (event, url) => {
 
 // electron-updater 自动下载 / 重启安装（Win NSIS / Linux AppImage；dev 与 mac 不启用）
 registerAutoUpdateIpc()
+// 双端一起更：启动 / 热更安装完成后自检 CEP 落盘，与 resources/cep payload 对齐
+try {
+  const cepSyncResult = ensureCepExtension({
+    appVersion: app.getVersion(),
+    resourcesPath: process.resourcesPath,
+    appPath: app.getAppPath(),
+    env: process.env,
+    home: os.homedir(),
+    commonFiles: process.env.CommonProgramFiles
+  })
+  if (cepSyncResult && cepSyncResult.refreshed) {
+    console.log('[cep-sync] refreshed', cepSyncResult.reason, cepSyncResult.dest, cepSyncResult.version)
+  }
+} catch (eCepSync) {
+  console.warn('[cep-sync] skip', String(eCepSync && eCepSync.message || eCepSync))
+}
 
 // --- Phase3/4: Node fs / path / os / execFile 均在主进程 ---
 function ensureDir (dir) {

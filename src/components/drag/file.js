@@ -1,6 +1,7 @@
 // 依赖库
 import { fs, path } from '../../util/node-env'
 import { resolveOutputPath } from '../../util/outputPath'
+import { buildInitialOutputName } from '../../util/tokenizeName'
 import notice from '../../ui-next/notice'
 import { t } from '../../i18n'
 import _ from 'lodash'
@@ -129,15 +130,14 @@ class actionFiles {
       // 序列帧：默认输出到 {帧目录}（预设 1 已不再追加 /output），可由 outputTo 策略覆盖
       // 不再自动追加 _apng 后缀，输出名交给用户在「输出名字」里用胶囊自行决定
       let folderName = path.basename(address)
-      temp.options.outputName = folderName.replace(/[ ]/g, '')
+      temp.options.outputName = buildInitialOutputName(folderName, temp.options)
       temp.basic.inputPath = address
       temp.basic.fileList = fileList
       temp.basic.outputPath = resolveOutputPath(temp, temp.options)
     } else {
-      //去除文件名空格；后缀为空时不拼出悬尾的下划线
-      let suffix = temp.options.outputSuffix
-      let baseName = path.basename(fileList[0]).split('.')[0].replace(/[ ]/g, '')
-      temp.options.outputName = suffix ? baseName + '_' + suffix : baseName
+      // 去除文件名空格；后缀为空时不拼出悬尾的下划线（与 Comp 初始名同函数）
+      let baseName = path.basename(fileList[0]).split('.')[0]
+      temp.options.outputName = buildInitialOutputName(baseName, temp.options)
       temp.basic.inputPath = address + '/' + path.basename(fileList[0]).split('.')[0]
       temp.basic.fileList = fileList
       temp.basic.outputPath = resolveOutputPath(temp, temp.options)

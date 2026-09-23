@@ -6,6 +6,13 @@ executableName: isparta-next
 # CI 事后再改名会导致 updater 找不到包；稳定别名由 release.yml 额外 copy
 artifactName: isparta-next-${version}-${os}-${arch}.${ext}
 asar: false
+# W3：AE CEP 扩展一体安装 payload（build/cep-payload 由 scripts/prepare-cep-payload.js 暂存）
+# 落到 <resources>/cep/io.github.isparta-next，安装时由 NSIS 复制到 CEP 目录
+extraResources:
+  - from: build/cep-payload
+    to: cep
+    filter:
+      - "**/*"
 # 使用本地已安装的 Electron，避免打包时再下载 zip
 electronDist: ./node_modules/electron/dist
 electronVersion: 28.3.3
@@ -36,6 +43,8 @@ nsis:
   installerSidebar: ./build/installerSidebar.bmp
   uninstallerSidebar: ./build/installerSidebar.bmp
   installerHeader: ./build/installerHeader.bmp
+  # W3 一体安装：组件页（桌面 / AE 扩展）+ 安装复制 CEP + 卸载清理
+  include: ./build/installer.nsh
   # SignPath Foundation 免费签名（审核通过后在 CI 注入，勿把密钥写进仓库）：
   # win.sign: SignPath
 mac:

@@ -33,8 +33,9 @@
 </template>
 
 <script>
-// 变量顺序即配色顺序：c1 srcPath / c2 src / c3 name / c4 type / c5 parent / c6 date
-const VAR_KEYS = ['srcPath', 'src', 'name', 'type', 'parent', 'date']
+// 变量顺序即配色顺序：c1 srcPath / c2 src / c3 srcName / c4 name / c5 type / c6 parent / c7 date
+// srcName：Comp=合成名；文件源=与 src 同（目录基名）
+const VAR_KEYS = ['srcPath', 'src', 'srcName', 'name', 'type', 'parent', 'date']
 
 export default {
   name: 'PathVars',

@@ -301,20 +301,24 @@ function installMockBridge () {
   const storage = createMockStorage(fs)
 
   window.ispartaAPI = {
-    fs,
-    path,
+    fs: fs,
+    path: path,
     os: {
-      tmpdir: () => '/isparta-mock-tmp',
-      cpus: () => [{}, {}, {}, {}]
+      tmpdir: function () { return '/isparta-mock-tmp' },
+      cpus: function () { return [{}, {}, {}, {}] }
     },
-    storage,
+    storage: storage,
     ipc: createMockIpc(),
     process: {
-      cwd: () => '/',
+      cwd: function () { return '/' },
       env: { NODE_ENV: 'development' }
     },
     childProcess: createMockChildProcess()
   }
+  // host-env 识别纯浏览器 mock（kind: 'browser-mock'）
+  window.__ispartaMockBridge = true
+  // host-env 识别纯浏览器 mock（kind: 'browser-mock'）
+  window.__ispartaMockBridge = true
 
   seedItems(fs, path, storage)
 
@@ -452,6 +456,8 @@ function installMockBridge () {
 
 // 生产构建或 Electron（preload 已注入）时不做任何事
 if (process.env.NODE_ENV === 'development' &&
-    typeof window !== 'undefined' && !window.ispartaAPI) {
+    typeof window !== 'undefined' &&
+    !window.__adobe_cep__ && !window.cep && !window.ispartaCS && !window.ispartaCepBridge &&
+    !window.ispartaAPI) {
   installMockBridge()
 }

@@ -1,6 +1,10 @@
 module.exports = {
     "uploadTips": "將文件拖入或點擊打開",
     "uploadRule": "只能上傳PNG序列、APNG、WEBP、GIF這四種圖片格式",
+    "uploadCompTips": "拖入或貼上合成，或點「選擇合成」",
+    "uploadCompRule": "AE 擴充：從工程拖入/貼上合成，或用合成樹勾選後加入任務",
+    "pickComps": "選擇合成…",
+    "compImportPending": "合成導入即將接入",
     //function
     "confrim":"確定",
     "cancel":"取消",
@@ -9,6 +13,7 @@ module.exports = {
     "openFolder":"打開目錄…",
     //global setting
     "defaultSetting": "默認設置",
+    "helpTip": "說明 / 開啟官網",
     "language":"語言",
     "filenameSuffix":"文件名後綴",
     //setting
@@ -168,6 +173,24 @@ module.exports = {
     "noticePasteEmpty":"剪貼簿中沒有圖片",
     "noticePasteNeedShortcut":"無法讀取剪貼簿，請直接按 Ctrl+V",
     "dropToImport":"鬆手即可導入",
+    // AE 合成輸入源
+    "uploadTipsComp":"將合成拖入、貼上或從合成樹勾選",
+    "uploadRuleComp":"支援從工程/時間軸拖入合成，或選取合成後 Ctrl+C / Ctrl+V",
+    "pasteHintComp":"或貼上合成（先在 AE 中複製合成）",
+    "dropCompToImport":"鬆手即可加入合成",
+    "compTree":"合成樹",
+    "compTreeRefresh":"重新整理",
+    "compTreeOpen":"合成樹",
+    "compTreeAdd":"加入任務（{n}）",
+    "compTreeHint":"勾選合成後加入任務列表；可拖出行到列表加入",
+    "compTreeEmpty":"無合成（請開啟工程後點重新整理）",
+    "compTreeLoading":"正在讀取合成…",
+    "compTreeNested":"含預合成 {n}",
+    "noticeCompPasteEmpty":"剪貼簿中沒有可識別的合成，請先在 AE 中選取合成後複製",
+    "noticeCompNotFound":"未在工程中找到對應合成",
+    "noticeCompAdded":"已加入 {n} 個合成",
+    "noticeCompImportFailed":"加入合成失敗",
+    "openSourceComp":"定位合成",
     // status bar
     "statDone":"成功",
     "statFail":"失敗",

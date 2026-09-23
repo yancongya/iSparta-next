@@ -1,11 +1,18 @@
 /**
  * 更新检查渲染层编排：IPC + 偏好 + 日志/弹窗策略
  * 网络与判定在主进程；这里只负责何时调、如何提示、如何落偏好。
+ *
+ * updatePolicy（双端一起更，禁止扩展单独热更）：
+ * - electron → 'full'（可 electron-updater 自动下载）
+ * - cep      → 'none'（默认；不跑 electron-updater）。可用 ISPARTA_CEP_UPDATE_POLICY=notify-only 只提示
+ * - browser-mock → 'notify-only'（UI 预览）
+ * W6 host-env 合入后改从 host-env 读 kind/updatePolicy；此处先自探测。
  */
 
 import Vue from 'vue'
 import { ipc } from './node-env'
 import appLog from '../ui-next/log'
+import hostAdapter from './host-env'
 import {
   loadUpdatePrefs,
   saveUpdatePrefs,
@@ -15,10 +22,58 @@ import {
   hasUpdateBadge
 } from './updatePrefs'
 
+/** 探测宿主 kind；host-env 就绪后优先用它 */
+export function detectHostKind () {
+  try {
+    var host = require('./host-env')
+    if (host && typeof host.getKind === 'function') { return host.getKind() }
+    if (host && host.kind) { return host.kind }
+  } catch (e) { /* W6 未合入 */ }
+  if (typeof window === 'undefined') { return 'browser-mock' }
+  if (window.__adobe_cep__ || window.ispartaCepBridge || (window.cep && window.cep.fs)) {
+    return 'cep'
+  }
+  if (window.ispartaAPI) {
+    var proc = window.ispartaAPI.process
+    if (proc && proc.versions && proc.versions.electron) { return 'electron' }
+    if (window.ispartaAPI.ipc) { return 'electron' }
+  }
+  return 'browser-mock'
+}
+
+/**
+ * 更新策略：full | notify-only | none
+ * CEP 默认 none（禁 electron-updater 自动下载）；notify-only 可选（env 开启）。
+ */
+export function resolveUpdatePolicy (kind) {
+  try {
+    var host = require('./host-env')
+    if (host && typeof host.getUpdatePolicy === 'function') {
+      var p = host.getUpdatePolicy()
+      if (p === 'full' || p === 'notify-only' || p === 'none') { return p }
+    }
+  } catch (e) { /* W6 未合入 */ }
+  var k = kind || detectHostKind()
+  if (k === 'cep') {
+    var forced = ''
+    try {
+      forced = (typeof process !== 'undefined' && process.env && process.env.ISPARTA_CEP_UPDATE_POLICY) || ''
+    } catch (eEnv) { forced = '' }
+    return forced === 'notify-only' ? 'notify-only' : 'none'
+  }
+  if (k === 'electron') { return 'full' }
+  return 'notify-only'
+}
+
+const hostKind = detectHostKind()
+const updatePolicy = resolveUpdatePolicy(hostKind)
+
 const state = Vue.observable({
   checking: false,
   meta: null,
   lastResult: null,
+  hostKind: hostKind,
+  updatePolicy: updatePolicy,
   // 自动检查：右下角非阻断 dock；手动检查/详情：模态 dialog
   dialogVisible: false,
   dockVisible: false,
@@ -33,6 +88,20 @@ const state = Vue.observable({
     version: null
   }
 })
+
+/** 当前策略是否允许检查（none 仅手动 force 且只提示） */
+export function getUpdatePolicy () {
+  return state.updatePolicy
+}
+
+export function getHostKind () {
+  return state.hostKind
+}
+
+/** 自动下载仅 full；notify-only / none 一律禁用 electron-updater 拉包 */
+function allowsAutoDownload () {
+  return state.updatePolicy === 'full' && state.hostKind === 'electron'
+}
 
 function refreshBadge () {
   state.badge = hasUpdateBadge(state.lastResult, loadUpdatePrefs())
@@ -59,8 +128,16 @@ async function loadMeta () {
     var meta = await ipc.invoke('updater:meta')
     if (meta && meta.version) {
       state.meta = meta
+      return state.meta
     }
-  } catch (e) { /* mock/旧主进程：忽略 */ }
+  } catch (e) { /* CEP / mock / 旧主进程：无 updater:meta */ }
+  // CEP 等无 Electron IPC 时：用 brand 静态版本（与 package.json 同步）
+  try {
+    var APP_VERSION = require('../brand').APP_VERSION
+    if (APP_VERSION) {
+      state.meta = { version: APP_VERSION, portable: false, autoSupported: false }
+    }
+  } catch (e2) { /* ignore */ }
   return state.meta
 }
 
@@ -72,7 +149,15 @@ async function loadMeta () {
  */
 export async function runUpdateCheck (opts) {
   var o = opts || {}
+  // CEP：updatePolicy=none，禁用自动/热更检查（双端一起更，扩展内不跑 electron-updater）
+  if (hostAdapter.updatePolicy === 'none') {
+    return { state: 'disabled', reason: 'update-policy-none' }
+  }
   var prefs = loadUpdatePrefs()
+  // CEP none：自动路径禁用；notify-only 仍可查但只提示、不下载
+  if (state.updatePolicy === 'none' && !o.force) {
+    return state.lastResult
+  }
   if (state.checking) { return state.lastResult }
   state.checking = true
   try {
@@ -129,6 +214,10 @@ export async function runUpdateCheck (opts) {
 }
 
 async function maybeStartAutoDownload () {
+  // CEP / notify-only / none：禁止 electron-updater 自动下载
+  if (!allowsAutoDownload()) {
+    return { ok: false, reason: 'update-policy', policy: state.updatePolicy }
+  }
   try {
     var snap = await ipc.invoke('updater:autoState')
     applyAutoState(snap)
@@ -222,8 +311,14 @@ export function closeUpdateDock () {
   state.dockVisible = false
 }
 
-/** dock 主操作：支持自动更新则后台下载，否则打开浏览器下载页 */
+/** dock 主操作：策略允许且支持自动更新则后台下载，否则打开浏览器下载页（CEP 同此） */
 export async function startUpdateFromDock (result) {
+  if (!allowsAutoDownload()) {
+    // notify-only / none：不跑 electron-updater；引导获取桌面完整包
+    var opened = await openDownload(result)
+    markLater(result && result.latest)
+    return { ok: false, reason: 'update-policy', policy: state.updatePolicy, opened: opened }
+  }
   var snap = await ipc.invoke('updater:autoState').catch(function () { return null })
   applyAutoState(snap)
   if (state.auto && state.auto.supported) {
@@ -313,5 +408,9 @@ export default {
   bindAutoIpcListener,
   bootstrapUpdateFromStorage,
   loadMeta,
-  loadUpdatePrefs
+  loadUpdatePrefs,
+  detectHostKind,
+  resolveUpdatePolicy,
+  getUpdatePolicy,
+  getHostKind
 }

@@ -19,8 +19,29 @@ module.exports = {
     target: 'web'
   },
   devServer: {
-    hot: false,
+    // Electron 关 HMR；CEP serve（BUILD_TARGET=cep）开热更
+    hot: process.env.BUILD_TARGET === 'cep',
     liveReload: false,
-    inline: false
+    inline: false,
+    // HMR 下让 /lib/cep-bridge.js 可解析到 targets/cep/lib（禁止打进 bundle）
+    contentBase: process.env.BUILD_TARGET === 'cep'
+      ? require('path').join(__dirname, 'targets', 'cep')
+      : undefined
   }
+}
+
+// CEP 面板（W2u）：独立 entry 输出到 targets/cep/ui，复用 src/ui-next + util/processor
+// 触发：BUILD_TARGET=cep（见 .env.cep 与 npm run build:cep / serve:cep）
+if (process.env.BUILD_TARGET === 'cep') {
+  module.exports.pages = {
+    index: {
+      entry: 'src/cep/main.js',
+      template: 'src/cep/index.html',
+      filename: 'index.html'
+    }
+  }
+  module.exports.outputDir = 'targets/cep/ui'
+  module.exports.publicPath = './'
+  module.exports.filenameHashing = false
+  module.exports.lintOnSave = false
 }

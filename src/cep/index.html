@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>iSparta</title>
+</head>
+<body>
+  <div id="app"></div>
+  <script>
+    (function () {
+      var http = location.protocol === 'http:' || location.protocol === 'https:'
+      var base = http ? '/lib/' : '../lib/'
+      document.write('<script src="' + base + 'cep-bridge.js"><\/script>')
+      document.write('<script src="' + base + 'cs.js"><\/script>')
+    })()
+  </script>
+  <script>
+    window.addEventListener('DOMContentLoaded', function () {
+      setTimeout(function () {
+        var el = document.getElementById('app')
+        if (el && el.childElementCount === 0) {
+          el.innerHTML = '<p style="color:#f88;font:12px monospace;padding:12px">bridge missing: ispartaAPI=' +
+            !!window.ispartaAPI + ' cepBridge=' + !!window.ispartaCepBridge + '</p>'
+        }
+      }, 800)
+    })
+  </script>
+</body>
+</html>

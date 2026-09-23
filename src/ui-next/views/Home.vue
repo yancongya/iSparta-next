@@ -14,6 +14,18 @@
       <div class="ib-import__top">
         <span class="ib-brand">{{ appName }}</span>
         <div class="ib-import__acts">
+          <button
+            v-if="supportsCompImport"
+            type="button"
+            class="ib-iconbtn"
+            title="合成树"
+            @click="onPickComps"
+          >
+            <is-icon name="layers" />
+          </button>
+          <button type="button" class="ib-iconbtn" :title="$t('helpTip') || '帮助'" @click="openLanding">
+            <is-icon name="question" />
+          </button>
           <button type="button" class="ib-iconbtn" :title="$t('defaultSetting')" @click="openGlobalSetting">
             <is-icon name="settings" />
             <span v-if="updateBadge" class="ib-rail__badge" aria-hidden="true" />
@@ -39,6 +51,9 @@
         </div>
         <h1>{{ $t('uploadTips') }}</h1>
         <p class="ib-drop__rule">{{ $t('uploadRule') }}</p>
+        <div v-if="supportsCompImport && compTreeOpen" class="ib-comptree">
+          <comp-tree @add="onCompTreeAdd" @close="compTreeOpen = false" />
+        </div>
         <div class="keyboard-hint">
           <p>{{ $t('pasteHint') }}</p>
           <div class="keyboard-keys">
@@ -195,6 +210,9 @@ import { storage } from '../../util/node-env'
 import notice from '../notice'
 import { APP_NAME } from '../../brand'
 import updateService from '../../util/updateService'
+import hostAdapter, { getSourceAdapter } from '../../util/host-env'
+import CompTree from '../../components/compTree/compTree.vue'
+import { LANDING_URL } from '../../brand'
 
 // 中间工具条列宽（px）
 const RAIL_W = 36
@@ -213,6 +231,7 @@ export default {
   name: 'UiNextHome',
   components: {
     'project-list': projectList,
+    'comp-tree': CompTree,
     'setting': setting,
     'sort-bar': sortBar,
     'globalsetting': globalSetting,
@@ -234,12 +253,19 @@ export default {
       resizing: false,
       sideW: DEFAULT_SIDE_W,
       // 运行日志面板
-      logOpen: false
+      logOpen: false,
+      compTreeOpen: false
     }
   },
   computed: {
     items () {
       return this.$store.getters.getterItems
+    },
+    supportsFileImport () {
+      return hostAdapter.supportsFileImport !== false
+    },
+    supportsCompImport () {
+      return !!hostAdapter.supportsCompImport
     },
     updateState () {
       return updateService.getUpdateState()
@@ -439,6 +465,28 @@ export default {
     openGlobalSetting () {
       this.$root.eventBus.$emit('openGlobalSetting')
     },
+    openLanding () {
+      hostAdapter.openExternal(LANDING_URL)
+    },
+    onPickComps () {
+      this.compTreeOpen = true
+      var self = this
+      this.$nextTick(function () {
+        if (self.$root && self.$root.eventBus) {
+          self.$root.eventBus.$emit('comp-tree-refresh')
+        }
+      })
+    },
+    onCompTreeAdd (items) {
+      if (!items || !items.length) return
+      for (var i = 0; i < items.length; i++) {
+        this.$store.dispatch('add', {
+          basic: items[i].basic,
+          options: items[i].options
+        })
+      }
+      this.compTreeOpen = false
+    },
     onDeleteSelected () {
       if (this.isLocked || !this.selectedCount) return
       this.$store.dispatch('removeSelectedForce')
@@ -557,6 +605,10 @@ export default {
 
     // ---------- 导入 ----------
     onPick () {
+      if (this.supportsCompImport) {
+        this.onPickComps()
+        return
+      }
       var ipc = window.ispartaAPI && window.ispartaAPI.ipc
       if (!ipc) { return }
       ipc.invoke('dialog:openFiles', {

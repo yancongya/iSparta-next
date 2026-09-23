@@ -9,6 +9,7 @@ import { fs, path, os } 	from '../node-env'
 import TYPE 		from '../../store/enum/type'
 import { enforceSizeLimit } from './sizeGate'
 import { resolveOutputPath } from '../outputPath'
+import hostAdapter 	from '../host-env'
 import appLog from '../../ui-next/log'
 import i18n from '../../i18n'
 
@@ -83,18 +84,33 @@ export default function (store, sameOutputPath, locale) {
 
     taskFactories.push(function (currentItem) {
       return function () {
-        switch (currentItem.basic.type) {
-          case TYPE.PNGs:
-            return PNGs2apng(currentItem, store, locale).then(() => apng2other(currentItem, store, locale))
-          case TYPE.GIF:
-            return gif2apng(currentItem, store, locale).then(() => apng2other(currentItem, store, locale))
-          case TYPE.APNG:
-            return apngCompress(currentItem, 0, store, locale).then(() => apng2other(currentItem, store, locale))
-          case TYPE.WEBP:
-            return webp2apng(currentItem, store, locale).then(() => apng2other(currentItem, store, locale))
-          default:
-            return Promise.resolve()
-        }
+        // Comp：转换前渲序列填 fileList，再走 PNGs 同链
+        var prepare = currentItem.basic && currentItem.basic.type === TYPE.Comp
+          ? hostAdapter.prepareItem(currentItem)
+          : Promise.resolve(currentItem)
+
+        return prepare.then(function (ready) {
+          // 路径/源文件在 fileList 填好后重算（{srcName}=合成名仍可用）
+          if (!sameOutputPath) {
+            ready.basic.outputPath = resolveOutputPath(ready, ready.options)
+          }
+          if (ready.basic.fileList && ready.basic.fileList[0] && !ready.basic.sourceFile) {
+            ready.basic.sourceFile = ready.basic.fileList[0]
+          }
+          switch (ready.basic.type) {
+            case TYPE.PNGs:
+            case TYPE.Comp:
+              return PNGs2apng(ready, store, locale).then(() => apng2other(ready, store, locale))
+            case TYPE.GIF:
+              return gif2apng(ready, store, locale).then(() => apng2other(ready, store, locale))
+            case TYPE.APNG:
+              return apngCompress(ready, 0, store, locale).then(() => apng2other(ready, store, locale))
+            case TYPE.WEBP:
+              return webp2apng(ready, store, locale).then(() => apng2other(ready, store, locale))
+            default:
+              return Promise.resolve()
+          }
+        })
       }
     }(item))
   }

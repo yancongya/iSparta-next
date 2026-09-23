@@ -366,6 +366,12 @@ export function formatReleaseNotes (body) {
 /** 渲染层/测试用：该 URL 是否允许 shell.openExternal */
 export function isAllowedExternalUrl (url, env) {
   if (typeof url !== 'string' || !url) { return false }
+  try {
+    var landing = require('../brand').LANDING_URL
+    if (landing && String(url).replace(/\/+$/, '') === String(landing).replace(/\/+$/, '')) {
+      return true
+    }
+  } catch (eBrand) { /* ignore */ }
   var cfg = resolveUpdateConfig(env)
   var allowOrigin
   var allowPathPrefix

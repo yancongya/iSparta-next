@@ -1,4 +1,5 @@
 // 统一取 Node/Electron 能力：优先 window.ispartaAPI（preload）
+// 桥接口冻结与签名契约见 docs/BRIDGE.md（改此处形状需同步 preload 与该文档）
 /* global window */
 function api () {
   if (typeof window !== 'undefined' && window.ispartaAPI) {

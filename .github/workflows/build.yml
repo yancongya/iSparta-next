@@ -82,16 +82,16 @@ jobs:
             fi
             if [[ "$PLATFORM" == "mac" ]]; then
               if [[ "$lower" == *arm64* ]]; then
-                dest="isparta-${VERSION}-mac-arm64.zip"
+                dest="isparta-next-${VERSION}-mac-arm64.zip"
               elif [[ "$lower" == *x64* || "$lower" == *x86_64* || "$lower" == *intel* ]]; then
-                dest="isparta-${VERSION}-mac-x64.zip"
+                dest="isparta-next-${VERSION}-mac-x64.zip"
               else
-                dest="isparta-${VERSION}-mac-x64.zip"
+                dest="isparta-next-${VERSION}-mac-x64.zip"
               fi
             elif [[ "$PLATFORM" == "win" ]]; then
-              dest="isparta-${VERSION}-win-x64.${ext}"
+              dest="isparta-next-${VERSION}-win-x64.${ext}"
             else
-              dest="isparta-${VERSION}-linux-x64.${ext}"
+              dest="isparta-next-${VERSION}-linux-x64.${ext}"
             fi
             mv "$f" "release/$dest"
           done
@@ -103,7 +103,97 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: isparta-${{ matrix.platform }}
+          name: isparta-next-${{ matrix.platform }}
+          if-no-files-found: error
+          retention-days: 7
+          path: release/*
+
+  # CEP 扩展 zip（W4）：从 targets/cep 打可分发包，与桌面 Artifact 并列上传。
+  # 约定（与 W3 / Release 资产一致）：
+  #   源目录  targets/cep/
+  #   编码器  public/bin 子集 → zip 内 bin/<plat>/（apngasm/apngquant/apngopt/cwebp/webpmux）
+  #   根目录  io.github.isparta-next/（Extension Id，解压即为 CEP extensions 目录项）
+  #   文件名  isparta-next-${version}-cep-${platform}.zip
+  # AE 仅 Win/mac，故只打这两端；日常 build 不建 Release。
+  cep:
+    name: Pack CEP (${{ matrix.platform }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: win
+            bin_plats: 'win32 win64'
+          - platform: mac
+            bin_plats: 'mac'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version-file: '.nvmrc'
+
+      - name: Pack CEP extension zip
+        shell: bash
+        env:
+          PLATFORM: ${{ matrix.platform }}
+          BIN_PLATS: ${{ matrix.bin_plats }}
+        run: |
+          set -euo pipefail
+          VERSION=$(node -p "require('./package.json').version")
+          STAGE_ID='io.github.isparta-next'
+          STAGE=".cep-stage/${STAGE_ID}"
+
+          if [ ! -d targets/cep ]; then
+            echo "targets/cep missing — CEP sources not present" >&2
+            exit 1
+          fi
+
+          rm -rf .cep-stage
+          mkdir -p "${STAGE}"
+
+          # 可分发文件：整棵 targets/cep，排除开发垃圾
+          rsync -a \
+            --exclude '.DS_Store' \
+            --exclude 'Thumbs.db' \
+            --exclude 'desktop.ini' \
+            --exclude '*.log' \
+            --exclude '*.tmp' \
+            --exclude 'node_modules/' \
+            --exclude '.git/' \
+            --exclude '.gitignore' \
+            --exclude '.vscode/' \
+            --exclude '.idea/' \
+            targets/cep/ "${STAGE}/"
+
+          # 编码器小工具子集（见 targets/cep/bin/README.md）；不入库二进制，CI 从 public/bin 播种
+          rm -rf "${STAGE}/bin"
+          for bp in ${BIN_PLATS}; do
+            mkdir -p "${STAGE}/bin/${bp}"
+            for tool in apngasm apngquant apngopt cwebp webpmux; do
+              for cand in "public/bin/${bp}/${tool}" "public/bin/${bp}/${tool}.exe"; do
+                if [ -f "${cand}" ]; then
+                  cp -f "${cand}" "${STAGE}/bin/${bp}/"
+                fi
+              done
+            done
+            if [ "${PLATFORM}" = 'mac' ]; then
+              chmod +x "${STAGE}/bin/${bp}/"* 2>/dev/null || true
+            fi
+          done
+
+          mkdir -p release
+          DEST="isparta-next-${VERSION}-cep-${PLATFORM}.zip"
+          (cd .cep-stage && zip -r -q "../release/${DEST}" "${STAGE_ID}")
+          ls -lh release
+          echo "Packed ${DEST} (version=${VERSION})"
+
+      - name: Upload CEP artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: isparta-next-cep-${{ matrix.platform }}
           if-no-files-found: error
           retention-days: 7
           path: release/*

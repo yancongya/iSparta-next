@@ -31,4 +31,20 @@ export function joinTokens (tokens) {
   }, '')
 }
 
+/**
+ * 初始输出名：桌面 file.js 与 CEP 合成共用。
+ * tokenizeName/joinTokens 同规则（分隔符保留），再去掉空格（与历史 .replace(/[ ]/g, '') 一致）；
+ * outputSuffix 非空才拼 `_suffix`，避免悬尾下划线。
+ */
+export function buildInitialOutputName (baseName, options) {
+  const tokens = tokenizeName(baseName || '')
+  const joined = joinTokens(
+    tokens
+      .filter(function (t) { return t.text !== ' ' })
+      .map(function (t) { return { text: t.text, sep: t.sep, on: true } })
+  )
+  const suffix = options && options.outputSuffix
+  return suffix ? joined + '_' + suffix : joined
+}
+
 export default tokenizeName

@@ -128,7 +128,7 @@
               number
               placeholder="100"
             />
-            <button type="button" class="is-info" v-tip="'0-100'">
+            <button type="button" class="is-info" :aria-label="$t('compressionQuality')" v-tip="$t('qualityTip')">
               <is-icon name="info" size="sm" />
             </button>
           </div>
@@ -315,6 +315,7 @@ import {
   savePresets,
   presetList,
   activePresetIdOf,
+  activePresetOf,
   setBuiltinTemplate,
   resetBuiltinTemplate,
   upsertCustomPreset,
@@ -389,9 +390,10 @@ export default {
       if (!this.selectedList.length) {
         return false
       }
-      // 多选时只要有一项是 PNGs 就展示帧频（写入所有选中项）
+      // 多选时只要有一项是 PNGs/Comp 就展示帧频（写入所有选中项）
+      // Comp 转换前渲序列，输出 APNG 的 fps 仍走 frameRate
       return this.selectedList.some(function (it) {
-        return it.basic && it.basic.type === 'PNGs'
+        return it.basic && (it.basic.type === 'PNGs' || it.basic.type === 'Comp')
       })
     },
     formatStatic () {
@@ -428,6 +430,7 @@ export default {
       return [
         { key: 'srcPath', value: ctx.srcPath },
         { key: 'src', value: ctx.src },
+        { key: 'srcName', value: ctx.srcName },
         { key: 'name', value: ctx.name },
         { key: 'type', value: ctx.type },
         { key: 'parent', value: ctx.parent },

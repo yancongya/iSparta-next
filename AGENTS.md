@@ -7,11 +7,16 @@
 | 用途 | 用法（PowerShell，仓库根 `F:\iSparta` 或你的克隆路径） |
 |------|----------------------------------------------------------|
 | Electron 开发 | `npm run dev`，或 `scripts\dev\run-dev.cmd`（日志：`dev.log` / `dev.err` / `dev.status`） |
+| 一键开发预览 | `npm run dev:all`（落地页 8080 + Web 8081 + CEP 8082）；`dev:all:electron` 再加 Electron；或 `scripts\dev\run-all-dev.cmd` |
+| 落地页静态 | `npm run landing:serve`（默认 8080） |
 | 浏览器 UI 预览 | `npm run serve`（默认 8081） |
 | 依赖安装 | `scripts\dev\run-npm-install.cmd` / `run-clean-install.cmd` / `run-electron-install.cmd` |
 | Lint | `npm run lint` |
 | 出包前自检 | `npm run doctor:pack`（图标 / 向导图 / builder 引用；CI 构建前会跑） |
 | 本地打包 Windows | `npm run build:windows` |
+| AE CEP 开发（**默认 HMR**） | `npm run dev:cep`（MainPath=`./dev-hmr.html`→8082）；刷新=**关面板再开（无 Ctrl+R）**。收工 `dev:cep:off`。出包才 `build:cep` |
+| CEP 铁律 | MainPath **禁 http://**；**禁 mock**；桥 `/lib/`|`../lib/`；外链 `cep.util.openURLInDefaultBrowser` |
+| CEP 载荷/扩展 zip | `npm run prepare:cep`（`build/cep-payload/`）；`npm run pack:cep`（`dist/*-cep-*.zip`） |
 | 更新逻辑测试 | `node scripts\updateCheck.l1.js`；fixture：`scripts\fixture-github.js` |
 | 图标再生 | 见 `scripts\build-app-icons.js`、`scripts\make-icons-from-png.py`、`scripts\make-installer-images.py`（勿手改位图当源） |
 
@@ -138,12 +143,25 @@ CI：`release.yml` 负责 bump、打包、挂 Release（notes 模板见该 workf
 - 主树（`master`）大范围写入前按会话规则确认 worktree；发版后 `git pull` 同步 bump
 - 完成后：lint 通过 → commit（规范见上）→ 更新 CHANGELOG/README（如有用户可见变化）→ **等用户点名再 release**
 
+## 8.1 双端目标（桌面 + AE CEP）
+
+- 完整计划与多 Agent 分工见 [`docs/PLAN-DUAL-TARGET.md`](docs/PLAN-DUAL-TARGET.md)（Goal / W1–W5 / 验收）。
+- 扩展 **Extension Id / CEP 目录名**：`io.github.isparta-next`；编码器用 **小工具子集**（与 `src/util/processor` 一致），扩展壳在 `targets/cep/`。
+- 转换核只依赖 `src/util/node-env.js` 桥接口；桌面 IPC 与 CEP Node 各写 adapter，业务不复制。
+- **Web 框架双端共用 Vue 2**；**压缩/合成只用 `src/util/processor/*`**，禁止在 CEP 另写编码链。AE 侧 jsx 负责选合成与渲序列，编码仍进 processor。
+- **禁止简化版 UI**：扩展完整复用桌面工作台（列表/设置/命名/路径）；AE 特殊化仅通过 **注入/适配层**（jsx 宿主、合成输入源、host adapter），不得维护平行精简面板。
+- **双端一起更**：同一 NSIS/Release 更新桌面与 AE 扩展；扩展不单独热更。桌面 electron-updater 完成后由应用自检并刷新 CEP 目录；CEP 内不跑 electron-updater。
+- 不用 Bolt/Nx；一体安装走现有 NSIS 组件页；发版仍须用户点名（§2.2）。
+- 实现阶段同步更新本节与 `docs/PLAN-DUAL-TARGET.md` 勾选状态。
+
 ## 9. 文档索引
 
 | 文档 | 用途 |
 | --- | --- |
 | `AGENTS.md` | 开发约定（本文） |
+| `docs/PLAN-DUAL-TARGET.md` | 双端（桌面+CEP）计划与分工 |
 | `docs/CHANGELOG.md` | 版本摘要（中文） |
+| `docs/BRIDGE.md` | 转换核桥接口冻结（ispartaAPI / node-env / processor） |
 | `docs/UPDATER.md` | 更新检查 / 自动更新现状 |
 | `docs/RELEASE.md` | 发版操作 |
 | `README.md` | 中文产品说明 |

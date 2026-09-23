@@ -22,6 +22,7 @@
 - **Windows（NSIS 安装版）/ Linux（AppImage）** 支持应用内自动更新通道；**macOS** 未签名，下载 zip 后解压覆盖（系统设置 → 隐私与安全性 → 仍要打开）。
 - 架构、限制与测试入口：[`docs/UPDATER.md`](docs/UPDATER.md)；发版步骤：[`docs/RELEASE.md`](docs/RELEASE.md)；版本摘要：[`docs/CHANGELOG.md`](docs/CHANGELOG.md)。
 - Windows 免费开源签名申请步骤见 [docs/SIGNPATH.md](docs/SIGNPATH.md)。
+- **AE 扩展（开发中）**：After Effects CEP 面板与桌面共用转换核，计划见 [`docs/PLAN-DUAL-TARGET.md`](docs/PLAN-DUAL-TARGET.md)。
 
 ### 近期体验更新
 

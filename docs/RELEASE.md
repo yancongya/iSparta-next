@@ -80,11 +80,14 @@ Actions → **Release** → Run workflow → 选 bump / prerelease / dry_run。
 | Linux x64 | `isparta-next-<ver>-linux-x64.AppImage` | `latest-linux.yml` |
 | macOS arm64 | `isparta-next-<ver>-mac-arm64.zip` | `latest-mac.yml`（不自动更新） |
 | macOS x64 | `isparta-next-<ver>-mac-x64.zip` | 同上 |
+| AE CEP Windows | `isparta-next-<ver>-cep-win.zip` | 无（手动解压安装） |
+| AE CEP macOS | `isparta-next-<ver>-cep-mac.zip` | 无（手动解压安装） |
 
 CI 会额外写入**稳定别名**（无版本号），供落地页 `releases/latest/download/...`：
 
 - `isparta-next-win-x64.exe`
 - `isparta-next-linux-x64.AppImage`
+- `isparta-next-cep-win.zip` / `isparta-next-cep-mac.zip`
 - 以及 mac zip 别名等  
 
 > `latest*.yml` 的 `path` 必须与 **版本化** 资产名一致，供 electron-updater 定位安装包；**不要**改名或删除这些 yml。  

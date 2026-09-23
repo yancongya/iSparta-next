@@ -12,6 +12,7 @@ import {
   normalizePresets,
   presetList,
   activePresetIdOf,
+  activePresetOf,
   setBuiltinTemplate,
   resetBuiltinTemplate,
   upsertCustomPreset,
@@ -39,6 +40,7 @@ export function savePresets (presets) {
 export {
   presetList,
   activePresetIdOf,
+  activePresetOf,
   setBuiltinTemplate,
   resetBuiltinTemplate,
   upsertCustomPreset,
