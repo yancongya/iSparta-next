@@ -47,6 +47,19 @@ function ispartaErr (message) {
 }
 
 /**
+ * 路径解码（安全）：AE/fs 可能给出 URI 编码路径，但字面量 % 不是合法编码。
+ * decodeURIComponent 遇 %xx 无效序列会抛 URIError，这里失败则原样返回。
+ */
+function ispartaDecodePath (s) {
+    s = String(s === null || s === undefined ? '' : s);
+    try {
+        return decodeURIComponent(s);
+    } catch (e) {
+        return s;
+    }
+}
+
+/**
  * 渲染进度事件 → 面板（type: isparta.render.progress）
  * 优先 CSXSEvent；无 CSXSEvent 时写临时文件/挂全局兑底（面板可轮询，注释说明）。
  * payload: { phase: start|progress|done|error, token, compIndex, compName, done, total, error? }
@@ -149,7 +162,7 @@ function ispartaCompDescriptor (comp, index, nest) {
         parent: folderPath ? 'folder:' + folderPath : null,
         contains: (nest && nest.contains[index]) || [],
         usedIn: (nest && nest.usedIn[index]) || [],
-        projectPath: (app.project.file ? decodeURIComponent(app.project.file.fsName) : '')
+        projectPath: (app.project.file ? ispartaDecodePath(app.project.file.fsName) : '')
     };
 }
 
@@ -170,7 +183,7 @@ function ispartaListComps () {
         return ispartaOk({
             comps: comps,
             count: comps.length,
-            projectPath: (app.project.file ? decodeURIComponent(app.project.file.fsName) : '')
+            projectPath: (app.project.file ? ispartaDecodePath(app.project.file.fsName) : '')
         });
     } catch (e) {
         return ispartaErr(e);
@@ -370,7 +383,7 @@ function ispartaPickOutputFolder (defaultPath) {
     try {
         var startFolder = null;
         if (defaultPath) {
-            startFolder = new Folder(decodeURIComponent(defaultPath));
+            startFolder = new Folder(ispartaDecodePath(defaultPath));
             if (!startFolder.exists) {
                 startFolder = null;
             }
@@ -379,7 +392,7 @@ function ispartaPickOutputFolder (defaultPath) {
         if (picked === null) {
             return ispartaToJson({ ok: false, cancelled: true });
         }
-        return ispartaOk({ path: decodeURIComponent(picked.fsName) });
+        return ispartaOk({ path: ispartaDecodePath(picked.fsName) });
     } catch (e) {
         return ispartaErr(e);
     }
@@ -404,16 +417,17 @@ function ispartaGetCompositions () {
         });
       }
     }
-    return JSON.stringify(comps);
+    // ES3 无原生 JSON，必须走 ispartaToJson
+    return ispartaToJson(comps);
   } catch (e) {
-    return JSON.stringify({ error: e.toString() });
+    return ispartaToJson({ error: String(e) });
   }
 }
 
 function ispartaGetProjectTree () {
   try {
     var proj = app.project;
-    if (!proj) { return JSON.stringify({ type: 'none' }); }
+    if (!proj) { return ispartaToJson({ type: 'none' }); }
     function buildTree (folder) {
       var children = [];
       for (var i = 1; i <= folder.items.length; i++) {
@@ -460,9 +474,9 @@ function ispartaGetProjectTree () {
       type: 'root',
       children: buildTree(proj.rootFolder)
     };
-    return JSON.stringify(tree);
+    return ispartaToJson(tree);
   } catch (e) {
-    return JSON.stringify({ error: e.toString() });
+    return ispartaToJson({ error: String(e) });
   }
 }
 
@@ -498,6 +512,7 @@ function ispartaRestoreRenderQueue (checkedItems) {
 }
 
 // save png sequence via renderQueue（思路对齐 helper.jsx savePNG）
+// theLocation 由调用方 ispartaDecodePath 解码；此处不再二次 decode。
 function ispartaSavePngSequence (theComp, theLocation) {
     var res = [1, 1];
     var start = theComp.workAreaStart;
@@ -507,8 +522,7 @@ function ispartaSavePngSequence (theComp, theLocation) {
         theComp.resolutionFactor = [1, 1];
     }
 
-    theLocation = decodeURIComponent(theLocation);
-    var renderToken = theLocation;
+    var renderToken = String(theLocation);
     var renderTotal = Math.round(dur / theComp.frameDuration) || 0;
     var RQbackup = ispartaStoreRenderQueue();
     if (RQbackup.length > 0 && RQbackup[RQbackup.length - 1] == 'rendering') {
@@ -525,11 +539,12 @@ function ispartaSavePngSequence (theComp, theLocation) {
         return 'RENDERING';
     }
 
+    var rqItem = null;
     try {
         app.project.renderQueue.showWindow(false);
         theComp.openInViewer();
         app.executeCommand(2104);
-        var rqItem = app.project.renderQueue.item(app.project.renderQueue.numItems);
+        rqItem = app.project.renderQueue.item(app.project.renderQueue.numItems);
         rqItem.render = true;
         var om = rqItem.outputModule(1);
         var templateTemp = om.templates;
@@ -570,11 +585,12 @@ function ispartaSavePngSequence (theComp, theLocation) {
             done: renderTotal,
             total: renderTotal
         });
-        rqItem.remove();
+        try { rqItem.remove(); } catch (eRm) { /* 已移除则忽略 */ }
+        rqItem = null;
         if (RQbackup !== null && RQbackup !== undefined) {
             ispartaRestoreRenderQueue(RQbackup);
         }
-        app.activeViewer.setActive();
+        try { app.activeViewer.setActive(); } catch (ev) { /* 无查看器不挡导出 */ }
         theComp.resolutionFactor = res;
         return finalpath;
     } catch (e) {
@@ -587,6 +603,9 @@ function ispartaSavePngSequence (theComp, theLocation) {
             total: renderTotal,
             error: String(e)
         });
+        // 失败也必须清 rqItem / 恢复渲染队列，避免队列被本任务卡住
+        try { if (rqItem) { rqItem.remove(); } } catch (eRm2) { /* ignore */ }
+        try { ispartaRestoreRenderQueue(RQbackup); } catch (eRq) { /* ignore */ }
         try {
             theComp.resolutionFactor = res;
         } catch (e2) {
@@ -625,7 +644,7 @@ function ispartaExportCompPngSequence (comp, location) {
     if (!location) {
         return ispartaErr('location required');
     }
-    location = decodeURIComponent(location);
+    location = ispartaDecodePath(location);
 
     var targetPath = location;
     var lastChar = location.charAt(location.length - 1);
@@ -685,7 +704,7 @@ function ispartaGetProjectStatus () {
         }
         var file = app.project.file;
         var isSaved = !!file;
-        var projectPath = file ? decodeURIComponent(file.fsName) : '';
+        var projectPath = file ? ispartaDecodePath(file.fsName) : '';
         var compCount = 0;
         var n = app.project.numItems;
         for (var i = 1; i <= n; i++) {
@@ -724,7 +743,7 @@ function ispartaExportCompThumb (comp, filePath) {
     if (!filePath) {
         return ispartaErr('filePath required');
     }
-    filePath = decodeURIComponent(filePath);
+    filePath = ispartaDecodePath(filePath);
     var target = new File(filePath);
     if (!target.parent.exists) {
         ispartaNewFolder(target.parent.fsName);
@@ -745,11 +764,12 @@ function ispartaExportCompThumb (comp, filePath) {
         return ispartaErr('render queue is busy');
     }
 
+    var rqItem = null;
     try {
         app.project.renderQueue.showWindow(false);
         comp.openInViewer();
         app.executeCommand(2104);
-        var rqItem = app.project.renderQueue.item(app.project.renderQueue.numItems);
+        rqItem = app.project.renderQueue.item(app.project.renderQueue.numItems);
         rqItem.render = true;
         var om = rqItem.outputModule(1);
         var templateTemp = om.templates;
@@ -770,7 +790,8 @@ function ispartaExportCompThumb (comp, filePath) {
 
         var finalpath = om.file.fsName;
         app.project.renderQueue.render();
-        rqItem.remove();
+        try { rqItem.remove(); } catch (eRm) { /* ignore */ }
+        rqItem = null;
         if (RQbackup !== null && RQbackup !== undefined) {
             ispartaRestoreRenderQueue(RQbackup);
         }
@@ -788,8 +809,10 @@ function ispartaExportCompThumb (comp, filePath) {
                 finalpath = outFile.fsName;
             }
         }
-        return ispartaOk({ path: decodeURIComponent(finalpath) });
+        return ispartaOk({ path: ispartaDecodePath(finalpath) });
     } catch (e) {
+        try { if (rqItem) { rqItem.remove(); } } catch (eRm2) { /* ignore */ }
+        try { ispartaRestoreRenderQueue(RQbackup); } catch (eRq) { /* ignore */ }
         try { comp.resolutionFactor = res; } catch (e2) {}
         return ispartaErr(e);
     }
@@ -814,7 +837,7 @@ function ispartaExportPngSequence (location) {
 
 function ispartaListPngs (folderPath) {
     try {
-        var folder = new Folder(decodeURIComponent(folderPath));
+        var folder = new Folder(ispartaDecodePath(folderPath));
         if (!folder.exists) {
             return ispartaErr('folder not found');
         }
@@ -822,7 +845,7 @@ function ispartaListPngs (folderPath) {
         var names = [];
         for (var i = 0; i < files.length; i++) {
             if (files[i] instanceof File) {
-                names.push(decodeURIComponent(files[i].fsName));
+                names.push(ispartaDecodePath(files[i].fsName));
             }
         }
         // 字典序，保证帧顺序

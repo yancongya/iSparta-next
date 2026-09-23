@@ -86,7 +86,7 @@ export const hostAdapter = {
     return Promise.resolve(item)
   },
 
-  /** 外链：CEP 用 cep.util.openURLInDefaultBrowser（非 window.open）；Electron 走白名单 IPC */
+  /** 外链：CEP 用 cep.util.openURLInDefaultBrowser（非 window.open / location.href）；Electron 走白名单 IPC */
   openExternal (url) {
     if (isCep) {
       try {
@@ -100,10 +100,7 @@ export const hostAdapter = {
           return Promise.resolve(true)
         }
       } catch (e2) { /* fall through */ }
-      if (typeof location !== 'undefined') {
-        location.href = String(url)
-        return Promise.resolve(true)
-      }
+      // CEP 禁止 location.href 兜底（会导航走面板）
       return Promise.resolve(false)
     }
     const ip = ipc()

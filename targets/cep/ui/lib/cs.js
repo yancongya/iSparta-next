@@ -59,10 +59,8 @@
       window.cep.util.openURLInDefaultBrowser(String(url))
       return true
     }
-    if (typeof location !== 'undefined') {
-      location.href = String(url)
-      return true
-    }
+    // 铁律：外链只用 cep.util.openURLInDefaultBrowser。
+    // 禁止 location.href 兜底（会把面板自身导航走，扩展白屏）。
     return false
   }
 
