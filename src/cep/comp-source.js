@@ -217,10 +217,11 @@ export function prepareCompSequence (item, opts) {
   }
   const idx = Number(basic.compIndex)
   const name = basic.compName || ''
-  // 临时帧目录：用 tmpDir 或系统临时下的 isparta-comp-*
-  // 只作渲染中间帧，不得覆盖用户 outputTo 输出目录语义
-  const tmpRoot = (basic.tmpDir || basic.tmpOutputDir) || ''
-  const outDir = tmpRoot || ('ae-comp-tmp-' + (idx != null ? idx : 'x'))
+  // 序列帧与合成输出同目录：直接用输出设置解析路径（resolveOutputPath，不另建方法）
+  // 默认模板 {srcPath}/{srcName} → 项目旁「合成名」子目录
+  const outDir = (item.options && resolveOutputPath(item, item.options)) ||
+    (basic.tmpDir || basic.tmpOutputDir) ||
+    ('ae-comp-tmp-' + (idx != null ? idx : 'x'))
   try {
     if (fs && typeof fs.ensureDirSync === 'function') {
       fs.ensureDirSync(outDir)
@@ -347,7 +348,7 @@ export function prepareCompSequence (item, opts) {
         }
         basic.fileList = files
         if (!basic.sourceFile) { basic.sourceFile = files[0] }
-        // 序列目录只作输入帧；outputPath 继续按 outputTo/模板解析（tokenizeName/outputPath 同函数）
+        // 序列帧与最终输出同走 resolveOutputPath（输出设置路径）；fileList 只作输入帧
         if (item.options) {
           item.basic.outputPath = resolveOutputPath(item, item.options)
         }
