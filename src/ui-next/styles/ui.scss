@@ -2133,3 +2133,18 @@ body.is-scroll-locked {
   width: 100%;
   min-width: 0;
 }
+
+// --------------------------------------------------------------------------
+// 右栏拖拽（grip / side）—— body 级规则
+// shell.scss 由 Home.vue 的 scoped 块引入，body 单条选择器会被加上 [data-v-xxx]
+// 永不命中；这些类由 Home.vue 挂在 body 上，必须落在全局 ui.scss。
+// --------------------------------------------------------------------------
+body.is-column-resizing {
+  cursor: col-resize !important;
+  user-select: none !important;
+}
+
+// 拖拽进行中关掉右栏 width 过渡，避免跟不上手
+body.is-column-resizing .ib-side {
+  transition: none !important;
+}

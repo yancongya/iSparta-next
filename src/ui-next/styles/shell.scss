@@ -567,17 +567,22 @@ body.is-theme-light .ib-drop .keyboard-key {
   }
 
   &__grip {
+    position: relative;
+    z-index: 1;
     display: flex;
     align-items: center;
     justify-content: center;
     flex: 1;
     width: 100%;
     min-height: 40px;
+    // 确保手柄可点：避免被相邻按钮/弹层盖住，拖拽期间也不吃文字选择
+    pointer-events: auto;
     cursor: col-resize;
     border-top: 1px solid var(--is-divider);
+    touch-action: none;
     transition: background-color var(--is-dur-fast) var(--is-ease-std);
 
-    // 两条竖线
+    // 两条竖线（装饰）；热区用整块 grip，这里只画指示
     &::before,
     &::after {
       content: '';
@@ -659,11 +664,8 @@ body.is-theme-light .ib-drop .keyboard-key {
   }
 }
 
-// 拖拽调宽时禁止全局选区，避免误选文本
-body.is-column-resizing {
-  cursor: col-resize !important;
-  user-select: none !important;
-}
+// 拖拽调宽时禁止全局选区、关掉右栏 width 过渡：body 级规则见 ui.scss
+// （本文件被 Home.vue scoped 引入，body 单条规则会被 [data-v] 选择器钉死）
 
 .ib-side {
   display: flex;
@@ -675,6 +677,7 @@ body.is-column-resizing {
   border-left: 1px solid var(--is-border);
   background: var(--is-panel);
   overflow: hidden;
+  // 拖拽进行中由 body.is-column-resizing 关掉过渡，见 ui.scss
   transition: width var(--is-dur-base) var(--is-ease-std);
 
   &--shut {
@@ -691,11 +694,6 @@ body.is-column-resizing {
     flex: 1;
     flex-direction: column;
   }
-}
-
-// 拖拽进行中关掉右侧的过渡，避免宽度跟不上手
-body.is-column-resizing .ib-side {
-  transition: none !important;
 }
 
 
@@ -755,6 +753,7 @@ body.is-column-resizing .ib-side {
 // --------------------------------------------------------------------------
 // CEP 小屏：≤720px 单列铺满（仅 body.is-cep，桌面宽屏不受影响）
 // 与 projectList 900 / sortBar 820 断点不重叠：这里只管壳层两栏，不碰列表/底栏内部
+// >720 的可拖宽场景不要吃到本规则——侧栏宽度由 sideStyle 行内值驱动，勿写 width:0!important
 // --------------------------------------------------------------------------
 @media (max-width: 720px) {
   body.is-cep {
@@ -771,10 +770,15 @@ body.is-column-resizing .ib-side {
     }
 
     .ib-side {
-      // 行内 width（sideStyle）盖不住 display，强制退出双栏；
-      // 设置只走覆盖层 .ib-set-overlay
+      // 强制退出双栏；设置只走覆盖层 .ib-set-overlay。
+      // 只用 display:none，不要再 width:0!important：那会盖住行内 sideStyle，
+      // 在断点边缘/缩放场景误伤本可拖宽的布局
       display: none;
-      width: 0 !important;
+    }
+
+    // 小屏侧栏已隐藏，grip 不再提供拖拽，避免「拖了没反应」的误导
+    .ib-rail__grip {
+      cursor: default;
     }
   }
 }

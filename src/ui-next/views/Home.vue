@@ -253,10 +253,11 @@ import hostAdapter, { getSourceAdapter } from '../../util/host-env'
 import CompTree from '../../components/compTree/compTree.vue'
 import { LANDING_URL } from '../../brand'
 
-// 中间工具条列宽（px）
+// 中间工具条列宽（px，与 tokens.css --is-rail-w 保持一致）
 const RAIL_W = 36
 const DEFAULT_SIDE_W = 340
-const MIN_SIDE_W = 260
+// 允许拖到的最小右栏宽：必须 ≤ EXPAND_SIDE_W，否则折叠态拖出时宽度会被垫高、不跟手
+const MIN_SIDE_W = 160
 const MAX_SIDE_W = 640
 // 左侧列表至少要留出的宽度：原来 380 太保守，
 // 820px 窗口下会把右侧上限压到 404，向左只有 84px 行程，手感等同拖不动
@@ -264,11 +265,14 @@ const MIN_MAIN_W = 300
 // CEP 窄面板：主列表可更窄，否则右栏被挤死无法拖宽
 function minMainW () {
   if (typeof window === 'undefined') return MIN_MAIN_W
-  return window.innerWidth < 720 ? 120 : MIN_MAIN_W
+  // 与壳层断点一致：≤720 视作窄面板（CEP 小屏此时侧栏 display:none，拖拽无意义）
+  return window.innerWidth <= 720 ? 120 : MIN_MAIN_W
 }
-// 拖拽折叠阈值：两个值不同形成迟滞区间，避免卡在临界点时反复开合抖动
-const COLLAPSE_SIDE_W = 170
-const EXPAND_SIDE_W = 230
+// 拖拽折叠阈值：两个值不同形成迟滞区间，避免卡在临界点时反复开合抖动。
+// 展开阈值旧值 230 过大：折叠态 grip 贴在右缘，要先把光标拽出 230px 才有反应，
+// 手感等同「拖不出来」。压到与 MIN 同档，拖出约 160px 即展开且宽度跟手。
+const COLLAPSE_SIDE_W = 120
+const EXPAND_SIDE_W = 160
 const SIDE_W_KEY = 'uiSideW'
 
 export default {
@@ -374,6 +378,8 @@ export default {
     // 只响应「变化沿」，不持续强制——用户手动点开的折叠态面板，
     // 在没有新的选中动作前保持打开，尊重手动意图。
     selectedCount (nv, ov) {
+      // 拖拽调宽过程中不响应选中联动，避免 watcher 把正在拖的面板夹断
+      if (this.resizing) return
       if (nv > 0 && ov === 0) { this.settingsOpen = true }
       else if (nv === 0 && ov > 0) { this.settingsOpen = false }
     },
@@ -401,6 +407,10 @@ export default {
     window.addEventListener('keyup', this.onKeyup)
     // 拖到窗口外缘时浏览器不会补发 dragleave，兜底重置遮罩
     window.addEventListener('blur', this.resetDrag)
+    // projectList 等子组件要求打开「任务输出设置」：CEP 用全屏覆盖层，桌面展开右栏
+    if (this.$root && this.$root.eventBus) {
+      this.$root.eventBus.$on('open-task-setting', this.onOpenTaskSetting)
+    }
     // CEP：任务条默认就是合成列表（不依赖先勾选）
     if (this.supportsCompImport) {
       this.loadAllCompsAsTasks()
@@ -418,6 +428,9 @@ export default {
     window.removeEventListener('keydown', this.onKeydown)
     window.removeEventListener('keyup', this.onKeyup)
     window.removeEventListener('blur', this.resetDrag)
+    if (this.$root && this.$root.eventBus) {
+      this.$root.eventBus.$off('open-task-setting', this.onOpenTaskSetting)
+    }
     if (this._updateTimer) { clearTimeout(this._updateTimer); this._updateTimer = null }
     if (this._unsubTheme) this._unsubTheme()
     if (this._onMove) document.removeEventListener('mousemove', this._onMove)
@@ -461,26 +474,46 @@ export default {
     },
     startResize (e) {
       if (e.button !== 0) return
+      // CEP ≤720 单列：侧栏 display:none，拖拽无意义，直接忽略
+      if (this.supportsCompImport && window.innerWidth <= 720) return
       e.preventDefault()
       this.resizing = true
       this.langOpen = false
       document.body.classList.add('is-column-resizing')
+      // 期望侧栏宽 = 光标右侧剩余空间（扣掉中栏）。rail 宽 36px，按在中段会让
+      // rawWant 瞬间偏小、面板跳一下——用 bias 把抓取点归零，宽度才严格跟手。
+      const rawWant = (clientX) => window.innerWidth - clientX - RAIL_W
+      this._resizeBias = rawWant(e.clientX) - (this.settingsOpen ? this.sideW : 0)
       this._onMove = (ev) => {
-        // 手柄右侧剩余的空间即为右侧面板期望宽度
-        const want = window.innerWidth - ev.clientX - RAIL_W
+        const want = rawWant(ev.clientX) - this._resizeBias
+
+        // 允许区间：main 至少留 minMainW，且绝不能把 sideW 顶到 maxByMain 之上
+        // （旧写法 Math.max(MIN, min(MAX, maxByMain, want)) 在 maxByMain < MIN 时会
+        // 强行垫到 MIN，反过来挤掉 main 的最小宽度）
+        const maxByMain = Math.max(0, window.innerWidth - RAIL_W - minMainW())
+        const upper = Math.min(MAX_SIDE_W, Math.max(maxByMain, 1))
+        const lower = Math.min(MIN_SIDE_W, upper)
+        const clampW = (w) => Math.round(Math.max(lower, Math.min(upper, w)))
 
         if (!this.settingsOpen) {
-          // 折叠态：拖回足够空间就自动展开，恢复到折叠前的 sideW
-          if (want > EXPAND_SIDE_W) this.settingsOpen = true
+          // 折叠态：拖过阈值即展开，并把 sideW 写成当前 want（跟手）。
+          // 旧逻辑在这里 return 不写 sideW，展开瞬间跳回旧宽度，下一帧再跳到钳位值。
+          if (want >= EXPAND_SIDE_W) {
+            this.settingsOpen = true
+            this.sideW = clampW(want)
+            // 以展开后的实际宽度重定 bias，继续拖不跳
+            this._resizeBias = rawWant(ev.clientX) - this.sideW
+          }
           return
         }
         // 展开态：拖窄到临界以下自动折叠，且不覆盖 sideW，便于展开时还原
         if (want < COLLAPSE_SIDE_W) {
           this.settingsOpen = false
+          // 以当前点为新的 0：再往左拖 EXPAND 才重新展开（迟滞）
+          this._resizeBias = rawWant(ev.clientX)
           return
         }
-        const maxByMain = window.innerWidth - RAIL_W - minMainW()
-        this.sideW = Math.max(MIN_SIDE_W, Math.min(MAX_SIDE_W, maxByMain, want))
+        this.sideW = clampW(want)
       }
       this._onUp = () => {
         this.resizing = false
@@ -490,6 +523,7 @@ export default {
         document.removeEventListener('mouseup', this._onUp)
         this._onMove = null
         this._onUp = null
+        this._resizeBias = 0
       }
       document.addEventListener('mousemove', this._onMove)
       document.addEventListener('mouseup', this._onUp)
@@ -512,6 +546,17 @@ export default {
     },
     toggleSettings () {
       this.settingsOpen = !this.settingsOpen
+    },
+    /**
+     * projectList 等发出「打开任务输出设置」：
+     * CEP 走全屏覆盖层（小屏侧栏 display:none）；桌面展开右栏。
+     */
+    onOpenTaskSetting () {
+      if (this.supportsCompImport) {
+        this.settingsDialogOpen = true
+      } else {
+        this.settingsOpen = true
+      }
     },
     openGlobalSetting () {
       this.$root.eventBus.$emit('openGlobalSetting')
