@@ -3,7 +3,13 @@
   无展开折叠；名称与搜索框同列；列溢出省略、hover 显示全文
 -->
 <template>
-  <section class="mod-ct" role="region" :aria-label="$t('compTree')">
+  <section
+    class="mod-ct"
+    role="region"
+    :aria-label="$t('compTree')"
+    @click="onBlankClick"
+    @dblclick="onBlankDblclick"
+  >
     <div class="mod-ct__head">
       <span class="mod-ct__c mod-ct__c--cb">
         <span class="mod-ct__cb" @click.stop="toggleAll">
@@ -28,6 +34,7 @@
       <button type="button" class="mod-ct__c mod-ct__c--num" @click="sortBy('frames')">
         {{ $t('compColFrames') }}{{ sortMark('frames') }}
       </button>
+      <span class="mod-ct__c mod-ct__c--act"></span>
     </div>
 
     <div v-if="!rows.length" class="mod-ct__empty">
@@ -55,6 +62,11 @@
         <span class="mod-ct__c mod-ct__c--num" :title="sizeText(node)">{{ sizeText(node) }}</span>
         <span class="mod-ct__c mod-ct__c--num" :title="String(node.fps)">{{ node.fps | fps }}</span>
         <span class="mod-ct__c mod-ct__c--num" :title="String(node.frames || 0)">{{ node.frames || 0 }}</span>
+        <span class="mod-ct__c mod-ct__c--act">
+          <button type="button" class="mod-ct__gear" :title="$t('outputConfig')" @click.stop="$emit('configure', node)">
+            <img :src="gearIcon" alt="" width="16" height="16" />
+          </button>
+        </span>
       </li>
     </ul>
   </section>
@@ -83,7 +95,8 @@ export default {
       keyword: '',
       sortKey: '',
       sortDir: 1,
-      compIcon: (http ? '/icons/' : './icons/') + 'pag-comp.png'
+      compIcon: (http ? '/icons/' : './icons/') + 'pag-comp.png',
+      gearIcon: (http ? '/icons/' : './icons/') + 'pag-gear.png',
     }
   },
   computed: {
@@ -116,15 +129,42 @@ export default {
     if (this.$root && this.$root.eventBus) {
       this.$root.eventBus.$on('comp-tree-refresh', this.refresh)
       this.$root.eventBus.$on('comp-tree-add-selected', this.emitAdd)
+      this.$root.eventBus.$on('comp-tree-select-all', this.selectAll)
+      this.$root.eventBus.$on('comp-tree-clear', this.clearSelection)
     }
   },
   beforeDestroy () {
     if (this.$root && this.$root.eventBus) {
       this.$root.eventBus.$off('comp-tree-refresh', this.refresh)
       this.$root.eventBus.$off('comp-tree-add-selected', this.emitAdd)
+      this.$root.eventBus.$off('comp-tree-select-all', this.selectAll)
+      this.$root.eventBus.$off('comp-tree-clear', this.clearSelection)
     }
   },
   methods: {
+    emitSelection () {
+      this.$emit('select', this.selectedNodes)
+    },
+    selectAll () {
+      const next = {}
+      this.rows.forEach((n) => { next[n.id] = true })
+      this.selectedMap = next
+      this.emitSelection()
+    },
+    clearSelection () {
+      this.selectedMap = {}
+      this.emitSelection()
+    },
+    onBlankClick (ev) {
+      if (ev.target && ev.target.closest && ev.target.closest('.mod-ct__row, .mod-ct__head, input, button')) return
+      // 点击空白 = 取消选择（对齐桌面）
+      this.clearSelection()
+    },
+    onBlankDblclick (ev) {
+      if (ev.target && ev.target.closest && ev.target.closest('.mod-ct__row, .mod-ct__head, input, button')) return
+      // 双击空白 = 全选（对齐桌面）
+      this.selectAll()
+    },
     sizeText (n) {
       return (n.width || 0) + '×' + (n.height || 0)
     },
@@ -175,9 +215,11 @@ export default {
       const on = !this.allSelected
       rows.forEach((n) => { next[n.id] = on })
       this.selectedMap = next
+      this.emitSelection()
     },
     toggleSelect (node) {
       this.$set(this.selectedMap, node.id, !this.selectedMap[node.id])
+      this.emitSelection()
     },
     emitAdd () {
       const items = sourceAdapter.toItems(this.selectedNodes)
@@ -266,6 +308,18 @@ export default {
   height: 16px;
   flex: 0 0 auto;
   display: block;
+}
+.mod-ct__c--act {
+  width: 36px;
+  flex: 0 0 36px;
+  text-align: center;
+}
+.mod-ct__gear {
+  border: 0;
+  background: transparent;
+  padding: 2px;
+  cursor: pointer;
+  line-height: 0;
 }
 .mod-ct__search {
   width: 100%;

@@ -38,6 +38,11 @@ if (process.env.BUILD_TARGET === 'cep') {
       entry: 'src/cep/main.js',
       template: 'src/cep/index.html',
       filename: 'index.html'
+    },
+    settings: {
+      entry: 'src/cep/settings.js',
+      template: 'src/cep/settings.html',
+      filename: 'settings.html'
     }
   }
   module.exports.outputDir = 'targets/cep/ui'

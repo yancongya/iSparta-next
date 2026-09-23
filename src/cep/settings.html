@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <title>iSparta 输出设置</title>
+    <script>
+      (function () {
+        var http = location.protocol === 'http:' || location.protocol === 'https:'
+        var base = http ? '/lib/' : '../lib/'
+        document.write('<script src="' + base + 'cep-bridge.js"><\/script>')
+        document.write('<script src="' + base + 'cs.js"><\/script>')
+      })()
+    </script>
+  </head>
+  <body>
+    <div id="app"></div>
+  </body>
+</html>

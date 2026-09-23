@@ -28,8 +28,9 @@
           />
         </div>
 
-        <!-- 缩略图：悬停逐帧播放；已完成的条目点击打开前后对比 -->
+        <!-- 缩略图：桌面悬停逐帧；CEP 合成无原生预览，不显示封面 -->
         <div
+          v-if="showThumb(project)"
           class="thumb is-checker"
           :class="{ 'is-comparable': stateOf(project.process) === 'done' }"
           @click.stop="openCompare(project)"
@@ -50,12 +51,14 @@
         </div>
 
         <div class="info">
-          <!-- 第一行：类型标签 + 输出目录（点击切换，hover 高亮） -->
+          <!-- 第一行：类型标签 + 输出目录（桌面）；CEP 只留类型，不显示路径 -->
           <div class="input">
-            <is-tag :tone="tagTone(project.basic && project.basic.type)">
+            <is-tag v-if="showOutPath" :tone="tagTone(project.basic && project.basic.type)">
               {{ project.basic && project.basic.type }}
             </is-tag>
+            <!-- 桌面：点击改输出目录；CEP：只读展示（项目旁/合成名） -->
             <button
+              v-if="showOutPath"
               type="button"
               class="outpath is-ellipsis"
               v-tip="$t('tipChangeOutput') + '：' + outPathOf(project)"
@@ -64,9 +67,16 @@
               <is-icon name="folder" size="xs" />
               <span class="is-ellipsis">{{ outPathOf(project) | basePath }}</span>
             </button>
+            <span
+              v-else
+              class="outpath outpath--static is-ellipsis"
+              :title="outPathOf(project)"
+            >
+              <is-icon name="folder" size="xs" />
+              <span class="is-ellipsis">{{ outPathOf(project) | basePath }}</span>
+            </span>
           </div>
-          <!-- 第二行：配置摘要。每项独立配色 + hover 反馈 + 完整设置说明。
-               数值文字包进 .sum-v：中档容器查询只隐藏数值（is-icon 本身也是 span，不能裸选 > span） -->
+          <!-- 第二行：默认参数摘要（帧频/循环/格式/阈值） -->
           <div class="summary">
             <span class="sum sum--fps" v-tip="tipOf('fps', fpsTip(project))">
               <is-icon name="zap" size="xs" /><span class="sum-v">{{ frameRateOf(project) }} f/s</span>
@@ -85,8 +95,8 @@
               <is-icon name="box" size="xs" /><span class="sum-v">≤ {{ sizeLimitOf(project) }}</span>
             </span>
           </div>
-          <!-- 第三行：准备输出的名字 + 变量路径 -->
-          <div class="summary summary--out">
+          <!-- 第三行：输出名 + 变量路径（仅桌面；CEP 名已在第一行） -->
+          <div v-if="showOutPath" class="summary summary--out">
             <span class="sum sum--name is-ellipsis" v-tip="tipOf('outputName', outNameOf(project))">
               <is-icon name="save" size="xs" /><span class="is-ellipsis">{{ outNameOf(project) || '—' }}</span>
             </span>
@@ -149,7 +159,13 @@
       @close="compareProject = null"
     ></compare-dialog>
 
-    <button type="button" class="open-folder" :disabled="isLocked" @click="openFolder">
+    <button
+      v-if="showOutPath"
+      type="button"
+      class="open-folder"
+      :disabled="isLocked"
+      @click="openFolder"
+    >
       <is-icon name="folder-plus" size="sm" />
       {{ $t('openFolder') }}
     </button>
@@ -164,6 +180,7 @@ import IsPacman from '../../ui-next/components/IsPacman.vue'
 import { f as fsOperate } from '../drag/file.js'
 import { naturalSort } from '../../util/sort'
 import notice from '../../ui-next/notice'
+import hostAdapter, { getSourceAdapter } from '../../util/host-env'
 
 export default {
   components: {
@@ -214,6 +231,10 @@ export default {
     isLocked () {
       return this.$store.getters.getterLocked
     },
+    // CEP：合成任务不展示输出路径/变量模板，只保留默认参数信息
+    showOutPath () {
+      return !(hostAdapter && (hostAdapter.supportsCompImport || hostAdapter.kind === 'cep'))
+    },
     marqueeStyle () {
       return {
         left: this.marquee.x + 'px',
@@ -224,6 +245,10 @@ export default {
     }
   },
   methods: {
+    // CEP 合成无原生预览 API（须渲帧）；列表不显示封面
+    showThumb () {
+      return this.showOutPath
+    },
     // 用输入路径做 key：删除中间项时其余项身份不变，FLIP 位移才正确
     itemKey (project, index) {
       var basic = project && project.basic
@@ -240,6 +265,8 @@ export default {
       }
     },
     canOpenFramePanel (project) {
+      // CEP：合成 fps 由 AE 定，无逐帧延时面板
+      if (hostAdapter && hostAdapter.supportsFrameDelay === false) return false
       if (!project || !project.basic) return false
       var files = project.basic.fileList
       // PNGs 序列 / 任意带多帧或可拆帧的任务都可打开预览面板
@@ -343,7 +370,12 @@ export default {
       return state !== 'pending' || !!(project.process && project.process.text)
     },
     thumbSrc (project, index) {
-      var list = project && project.basic && project.basic.fileList
+      var basic = project && project.basic
+      // CEP 合成：优先首帧预览 thumbPath
+      if (basic && basic.thumbPath) {
+        return this.thumbFor(basic.thumbPath)
+      }
+      var list = basic && basic.fileList
       if (!list || !list.length) { return '' }
       if (this.hoverIdx === index) {
         var i = this.hoverFrame % Math.min(list.length, 48)
@@ -537,6 +569,20 @@ export default {
       var procState = this.stateOf(project && project.process)
       var isRunning = procState === 'running'
       this.$store.dispatch('setSelected', index)
+      // CEP：右键可终止运行中任务；否则定位合成（无删除/改路径）
+      if (!this.showOutPath) {
+        if (isRunning) {
+          this.$store.dispatch('stopSelectedTasks')
+          return
+        }
+        try {
+          var src = getSourceAdapter && getSourceAdapter()
+          if (src && typeof src.openSource === 'function') {
+            src.openSource(project)
+          }
+        } catch (e) { /* 定位失败不打断 */ }
+        return
+      }
       // 让 store 先完成选中态更新，再取当前选中数量构建菜单
       window.setTimeout(() => {
         rightMenu.init(
@@ -549,7 +595,7 @@ export default {
       }, 10)
     },
     changeFold (outputPath, index) {
-      if (this.isLocked) {
+      if (this.isLocked || !this.showOutPath) {
         return false
       }
       ipc.send('change-item-fold', outputPath, index)
@@ -560,7 +606,7 @@ export default {
       this.compareProject = project
     },
     openFolder () {
-      if (this.isLocked) return
+      if (this.isLocked || !this.showOutPath) return
       ipc.invoke('dialog:openFiles', {
         properties: ['openFile', 'openDirectory', 'multiSelections']
       }).then((result) => {
@@ -572,6 +618,7 @@ export default {
       })
     },
     importPaths (list) {
+      if (!this.showOutPath) return Promise.resolve()
       return fsOperate.readerFiles(list).then((ars) => {
         for (var i in ars) {
           ars[i].basic.fileList.sort(naturalSort)
@@ -583,6 +630,7 @@ export default {
       })
     },
     onDelaySetting (project) {
+      if (hostAdapter && hostAdapter.supportsFrameDelay === false) return
       this.delayProject = project
       this.dialogFormVisible = true
     }

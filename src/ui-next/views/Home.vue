@@ -9,8 +9,8 @@
     <globalsetting></globalsetting>
     <is-notice-host></is-notice-host>
 
-    <!-- 空态：无任务时全屏导入 -->
-    <section v-if="!items.length" class="ib-import">
+    <!-- 空态：无任务时全屏导入（CEP 先铺合成列表，仍为空才显示） -->
+    <section v-if="!items.length && !compTreeOpen" class="ib-import">
       <div class="ib-import__top">
         <span class="ib-brand">{{ appName }}</span>
         <div class="ib-import__acts">
@@ -39,6 +39,7 @@
       <div v-if="supportsCompImport && compTreeOpen" class="ib-main__list">
         <comp-tree @add="onCompTreeAdd" @close="compTreeOpen = false" />
       </div>
+      <!-- 空态：CEP 点击刷新合成；桌面点击/拖入导入文件 -->
       <div
         v-else
         class="ib-drop"
@@ -54,9 +55,11 @@
             <div class="ib-folder__back"></div>
           </div>
         </div>
-        <h1>{{ $t('uploadTips') }}</h1>
-        <p class="ib-drop__rule">{{ $t('uploadRule') }}</p>
-        <div class="keyboard-hint">
+        <h1>{{ supportsCompImport ? $t('compRefresh') : $t('uploadTips') }}</h1>
+        <p class="ib-drop__rule">{{ supportsCompImport ? $t('uploadCompRule') : $t('uploadRule') }}</p>
+        <!-- 仅工程/扫描异常时提示；正常扫描结果静默 -->
+        <p v-if="projectStatusMsg" class="ib-drop__status">{{ projectStatusMsg }}</p>
+        <div v-if="!supportsCompImport" class="keyboard-hint">
           <p>{{ $t('pasteHint') }}</p>
           <div class="keyboard-keys">
             <span class="keyboard-key" id="ctrl-key" :class="{ 'key-pressed': pressed === 'Control' }" @click.stop="onKeyClick('Control')">CTRL</span>
@@ -71,7 +74,14 @@
     <section v-else class="ib-ws">
       <div class="ib-main">
         <div class="ib-main__list">
-          <project-list></project-list>
+          <comp-tree
+            v-if="supportsCompImport && compTreeOpen"
+            @add="onCompTreeAdd"
+            @close="compTreeOpen = false"
+            @select="onCompSelect"
+            @configure="onCompConfigure"
+          />
+          <project-list v-else></project-list>
         </div>
         <sort-bar></sort-bar>
       </div>
@@ -81,6 +91,17 @@
         class="ib-rail"
         :class="{ 'is-resizing': resizing }"
       >
+        <button
+          v-if="supportsCompImport"
+          type="button"
+          class="ib-rail__btn"
+          :class="{ 'is-active': compTreeOpen }"
+          :title="compTreeOpen ? $t('compTreeOpen') : $t('compTreeOpen')"
+          @click="toggleCompTree"
+        >
+          <is-icon name="layers" size="sm" />
+        </button>
+
         <button type="button" class="ib-rail__btn" :title="themeTitle" @click="toggleTheme">
           <is-icon :name="theme === 'dark' ? 'sun' : 'moon'" size="sm" />
         </button>
@@ -113,8 +134,9 @@
           <span v-if="updateBadge" class="ib-rail__badge" aria-hidden="true" />
         </button>
 
-        <!-- 删除所选任务：有选中时才可用 -->
+        <!-- 删除所选任务：仅桌面文件任务；CEP 任务=合成列表，删除会清空且无意义 -->
         <button
+          v-if="!supportsCompImport"
           type="button"
           class="ib-rail__btn ib-rail__btn--danger"
           :title="$t('shortcutDelete')"
@@ -173,6 +195,21 @@
     </transition>
 
     <is-log-panel :visible="logOpen" @close="logOpen = false" />
+    <!-- CEP：全屏覆盖输出设置（不是小弹窗/外开浏览器）；桌面仍用侧栏 -->
+    <div
+      v-if="supportsCompImport && settingsDialogOpen"
+      class="ib-set-overlay"
+    >
+      <div class="ib-set-overlay__bar">
+        <span>{{ $t('outputConfig') }}</span>
+        <button type="button" class="ib-iconbtn" :title="$t('close')" @click="settingsDialogOpen = false">
+          <is-icon name="close" />
+        </button>
+      </div>
+      <div class="ib-set-overlay__body">
+        <setting></setting>
+      </div>
+    </div>
     <is-update-dock
       :visible="updateDockVisible"
       :result="updateResult"
@@ -224,6 +261,11 @@ const MAX_SIDE_W = 640
 // 左侧列表至少要留出的宽度：原来 380 太保守，
 // 820px 窗口下会把右侧上限压到 404，向左只有 84px 行程，手感等同拖不动
 const MIN_MAIN_W = 300
+// CEP 窄面板：主列表可更窄，否则右栏被挤死无法拖宽
+function minMainW () {
+  if (typeof window === 'undefined') return MIN_MAIN_W
+  return window.innerWidth < 720 ? 120 : MIN_MAIN_W
+}
 // 拖拽折叠阈值：两个值不同形成迟滞区间，避免卡在临界点时反复开合抖动
 const COLLAPSE_SIDE_W = 170
 const EXPAND_SIDE_W = 230
@@ -248,7 +290,7 @@ export default {
       // dragenter/dragleave 会在子元素间反复触发，用计数器判定真正的进出
       dragDepth: 0,
       dragging: false,
-      settingsOpen: true,
+      settingsOpen: !hostAdapter.supportsCompImport,
       theme: 'dark',
       pressed: '',
       langOpen: false,
@@ -256,7 +298,10 @@ export default {
       sideW: DEFAULT_SIDE_W,
       // 运行日志面板
       logOpen: false,
-      compTreeOpen: false
+      compTreeOpen: false,
+      settingsDialogOpen: false,
+      // 仅工程/扫描异常时非空
+      projectStatusMsg: ''
     }
   },
   computed: {
@@ -356,6 +401,10 @@ export default {
     window.addEventListener('keyup', this.onKeyup)
     // 拖到窗口外缘时浏览器不会补发 dragleave，兜底重置遮罩
     window.addEventListener('blur', this.resetDrag)
+    // CEP：任务条默认就是合成列表（不依赖先勾选）
+    if (this.supportsCompImport) {
+      this.loadAllCompsAsTasks()
+    }
     // 启动延迟自动检查：失败静默，由 updateService 写日志
     updateService.bootstrapUpdateFromStorage()
     updateService.bindAutoIpcListener()
@@ -430,7 +479,7 @@ export default {
           this.settingsOpen = false
           return
         }
-        const maxByMain = window.innerWidth - RAIL_W - MIN_MAIN_W
+        const maxByMain = window.innerWidth - RAIL_W - minMainW()
         this.sideW = Math.max(MIN_SIDE_W, Math.min(MAX_SIDE_W, maxByMain, want))
       }
       this._onUp = () => {
@@ -479,6 +528,68 @@ export default {
         }
       })
     },
+    /**
+     * 任务条 = 合成列表：切到桌面任务 UI 时，用工程合成铺满 store，
+     * 未勾选的也进列表（只改 isSelected），避免「没选合成 → 任务空」。
+     */
+    /**
+     * 启动/刷新：读工程状态 → 扫描全部合成铺任务。
+     * 状态正常不提示；noProject/unsaved/扫描失败才写 projectStatusMsg。
+     */
+    loadAllCompsAsTasks () {
+      var src = getSourceAdapter()
+      if (!src || typeof src.list !== 'function') return Promise.resolve()
+      var store = this.$store
+      var self = this
+      var statusFn = src.getProjectStatus
+      var statusP = (typeof statusFn === 'function')
+        ? Promise.resolve(statusFn()).catch(function () { return { ok: false, code: 'error' } })
+        : Promise.resolve({ ok: true, code: 'ok' })
+
+      return statusP.then(function (st) {
+        if (st && st.code && st.code !== 'ok') {
+          if (st.code === 'noProject') self.projectStatusMsg = self.$t('projectNoOpen')
+          else if (st.code === 'unsaved') self.projectStatusMsg = self.$t('projectUnsaved')
+          else self.projectStatusMsg = self.$t('compScanFailed')
+          return null
+        }
+        self.projectStatusMsg = ''
+        return src.list()
+      }).then(function (comps) {
+        if (!comps || !comps.length) return
+        var gen = src.toItems(comps)
+        var old = store.getters.getterItems || []
+        var existing = {}
+        for (var i = 0; i < old.length; i++) {
+          var b = old[i] && old[i].basic
+          if (b && b.type === 'Comp') {
+            existing[b.compIndex] = true
+          }
+        }
+        for (var j = 0; j < gen.length; j++) {
+          var idx = gen[j].basic.compIndex
+          if (!existing[idx]) {
+            store.dispatch('add', {
+              basic: gen[j].basic,
+              options: gen[j].options
+            })
+          }
+        }
+        // 铺底时保持当前勾选；全空则默认全不选，由树/列表再勾
+        var selected = []
+        var items = store.getters.getterItems || []
+        for (var k = 0; k < items.length; k++) {
+          var it = items[k]
+          if (it && it.basic && it.basic.type === 'Comp' && it.isSelected) {
+            selected.push(it.basic.compIndex)
+          }
+        }
+        store.dispatch('syncCompSelected', selected)
+        self.wakeCompThumbs()
+      }).catch(function () {
+        self.projectStatusMsg = self.$t('compScanFailed')
+      })
+    },
     onCompTreeAdd (items) {
       if (!items || !items.length) return
       for (var i = 0; i < items.length; i++) {
@@ -489,6 +600,68 @@ export default {
       }
       this.compTreeOpen = false
     },
+    /** 选中合成 → 同步为桌面「任务选中」，供右栏设置/底栏计数 */
+    toggleCompTree () {
+      if (this.compTreeOpen) {
+        this.compTreeOpen = false
+        // 切到桌面任务 UI：任务条渲染完整合成列表
+        this.loadAllCompsAsTasks()
+      } else {
+        this.onPickComps()
+      }
+    },
+    /** PAG 式：独立 OS 窗口（不撑开侧栏） */
+    onCompConfigure (node) {
+      // 只同步选中，不打开右栏
+      var src = getSourceAdapter()
+      if (src) {
+        var gen = src.toItems([node])
+        // 轻量同步：交给 onCompSelect 前先记住不要开侧栏
+        this._noSidePanel = true
+        this.onCompSelect([node])
+        this._noSidePanel = false
+      }
+      this.openSettingsWindow()
+    },
+    openSettingsWindow () {
+      // CEP：面板内全屏覆盖层（PAG 式全局设置）；不外开浏览器
+      this.settingsDialogOpen = true
+    },
+    onCompSelect (nodes) {
+      if (nodes && nodes.length && !this._noSidePanel) {
+        this.settingsOpen = true
+      }
+      var src = getSourceAdapter()
+      if (!src) return
+      var store = this.$store
+      var selected = nodes || []
+      var gen = selected.length ? src.toItems(selected) : []
+      // 任务列表始终显示全部任务；树勾选只同步 isSelected，不删行
+      var old = store.getters.getterItems || []
+      var existing = {}
+      for (var i = 0; i < old.length; i++) {
+        var b = old[i] && old[i].basic
+        if (b && b.type === 'Comp') {
+          existing[b.compIndex] = true
+        }
+      }
+      var compIndexes = []
+      for (var j = 0; j < gen.length; j++) {
+        var idx = gen[j].basic.compIndex
+        compIndexes.push(idx)
+        if (!existing[idx]) {
+          store.dispatch('add', {
+            basic: gen[j].basic,
+            options: gen[j].options
+          })
+        }
+      }
+      store.dispatch('syncCompSelected', compIndexes)
+      // 未勾选的合成也已在列表；无原生预览，不渲封面
+      this.wakeCompThumbs()
+    },
+    /** 合成无原生预览 API（须渲帧）；CEP 列表不显示封面 */
+    wakeCompThumbs () {},
     onDeleteSelected () {
       if (this.isLocked || !this.selectedCount) return
       this.$store.dispatch('removeSelectedForce')
@@ -518,10 +691,12 @@ export default {
     },
     onDrop (ev) {
       this.resetDrag()
+      if (!this.supportsFileImport) return
       var files = ev.dataTransfer && ev.dataTransfer.files
       if (files && files.length) { this.importPaths(files) }
     },
     onPaste (ev) {
+      if (!this.supportsFileImport) return
       var cd = ev.clipboardData
       if (!cd || !cd.files || !cd.files.length) { return }
       this.importPaths(cd.files)
@@ -544,18 +719,36 @@ export default {
 
       if (mod && key === 'a') {
         e.preventDefault()
+        // 合成树模式：全选合成（对应桌面选任务）
+        if (this.supportsCompImport && this.compTreeOpen && !this.items.length) {
+          if (this.$root && this.$root.eventBus) {
+            this.$root.eventBus.$emit('comp-tree-select-all')
+          }
+          return
+        }
         if (!this.isLocked) this.$store.dispatch('allSelect')
         return
       }
-      // Delete / Backspace：删除所选（运行中也可用，走强制移除）
+      // Delete / Backspace：合成树=取消选择；CEP 任务=取消勾选（不删行）；桌面=删除所选
       if (!mod && (e.key === 'Delete' || e.key === 'Backspace')) {
         e.preventDefault()
+        if (this.supportsCompImport && this.compTreeOpen && !this.items.length) {
+          if (this.$root && this.$root.eventBus) {
+            this.$root.eventBus.$emit('comp-tree-clear')
+          }
+          return
+        }
+        if (this.supportsCompImport) {
+          if (!this.isLocked) this.$store.dispatch('noneSelect')
+          return
+        }
         if (this.selectedCount) this.$store.dispatch('removeSelectedForce')
         return
       }
-      // 兼容旧习惯：Ctrl+Delete
+      // 兼容旧习惯：Ctrl+Delete（CEP 不删任务）
       if (mod && (key === 'delete' || key === 'backspace')) {
         e.preventDefault()
+        if (this.supportsCompImport) return
         if (this.selectedCount) this.$store.dispatch('removeSelectedForce')
       }
     },
@@ -607,8 +800,9 @@ export default {
 
     // ---------- 导入 ----------
     onPick () {
+      // CEP：空面板点击 = 刷新扫描合成列表（不是粘贴/选文件）
       if (this.supportsCompImport) {
-        this.onPickComps()
+        this.loadAllCompsAsTasks()
         return
       }
       var ipc = window.ispartaAPI && window.ispartaAPI.ipc
@@ -622,6 +816,7 @@ export default {
     },
     importPaths (list) {
       if (this.isLocked) return
+      if (!this.supportsFileImport) return
       return fsOperate.readerFiles(list).then((ars) => {
         if (!ars || !ars.length) {
           appLog.warn(this.$t('noticeNothingFound'), list.join(', '))
@@ -650,4 +845,38 @@ export default {
 
 <style lang="scss" scoped>
 @import "../styles/shell.scss";
+
+/* 窄面板单滚动：外层裁剪，内层列表滚动 */
+.ib-main__list {
+  overflow-x: hidden;
+  overflow-y: auto;
+  min-height: 0;
+}
+/* CEP 全屏覆盖设置层 */
+.ib-set-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  background: var(--is-bg, #1b1b1b);
+  color: var(--is-fg, #eee);
+}
+.ib-set-overlay__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--is-line, rgba(128, 128, 128, 0.25));
+  font-weight: 600;
+}
+.ib-set-overlay__body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 8px 12px 24px;
+}
+.ib-main__list > * {
+  min-height: 0;
+}
 </style>

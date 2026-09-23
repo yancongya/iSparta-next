@@ -216,6 +216,33 @@
     }
 
     &:active { transform: scale(0.995); }
+
+    // CEP 只读路径：无点击/下划线
+    &--static {
+      cursor: default;
+      text-decoration: none;
+
+      &:hover {
+        color: var(--is-accent);
+        text-decoration-color: rgba(var(--is-accent-rgb), 0.35);
+
+        .is-icon {
+          opacity: 0.75;
+          transform: none;
+        }
+      }
+
+      &:active { transform: none; }
+    }
+  }
+
+  // CEP：类型旁显示输出名（无路径入口）
+  .comp-name {
+    flex: 1;
+    min-width: 0;
+    color: var(--is-text-2);
+    font-size: var(--is-fs-base);
+    font-weight: var(--is-fw-medium);
   }
 
   .iconbtn {
@@ -423,12 +450,17 @@
 // 中档：缩略图收缩 + 配置芯片只留图标（数值走现有 v-tip 气泡）
 @container is-item (max-width: 480px) {
   .mod-list {
-    .item { gap: var(--is-s-2); }
+    .item {
+      gap: var(--is-s-2);
+      padding: var(--is-s-1) var(--is-s-2);
+      // 细长：压高度，横向铺开
+      min-height: 44px;
+    }
 
     .thumb {
-      width: 44px;
-      height: 44px;
-      flex: 0 0 44px;
+      width: 36px;
+      height: 36px;
+      flex: 0 0 36px;
     }
 
     // 仅配置行收纯图标；输出名行（summary--out）的名字必须保留
@@ -447,19 +479,20 @@
   }
 }
 
-// 窄档：只保留「标签 + 输出名 + 进度」三要素。
+// 窄档：细长单行为主，只保留「标签 + 名 + 进度」。
 // 配置值此时在右侧面板（选中项）与 hover 气泡里都完整可得，卡片不重复堆砌。
 @container is-item (max-width: 340px) {
   .mod-list {
     .item {
       gap: var(--is-s-1);
-      padding: var(--is-s-1) var(--is-s-2);
+      padding: 4px var(--is-s-2);
+      min-height: 36px;
     }
 
     .thumb {
-      width: 36px;
-      height: 36px;
-      flex: 0 0 36px;
+      width: 28px;
+      height: 28px;
+      flex: 0 0 28px;
 
       &__badge { font-size: 9px; padding: 0 3px; }
     }
@@ -472,6 +505,9 @@
     // 变量路径模板次要，输出名优先
     .summary--out .sum--tpl { display: none; }
 
-    .progress { width: 48px; }
+    .comp-name,
+    .outpath { font-size: var(--is-fs-sm); }
+
+    .progress { width: 40px; }
   }
 }

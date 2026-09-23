@@ -231,6 +231,12 @@ if (localData) {
 }
 // 只有这里才能才state的值
 const mutations = {
+  // CEP 合成勾选同步（向后兼容增量，桌面可不调用）
+  REMOVE_AT (state, index) {
+    if (index >= 0 && index < state.items.length) {
+      state.items.splice(index, 1)
+    }
+  },
   [types.ITEMS_ADD](state, data) {
     if (state.locked) {
       return false
@@ -397,6 +403,9 @@ const mutations = {
 const actions = {
 
   //
+  removeAt (context, index) {
+    context.commit('REMOVE_AT', index)
+  },
   add(context, data) {
     context.commit('ITEMS_ADD', data)
   },
@@ -470,6 +479,28 @@ const actions = {
     if (!item) { return }
     if (!item.options) { item.options = {} }
     item.options.outputName = payload.name
+    persistItems()
+  },
+  /** 按 items 下标改 basic（如 thumbPath），不影响其他项 */
+  editBasicAt(context, payload) {
+    if (!payload || context.rootState.locked) { return }
+    var item = context.rootState.items[payload.index]
+    if (!item) { return }
+    if (!item.basic) { item.basic = {} }
+    _.extend(item.basic, payload.patch || {})
+    persistItems()
+  },
+  /** 合成树勾选：只改 Comp 任务的 isSelected，不增删任务 */
+  syncCompSelected(context, selectedCompIndexes) {
+    if (context.rootState.locked) { return }
+    var set = {}
+    _.each(selectedCompIndexes || [], function (i) {
+      set[i] = true
+    })
+    _.each(context.rootState.items, function (item) {
+      if (!item.basic || item.basic.type !== 'Comp') { return }
+      item.isSelected = !!set[item.basic.compIndex]
+    })
     persistItems()
   },
   editProcess(context, keyValue) {
