@@ -65,8 +65,10 @@ const store = new Vuex.Store({
       state.items = items
     },
     EDIT_PROCESS (state, { index, text, schedule }) {
-      const it = state.items[index]
-      if (!it) { return }
+      // 与桌面 store 一致：processor/Action 的 item.index 是「选中列表」下标，不是全列表
+      const selected = state.items.filter((i) => i.isSelected)
+      const it = selected[index]
+      if (!it || !it.process) { return }
       if (text !== undefined) { it.process.text = text }
       if (schedule !== undefined) { it.process.schedule = schedule }
     },

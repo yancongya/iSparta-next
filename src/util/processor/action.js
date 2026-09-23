@@ -83,14 +83,17 @@ export default class Action {
         console.warn('stdout:', result && result.stdout)
         console.warn('stderr:', result && result.stderr)
         console.warn(result && result.error)
-        store.dispatch('editProcess', {
-          index: item.index,
-          text: result && result.cancelled
-            ? (locale.noticeConvertAborted || 'Conversion aborted')
-            : locale.convertFail,
-          schedule: -1
-        })
-        store.dispatch('setLock', false)
+        // silent：探测性命令（如 webpmux 取帧到末尾）的预期失败，不写 convertFail、不解锁
+        if (!(options && options.silent)) {
+          store.dispatch('editProcess', {
+            index: item.index,
+            text: result && result.cancelled
+              ? (locale.noticeConvertAborted || 'Conversion aborted')
+              : locale.convertFail,
+            schedule: -1
+          })
+        }
+        // 不在此 setLock(false)：多任务批处理中单条命令失败会误开锁；由 processor 统一收口
         return Promise.reject({
           command: command,
           args: cleanArgs,

@@ -217,9 +217,10 @@ export function prepareCompSequence (item, opts) {
   }
   const idx = Number(basic.compIndex)
   const name = basic.compName || ''
-  // 序列帧与合成输出同目录：直接用输出设置解析路径（resolveOutputPath，不另建方法）
-  // 默认模板 {srcPath}/{srcName} → 项目旁「合成名」子目录
-  const outDir = (item.options && resolveOutputPath(item, item.options)) ||
+  // 序列帧与合成输出同目录：优先 processor 已解析的 outputPath（含 sameOutputPath），
+  // 否则走输出设置 resolveOutputPath（不另建方法）。默认模板 {srcPath}/{srcName} → 项目旁「合成名」子目录
+  const outDir = basic.outputPath ||
+    (item.options && resolveOutputPath(item, item.options)) ||
     (basic.tmpDir || basic.tmpOutputDir) ||
     ('ae-comp-tmp-' + (idx != null ? idx : 'x'))
   try {
@@ -234,6 +235,7 @@ export function prepareCompSequence (item, opts) {
   let onRenderEvent = null
   let pollTimer = null
   let maxDone = 0
+  let failed = false
   const eventToken = location
 
   function countPngs (folder) {
@@ -248,6 +250,7 @@ export function prepareCompSequence (item, opts) {
   }
 
   function applyProgress (done, total, phase) {
+    if (failed) { return }
     const t = Number(total) || expectedFrames || 0
     const d = Number(done) || 0
     if (d > maxDone) { maxDone = d }
@@ -258,11 +261,15 @@ export function prepareCompSequence (item, opts) {
     })
   }
 
-  function teardownProgress () {
+  function stopPoll () {
     if (pollTimer) {
       try { clearInterval(pollTimer) } catch (e) { /* ignore */ }
       pollTimer = null
     }
+  }
+
+  function teardownProgress () {
+    stopPoll()
     if (onRenderEvent) {
       try {
         if (host && typeof host.removeEventListener === 'function') {
@@ -271,6 +278,18 @@ export function prepareCompSequence (item, opts) {
       } catch (e2) { /* ignore */ }
       onRenderEvent = null
     }
+  }
+
+  /** 错误态置位并停轮询，避免 PNG 轮询把 schedule:-1 冲掉 */
+  function failProgress (payload) {
+    if (failed) { return }
+    failed = true
+    stopPoll()
+    emitRenderProgress(item, opts, {
+      phase: 'error',
+      done: (payload && payload.done) || 0,
+      total: (payload && payload.total) || expectedFrames || 0
+    })
   }
 
   if (host && typeof host.addEventListener === 'function') {
@@ -289,7 +308,7 @@ export function prepareCompSequence (item, opts) {
       }
       const phase = p.phase || 'progress'
       if (phase === 'error') {
-        emitRenderProgress(item, opts, { phase: 'error', done: p.done, total: p.total })
+        failProgress(p)
         return
       }
       applyProgress(p.done, p.total, phase)
@@ -302,6 +321,7 @@ export function prepareCompSequence (item, opts) {
   try {
     if (typeof setInterval === 'function') {
       pollTimer = setInterval(function () {
+        if (failed) { return }
         applyProgress(countPngs(outDir), expectedFrames, 'progress')
       }, 200)
     }
@@ -316,7 +336,15 @@ export function prepareCompSequence (item, opts) {
   const script = isFinite(idx)
     ? 'ispartaExportPngSequenceByIndex(' + idx + ',' + JSON.stringify(location) + ')'
     : 'ispartaMatchComps(' + JSON.stringify([{ name: name }]) + ')'
-  return host.evalJson(script).then((res) => {
+  // 先进 Promise 再 evalJson：同步抛错也走 teardown，不泄漏 listener/timer
+  return Promise.resolve()
+    .then(() => {
+      if (!host || typeof host.evalJson !== 'function') {
+        throw new Error('AE host unavailable')
+      }
+      return host.evalJson(script)
+    })
+    .then((res) => {
     if (!res || !res.ok) {
       throw new Error((res && res.error) || 'export comp sequence failed')
     }
@@ -348,10 +376,8 @@ export function prepareCompSequence (item, opts) {
         }
         basic.fileList = files
         if (!basic.sourceFile) { basic.sourceFile = files[0] }
-        // 序列帧与最终输出同走 resolveOutputPath（输出设置路径）；fileList 只作输入帧
-        if (item.options) {
-          item.basic.outputPath = resolveOutputPath(item, item.options)
-        }
+        // 不在此覆盖 outputPath：processor 在 prepare 后统一解析
+        // （模板走 resolveOutputPath；sameOutputPath 须原样保留，避免「输出到文件夹」被模板顶掉）
         emitRenderProgress(item, opts, {
           phase: 'done',
           done: files.length,
@@ -361,7 +387,7 @@ export function prepareCompSequence (item, opts) {
       })
   }).catch((err) => {
     // 失败 schedule:-1，与 action.js 失败一致
-    emitRenderProgress(item, opts, { phase: 'error' })
+    failProgress()
     return Promise.reject(err)
   }).then((ready) => {
     teardownProgress()

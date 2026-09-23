@@ -102,7 +102,10 @@ export default function (store, sameOutputPath, locale) {
 
         return prepare.then(function (ready) {
           // 路径/源文件在 fileList 填好后重算（{srcName}=合成名仍可用）
-          if (!sameOutputPath) {
+          // sameOutputPath 必须再断言：prepareCompSequence 不得用模板顶掉「输出到文件夹」
+          if (sameOutputPath) {
+            ready.basic.outputPath = sameOutputPath
+          } else {
             ready.basic.outputPath = resolveOutputPath(ready, ready.options)
           }
           if (ready.basic.fileList && ready.basic.fileList[0] && !ready.basic.sourceFile) {

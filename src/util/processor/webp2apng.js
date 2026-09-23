@@ -44,11 +44,12 @@ export default function (item, store, locale) {
 function getframe (item, store, locale, frame, callback) {
   var webpDir = path.join(item.basic.tmpDir, 'webp')
   fs.ensureDirSync(webpDir)
+  // silent：取到末帧后 webpmux 必失败，属探测结束条件，不能标 convertFail / 解锁
   action.exec(action.bin('webpmux'), [
     '-get', 'frame', String(frame),
     item.basic.fileList[0],
     '-o', path.join(webpDir, frame + '.webp')
-  ], item, store, locale).then(() => {
+  ], item, store, locale, { silent: true }).then(() => {
     getframe(item, store, locale, frame + 1, callback)
   }).catch(() => {
     if ((typeof callback) === 'function') {
