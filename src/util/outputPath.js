@@ -29,7 +29,7 @@ export function sourceDirOf (item) {
   if (item.basic.type === 'PNGs') {
     return input
   }
-  // Comp：fileList 是渲序列临时帧，源目录始终取 inputPath 上级（工程目录或 ae-comp）
+  // Comp：源目录始终取 inputPath 上级（工程目录）；序列帧与输出同走 outputTo 模板变量
   if (item.basic.type === 'Comp') {
     return npath.dirname(input)
   }
