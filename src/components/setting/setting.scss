@@ -43,7 +43,7 @@
     padding: var(--is-s-2) var(--is-s-3) 60px;
   }
 
-  // 两列参数区：帧频/循环 | 压缩质量；递减 | 重试
+  // 两列参数区：递减 | 重试；帧频/循环 与 压缩质量 各自占满整行再排
   .mod-form__pairwrap {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -55,6 +55,36 @@
 
   .mod-form__paircell {
     min-width: 0;
+  }
+
+  // 帧频/循环：整行内左右并排（小屏也不与质量挤在同一行）
+  .mod-form__paircell--duo {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: var(--is-s-3);
+    row-gap: var(--is-s-2);
+    align-items: center;
+    min-width: 0;
+
+    .mod-form__row {
+      flex-wrap: nowrap;
+    }
+  }
+
+  // 压缩质量：换行占满，避免半列里输入框被挤断行
+  .mod-form__paircell--full {
+    grid-column: 1 / -1;
+    min-width: 0;
+
+    .mod-form__row {
+      flex-wrap: nowrap;
+    }
+
+    .row-label {
+      flex: none;
+      max-width: none;
+    }
   }
 
   .mod-form__paircell .mod-form__row {
@@ -81,7 +111,7 @@
     flex: none;
   }
 
-  // 窄栏：两列收成单列，避免横向溢出与控件互相挤压
+  // 窄栏：递减/重试收成单列；帧频/循环 仍保持并排，质量仍单独一行
   body.side-narrow & {
     .mod-form__pairwrap {
       grid-template-columns: 1fr;
@@ -235,6 +265,9 @@
     color: var(--is-text-3);
     font-size: var(--is-fs-xs);
     text-align: right;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   // 真实路径：只读、等宽、超长省略

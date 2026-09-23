@@ -33,42 +33,54 @@
       </div>
     </div>
 
-    <div class="bar-kbd">
+    <div class="bar-actions">
       <button
         type="button"
-        class="bar-kbd__btn"
-        :class="{ 'is-on': shortcutsOpen }"
-        :title="$t('shortcutTip')"
-        :aria-expanded="shortcutsOpen ? 'true' : 'false'"
-        @click.stop="shortcutsOpen = !shortcutsOpen"
+        class="bar-icon-btn bar-start"
+        :class="{ 'is-running': isConverting }"
+        :title="startTitle"
+        :disabled="!canStart"
+        @click.stop="startSelected"
       >
-        <is-icon name="keyboard" size="sm" />
+        <is-icon :name="isConverting ? 'loader' : 'play'" :spin="isConverting" size="sm" />
       </button>
-      <transition name="is-fade">
-        <div v-if="shortcutsOpen" class="bar-kbd__panel" @click.stop>
-          <div class="bar-kbd__row">
-            <span class="is-kbd-group">
-              <kbd class="is-kbd">Ctrl</kbd><span>+</span><kbd class="is-kbd">A</kbd>
-            </span>
-            <span>{{ $t('selectAll') }}</span>
+      <div class="bar-kbd">
+        <button
+          type="button"
+          class="bar-icon-btn bar-kbd__btn"
+          :class="{ 'is-on': shortcutsOpen }"
+          :title="$t('shortcutTip')"
+          :aria-expanded="shortcutsOpen ? 'true' : 'false'"
+          @click.stop="shortcutsOpen = !shortcutsOpen"
+        >
+          <is-icon name="keyboard" size="sm" />
+        </button>
+        <transition name="is-fade">
+          <div v-if="shortcutsOpen" class="bar-kbd__panel" @click.stop>
+            <div class="bar-kbd__row">
+              <span class="is-kbd-group">
+                <kbd class="is-kbd">Ctrl</kbd><span>+</span><kbd class="is-kbd">A</kbd>
+              </span>
+              <span>{{ $t('selectAll') }}</span>
+            </div>
+            <div class="bar-kbd__row">
+              <span class="is-kbd-group">
+                <kbd class="is-kbd">Delete</kbd>
+              </span>
+              <span>{{ $t(isCepHost ? 'shortcutClearSelect' : 'shortcutDelete') }}</span>
+            </div>
+            <div class="bar-kbd__row">
+              <span class="is-kbd-group">
+                <kbd class="is-kbd">Ctrl</kbd><span>+</span><kbd class="is-kbd">V</kbd>
+              </span>
+              <span>{{ $t('pasteHint') }}</span>
+            </div>
+            <div class="bar-kbd__row bar-kbd__row--plain">
+              <span>{{ $t('shortcutBlankClick') }}</span>
+            </div>
           </div>
-          <div class="bar-kbd__row">
-            <span class="is-kbd-group">
-              <kbd class="is-kbd">Delete</kbd>
-            </span>
-            <span>{{ $t('shortcutDelete') }}</span>
-          </div>
-          <div class="bar-kbd__row">
-            <span class="is-kbd-group">
-              <kbd class="is-kbd">Ctrl</kbd><span>+</span><kbd class="is-kbd">V</kbd>
-            </span>
-            <span>{{ $t('pasteHint') }}</span>
-          </div>
-          <div class="bar-kbd__row bar-kbd__row--plain">
-            <span>{{ $t('shortcutBlankClick') }}</span>
-          </div>
-        </div>
-      </transition>
+        </transition>
+      </div>
     </div>
   </section>
 </template>
@@ -76,6 +88,9 @@
 <script>
 import confetti from '../../ui-next/confetti'
 import IsPacman from '../../ui-next/components/IsPacman.vue'
+import processor from '../../util/processor'
+import notice from '../../ui-next/notice'
+import hostAdapter from '../../util/host-env'
 
 export default {
   components: { 'is-pacman': IsPacman },
@@ -86,6 +101,9 @@ export default {
     }
   },
   computed: {
+    isCepHost () {
+      return !!(hostAdapter && (hostAdapter.supportsCompImport || hostAdapter.kind === 'cep'))
+    },
     items () {
       return this.$store.getters.getterItems
     },
@@ -97,6 +115,20 @@ export default {
     },
     selectedCount () {
       return this.$store.getters.getterSelected.length
+    },
+    isConverting () {
+      return this.isLocked
+    },
+    // 与设置页一致：未锁定，且每个勾选项都至少有一种输出格式
+    canStart () {
+      if (this.isLocked || !this.selectedCount) return false
+      return this.$store.getters.getterSelected.every(function (it) {
+        var fmt = it.options && it.options.outputFormat
+        return !!(fmt && fmt.length)
+      })
+    },
+    startTitle () {
+      return this.isConverting ? this.$t('startConvert') : this.$t('start')
     },
     allChecked () {
       return this.itemCount > 0 && this.selectedCount === this.itemCount
@@ -178,6 +210,48 @@ export default {
         this.$store.dispatch('noneSelect')
       } else {
         this.$store.dispatch('allSelect')
+      }
+    },
+    // 与设置页「开始」同一条转换链：只跑勾选项
+    startSelected () {
+      if (!this.canStart) return
+      var selected = this.$store.getters.getterSelected
+      var locale = this.$i18n.messages[this.$i18n.locale]
+      for (var i = 0; i < selected.length; i++) {
+        this.$store.dispatch('editProcess', {
+          index: i,
+          text: '',
+          schedule: 0
+        })
+      }
+      var self = this
+      setTimeout(function () {
+        self.$store.dispatch('setLock', true)
+        processor(self.$store, '', locale)
+          .then(function () {
+            self.$store.dispatch('setLock', false)
+            self.reportResult()
+          })
+          .catch(function (err) {
+            console.warn('convert error:', err)
+            self.$store.dispatch('setLock', false)
+            notice.error(self.$t('noticeConvertAborted'), err && err.message)
+          })
+      }, 20)
+    },
+    reportResult () {
+      var items = this.$store.getters.getterItems
+      var ok = 0
+      var fail = 0
+      items.forEach(function (it) {
+        var s = it.process && it.process.schedule
+        if (s === 1) ok++
+        else if (s === -1) fail++
+      })
+      if (fail) {
+        notice.warning(this.$t('noticeDone'), this.$t('resultSummary', { ok: ok, fail: fail }))
+      } else if (ok) {
+        notice.success(this.$t('noticeAllDone'), this.$t('resultSummary', { ok: ok, fail: 0 }))
       }
     }
   }

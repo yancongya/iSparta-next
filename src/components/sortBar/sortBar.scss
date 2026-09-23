@@ -100,13 +100,20 @@
     }
   }
 
-  .bar-kbd {
-    position: relative;
+  .bar-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--is-s-1);
     flex: none;
     margin-left: auto;
   }
 
-  .bar-kbd__btn {
+  .bar-kbd {
+    position: relative;
+    flex: none;
+  }
+
+  .bar-icon-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -122,7 +129,36 @@
       background-color var(--is-dur-fast) var(--is-ease-std),
       border-color var(--is-dur-fast) var(--is-ease-std);
 
-    &:hover,
+    &:hover:not(:disabled),
+    &.is-on {
+      background: var(--is-hover);
+      border-color: var(--is-border);
+      color: var(--is-text);
+    }
+
+    &:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+  }
+
+  // 开始：有可跑任务时用强调色，比帮助图标更像「动作」
+  .bar-start {
+    color: var(--is-accent-fg);
+
+    &:hover:not(:disabled) {
+      background: var(--is-hover);
+      border-color: var(--is-accent);
+      color: var(--is-accent-fg);
+    }
+
+    &.is-running {
+      color: var(--is-accent-fg);
+    }
+  }
+
+  .bar-kbd__btn {
+    &:hover:not(:disabled),
     &.is-on {
       background: var(--is-hover);
       border-color: var(--is-border);

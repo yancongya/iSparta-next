@@ -94,9 +94,9 @@
         </div>
       </div>
 
-      <!-- 帧频/循环 与 压缩质量：两列对齐，label/输入/说明图标同一节奏 -->
+      <!-- 帧频/循环 一行并排；压缩质量换行占满（小屏不挤在半列里断行） -->
       <div class="mod-form__pairwrap">
-        <div v-if="showFrame" class="mod-form__paircell">
+        <div v-if="showFrame" class="mod-form__paircell mod-form__paircell--duo">
           <div class="mod-form__row">
             <span class="row-label">{{ $t('fps') }}</span>
             <is-input v-model="frameRate" type="number" class="num" :max="100" :min="0" number placeholder="25" />
@@ -114,7 +114,7 @@
           </div>
         </div>
 
-        <div class="mod-form__paircell">
+        <div class="mod-form__paircell mod-form__paircell--full">
           <div class="mod-form__row">
             <span class="row-label">{{ $t('compressionQuality') }}</span>
             <is-checkbox v-model="qualityCheck">{{ $t('enable') }}</is-checkbox>
@@ -147,7 +147,7 @@
         </is-checkbox-group>
       </div>
 
-      <!-- 输出路径：预设只往变量路径填模板，真实路径实时展开 -->
+      <!-- 输出路径：展示真实路径；CEP 无「选目录/输出到目录」（固定为项目旁合成子目录） -->
       <div class="mod-form__group">
         <p class="mod-form__caption">{{ $t("outputTo") }}</p>
         <is-preset-bar
@@ -168,6 +168,7 @@
             <span class="path-row__label">{{ $t('pathReal') }}</span>
             <is-input class="path-row__in" :value="pathPreviewUI" readonly :placeholder="'—'" />
             <button
+              v-if="showPathUI"
               type="button"
               class="path-row__pick"
               v-tip="$t('pickOutputDir')"
@@ -291,7 +292,7 @@
       >{{ isArraySetting ? $t("batchStart") : $t("start") }}</is-button>
 
       <is-button
-        v-if="isArraySetting"
+        v-if="isArraySetting && showPathUI"
         block
         icon="folder"
         :disabled="isStarted"
@@ -309,6 +310,7 @@
 <script>
 import processor from '../../util/processor'
 import { ipc } from '../../util/node-env'
+import hostAdapter from '../../util/host-env'
 import { resolveOutputPath, normalizeOutputTo, outputContext } from '../../util/outputPath'
 import {
   loadPresets,
@@ -358,6 +360,10 @@ export default {
     // 多选时仍用「第一项」作为表单基值；setter 统一写到所有选中项
     isArraySetting () {
       return this.selectedList.length > 1
+    },
+    // CEP：可显示路径，但不提供「选目录/输出到目录」
+    showPathUI () {
+      return !(hostAdapter && (hostAdapter.supportsCompImport || hostAdapter.kind === 'cep'))
     },
     curtSetting () {
       if (this.selectedList.length === 0) {
@@ -910,6 +916,8 @@ export default {
       }
     },
     onDeleteAll () {
+      // CEP：任务=合成列表，删除会清空且无法从 AE 恢复勾选语义
+      if (!this.showPathUI) return
       this.$store.dispatch('remove')
     },
     openGlobalSetting () {
