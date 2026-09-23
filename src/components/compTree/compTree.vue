@@ -1,55 +1,62 @@
 <!--
-  合成树（CEP 特化注入）
-  - 无内嵌面板组标题（刷新/加入在顶部工具栏）
-  - 点击行 = 折叠/展开，不是选中
-  - 勾选框 = 选中；支持空白拖拽框选
-  - 桌面端不使用本组件，互不影响
+  合成列表（CEP 特化）— 复用 PAG 列表式：表头全选/搜索 + 尺寸/帧率/帧数排序
+  无展开折叠；名称与搜索框同列；列溢出省略、hover 显示全文
 -->
 <template>
-  <section
-    class="mod-comptree"
-    role="region"
-    :aria-label="$t('compTree')"
-    @mousedown="onMarqueeStart"
-  >
-    <div v-if="!nodes.length" class="mod-comptree__empty">
+  <section class="mod-ct" role="region" :aria-label="$t('compTree')">
+    <div class="mod-ct__head">
+      <span class="mod-ct__c mod-ct__c--cb">
+        <span class="mod-ct__cb" @click.stop="toggleAll">
+          <is-checkbox :value="allSelected" :readonly="true" />
+        </span>
+      </span>
+      <span class="mod-ct__c mod-ct__c--name">
+        <input
+          v-model="keyword"
+          type="search"
+          class="mod-ct__search"
+          :placeholder="$t('compTree') + ' / ' + $t('search')"
+          spellcheck="false"
+        />
+      </span>
+      <button type="button" class="mod-ct__c mod-ct__c--num" @click="sortBy('width')">
+        {{ $t('compColSize') }}{{ sortMark('width') }}
+      </button>
+      <button type="button" class="mod-ct__c mod-ct__c--num" @click="sortBy('fps')">
+        {{ $t('compColFps') }}{{ sortMark('fps') }}
+      </button>
+      <button type="button" class="mod-ct__c mod-ct__c--num" @click="sortBy('frames')">
+        {{ $t('compColFrames') }}{{ sortMark('frames') }}
+      </button>
+    </div>
+
+    <div v-if="!rows.length" class="mod-ct__empty">
       {{ busy ? $t('compTreeLoading') : $t('compTreeEmpty') }}
     </div>
-    <ul v-else class="mod-comptree__list" role="listbox" :aria-label="$t('compTree')" multiple>
+    <ul v-else class="mod-ct__list" role="listbox" multiple>
       <li
-        v-for="node in visibleNodes"
+        v-for="node in rows"
         :key="node.id"
-        class="mod-comptree__row"
-        :class="{ 'is-on': !!selectedMap[node.id], 'is-dim': node.hiddenByCollapse }"
+        class="mod-ct__row"
+        :class="{ 'is-on': !!selectedMap[node.id] }"
         :data-id="node.id"
-        :style="{ paddingLeft: (8 + node.depth * 14) + 'px' }"
         draggable="true"
-        @click.stop="onRowClick(node)"
         @dragstart="onRowDrag($event, node)"
       >
-        <is-checkbox
-          :value="!!selectedMap[node.id]"
-          @input.stop="toggleSelect(node)"
-        />
-        <span
-          v-if="hasChildren(node)"
-          class="mod-comptree__twisty"
-          :class="{ 'is-open': !!expandedMap[node.id] }"
-          @click.stop="toggleExpand(node)"
-        >▸</span>
-        <span v-else class="mod-comptree__twisty mod-comptree__twisty--leaf"></span>
-        <div class="mod-comptree__meta">
-          <div class="mod-comptree__name" :title="node.name">
-            <span v-if="node.folderPath" class="mod-comptree__folder">{{ node.folderPath }}/</span>{{ node.name }}
-          </div>
-          <div class="mod-comptree__sub" v-if="node.type === 'composition' || node.fps">
-            {{ node.width }}×{{ node.height }} · {{ node.fps | fps }}fps · {{ node.frames || node.duration }}f
-            <span v-if="node.refs && node.refs.length" class="mod-comptree__nest">· {{ $t('compTreeNested', { n: node.refs.length }) }}</span>
-          </div>
-        </div>
+        <span class="mod-ct__c mod-ct__c--cb">
+          <span class="mod-ct__cb" @click.stop="toggleSelect(node)">
+            <is-checkbox :value="!!selectedMap[node.id]" :readonly="true" />
+          </span>
+        </span>
+        <span class="mod-ct__c mod-ct__c--name" :title="node.name">
+          <img class="mod-ct__ico" :src="compIcon" alt="" width="16" height="16" />
+          <span class="mod-ct__txt">{{ node.name }}</span>
+        </span>
+        <span class="mod-ct__c mod-ct__c--num" :title="sizeText(node)">{{ sizeText(node) }}</span>
+        <span class="mod-ct__c mod-ct__c--num" :title="String(node.fps)">{{ node.fps | fps }}</span>
+        <span class="mod-ct__c mod-ct__c--num" :title="String(node.frames || 0)">{{ node.frames || 0 }}</span>
       </li>
     </ul>
-    <div v-if="marquee.active" class="mod-comptree__marquee" :style="marqueeStyle"></div>
   </section>
 </template>
 
@@ -67,43 +74,41 @@ export default {
     }
   },
   data () {
+    const http = typeof location !== 'undefined' &&
+      (location.protocol === 'http:' || location.protocol === 'https:')
     return {
       busy: false,
       nodes: [],
       selectedMap: {},
-      expandedMap: {},
-      marquee: { active: false, x0: 0, y0: 0, x1: 0, y1: 0 }
+      keyword: '',
+      sortKey: '',
+      sortDir: 1,
+      compIcon: (http ? '/icons/' : './icons/') + 'pag-comp.png'
     }
   },
   computed: {
-    /** 树：带 depth 的扁平列表 + 折叠隐藏 */
-    visibleNodes () {
-      const hidden = {}
-      return this.nodes.filter((n) => {
-        if (n.parentId && hidden[n.parentId]) {
-          hidden[n.id] = true
-          return false
-        }
-        if (n.type === 'folder' && !this.expandedMap[n.id]) {
-          // 折叠文件夹：只显示自身，子级隐藏
-          hidden[n.id] = true
-        }
-        return true
+    rows () {
+      const kw = String(this.keyword || '').toLowerCase()
+      let list = this.nodes.filter(function (n) {
+        return !kw || String(n.name || '').toLowerCase().indexOf(kw) >= 0
       })
+      const k = this.sortKey
+      if (k) {
+        const dir = this.sortDir
+        list = list.slice().sort(function (a, b) {
+          const av = k === 'width' ? (a.width * a.height) : Number(a[k]) || 0
+          const bv = k === 'width' ? (b.width * b.height) : Number(b[k]) || 0
+          return (av - bv) * dir
+        })
+      }
+      return list
     },
-    selectedIds () {
-      return this.nodes.filter((n) => this.selectedMap[n.id]).map((n) => n.id)
+    allSelected () {
+      const rows = this.rows
+      return rows.length > 0 && rows.every((n) => this.selectedMap[n.id])
     },
     selectedNodes () {
       return this.nodes.filter((n) => this.selectedMap[n.id])
-    },
-    marqueeStyle () {
-      const m = this.marquee
-      const x = Math.min(m.x0, m.x1)
-      const y = Math.min(m.y0, m.y1)
-      const w = Math.abs(m.x1 - m.x0)
-      const h = Math.abs(m.y1 - m.y0)
-      return { left: x + 'px', top: y + 'px', width: w + 'px', height: h + 'px' }
     }
   },
   created () {
@@ -118,14 +123,22 @@ export default {
       this.$root.eventBus.$off('comp-tree-refresh', this.refresh)
       this.$root.eventBus.$off('comp-tree-add-selected', this.emitAdd)
     }
-    window.removeEventListener('mousemove', this.onMarqueeMove)
-    window.removeEventListener('mouseup', this.onMarqueeEnd)
   },
   methods: {
-    hasChildren (node) {
-      return (node.type === 'folder') ||
-        (node.refs && node.refs.length > 0) ||
-        this.nodes.some((n) => n.parentId === node.id)
+    sizeText (n) {
+      return (n.width || 0) + '×' + (n.height || 0)
+    },
+    sortMark (key) {
+      if (this.sortKey !== key) return ''
+      return this.sortDir > 0 ? ' ↑' : ' ↓'
+    },
+    sortBy (key) {
+      if (this.sortKey === key) {
+        this.sortDir = -this.sortDir
+      } else {
+        this.sortKey = key
+        this.sortDir = 1
+      }
     },
     refresh () {
       if (this.busy) return
@@ -134,10 +147,6 @@ export default {
       sourceAdapter.list()
         .then((list) => {
           this.nodes = (list || []).map(normalizeCompNode)
-          // 默认全部展开
-          const exp = {}
-          this.nodes.forEach((n) => { exp[n.id] = true })
-          this.expandedMap = exp
           const next = {}
           this.nodes.forEach((n) => {
             const hit = prev.some((p) => p.index === n.index && p.name === n.name)
@@ -152,7 +161,7 @@ export default {
             var noticeMod = require('../../ui-next/notice')
             var n = noticeMod.default || noticeMod
             if (n && n.warning) {
-              n.warning('合成树刷新失败: ' + ((e && e.message) || e))
+              n.warning('合成列表刷新失败: ' + ((e && e.message) || e))
             }
           } catch (e2) { /* ignore */ }
         })
@@ -160,13 +169,12 @@ export default {
           this.busy = false
         })
     },
-    /** 点击行：折叠/展开，不切换选中 */
-    onRowClick (node) {
-      this.toggleExpand(node)
-    },
-    toggleExpand (node) {
-      if (!this.hasChildren(node)) return
-      this.$set(this.expandedMap, node.id, !this.expandedMap[node.id])
+    toggleAll () {
+      const rows = this.rows
+      const next = Object.assign({}, this.selectedMap)
+      const on = !this.allSelected
+      rows.forEach((n) => { next[n.id] = on })
+      this.selectedMap = next
     },
     toggleSelect (node) {
       this.$set(this.selectedMap, node.id, !this.selectedMap[node.id])
@@ -177,121 +185,115 @@ export default {
     },
     onRowDrag (ev, node) {
       if (!ev.dataTransfer) return
-      const payload = JSON.stringify({ index: node.index, name: node.name })
-      ev.dataTransfer.setData(sourceAdapter.COMP_MIME, payload)
+      ev.dataTransfer.setData(sourceAdapter.COMP_MIME, JSON.stringify({ index: node.index, name: node.name }))
       ev.dataTransfer.setData('text/plain', node.name)
       ev.dataTransfer.effectAllowed = 'copy'
-    },
-    // —— 空白拖拽框选 ——
-    onMarqueeStart (ev) {
-      if (ev.target && ev.target.closest && ev.target.closest('.mod-comptree__row')) return
-      if (ev.button !== 0) return
-      this.marquee = { active: true, x0: ev.offsetX, y0: ev.offsetY, x1: ev.offsetX, y1: ev.offsetY }
-      window.addEventListener('mousemove', this.onMarqueeMove)
-      window.addEventListener('mouseup', this.onMarqueeEnd)
-    },
-    onMarqueeMove (ev) {
-      if (!this.marquee.active) return
-      const el = this.$el
-      const rect = el.getBoundingClientRect()
-      this.marquee.x1 = ev.clientX - rect.left
-      this.marquee.y1 = ev.clientY - rect.top
-    },
-    onMarqueeEnd () {
-      if (!this.marquee.active) return
-      const box = this.marquee
-      this.marquee = { active: false, x0: 0, y0: 0, x1: 0, y1: 0 }
-      window.removeEventListener('mousemove', this.onMarqueeMove)
-      window.removeEventListener('mouseup', this.onMarqueeEnd)
-      const el = this.$el
-      if (!el) return
-      const rows = el.querySelectorAll('.mod-comptree__row')
-      const next = Object.assign({}, this.selectedMap)
-      for (let i = 0; i < rows.length; i++) {
-        const r = rows[i].getBoundingClientRect()
-        const host = el.getBoundingClientRect()
-        const x = r.left - host.left
-        const y = r.top - host.top
-        const hit = x < Math.max(box.x0, box.x1) && x + r.width > Math.min(box.x0, box.x1) &&
-          y < Math.max(box.y0, box.y1) && y + r.height > Math.min(box.y0, box.y1)
-        const id = rows[i].getAttribute('data-id')
-        if (id && hit) { next[id] = true }
-      }
-      this.selectedMap = next
     }
   }
 }
 </script>
 
 <style lang="scss" scoped>
-.mod-comptree {
-  position: relative;
+.mod-ct {
   display: flex;
   flex-direction: column;
   height: 100%;
   min-height: 0;
-  overflow: auto;
-  user-select: none;
-}
-.mod-comptree__empty {
-  padding: 16px 8px;
   font-size: 12px;
-  opacity: 0.55;
-  text-align: center;
 }
-.mod-comptree__list {
-  list-style: none;
-  margin: 0;
-  padding: 4px 0;
+.mod-ct__head,
+.mod-ct__row {
+  display: flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 4px;
+  gap: 0;
 }
-.mod-comptree__row {
+.mod-ct__head {
+  border-bottom: 1px solid var(--is-line, rgba(128, 128, 128, 0.25));
+  font-weight: 600;
+  opacity: 0.85;
+}
+.mod-ct__row:hover {
+  background: rgba(128, 128, 128, 0.1);
+}
+.mod-ct__row.is-on {
+  background: var(--is-accent-soft, rgba(200, 245, 66, 0.15));
+}
+.mod-ct__c {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.mod-ct__c--cb {
+  width: 28px;
+  flex: 0 0 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.mod-ct__c--name {
+  flex: 1 1 auto;
   display: flex;
   align-items: center;
   gap: 6px;
-  min-height: 28px;
-  padding: 2px 8px 2px 8px;
-  cursor: default;
+  padding-right: 8px;
 }
-.mod-comptree__row:hover {
-  background: rgba(128, 128, 128, 0.08);
+.mod-ct__c--num {
+  width: 72px;
+  flex: 0 0 72px;
+  text-align: right;
+  padding-right: 8px;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
 }
-.mod-comptree__row.is-on {
-  background: var(--is-accent-soft, rgba(200, 245, 66, 0.18));
+.mod-ct__c--num:hover {
+  opacity: 0.8;
+  text-decoration: underline;
 }
-.mod-comptree__twisty {
-  width: 12px;
-  font-size: 10px;
-  opacity: 0.7;
-  transition: transform 0.12s ease;
-}
-.mod-comptree__twisty.is-open {
-  transform: rotate(90deg);
-}
-.mod-comptree__twisty--leaf {
-  opacity: 0;
-}
-.mod-comptree__meta {
+.mod-ct__txt {
   min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.mod-ct__ico {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+  display: block;
+}
+.mod-ct__search {
+  width: 100%;
+  min-width: 0;
+  height: 22px;
+  border: 1px solid var(--is-line, rgba(128, 128, 128, 0.35));
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.15);
+  color: inherit;
+  padding: 0 8px;
+  font: inherit;
+  outline: none;
+}
+.mod-ct__cb {
+  display: inline-flex;
+  cursor: pointer;
+}
+.mod-ct__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow: auto;
   flex: 1;
+  min-height: 0;
 }
-.mod-comptree__name {
-  font-size: 12px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.mod-comptree__sub {
-  font-size: 11px;
+.mod-ct__empty {
+  padding: 16px;
+  text-align: center;
   opacity: 0.55;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.mod-comptree__marquee {
-  position: absolute;
-  border: 1px solid var(--is-accent, #c8f542);
-  background: rgba(200, 245, 66, 0.12);
-  pointer-events: none;
-  z-index: 2;
 }
 </style>

@@ -52,11 +52,14 @@ function readGlobalSetting () {
 /** jsx 合成节点 → list() 的 ItemSource（扁平，parent 预留嵌套/文件夹） */
 export function normalizeCompNode (c) {
   const folderPath = (c && c.folderPath) || ''
-  const depth = folderPath ? String(folderPath).split('/').filter(Boolean).length : 0
+  const depth = typeof (c && c.depth) === 'number'
+    ? c.depth
+    : (folderPath ? String(folderPath).split('/').filter(Boolean).length : 0)
   return {
-    id: 'comp:' + (c && c.index),
+    id: 'comp:' + (c && (c.index != null ? c.index : c.id)) + ':' + (c && c.name),
     kind: 'comp',
-    index: Number(c && c.index),
+    type: (c && c.type) || 'composition',
+    index: Number(c && c.index) || 0,
     name: String((c && c.name) || ''),
     width: Number(c && c.width) || 0,
     height: Number(c && c.height) || 0,
@@ -65,7 +68,9 @@ export function normalizeCompNode (c) {
     frames: Number(c && c.frames) || 0,
     folderPath,
     parent: folderPath ? 'folder:' + folderPath : null,
+    parentId: (c && c.parentId) || (folderPath ? 'folder:' + folderPath : null),
     depth,
+    refs: (c && c.refs) || [],
     contains: (c && c.contains) || [],
     usedIn: (c && c.usedIn) || [],
     projectPath: (c && c.projectPath) || ''
@@ -283,17 +288,19 @@ export const sourceAdapter = {
         appLog.core.info('bridge', 'projectTree', JSON.stringify(tree).slice(0, 240))
       } catch (e) { /* ignore */ }
       var comps = []
-      function walk (nodes, folderPath, depth, parent) {
+      function walk (nodes, folderPath, depth, parentId) {
         if (!nodes || !nodes.length) { return }
         for (var i = 0; i < nodes.length; i++) {
           var n = nodes[i]
           if (!n) { continue }
           if (n.type === 'folder' || n.type === 'root') {
-            walk(n.children, n.type === 'root' ? '' : ((folderPath ? folderPath + '/' : '') + n.name), depth + 1, parent)
+            var fid = 'folder:' + (n.id || n.name)
+            walk(n.children, n.type === 'root' ? '' : ((folderPath ? folderPath + '/' : '') + n.name), depth + 1, fid)
           } else if (n.type === 'composition') {
             n.folderPath = folderPath
             n.depth = depth
-            n.parent = parent
+            n.parent = parentId || null
+            n.parentId = parentId || null
             comps.push(n)
           }
         }

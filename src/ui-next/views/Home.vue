@@ -35,7 +35,12 @@
           </button>
         </div>
       </div>
+      <!-- 合成树占任务列表区；不与空态画框嵌套 -->
+      <div v-if="supportsCompImport && compTreeOpen" class="ib-main__list">
+        <comp-tree @add="onCompTreeAdd" @close="compTreeOpen = false" />
+      </div>
       <div
+        v-else
         class="ib-drop"
         :class="{ 'is-hot': dragging }"
         @click="onPick"
@@ -51,9 +56,6 @@
         </div>
         <h1>{{ $t('uploadTips') }}</h1>
         <p class="ib-drop__rule">{{ $t('uploadRule') }}</p>
-        <div v-if="supportsCompImport && compTreeOpen" class="ib-comptree">
-          <comp-tree @add="onCompTreeAdd" @close="compTreeOpen = false" />
-        </div>
         <div class="keyboard-hint">
           <p>{{ $t('pasteHint') }}</p>
           <div class="keyboard-keys">
