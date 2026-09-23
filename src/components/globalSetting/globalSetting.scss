@@ -37,6 +37,19 @@
     font-size: var(--is-fs-md);
   }
 
+  // 检查更新状态常显行（不只 toast）
+  .gs-update-status {
+    margin: calc(var(--is-s-3) * -1) 0 var(--is-s-4);
+    color: var(--is-text-3);
+    font-size: var(--is-fs-sm);
+    line-height: 1.5;
+
+    &.is-ok { color: var(--is-ok-fg, var(--is-ok)); }
+    &.is-info { color: var(--is-text-3); }
+    &.is-warn { color: var(--is-warn-fg, var(--is-warn)); }
+    &.is-bad { color: var(--is-bad-fg, var(--is-bad)); }
+  }
+
   .w-80 {
     width: 80px;
     flex: none;

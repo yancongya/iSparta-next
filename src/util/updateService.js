@@ -13,6 +13,7 @@ import Vue from 'vue'
 import { ipc } from './node-env'
 import appLog from '../ui-next/log'
 import hostAdapter from './host-env'
+import { checkUpdate } from './updateCheck'
 import {
   loadUpdatePrefs,
   saveUpdatePrefs,
@@ -149,25 +150,23 @@ async function loadMeta () {
  */
 export async function runUpdateCheck (opts) {
   var o = opts || {}
-  // CEP：updatePolicy=none，禁用自动/热更检查（双端一起更，扩展内不跑 electron-updater）
-  if (hostAdapter.updatePolicy === 'none') {
-    return { state: 'disabled', reason: 'update-policy-none' }
-  }
   var prefs = loadUpdatePrefs()
-  // CEP none：自动路径禁用；notify-only 仍可查但只提示、不下载
-  if (state.updatePolicy === 'none' && !o.force) {
-    return state.lastResult
+  // 用户关了自动检查：仅手动 force 仍查（双端都要能显示最新/无网络状态）
+  if (prefs.enabled === false && !o.force) {
+    return { state: 'disabled', reason: 'user-disabled' }
   }
   if (state.checking) { return state.lastResult }
   state.checking = true
   try {
     var meta = await loadMeta()
-    var result = await ipc.invoke('updater:check', {
+    var result = await invokeCheck({
       force: !!o.force,
       enabled: prefs.enabled !== false,
       lastAt: prefs.lastAt || 0,
+      lastCheckAt: prefs.lastAt || 0,
       skipVersion: prefs.skipVersion || '',
-      cachedResult: prefs.lastResult || null
+      cachedResult: prefs.lastResult || null,
+      current: (meta && meta.version) || ''
     })
     if (!result || typeof result !== 'object') {
       result = { state: 'error', current: (meta && meta.version) || '', latest: null }
@@ -211,6 +210,72 @@ export async function runUpdateCheck (opts) {
   } finally {
     state.checking = false
   }
+}
+
+/**
+ * 桌面走主进程 updater:check；CEP/桥缺失时渲染层直接查 GitHub。
+ * 两边都返回 updateCheck 同形 result：latest / available / offline / error…
+ */
+async function invokeCheck (payload) {
+  try {
+    if (ipc && typeof ipc.invoke === 'function') {
+      var r = await ipc.invoke('updater:check', payload)
+      if (r && typeof r === 'object' && r.state) { return r }
+    }
+  } catch (e) { /* CEP 桥无 updater:check → 回退 */ }
+  return browserCheck(payload)
+}
+
+function browserFetchJson (url, timeoutMs) {
+  return new Promise(function (resolve, reject) {
+    var done = false
+    var timer = setTimeout(function () {
+      if (done) return
+      done = true
+      reject(new Error('timeout'))
+    }, timeoutMs || 12000)
+    fetch(url, { method: 'GET', headers: { Accept: 'application/vnd.github+json' }, redirect: 'follow' })
+      .then(function (res) {
+        return res.json().then(function (json) {
+          if (done) return
+          done = true
+          clearTimeout(timer)
+          resolve({ status: res.status, json: json })
+        })
+      })
+      .catch(function (e) {
+        if (done) return
+        done = true
+        clearTimeout(timer)
+        reject(e)
+      })
+  })
+}
+
+function browserFetchHead (url, timeoutMs) {
+  // 浏览器 fetch 会跟随重定向，读不到 302 Location；交给 checkUpdate 的 API 兜底
+  return Promise.resolve({ status: 0, location: null })
+}
+
+function browserCheck (payload) {
+  var p = payload || {}
+  var proc = (typeof window !== 'undefined' && window.ispartaAPI && window.ispartaAPI.process) || null
+  var platform = (proc && proc.platform) || 'win32'
+  var arch = (proc && proc.arch) || 'x64'
+  return checkUpdate({
+    force: !!p.force,
+    enabled: p.enabled !== false,
+    lastCheckAt: p.lastCheckAt || p.lastAt || 0,
+    skipVersion: p.skipVersion || '',
+    cachedResult: p.cachedResult || null,
+    currentVersion: p.current || p.currentVersion || '',
+    platform: platform,
+    arch: arch,
+    env: {},
+    fetchJson: browserFetchJson,
+    fetchHead: browserFetchHead,
+    now: Date.now()
+  })
 }
 
 async function maybeStartAutoDownload () {

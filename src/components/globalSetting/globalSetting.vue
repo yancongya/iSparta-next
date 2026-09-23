@@ -206,6 +206,7 @@
             </div>
           </div>
         </div>
+        <p class="gs-update-status" :class="'is-' + updateStatus.tone">{{ updateStatus.text }}</p>
         <is-form-item :label="$t('updateAutoCheck')">
           <is-switch v-model="updateEnabled" />
           <em class="hint">{{ $t('updatePrivacyTip') }}</em>
@@ -325,6 +326,40 @@ export default {
     updateHasNewVersion () {
       var r = this.updateUi && this.updateUi.lastResult
       return !!(r && r.state === 'available' && r.latest)
+    },
+    // 检查更新状态常显行：文案 + 色相（ok/info/warn/bad）
+    updateStatus () {
+      var ui = this.updateUi
+      if (this.updateChecking) {
+        return { tone: 'info', text: this.$t('updateChecking') }
+      }
+      var r = ui && ui.lastResult
+      if (!r) {
+        return { tone: 'info', text: this.$t('updateCheckFirst') }
+      }
+      var st = r.state
+      if (st === 'latest') {
+        return { tone: 'ok', text: this.$t('updateLatest') }
+      }
+      if (st === 'available') {
+        return {
+          tone: 'warn',
+          text: this.$t('updateAvailable', {
+            latest: 'v' + (r.latest || ''),
+            current: 'v' + (r.current || '')
+          })
+        }
+      }
+      if (st === 'offline') {
+        return { tone: 'warn', text: this.$t('updateOffline') }
+      }
+      if (st === 'disabled') {
+        return { tone: 'info', text: this.$t('updateDisabled') }
+      }
+      if (st === 'skipped') {
+        return { tone: 'info', text: this.$t('updateSkipVersion') }
+      }
+      return { tone: 'bad', text: this.$t('updateFailed') }
     },
     languages () {
       return [
