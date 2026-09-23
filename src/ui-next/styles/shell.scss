@@ -181,6 +181,15 @@
     line-height: 1.7;
   }
 
+  // 空态异常提示（工程/扫描失败等）：次要色小字，不抢主文案
+  &__status {
+    max-width: 420px;
+    margin: 0;
+    color: var(--is-text-2);
+    font-size: var(--is-fs-sm);
+    line-height: 1.5;
+  }
+
   /* ---- 以下键盘样式原样复制自 image-compression #drop-area ---- */
   .keyboard-hint {
     margin: 0;
@@ -743,3 +752,29 @@ body.is-column-resizing .ib-side {
   text-align: center;
 }
 
+// --------------------------------------------------------------------------
+// CEP 小屏：≤720px 单列铺满（仅 body.is-cep，桌面宽屏不受影响）
+// 与 projectList 900 / sortBar 820 断点不重叠：这里只管壳层两栏，不碰列表/底栏内部
+// --------------------------------------------------------------------------
+@media (max-width: 720px) {
+  body.is-cep {
+    .ib-main {
+      // 设置侧栏隐藏后主列吃满剩余宽（rail 仍保留工具条）
+      flex: 1 1 auto;
+      width: auto;
+      min-width: 0;
+    }
+
+    .ib-main__list {
+      width: 100%;
+      max-width: none;
+    }
+
+    .ib-side {
+      // 行内 width（sideStyle）盖不住 display，强制退出双栏；
+      // 设置只走覆盖层 .ib-set-overlay
+      display: none;
+      width: 0 !important;
+    }
+  }
+}

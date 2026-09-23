@@ -39,6 +39,9 @@ Vue.filter('fileLink', function (value) {
 
 // 必须在挂载前：主题类写到 html/body，避免首帧闪烁
 ThemeManager.init()
+// CEP 小屏铺满：与主题类同挂 html/body，避免首帧布局闪烁（卸载不必须）
+if (document.documentElement) document.documentElement.classList.add('is-cep')
+if (document.body) document.body.classList.add('is-cep')
 // store/index.js 模块作用域已绑定 storage 路径，此刻才读得到用户语言
 syncLocaleFromStorage()
 
