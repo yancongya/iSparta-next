@@ -2,6 +2,7 @@
 node_modules
 /dist
 /build/cep-payload
+/build/pag-assets
 
 # local env files
 .env.local
