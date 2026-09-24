@@ -547,34 +547,52 @@ function ispartaTrimPath (s) {
 }
 
 /**
- * AE PNG 序列可能写成 frame.png00000（序号接在扩展名后）→ 改成 frame00000.png。
- * helper.jsx 的 getFiles('*.png') 扫不到前者，必须先归一化。
+ * AE PNG 序列可能写成 frame.png00000 / frame00000.png → 改成「合成名_序号.png」。
+ * 中间产物用 ASCII frame.png，避免中文基名让 om.file 出错；最终名再归一化。
+ * 只改中间名（frame/out/temp），不动已是 合成名_序号.png 的文件。
  */
-function ispartaNormalizeFrameNames (folderPath) {
+function ispartaNormalizeFrameNames (folderPath, baseName) {
     var folder = new Folder(folderPath);
     if (!folder.exists) { return 0; }
+    var base = ispartaFilterName(ispartaTrimPath(String(baseName || '')));
+    if (!base) { base = 'frame'; }
     var files = folder.getFiles();
     var renamed = 0;
     for (var i = 0; i < files.length; i++) {
         var f = files[i];
         if (!(f instanceof File)) { continue; }
         var n = String(f.name || '');
-        // frame.png00000 / out.png0001 → frame00000.png / out0001.png
-        var m = /^(.*)(\.png)(\d+)$/i.exec(n);
-        if (m) {
-            try {
-                if (f.rename(m[1] + m[3] + '.png')) { renamed++; }
-            } catch (eR) { /* ignore */ }
+        // 已是 合成名_序号.png
+        if (/\.png$/i.test(n) && n.indexOf('_') > 0) {
+            var pre = n.replace(/\.png$/i, '');
+            if (/^\S+_\d+$/.test(pre)) { continue; }
         }
+        var digits = '';
+        // 仅处理中间产物：frame/out/temp + 可选序号
+        var m1 = /^(frame|out|temp)(\.png)(\d+)$/i.exec(n);
+        var m2 = /^(frame|out|temp)(\d+)(\.png)$/i.exec(n);
+        if (m1) {
+            digits = m1[3];
+        } else if (m2) {
+            digits = m2[2];
+        } else {
+            continue;
+        }
+        while (digits.length < 5) { digits = '0' + digits; }
+        var newName = base + '_' + digits + '.png';
+        if (newName === n) { continue; }
+        try {
+            if (f.rename(newName)) { renamed++; }
+        } catch (eR) { /* ignore */ }
     }
     return renamed;
 }
 
 /** 列出目录内 PNG 帧：先归一化命名，再 *.png；兼容未改名的 frame.png##### */
-function ispartaCollectPngs (folderPath) {
+function ispartaCollectPngs (folderPath, baseName) {
     var folder = new Folder(folderPath);
     if (!folder.exists) { return []; }
-    try { ispartaNormalizeFrameNames(folderPath); } catch (eN) { /* ignore */ }
+    try { ispartaNormalizeFrameNames(folderPath, baseName); } catch (eN) { /* ignore */ }
     var out = [];
     var files = folder.getFiles();
     for (var i = 0; i < files.length; i++) {
@@ -585,7 +603,7 @@ function ispartaCollectPngs (folderPath) {
             out.push(f);
         }
     }
-    // 字典序，保证帧顺序（frame00000.png / frame.png00000 均可）
+    // 字典序，保证帧顺序（闪闪_00000.png / frame.png00000 均可）
     out.sort(function (a, b) {
         var na = String(a.name || '');
         var nb = String(b.name || '');
@@ -811,8 +829,7 @@ function ispartaExportCompPngSequence (comp, location) {
     }
     location = ispartaTrimPath(ispartaDecodePath(location));
 
-    // 统一：输出目录 + frame.png 基名 → AE PNG Sequence 写出 frame00000.png…
-    // （禁止把目录本身当 file；目录不存在时也要落到 dir/frame.png）
+    // 中间产物 ASCII frame.png（避免中文基名）；渲后归一化为「合成名_序号.png」
     // 尾空格会另建「闪闪 」目录，Windows/AE 写文件失败 → 必须先 trim
     var dir = location;
     while (dir.length > 1 && (dir.charAt(dir.length - 1) === '/' || dir.charAt(dir.length - 1) === '\\')) {
@@ -829,7 +846,8 @@ function ispartaExportCompPngSequence (comp, location) {
     if (!parent.exists) {
         return ispartaErr('cannot create output folder: ' + parent.fsName);
     }
-    // 清掉上次残留（frame.png00000 / frame00000.png），避免新旧命名混在一起
+    // 清掉上次残留（frame* / 合成名_*），避免新旧命名混在一起
+    var compName = ispartaFilterName(comp.name);
     try {
         var olds = parent.getFiles('frame*');
         for (var oi = 0; oi < olds.length; oi++) {
@@ -837,11 +855,18 @@ function ispartaExportCompPngSequence (comp, location) {
                 try { olds[oi].remove(); } catch (eDel) { /* ignore */ }
             }
         }
+        if (compName) {
+            var olds2 = parent.getFiles(compName + '_*');
+            for (var oj = 0; oj < olds2.length; oj++) {
+                if (olds2[oj] instanceof File) {
+                    try { olds2[oj].remove(); } catch (eDel2) { /* ignore */ }
+                }
+            }
+        }
     } catch (eClean) { /* ignore */ }
 
     var fps = 1 / comp.frameDuration;
     var frames = Math.round(comp.workAreaDuration / comp.frameDuration);
-    var compName = ispartaFilterName(comp.name);
     var saved = ispartaSavePngSequence(comp, targetPath);
     if (saved === 'RENDERING') {
         return ispartaErr('render queue is busy');
@@ -859,10 +884,10 @@ function ispartaExportCompPngSequence (comp, location) {
             diag = eval('(' + saved.substring(metaAt + 10) + ')');
         } catch (eD) { diag = null; }
     }
-    // 渲后必须校验帧数：先归一化 frame.png##### → frame#####.png，再扫 PNG
+    // 渲后必须校验帧数：先归一化为「合成名_序号.png」，再扫 PNG
     try {
         var checkFolder = new Folder(parent.fsName);
-        var pngs = ispartaCollectPngs(parent.fsName);
+        var pngs = ispartaCollectPngs(parent.fsName, compName);
         if (!pngs || pngs.length < 1) {
             // 列出目录里实际落盘的文件，区分「写到别处 / Format 不是 PNG / 路径不对」
             var extras = [];
