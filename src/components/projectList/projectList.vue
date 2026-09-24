@@ -520,9 +520,11 @@ export default {
     onItemClick (index) {
       if (this.isLocked) return
       var project = this.projectList[index]
-      if (project && !project.isSelected) {
-        this.$store.dispatch('singleSelect', index)
-      }
+      if (!project) return
+      // 已是唯一选中则不动；多选里点某条 → 只留该条（与树单勾一致）
+      var selected = this.selectedList
+      if (selected.length === 1 && project.isSelected) return
+      this.$store.dispatch('singleSelect', index)
     },
     // 单击列表空白处 = 取消全部选中
     onBlankClick (e) {

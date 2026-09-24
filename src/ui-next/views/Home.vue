@@ -611,6 +611,15 @@ export default {
             existing[b.compIndex] = true
           }
         }
+        // 先记下勾选：ITEMS_ADD 会清空其它项 isSelected，不能在 add 之后再读
+        var selected = []
+        var beforeItems = store.getters.getterItems || []
+        for (var k = 0; k < beforeItems.length; k++) {
+          var it = beforeItems[k]
+          if (it && it.basic && it.basic.type === 'Comp' && it.isSelected) {
+            selected.push(it.basic.compIndex)
+          }
+        }
         for (var j = 0; j < gen.length; j++) {
           var idx = gen[j].basic.compIndex
           if (!existing[idx]) {
@@ -620,15 +629,7 @@ export default {
             })
           }
         }
-        // 铺底时保持当前勾选；全空则默认全不选，由树/列表再勾
-        var selected = []
-        var items = store.getters.getterItems || []
-        for (var k = 0; k < items.length; k++) {
-          var it = items[k]
-          if (it && it.basic && it.basic.type === 'Comp' && it.isSelected) {
-            selected.push(it.basic.compIndex)
-          }
-        }
+        // 铺底后按先前勾选恢复；全空则默认全不选，由树/列表再勾
         store.dispatch('syncCompSelected', selected)
         self.wakeCompThumbs()
       }).catch(function () {
@@ -764,8 +765,8 @@ export default {
 
       if (mod && key === 'a') {
         e.preventDefault()
-        // 合成树模式：全选合成（对应桌面选任务）
-        if (this.supportsCompImport && this.compTreeOpen && !this.items.length) {
+        // 合成树打开时：全选树节点（与列表 allSelect 同一 isSelected 真相源）
+        if (this.supportsCompImport && this.compTreeOpen) {
           if (this.$root && this.$root.eventBus) {
             this.$root.eventBus.$emit('comp-tree-select-all')
           }
@@ -777,7 +778,7 @@ export default {
       // Delete / Backspace：合成树=取消选择；CEP 任务=取消勾选（不删行）；桌面=删除所选
       if (!mod && (e.key === 'Delete' || e.key === 'Backspace')) {
         e.preventDefault()
-        if (this.supportsCompImport && this.compTreeOpen && !this.items.length) {
+        if (this.supportsCompImport && this.compTreeOpen) {
           if (this.$root && this.$root.eventBus) {
             this.$root.eventBus.$emit('comp-tree-clear')
           }

@@ -500,16 +500,18 @@ const actions = {
     _.extend(item.basic, payload.patch || {})
     persistItems()
   },
-  /** 合成树勾选：只改 Comp 任务的 isSelected，不增删任务 */
+  /** 合成树勾选：只改 Comp 任务的 isSelected，不增删任务（与列表共用真相源） */
   syncCompSelected(context, selectedCompIndexes) {
     if (context.rootState.locked) { return }
     var set = {}
     _.each(selectedCompIndexes || [], function (i) {
-      set[i] = true
+      var idx = Number(i)
+      if (isFinite(idx)) { set[idx] = true }
     })
     _.each(context.rootState.items, function (item) {
       if (!item.basic || item.basic.type !== 'Comp') { return }
-      item.isSelected = !!set[item.basic.compIndex]
+      var idx = Number(item.basic.compIndex)
+      item.isSelected = isFinite(idx) ? !!set[idx] : false
     })
     persistItems()
   },

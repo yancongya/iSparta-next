@@ -122,6 +122,35 @@ export default {
     },
     selectedNodes () {
       return this.nodes.filter((n) => this.selectedMap[n.id])
+    },
+    /** store 里 Comp 任务的 isSelected → compIndex 集合（与列表共用的唯一真相源） */
+    storeSelectedByIndex () {
+      const map = {}
+      const items = this.storeItems()
+      for (let i = 0; i < items.length; i++) {
+        const it = items[i]
+        if (!it || !it.basic || it.basic.type !== 'Comp' || !it.isSelected) continue
+        const idx = Number(it.basic.compIndex)
+        if (isFinite(idx)) map[idx] = true
+      }
+      return map
+    },
+    /** 任一 Comp 的勾选/增减都变；驱动树勾选镜像 store */
+    storeSelectSignature () {
+      const items = this.storeItems()
+      let sig = ''
+      for (let i = 0; i < items.length; i++) {
+        const it = items[i]
+        const b = it && it.basic
+        if (!b || b.type !== 'Comp') continue
+        sig += Number(b.compIndex) + (it.isSelected ? '+;' : '-;')
+      }
+      return sig
+    }
+  },
+  watch: {
+    storeSelectSignature () {
+      this.pullSelectionFromStore()
     }
   },
   created () {
@@ -142,6 +171,37 @@ export default {
     }
   },
   methods: {
+    storeItems () {
+      try {
+        return (this.$store && this.$store.getters && this.$store.getters.getterItems) || []
+      } catch (e) {
+        return []
+      }
+    },
+    /** store 已有 Comp 任务时，勾选以 isSelected 为准；空态树仍是「待添加」本地选择 */
+    storeHasCompTasks () {
+      const items = this.storeItems()
+      for (let i = 0; i < items.length; i++) {
+        const b = items[i] && items[i].basic
+        if (b && b.type === 'Comp') return true
+      }
+      return false
+    },
+    pullSelectionFromStore () {
+      if (!this.storeHasCompTasks()) return
+      const set = this.storeSelectedByIndex
+      const next = {}
+      this.nodes.forEach((n) => {
+        if (set[n.index]) next[n.id] = true
+      })
+      const prev = this.selectedMap || {}
+      const prevKeys = Object.keys(prev)
+      const nextKeys = Object.keys(next)
+      if (prevKeys.length === nextKeys.length && nextKeys.every((k) => !!prev[k] === !!next[k])) {
+        return
+      }
+      this.selectedMap = next
+    },
     emitSelection () {
       this.$emit('select', this.selectedNodes)
     },
@@ -187,12 +247,18 @@ export default {
       sourceAdapter.list()
         .then((list) => {
           this.nodes = (list || []).map(normalizeCompNode)
-          const next = {}
-          this.nodes.forEach((n) => {
-            const hit = prev.some((p) => p.index === n.index && p.name === n.name)
-            if (hit) { next[n.id] = true }
-          })
-          this.selectedMap = next
+          if (this.storeHasCompTasks()) {
+            // 任务列表模式：勾选跟 store.isSelected（列表勾选/全选/框选写入的同一真相）
+            this.pullSelectionFromStore()
+          } else {
+            // 空态树：本地勾选按 name+index 迁移（尚未写入 store）
+            const next = {}
+            this.nodes.forEach((n) => {
+              const hit = prev.some((p) => p.index === n.index && p.name === n.name)
+              if (hit) { next[n.id] = true }
+            })
+            this.selectedMap = next
+          }
           this.$emit('loaded', this.nodes.length)
         })
         .catch((e) => {
