@@ -138,7 +138,7 @@
               :title="$t('tipTaskSetting')"
               :disabled="isLocked"
               @click.stop="onTaskSetting(project, index)"
-            ><is-icon name="sliders" size="sm" /></button>
+            ><is-icon name="settings" size="sm" /></button>
             <button
               v-if="canOpenFramePanel(project)"
               type="button"
@@ -296,6 +296,7 @@ export default {
       return {
         active: !!project.isSelected,
         'is-running': this.stateOf(project.process) === 'running',
+        'is-no-thumb': !showThumb(project),
         'is-fail': this.stateOf(project.process) === 'fail'
       }
     },

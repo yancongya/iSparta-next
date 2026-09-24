@@ -33,7 +33,13 @@
     position: relative;
     display: grid;
     // 缩略图列改为 auto：宽度由 .thumb 自身决定，容器查询降档时才能整体收缩
-    grid-template-columns: auto auto minmax(0, 1fr) auto;
+    grid-template-columns: auto auto minmax(0, 1fr) max-content;
+    overflow: visible;
+
+    // 无缩略图时只有勾选 + 信息 + 侧栏 3 个格子，否则侧栏会被挤到 1fr 列而溢出
+    &.is-no-thumb {
+      grid-template-columns: auto minmax(0, 1fr) max-content;
+    }
     align-items: center;
     gap: var(--is-s-3);
     padding: var(--is-s-2) var(--is-s-3);
@@ -356,16 +362,17 @@
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    gap: var(--is-s-2);
-    flex: none;
-    min-width: 56px;
+    gap: var(--is-s-1);
+    min-width: 0;
+    overflow: visible;
   }
 
   .side__btns {
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    margin-left: auto;
+    flex: none;
+    overflow: visible;
   }
 
   // ---------- 状态与进度 ----------
