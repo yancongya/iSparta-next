@@ -452,7 +452,7 @@ function ispartaGetProjectTree () {
           } catch (ex) { }
           children.push({
             id: item.id,
-            index: 0,
+            index: item.index,
             name: item.name,
             type: 'composition',
             width: item.width,
@@ -461,7 +461,8 @@ function ispartaGetProjectTree () {
             duration: item.duration,
             frames: Math.round(item.frameRate * item.duration),
             time: item.time,
-            refs: refs
+            refs: refs,
+            projectPath: (proj.file ? ispartaDecodePath(proj.file.fsName) : '')
           });
         } else {
           children.push({ name: item.name, type: 'footage' });
@@ -472,6 +473,7 @@ function ispartaGetProjectTree () {
     var tree = {
       name: proj.file ? proj.file.displayName : 'Untitled',
       type: 'root',
+      projectPath: (proj.file ? ispartaDecodePath(proj.file.fsName) : ''),
       children: buildTree(proj.rootFolder)
     };
     return ispartaToJson(tree);

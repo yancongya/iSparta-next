@@ -751,14 +751,12 @@ body.is-theme-light .ib-drop .keyboard-key {
 }
 
 // --------------------------------------------------------------------------
-// CEP 小屏：≤720px 单列铺满（仅 body.is-cep，桌面宽屏不受影响）
-// 与 projectList 900 / sortBar 820 断点不重叠：这里只管壳层两栏，不碰列表/底栏内部
-// >720 的可拖宽场景不要吃到本规则——侧栏宽度由 sideStyle 行内值驱动，勿写 width:0!important
+// CEP 极窄（≤360px）才单列藏侧栏；AE 面板常见 ~420px 仍可拖出侧栏
+// 与 projectList 900 / sortBar 820 断点不重叠：这里只管壳层两栏
 // --------------------------------------------------------------------------
-@media (max-width: 720px) {
+@media (max-width: 360px) {
   body.is-cep {
     .ib-main {
-      // 设置侧栏隐藏后主列吃满剩余宽（rail 仍保留工具条）
       flex: 1 1 auto;
       width: auto;
       min-width: 0;
@@ -770,13 +768,9 @@ body.is-theme-light .ib-drop .keyboard-key {
     }
 
     .ib-side {
-      // 强制退出双栏；设置只走覆盖层 .ib-set-overlay。
-      // 只用 display:none，不要再 width:0!important：那会盖住行内 sideStyle，
-      // 在断点边缘/缩放场景误伤本可拖宽的布局
       display: none;
     }
 
-    // 小屏侧栏已隐藏，grip 不再提供拖拽，避免「拖了没反应」的误导
     .ib-rail__grip {
       cursor: default;
     }

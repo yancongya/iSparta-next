@@ -474,8 +474,8 @@ export default {
     },
     startResize (e) {
       if (e.button !== 0) return
-      // CEP ≤720 单列：侧栏 display:none，拖拽无意义，直接忽略
-      if (this.supportsCompImport && window.innerWidth <= 720) return
+      // CEP 极窄面板也允许拖出侧栏（只在真正放不下时禁用）
+      if (window.innerWidth < 360) return
       e.preventDefault()
       this.resizing = true
       this.langOpen = false

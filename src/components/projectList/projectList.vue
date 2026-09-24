@@ -63,7 +63,7 @@
               </div>
               <!-- 桌面：点击改输出目录；CEP：只读短路径（勿把 ae-comp/路径当名字） -->
               <button
-                v-if="showOutPath"
+                v-if="showOutPath && isRealFsPath(outPathOf(project))"
                 type="button"
                 class="outpath is-ellipsis"
                 v-tip="$t('tipChangeOutput') + '：' + outPathOf(project)"
@@ -73,7 +73,7 @@
                 <span class="is-ellipsis">{{ pathLabelOf(project) }}</span>
               </button>
               <span
-                v-else
+                v-else-if="!showOutPath && pathLabelOf(project)"
                 class="outpath outpath--static is-ellipsis"
                 v-tip="titleTipOf(project)"
               >
@@ -350,18 +350,30 @@ export default {
       if (segs.length >= 2) return segs.slice(-2).join('/')
       return segs[0] || ''
     },
+    // 只展示真实文件系统路径；ae-comp 假前缀 / 非绝对路径不显示
+    isRealFsPath (p) {
+      var s = String(p || '')
+      if (!s || /^ae-comp([\\/]|$)/i.test(s)) return false
+      return /^[a-zA-Z]:[\\/]/.test(s) || s.charAt(0) === '/' || s.charAt(0) === '\\'
+    },
     pathLabelOf (project) {
       var out = this.outPathOf(project)
       var input = (project && project.basic && project.basic.inputPath) || ''
-      return this.shortPathOf(out || input) || '—'
+      var p = out || input
+      if (!this.isRealFsPath(p)) return ''
+      return this.shortPathOf(p)
     },
     titleTipOf (project) {
       var b = (project && project.basic) || {}
       var lines = []
       if (b.compName) lines.push(b.compName)
-      if (b.inputPath) lines.push(this.$t('tipInputDir') + '：' + b.inputPath)
+      if (b.inputPath && this.isRealFsPath(b.inputPath)) {
+        lines.push(this.$t('tipInputDir') + '：' + b.inputPath)
+      }
       var out = this.outPathOf(project)
-      if (out) lines.push(this.$t('tipOutputDir') + '：' + out)
+      if (out && this.isRealFsPath(out)) {
+        lines.push(this.$t('tipOutputDir') + '：' + out)
+      }
       var name = this.outNameOf(project)
       if (name) lines.push(this.$t('outputName') + '：' + name)
       return lines.join('\n')

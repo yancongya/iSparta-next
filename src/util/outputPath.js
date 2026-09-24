@@ -29,9 +29,13 @@ export function sourceDirOf (item) {
   if (item.basic.type === 'PNGs') {
     return input
   }
-  // Comp：源目录始终取 inputPath 上级（工程目录）；序列帧与输出同走 outputTo 模板变量
+  // Comp：源目录 = 工程文件所在目录（真实路径）；无工程路径时不编造 ae-comp
   if (item.basic.type === 'Comp') {
-    return npath.dirname(input)
+    const pp = item.basic.projectPath || (item.basic && item.basic.projectPath)
+    if (pp) { return npath.dirname(pp) }
+    const inp = item.basic.inputPath || ''
+    if (inp && /[\\/]/.test(inp)) { return npath.dirname(inp) }
+    return ''
   }
   // 单文件：inputPath 为 address + '/' + base（无扩展），取其上级目录
   const list = item.basic.fileList

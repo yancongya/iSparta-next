@@ -105,16 +105,18 @@ export function toCompItem (comp, optionsOverride) {
   }
 
   const projectPath = node.projectPath || ''
-  let address = 'ae-comp'
+  // 真实工程目录；未保存工程没有 projectPath，绝不能编造 ae-comp 假路径
+  let address = ''
   if (projectPath) {
     try {
       address = path.dirname(projectPath)
     } catch (e) {
-      address = 'ae-comp'
+      address = ''
     }
   }
   // 与 file.js 非 PNGs 分支一致：inputPath = 目录 + '/' + 名（无扩展）
-  temp.basic.inputPath = address + '/' + node.name
+  temp.basic.inputPath = address ? (address + '/' + node.name) : node.name
+  temp.basic.projectPath = projectPath
   // 帧数：渲染进度分母（0.15–0.38）
   temp.basic.frameCount = Number(node.frames) || 0
   // CEP 默认输出 = 项目旁「合成名」子目录（对应桌面输出到文件夹）
@@ -570,7 +572,12 @@ export const sourceAdapter = {
       }
       walk(tree && tree.children, '', 0, null)
       if (comps.length) {
-        return comps.map(normalizeCompNode)
+        // 工程树节点可能缺 projectPath：用树根/工程文件路径补齐，避免落到 ae-comp 假路径
+        var treePp = (tree && tree.projectPath) || ''
+        return comps.map(function (c) {
+          if (!c.projectPath && treePp) { c.projectPath = treePp }
+          return normalizeCompNode(c)
+        })
       }
       // 回退：扁平 getCompositions
       return evalJson('ispartaGetCompositions()').then(function (list) {
