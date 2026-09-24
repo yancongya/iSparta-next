@@ -500,18 +500,23 @@ const actions = {
     _.extend(item.basic, payload.patch || {})
     persistItems()
   },
-  /** 合成树勾选：只改 Comp 任务的 isSelected，不增删任务（与列表共用真相源） */
-  syncCompSelected(context, selectedCompIndexes) {
+  /** 合成树勾选：只改 Comp 任务的 isSelected，不增删任务（与列表共用真相源）
+   * selectedCompKeys: ['{index}:{name}', ...] 或 [{index,name}]；禁止只用 index（可能全为 0） */
+  syncCompSelected(context, selectedCompKeys) {
     if (context.rootState.locked) { return }
     var set = {}
-    _.each(selectedCompIndexes || [], function (i) {
-      var idx = Number(i)
-      if (isFinite(idx)) { set[idx] = true }
+    _.each(selectedCompKeys || [], function (k) {
+      if (k && typeof k === 'object') {
+        set[Number(k.index) + ':' + String(k.name || '')] = true
+        return
+      }
+      var s = String(k)
+      if (s) { set[s] = true }
     })
     _.each(context.rootState.items, function (item) {
       if (!item.basic || item.basic.type !== 'Comp') { return }
-      var idx = Number(item.basic.compIndex)
-      item.isSelected = isFinite(idx) ? !!set[idx] : false
+      var key = Number(item.basic.compIndex) + ':' + String(item.basic.compName || '')
+      item.isSelected = !!set[key]
     })
     persistItems()
   },

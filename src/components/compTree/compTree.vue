@@ -123,15 +123,15 @@ export default {
     selectedNodes () {
       return this.nodes.filter((n) => this.selectedMap[n.id])
     },
-    /** store 里 Comp 任务的 isSelected → compIndex 集合（与列表共用的唯一真相源） */
+    /** store 里 Comp 任务的 isSelected → '{index}:{name}' 集合（禁止只用 index，可能全为 0） */
     storeSelectedByIndex () {
       const map = {}
       const items = this.storeItems()
       for (let i = 0; i < items.length; i++) {
         const it = items[i]
         if (!it || !it.basic || it.basic.type !== 'Comp' || !it.isSelected) continue
-        const idx = Number(it.basic.compIndex)
-        if (isFinite(idx)) map[idx] = true
+        const key = Number(it.basic.compIndex) + ':' + String(it.basic.compName || '')
+        map[key] = true
       }
       return map
     },
@@ -143,7 +143,7 @@ export default {
         const it = items[i]
         const b = it && it.basic
         if (!b || b.type !== 'Comp') continue
-        sig += Number(b.compIndex) + (it.isSelected ? '+;' : '-;')
+        sig += Number(b.compIndex) + ':' + String(b.compName || '') + (it.isSelected ? '+;' : '-;')
       }
       return sig
     }
@@ -192,7 +192,8 @@ export default {
       const set = this.storeSelectedByIndex
       const next = {}
       this.nodes.forEach((n) => {
-        if (set[n.index]) next[n.id] = true
+        const key = Number(n.index) + ':' + String(n.name || '')
+        if (set[key]) next[n.id] = true
       })
       const prev = this.selectedMap || {}
       const prevKeys = Object.keys(prev)

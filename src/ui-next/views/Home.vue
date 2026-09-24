@@ -380,6 +380,8 @@ export default {
     selectedCount (nv, ov) {
       // 拖拽调宽过程中不响应选中联动，避免 watcher 把正在拖的面板夹断
       if (this.resizing) return
+      // CEP：选中不自动展开侧栏，由用户拖出；桌面保留选中即展开
+      if (this.supportsCompImport) return
       if (nv > 0 && ov === 0) { this.settingsOpen = true }
       else if (nv === 0 && ov > 0) { this.settingsOpen = false }
     },
@@ -399,7 +401,8 @@ export default {
     this.sideW = this.readSideW()
     // 初始挂载同样遵循「无选中即折叠」；store 恢复逻辑保证有任务时至少选中一条，
     // 因此正常情况下带任务启动面板是开的
-    this.settingsOpen = this.selectedCount > 0
+    // 初始挂载：CEP 不因选中自动展开（用户拖出）；桌面仍「有选中即展开」
+    this.settingsOpen = !this.supportsCompImport && this.selectedCount > 0
   },
   mounted () {
     window.addEventListener('paste', this.onPaste)
@@ -608,21 +611,23 @@ export default {
         for (var i = 0; i < old.length; i++) {
           var b = old[i] && old[i].basic
           if (b && b.type === 'Comp') {
-            existing[b.compIndex] = true
+            existing[b.compIndex + ':' + (b.compName || '')] = true
           }
         }
         // 先记下勾选：ITEMS_ADD 会清空其它项 isSelected，不能在 add 之后再读
+        // 用 index:name 复合键，避免 compIndex 全为 0 时误恢复/误全选
         var selected = []
         var beforeItems = store.getters.getterItems || []
         for (var k = 0; k < beforeItems.length; k++) {
           var it = beforeItems[k]
           if (it && it.basic && it.basic.type === 'Comp' && it.isSelected) {
-            selected.push(it.basic.compIndex)
+            selected.push(Number(it.basic.compIndex) + ':' + String(it.basic.compName || ''))
           }
         }
         for (var j = 0; j < gen.length; j++) {
-          var idx = gen[j].basic.compIndex
-          if (!existing[idx]) {
+          var gb = gen[j].basic
+          var gKey = Number(gb.compIndex) + ':' + String(gb.compName || '')
+          if (!existing[gKey]) {
             store.dispatch('add', {
               basic: gen[j].basic,
               options: gen[j].options
@@ -674,7 +679,8 @@ export default {
       this.settingsDialogOpen = true
     },
     onCompSelect (nodes) {
-      if (nodes && nodes.length && !this._noSidePanel) {
+      // CEP：选中不自动展开侧栏（用户拖出）；桌面保留
+      if (nodes && nodes.length && !this._noSidePanel && !this.supportsCompImport) {
         this.settingsOpen = true
       }
       var src = getSourceAdapter()
@@ -688,21 +694,23 @@ export default {
       for (var i = 0; i < old.length; i++) {
         var b = old[i] && old[i].basic
         if (b && b.type === 'Comp') {
-          existing[b.compIndex] = true
+          existing[b.compIndex + ':' + (b.compName || '')] = true
         }
       }
-      var compIndexes = []
+      // 用 index:name 复合键，避免 index 全为 0 时误选全部
+      var compKeys = []
       for (var j = 0; j < gen.length; j++) {
-        var idx = gen[j].basic.compIndex
-        compIndexes.push(idx)
-        if (!existing[idx]) {
+        var basic = gen[j].basic
+        var key = Number(basic.compIndex) + ':' + String(basic.compName || '')
+        compKeys.push(key)
+        if (!existing[key]) {
           store.dispatch('add', {
             basic: gen[j].basic,
             options: gen[j].options
           })
         }
       }
-      store.dispatch('syncCompSelected', compIndexes)
+      store.dispatch('syncCompSelected', compKeys)
       // 未勾选的合成也已在列表；无原生预览，不渲封面
       this.wakeCompThumbs()
     },
