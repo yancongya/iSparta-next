@@ -25,20 +25,14 @@ function runWithConcurrency (tasks, limit) {
   return new Promise(function (resolve, reject) {
     var index = 0
     var running = 0
-    var settled = false
-    function fail (err) {
-      if (!settled) {
-        settled = true
-        reject(err)
-      }
-    }
+    var errors = []
     function next () {
-      if (settled) {
-        return
-      }
       if (index >= tasks.length && running === 0) {
-        settled = true
-        resolve()
+        if (errors.length) {
+          reject(errors[0])
+        } else {
+          resolve()
+        }
         return
       }
       while (running < limit && index < tasks.length) {
@@ -47,7 +41,12 @@ function runWithConcurrency (tasks, limit) {
         Promise.resolve().then(task).then(function () {
           running--
           next()
-        }, fail)
+        }, function (err) {
+          // 单条失败不中断整批：其余任务继续跑完，避免「一失败其它卡死/状态错乱」
+          errors.push(err)
+          running--
+          next()
+        })
       }
     }
     if (tasks.length === 0) {
@@ -139,7 +138,19 @@ export default function (store, sameOutputPath, locale) {
     }(item))
   }
 
-  var concurrency = Math.max(1, (os.cpus() || [{}]).length)
+  // 长序列/大图：压低并发，避免多个 apngquant 同时打爆内存导致假卡死或失败
+  var totalFrames = 0
+  for (var fi = 0; fi < action.items.length; fi++) {
+    var fl = action.items[fi].basic && action.items[fi].basic.fileList
+    totalFrames += (fl && fl.length) || 0
+  }
+  var cpuN = Math.max(1, (os.cpus() || [{}]).length)
+  var concurrency = cpuN
+  if (totalFrames > 400 || action.items.length === 1 && totalFrames > 200) {
+    concurrency = 1
+  } else if (totalFrames > 150) {
+    concurrency = Math.min(2, cpuN)
+  }
   appLog.info(i18n.t('logBatchStart', { n: action.items.length }), i18n.t('logConcurrency') + ' ' + concurrency)
   return runWithConcurrency(taskFactories, concurrency).then(() => {
     for (var i = 0; i < action.items.length; i++) {

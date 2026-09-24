@@ -332,7 +332,10 @@
         })
         return
       }
-      var opts = Object.assign({ maxBuffer: 1024 * 1024 * 64 }, options || {})
+      var opts = Object.assign({
+        maxBuffer: 1024 * 1024 * 64,
+        timeout: 30 * 60 * 1000
+      }, options || {})
       var child = nodeCp.execFile(command, args || [], opts, function (err, stdout, stderr) {
         var idx = runningProcs.indexOf(child)
         if (idx >= 0) { runningProcs.splice(idx, 1) }
@@ -341,6 +344,7 @@
           resolve({
             ok: false,
             cancelled: /killed|terminated|abort/i.test(msg),
+            timedOut: /timeout|ETIMEDOUT/i.test(msg) || err.code === 'ETIMEDOUT',
             error: msg,
             stdout: String(stdout || ''),
             stderr: String(stderr || '')

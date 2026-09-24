@@ -70,7 +70,11 @@ export default class Action {
     return num
   }
   static exec(command, args, item, store, locale, options) {
-    var execOptions = { maxBuffer: 1024 * 1024 * 64 }
+    // 默认 30min 超时：大动画下工具挂死时进度会永久停住
+    var execOptions = {
+      maxBuffer: 1024 * 1024 * 64,
+      timeout: (options && options.timeout) || 30 * 60 * 1000
+    }
     if (options && options.cwd) {
       execOptions.cwd = options.cwd
     }

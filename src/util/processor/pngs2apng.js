@@ -9,23 +9,47 @@ export default function (item, store, locale) {
     schedule: 0.4
   })
 
-	// copy filelist to temp dir
+	// copy filelist to temp dir（限流：长序列一次 Promise.all 会打爆句柄/内存）
   var tmpDir = item.basic.tmpDir
   var numLen = item.basic.fileList.length.toString().split('').length
   fs.ensureDirSync(tmpDir)
   var firstPNG = 'apng' + action.pad(1, numLen) + '.png'
 
-  var copyTasks = item.basic.fileList.map((file, index) => {
-    var target = path.join(tmpDir, 'apng' + action.pad(index + 1, numLen) + '.png')
-    var p = fs.copy(file, target)
-    if (item.options.delays && item.options.delays[index]) {
-      var txtFile = path.join(tmpDir, 'apng' + action.pad(index + 1, numLen) + '.txt')
-      p = p.then(() => fs.writeFile(txtFile, "delay=" + item.options.delays[index] * 1000 + "/1000"))
+  var copyJobs = item.basic.fileList.map((file, index) => {
+    return function () {
+      var target = path.join(tmpDir, 'apng' + action.pad(index + 1, numLen) + '.png')
+      var p = fs.copy(file, target)
+      if (item.options.delays && item.options.delays[index]) {
+        var txtFile = path.join(tmpDir, 'apng' + action.pad(index + 1, numLen) + '.txt')
+        p = p.then(() => fs.writeFile(txtFile, "delay=" + item.options.delays[index] * 1000 + "/1000"))
+      }
+      return p
     }
-    return p
   })
 
-  return Promise.all(copyTasks).then(() => {
+  function runCopyLimited (jobs, limit) {
+    var i = 0
+    var running = 0
+    return new Promise(function (resolve, reject) {
+      function next () {
+        if (i >= jobs.length && running === 0) {
+          resolve()
+          return
+        }
+        while (running < limit && i < jobs.length) {
+          var job = jobs[i++]
+          running++
+          Promise.resolve().then(job).then(function () {
+            running--
+            next()
+          }, reject)
+        }
+      }
+      if (!jobs.length) { resolve() } else { next() }
+    })
+  }
+
+  return runCopyLimited(copyJobs, 8).then(() => {
 	// apngasm
     return action.exec(action.bin('apngasm'), [
       path.join(item.basic.tmpOutputDir, item.options.outputName + '.png'),

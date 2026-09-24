@@ -502,7 +502,11 @@ const runningJobs = new Set()
 
 ipcMain.handle('job:execFile', async (event, command, args, options) => {
   return new Promise((resolve) => {
-    const opts = Object.assign({ maxBuffer: 1024 * 1024 * 64 }, options || {})
+    // 大动画下 apngquant/apngasm 可能跑很久；无超时会永久挂住表现为「进度不动」
+    const opts = Object.assign({
+      maxBuffer: 1024 * 1024 * 64,
+      timeout: 30 * 60 * 1000
+    }, options || {})
     let child = null
     let settled = false
     const finish = (payload) => {
@@ -517,6 +521,7 @@ ipcMain.handle('job:execFile', async (event, command, args, options) => {
         finish({
           ok: false,
           cancelled: /killed|terminated|abort/i.test(msg),
+          timedOut: /timeout|ETIMEDOUT/i.test(msg) || err.code === 'ETIMEDOUT',
           error: msg,
           stdout: String(stdout || ''),
           stderr: String(stderr || '')
