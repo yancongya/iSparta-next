@@ -1,4 +1,4 @@
-﻿// hostscript.jsx — AE 合成导出 PNG 序列（ExtendScript ES3）
+// hostscript.jsx — AE 合成导出 PNG 序列（ExtendScript ES3）
 // 方法对齐 webp_apng helper.jsx：savePNG + 渲染队列备份恢复
 // 约束：仅 ES3（var / function / for）；勿写 AT 指令式注释；返回值必须是字符串（JSON）
 
@@ -533,22 +533,84 @@ function ispartaRestoreRenderQueue (checkedItems) {
     }
 }
 
-/** 选 PNG 序列输出模板：优先按名称，退回最后一个隐藏模板（helper.jsx 同款） */
+/** 去掉路径首尾空白（含尾空格目录，Windows 会另建「闪闪 」） */
+function ispartaTrimPath (s) {
+    s = String(s === null || s === undefined ? '' : s);
+    var a = 0;
+    var b = s.length;
+    while (a < b && (s.charAt(a) === ' ' || s.charAt(a) === '\t' || s.charAt(a) === '\r' || s.charAt(a) === '\n')) { a++; }
+    while (b > a && (s.charAt(b - 1) === ' ' || s.charAt(b - 1) === '\t' || s.charAt(b - 1) === '\r' || s.charAt(b - 1) === '\n')) { b--; }
+    return s.substring(a, b);
+}
+
+/**
+ * 选 PNG 序列输出模板。
+ * 对齐 helper.jsx：优先最后一个模板（多为 _HIDDEN X-Factor 16 Premul），
+ * 再按名称找 PNG/X-Factor/_HIDDEN，避免误用「无损」写出 mov/avi。
+ */
 function ispartaPickPngTemplate (om) {
     try {
         var tpls = om.templates;
-        if (!tpls || !tpls.length) { return '' }
+        if (!tpls || !tpls.length) { return ''; }
+        // helper.jsx 固定取最后一个隐藏 PNG 模板
+        var last = String(tpls[tpls.length - 1] || '');
+        if (last.indexOf('X-Factor') >= 0 || last.indexOf('_HIDDEN') >= 0 || last.indexOf('PNG') >= 0) {
+            return tpls[tpls.length - 1];
+        }
         for (var i = tpls.length - 1; i >= 0; i--) {
             var n = String(tpls[i] || '');
             if (n.indexOf('PNG') >= 0 || n.indexOf('X-Factor') >= 0 || n.indexOf('_HIDDEN') >= 0) {
                 return tpls[i];
             }
         }
+        // 都没有时仍用最后一个（与 helper 一致），再靠 ForcePng 兜底 Format
         return tpls[tpls.length - 1];
-    } catch (e) { return '' }
+    } catch (e) { return ''; }
 }
 
-// save png sequence via renderQueue（对齐 helper.jsx savePNG，但用 items.add 免弹「另存帧」）
+/**
+ * 强制 Output Module 为 PNG 序列（RenderSmith 同款多语言重试）。
+ * 模板名因语言/版本而异，仅 applyTemplate 不够——Format 若仍是 QuickTime 会写出 mov。
+ */
+function ispartaForcePngOutput (om) {
+    var applied = '';
+    // 1) STRING 多语言 Format 名
+    var fmtNames = ['PNG Sequence', 'PNG 序列', 'PNGシーケンス', 'PNG'];
+    for (var i = 0; i < fmtNames.length; i++) {
+        try {
+            om.setSettings({ 'Format': fmtNames[i] });
+            applied = fmtNames[i];
+            break;
+        } catch (eF) { /* 下一候选 */ }
+    }
+    // 2) SPEC 通道再写一次（与显示名无关）
+    try {
+        if (typeof GetSettingsFormat !== 'undefined' && GetSettingsFormat.SPEC) {
+            var s = om.getSettings(GetSettingsFormat.SPEC);
+            if (s && s['Format'] !== undefined) {
+                var specIds = ['PNG Sequence', 'PNG', 'png '];
+                for (var k = 0; k < specIds.length; k++) {
+                    try {
+                        s['Format'] = specIds[k];
+                        om.setSettings(s);
+                        applied = applied || specIds[k];
+                        break;
+                    } catch (eS) { /* next */ }
+                }
+            }
+        }
+    } catch (eG) { /* 老版本无 GetSettingsFormat */ }
+    // 3) 序列编号（helper.jsx 同款；键名不认则忽略）
+    try {
+        om.setSettings({
+            'Use Comp Frame Number': false,
+            'Starting #': '0'
+        });
+    } catch (eN) { /* ignore */ }
+    return applied;
+}
+
+// save png sequence via renderQueue（对齐 helper.jsx savePNG + RenderSmith 的 Format 强制）
 // theLocation 由调用方 ispartaDecodePath 解码；此处不再二次 decode。
 function ispartaSavePngSequence (theComp, theLocation) {
     var res = [1, 1];
@@ -581,22 +643,27 @@ function ispartaSavePngSequence (theComp, theLocation) {
         app.project.renderQueue.showWindow(false);
         // items.add 不会弹「另存帧」对话框；executeCommand(2104) 在部分环境会逐帧要目录
         rqItem = app.project.renderQueue.items.add(theComp);
+        // Time Span 同时走属性 + setSettings：items.add 默认可能是整段合成/工作区，setSettings 键名因版本而异
+        try {
+            rqItem.timeSpanStart = start;
+            rqItem.timeSpanDuration = dur;
+        } catch (eTs) { /* 老版本无属性，走 setSettings */ }
+        try {
+            rqItem.setSettings({
+                'Time Span Duration': dur,
+                'Time Span Start': start
+            });
+        } catch (eTs2) { /* ignore */ }
+
         var om = rqItem.outputModule(1);
         var setPNG = ispartaPickPngTemplate(om);
         if (setPNG) {
-            om.applyTemplate(setPNG);
+            try { om.applyTemplate(setPNG); } catch (eTpl) { /* 再靠 ForcePng */ }
         }
-        // 必须是 .png 基名，AE PNG Sequence 才会写 temp00000.png… 而不是逐帧询问
+        // 模板不一定是 PNG 序列（无损=mov/avi → 0 png）；必须显式 Format
+        var fmtApplied = ispartaForcePngOutput(om);
+        // 必须是 .png 基名，AE PNG Sequence 才会写 frame00000.png… 而不是逐帧询问
         om.file = new File(theLocation);
-
-        rqItem.setSettings({
-            'Time Span Duration': dur,
-            'Time Span Start': start
-        });
-        om.setSettings({
-            'Use Comp Frame Number': false,
-            'Starting #': '0'
-        });
 
         // 仅 UNQUEUED 才允许 render=true（DONE/STOPPED/RENDERING 会抛 AE 错误）
         if (rqItem.status == RQItemStatus.UNQUEUED) {
@@ -615,6 +682,8 @@ function ispartaSavePngSequence (theComp, theLocation) {
         // renderQueue.render() 为阻塞调用，中途无法派发 CSXSEvent；
         // 中间进度由面板轮询输出目录 PNG 数（0.15–0.38）补齐。
         app.project.renderQueue.render();
+        var statusAfter = -1;
+        try { statusAfter = String(rqItem.status); } catch (eSt) { /* ignore */ }
         ispartaDispatchRenderProgress({
             phase: 'done',
             token: renderToken,
@@ -630,7 +699,16 @@ function ispartaSavePngSequence (theComp, theLocation) {
         }
         try { app.activeViewer.setActive(); } catch (ev) { /* 无查看器不挡导出 */ }
         theComp.resolutionFactor = res;
-        return finalpath;
+        // 附加诊断，便于 0 帧时定位 Format/模板/状态
+        return finalpath + '\n@isparta@' + ispartaToJson({
+            template: setPNG,
+            format: fmtApplied,
+            status: statusAfter,
+            start: start,
+            dur: dur,
+            total: renderTotal,
+            file: finalpath
+        });
     } catch (e) {
         ispartaDispatchRenderProgress({
             phase: 'error',
@@ -682,14 +760,16 @@ function ispartaExportCompPngSequence (comp, location) {
     if (!location) {
         return ispartaErr('location required');
     }
-    location = ispartaDecodePath(location);
+    location = ispartaTrimPath(ispartaDecodePath(location));
 
     // 统一：输出目录 + frame.png 基名 → AE PNG Sequence 写出 frame00000.png…
     // （禁止把目录本身当 file；目录不存在时也要落到 dir/frame.png）
+    // 尾空格会另建「闪闪 」目录，Windows/AE 写文件失败 → 必须先 trim
     var dir = location;
     while (dir.length > 1 && (dir.charAt(dir.length - 1) === '/' || dir.charAt(dir.length - 1) === '\\')) {
-        dir = dir.substring(0, dir.length - 1);
+        dir = ispartaTrimPath(dir.substring(0, dir.length - 1));
     }
+    dir = ispartaTrimPath(dir);
     var sep = ($.os.toLowerCase().indexOf('mac') === 0) ? '/' : '\\';
     var targetPath = dir + sep + 'frame.png';
 
@@ -711,23 +791,49 @@ function ispartaExportCompPngSequence (comp, location) {
     if (saved.indexOf('ERR:') === 0) {
         return ispartaErr(saved.substring(4));
     }
+    // 拆出附加诊断（path\n@isparta@{json}）
+    var diag = null;
+    var savedPath = saved;
+    var metaAt = saved.indexOf('\n@isparta@');
+    if (metaAt >= 0) {
+        savedPath = saved.substring(0, metaAt);
+        try {
+            diag = eval('(' + saved.substring(metaAt + 10) + ')');
+        } catch (eD) { diag = null; }
+    }
     // 渲后必须校验帧数：否则 0 帧也会当成功，下游只报「生成失败」
     try {
         var checkFolder = new Folder(parent.fsName);
         var pngs = checkFolder.getFiles('*.png');
         if (!pngs || pngs.length < 1) {
-            return ispartaErr('render produced 0 PNG frames in ' + parent.fsName);
+            // 列出目录里实际落盘的文件，区分「写到别处 / Format 不是 PNG / 路径不对」
+            var extras = [];
+            try {
+                var all = checkFolder.getFiles();
+                for (var i = 0; i < all.length && i < 12; i++) {
+                    extras.push(String(all[i].name));
+                }
+            } catch (eL) { /* ignore */ }
+            var dmsg = '';
+            if (diag) {
+                dmsg = ' | template=' + diag.template + ' format=' + diag.format +
+                    ' status=' + diag.status + ' total=' + diag.total + ' file=' + diag.file;
+            }
+            return ispartaErr('render produced 0 PNG frames in ' + parent.fsName +
+                ' | dirExists=' + (checkFolder.exists ? '1' : '0') +
+                ' | files=[' + extras.join(', ') + ']' + dmsg);
         }
     } catch (eChk) { /* 列目录失败不挡返回 */ }
 
     return ispartaOk({
-        path: saved,
+        path: savedPath,
         folder: parent.fsName,
         compName: compName,
         fps: fps,
         frames: frames,
         width: comp.width,
-        height: comp.height
+        height: comp.height,
+        diag: diag
     });
 }
 
@@ -810,18 +916,21 @@ function ispartaExportCompThumb (comp, filePath) {
         var om = rqItem.outputModule(1);
         var setPNG = ispartaPickPngTemplate(om);
         if (setPNG) {
-            om.applyTemplate(setPNG);
+            try { om.applyTemplate(setPNG); } catch (eTpl) { /* ForcePng 兜底 */ }
         }
+        ispartaForcePngOutput(om);
         om.file = target;
 
-        rqItem.setSettings({
-            'Time Span Duration': dur,
-            'Time Span Start': start
-        });
-        om.setSettings({
-            'Use Comp Frame Number': false,
-            'Starting #': '0'
-        });
+        try {
+            rqItem.timeSpanStart = start;
+            rqItem.timeSpanDuration = dur;
+        } catch (eTs) { /* ignore */ }
+        try {
+            rqItem.setSettings({
+                'Time Span Duration': dur,
+                'Time Span Start': start
+            });
+        } catch (eTs2) { /* ignore */ }
         if (rqItem.status == RQItemStatus.UNQUEUED) {
             rqItem.render = true;
         }

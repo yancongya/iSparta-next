@@ -95,7 +95,7 @@ export function toCompItem (comp, optionsOverride) {
   }
   temp.basic.type = 'Comp'
   temp.basic.compIndex = node.index
-  temp.basic.compName = node.name
+  temp.basic.compName = String(node.name || '').replace(/^[\s\u3000]+|[\s\u3000]+$/g, '')
   temp.basic.fileList = []
   temp.basic.thumbPath = ''
 
@@ -220,10 +220,12 @@ export function prepareCompSequence (item, opts) {
   const name = basic.compName || ''
   // 序列帧与合成输出同目录：优先 processor 已解析的 outputPath（含 sameOutputPath），
   // 否则走输出设置 resolveOutputPath（不另建方法）。默认模板 {srcPath}/{srcName} → 项目旁「合成名」子目录
-  const outDir = basic.outputPath ||
+  // 尾空格会另建「闪闪 」目录且 AE 写不进 → 统一 trim（jsx 侧再 trim 一次）
+  const outDirRaw = basic.outputPath ||
     (item.options && resolveOutputPath(item, item.options)) ||
     (basic.tmpDir || basic.tmpOutputDir) ||
     ('ae-comp-tmp-' + (idx != null ? idx : 'x'))
+  const outDir = String(outDirRaw).replace(/^[\s\u3000]+|[\s\u3000]+$/g, '')
   try {
     if (fs && typeof fs.ensureDirSync === 'function') {
       fs.ensureDirSync(outDir)

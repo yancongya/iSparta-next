@@ -69,7 +69,9 @@ export function outputContext (item) {
   const type = (item && item.basic && item.basic.type) || ''
   const src = srcPath ? npath.basename(srcPath) : ''
   // Comp 用合成名；文件源退回源目录基名
-  const srcName = (item && item.basic && (item.basic.compName || item.basic.sourceName)) || src
+  // 合成名尾空格会拼出「闪闪 」目录
+  const srcName = String((item && item.basic && (item.basic.compName || item.basic.sourceName)) || src || '')
+    .replace(/^[\s\u3000]+|[\s\u3000]+$/g, '')
   const parent = srcPath ? npath.dirname(srcPath) : ''
   const d = new Date()
   const date = d.getFullYear() +
@@ -210,14 +212,18 @@ export function resolveOutputPath (item, options) {
   const ctx = outputContext(item)
   const o = normalizeOutputTo(options || item.options)
   const tpl = (o.template || '').trim()
+  // 尾空格/全角空白会另建目录且 AE 写不进 → 结果统一 trim
+  const trimPath = function (p) {
+    return String(p || '').replace(/^[\s\u3000]+|[\s\u3000]+$/g, '')
+  }
 
-  if (tpl) { return resolveVars(tpl, ctx) }
+  if (tpl) { return trimPath(resolveVars(tpl, ctx)) }
 
-  if (!ctx.srcPath) { return o.customPath || '' }
-  if (o.mode === 'beside') { return ctx.parent || ctx.srcPath }
-  if (o.customPath && o.customPath.trim()) { return resolveVars(o.customPath.trim(), ctx) }
+  if (!ctx.srcPath) { return trimPath(o.customPath || '') }
+  if (o.mode === 'beside') { return trimPath(ctx.parent || ctx.srcPath) }
+  if (o.customPath && o.customPath.trim()) { return trimPath(resolveVars(o.customPath.trim(), ctx)) }
   // 历史数据（模板为空、mode=output）：直接输出到源目录，不再追加 /output
-  return ctx.srcPath || ''
+  return trimPath(ctx.srcPath || '')
 }
 
 export function outputPathPreviewLabel (o) {
