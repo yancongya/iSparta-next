@@ -391,8 +391,23 @@ export function prepareCompSequence (item, opts) {
       return Promise.reject(new Error('aerender forge unavailable'))
     }
     return evalJson('ispartaGetAeHostInfo()').then((info) => {
-      if (!info || !info.ok || !info.isSaved || !info.projectPath) {
-        throw new Error('project not saved for aerender')
+      if (!info || !info.ok) {
+        throw new Error('aerender host info unavailable')
+      }
+      // 只接受真实 .aep；输出目录绝不能当 project（会弹「找不到该项目 …\\闪闪」）
+      let proj = ''
+      const cands = [basic.projectPath, info.projectPath]
+      for (let i = 0; i < cands.length; i++) {
+        const p = String(cands[i] || '').replace(/^[\s　]+|[\s　]+$/g, '')
+        if (/\.aep$/i.test(p)) {
+          try {
+            if (fs.existsSync(p)) { proj = p; break }
+          } catch (eChk) { /* ignore */ }
+          if (!proj) { proj = p }
+        }
+      }
+      if (!proj) {
+        throw new Error('no .aep projectPath for aerender (got: ' + (info.projectPath || basic.projectPath || '') + ')')
       }
       const aerenderPath = findAerender(info.appPath)
       if (!aerenderPath) {
@@ -403,7 +418,7 @@ export function prepareCompSequence (item, opts) {
       return new Promise(function (resolve, reject) {
         try {
           forge.launch(aerenderPath, {
-            projectPath: info.projectPath,
+            projectPath: proj,
             compName: name,
             outputPath: outBase,
             startFrame: 0,

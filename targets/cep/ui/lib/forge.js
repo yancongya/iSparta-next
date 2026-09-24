@@ -78,33 +78,40 @@ var ispartaForge = (function () {
     /**
      * Build aerender command arguments for Single Comp mode
      */
+    /** aerender 官方为 key="value"（路径含空格时必须整段一个 argv） */
+    function _kv(key, value) {
+        var v = String(value == null ? '' : value).replace(/"/g, '\\"');
+        return key + '="' + v + '"';
+    }
+
     function buildSingleArgs(options) {
         var memCache = String(options.memCache || 50);
         var memOther = String(options.memOther || 50);
+        // 官方语法 project= comp= output=；-project 在带空格中文路径下会被拆坏
         var args = [
-            '-project', options.projectPath,
-            '-comp', options.compName,
-            '-output', options.outputPath,
-            '-mem_usage', memCache, memOther
+            _kv('project', options.projectPath),
+            _kv('comp', options.compName),
+            _kv('output', options.outputPath),
+            _kv('mem_usage', memCache + ' ' + memOther)
         ];
 
-        // 仅在给出帧范围时传 -s/-e；否则 aerender 走合成工作区
+        // 仅在给出帧范围时传 start/end；否则 aerender 走合成工作区
         var hasRange = (options.endFrame != null && options.endFrame !== '') ||
             (options.totalFrames && options.totalFrames > 0);
         if (hasRange) {
-            args.push('-s', String(options.startFrame || 0));
-            args.push('-e', String(
+            args.push(_kv('start', String(options.startFrame || 0)));
+            args.push(_kv('end', String(
                 options.endFrame != null && options.endFrame !== ''
                     ? options.endFrame
                     : (options.totalFrames - 1)
-            ));
+            )));
         }
 
         if (options.rsTemplate) {
-            args.push('-RStemplate', options.rsTemplate);
+            args.push(_kv('RStemplate', options.rsTemplate));
         }
         if (options.omTemplate) {
-            args.push('-OMtemplate', options.omTemplate);
+            args.push(_kv('OMtemplate', options.omTemplate));
         }
 
         return args;
@@ -117,8 +124,8 @@ var ispartaForge = (function () {
         var memCache = String(options.memCache || 50);
         var memOther = String(options.memOther || 50);
         var args = [
-            '-project', options.projectPath,
-            '-mem_usage', memCache, memOther
+            _kv('project', options.projectPath),
+            _kv('mem_usage', memCache + ' ' + memOther)
         ];
 
         return args;
