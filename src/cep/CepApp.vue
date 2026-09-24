@@ -165,6 +165,7 @@ export default {
       return {
         startConvert: t('startConvert', '开始转换'),
         analysing: t('analysing', '分析中'),
+        assembling: t('assembling', '合成动画'),
         convertSuccess: t('convertSuccess', '转换成功'),
         convertFail: t('convertFail', '转换失败'),
         noticeConvertAborted: t('noticeConvertAborted', '已中止')

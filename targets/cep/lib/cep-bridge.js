@@ -130,6 +130,29 @@
 
   function copy (a, b) {
     return new Promise(function (resolve, reject) {
+      // 同盘大帧优先硬链接（瞬时，不占双份磁盘）；跨盘/失败再异步 copy
+      if (hasNode && nodeFs && typeof nodeFs.link === 'function') {
+        nodeFs.link(a, b, function (linkErr) {
+          if (!linkErr) {
+            resolve({ ok: true, linked: true })
+            return
+          }
+          if (hasNode && nodeFs && typeof nodeFs.copyFile === 'function') {
+            nodeFs.copyFile(a, b, function (err) {
+              if (err) { reject(err); return }
+              resolve({ ok: true })
+            })
+            return
+          }
+          try {
+            copySync(a, b)
+            resolve({ ok: true })
+          } catch (e2) {
+            reject(e2)
+          }
+        })
+        return
+      }
       // 大图必须异步：copySync 会堵住面板，表现为「解析图片」假死
       if (hasNode && nodeFs && typeof nodeFs.copyFile === 'function') {
         nodeFs.copyFile(a, b, function (err) {

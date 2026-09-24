@@ -73,6 +73,7 @@ module.exports = {
     "convertFail":"生成失败",
     "renderingComp":"正在渲染合成",
     "analysing":"正在解析图片",
+    "assembling":"正在合成动画",
     "compressing":"正在压缩图片",
     "outputing":"正在输出",
     // delay dialog

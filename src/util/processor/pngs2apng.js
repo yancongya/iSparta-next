@@ -73,10 +73,11 @@ export default function (item, store, locale) {
     }
   })
   return runCopyLimited(wrapped, copyLimit).then(() => {
+    // 拷贝结束 → 明确进入合成，避免 UI 一直停在「解析图片」
     store.dispatch('editProcess', {
       index: item.index,
-      text: locale.analysing + '...',
-      schedule: 0.45
+      text: (locale.assembling || 'Assembling') + '...',
+      schedule: 0.55
     })
 	// apngasm：中间产物用 ASCII 文件名（outputName 可能是中文，部分工具会失败）
     var toolBase = 'out'

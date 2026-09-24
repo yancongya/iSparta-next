@@ -73,6 +73,7 @@ module.exports = {
     "convertFail":"Failed",
     "renderingComp":"Rendering composition",
     "analysing":"Analysing images",
+    "assembling":"Assembling animation",
     "compressing":"Compressing images",
     "outputing":"Writing output",
     // delay dialog
