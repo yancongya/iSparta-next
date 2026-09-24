@@ -240,7 +240,20 @@ export default {
       return this.selectedList.length > 1
     },
     projectList () {
-      return this.$store.getters.getterItems
+      var items = this.$store.getters.getterItems || []
+      // CEP 合成：与合成树「默认可排序态」一致（sortKey 空 = index → 名称）
+      if (!(hostAdapter && (hostAdapter.supportsCompImport || hostAdapter.kind === 'cep'))) {
+        return items
+      }
+      return items.slice().sort(function (a, b) {
+        var ba = (a && a.basic) || {}
+        var bb = (b && b.basic) || {}
+        if (ba.type !== 'Comp' || bb.type !== 'Comp') return 0
+        var ia = Number(ba.compIndex) || 0
+        var ib = Number(bb.compIndex) || 0
+        if (ia !== ib) return ia - ib
+        return String(ba.compName || '').localeCompare(String(bb.compName || ''))
+      })
     },
     isLocked () {
       return this.$store.getters.getterLocked
@@ -352,8 +365,10 @@ export default {
     },
     // 只展示真实文件系统路径；ae-comp 假前缀 / 非绝对路径不显示
     isRealFsPath (p) {
-      var s = String(p || '')
-      if (!s || /^ae-comp([\\/]|$)/i.test(s)) return false
+      var s = String(p || '').trim()
+      if (!s) return false
+      // 任一段是 ae-comp 都视为假路径（兼容旧数据 / 大小写）
+      if (/(^|[\\/])ae-comp([\\/]|$)/i.test(s)) return false
       return /^[a-zA-Z]:[\\/]/.test(s) || s.charAt(0) === '/' || s.charAt(0) === '\\'
     },
     pathLabelOf (project) {
@@ -516,6 +531,14 @@ export default {
           return schedule * 100
       }
     },
+    // 显示序可能与 store 序不同（CEP 按树默认序）：用对象回查 store 下标
+    storeIndexOf (project) {
+      var items = this.$store.getters.getterItems || []
+      for (var i = 0; i < items.length; i++) {
+        if (items[i] === project) return i
+      }
+      return -1
+    },
     // 点击条目空白处 = 单选（勾选框负责多选）
     onItemClick (index) {
       if (this.isLocked) return
@@ -524,7 +547,8 @@ export default {
       // 已是唯一选中则不动；多选里点某条 → 只留该条（与树单勾一致）
       var selected = this.selectedList
       if (selected.length === 1 && project.isSelected) return
-      this.$store.dispatch('singleSelect', index)
+      var si = this.storeIndexOf(project)
+      if (si >= 0) this.$store.dispatch('singleSelect', si)
     },
     // 单击列表空白处 = 取消全部选中
     onBlankClick (e) {
@@ -638,7 +662,9 @@ export default {
       if (this.isLocked) {
         return false
       }
-      this.$store.dispatch('multiSelect', index)
+      var project = this.projectList[index]
+      var si = this.storeIndexOf(project)
+      if (si >= 0) this.$store.dispatch('multiSelect', si)
     },
     itemRightClick (project, index) {
       var locale = this.$i18n.messages[this.$i18n.locale]
@@ -716,7 +742,8 @@ export default {
      */
     onTaskSetting (project, index) {
       if (this.isLocked) return
-      this.$store.dispatch('selectOnlyAt', index)
+      var si = this.storeIndexOf(project)
+      if (si >= 0) this.$store.dispatch('selectOnlyAt', si)
       if (this.$root && this.$root.eventBus) {
         this.$root.eventBus.$emit('open-task-setting')
       }

@@ -113,6 +113,14 @@ export default {
           const bv = k === 'width' ? (b.width * b.height) : Number(b[k]) || 0
           return (av - bv) * dir
         })
+      } else {
+        // 默认可排序态：index → 名称（与任务列表 projectList 同一比较器）
+        list = list.slice().sort(function (a, b) {
+          const ia = Number(a.index) || 0
+          const ib = Number(b.index) || 0
+          if (ia !== ib) return ia - ib
+          return String(a.name || '').localeCompare(String(b.name || ''))
+        })
       }
       return list
     },
