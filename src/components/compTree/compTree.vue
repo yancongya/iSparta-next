@@ -351,7 +351,10 @@ export default {
   justify-content: center;
 }
 .mod-ct__c--name {
-  flex: 1 1 auto;
+  /* 必须 1 1 0：auto 基准会让长名撑破行，ellipsis 失效 */
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -374,6 +377,7 @@ export default {
   text-decoration: underline;
 }
 .mod-ct__txt {
+  flex: 1 1 0;
   min-width: 0;
   overflow: hidden;
   white-space: nowrap;
