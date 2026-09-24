@@ -237,6 +237,22 @@ export function prepareCompSequence (item, opts) {
       fs.ensureDirSync(outDir)
     }
   } catch (e) { /* ensure 失败交由 jsx 报错 */ }
+
+  // 覆盖策略：渲前清掉 frame* + 合成名_*，避免新旧序列帧混用（aerender / renderQueue 一致）
+  try {
+    if (fs && typeof fs.readdirSync === 'function' && typeof fs.remove === 'function') {
+      const safeName = String(name || '').replace(/["' /\\:*?<>|]/g, '_')
+      const olds = fs.readdirSync(outDir)
+      for (let oi = 0; oi < olds.length; oi++) {
+        const n = String(olds[oi] || '')
+        const hitFrame = /^frame/i.test(n)
+        const hitName = !!safeName && (n.indexOf(safeName + '_') === 0 || n.indexOf(safeName + '.') === 0)
+        if (hitFrame || hitName) {
+          try { fs.remove(path.join(outDir, n)) } catch (eDel) { /* ignore */ }
+        }
+      }
+    }
+  } catch (eClean) { /* ignore */ }
   const location = outDir + (String(outDir).slice(-1) === '/' ? '' : (path.sep || '/'))
   const expectedFrames = Number(basic.frameCount) || 0
 
