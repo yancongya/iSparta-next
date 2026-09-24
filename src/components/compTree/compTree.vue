@@ -63,8 +63,8 @@
         <span class="mod-ct__c mod-ct__c--num" :title="String(node.fps)">{{ node.fps | fps }}</span>
         <span class="mod-ct__c mod-ct__c--num" :title="String(node.frames || 0)">{{ node.frames || 0 }}</span>
         <span class="mod-ct__c mod-ct__c--act">
-          <button type="button" class="mod-ct__gear" :title="$t('outputConfig')" @click.stop="$emit('configure', node)">
-            <img :src="gearIcon" alt="" width="16" height="16" />
+          <button type="button" class="iconbtn" :title="$t('outputConfig')" @click.stop="$emit('configure', node)">
+            <is-icon name="sliders" size="sm" />
           </button>
         </span>
       </li>
@@ -96,7 +96,6 @@ export default {
       sortKey: '',
       sortDir: 1,
       compIcon: (http ? '/icons/' : './icons/') + 'pag-comp.png',
-      gearIcon: (http ? '/icons/' : './icons/') + 'pag-gear.png',
     }
   },
   computed: {
@@ -323,8 +322,9 @@ export default {
   display: flex;
   align-items: center;
   min-height: 28px;
-  padding: 0 4px;
+  padding: 0 2px 0 4px;
   gap: 0;
+  overflow: hidden;
 }
 .mod-ct__head {
   border-bottom: 1px solid var(--is-line, rgba(128, 128, 128, 0.25));
@@ -358,8 +358,9 @@ export default {
   padding-right: 8px;
 }
 .mod-ct__c--num {
-  width: 72px;
-  flex: 0 0 72px;
+  width: 64px;
+  flex: 0 1 64px;
+  min-width: 40px;
   text-align: right;
   padding-right: 8px;
   background: transparent;
@@ -384,17 +385,34 @@ export default {
   flex: 0 0 auto;
   display: block;
 }
+/* 操作列固定不压缩，overflow:visible 防止齿轮被行裁掉 */
 .mod-ct__c--act {
-  width: 36px;
-  flex: 0 0 36px;
-  text-align: center;
+  width: 32px;
+  flex: 0 0 32px;
+  overflow: visible;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
 }
-.mod-ct__gear {
-  border: 0;
-  background: transparent;
-  padding: 2px;
+/* 与 projectList / ib-iconbtn 同一套设置钮 */
+.iconbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid var(--is-border);
+  border-radius: var(--is-r-xs, 6px);
+  background: var(--is-card);
+  color: var(--is-text-2);
   cursor: pointer;
-  line-height: 0;
+}
+.iconbtn:hover {
+  border-color: var(--is-border-hi);
+  background: var(--is-accent-soft, var(--is-accent-dim));
+  color: var(--is-accent);
 }
 .mod-ct__search {
   width: 100%;
