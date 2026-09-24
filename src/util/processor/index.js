@@ -162,6 +162,11 @@ export default function (store, sameOutputPath, locale) {
       fs.remove(action.items[i].basic.tmpDir);
     }
     store.dispatch('setLock', false)
+    // 必须打出真实 err：否则日志只有「转换中断」没有原因
+    try {
+      var msg = (err && (err.err || err.message || err.error || err.command)) || String(err)
+      appLog.error('转换中断', msg)
+    } catch (eLog) { /* ignore */ }
     return Promise.reject(err)
   })
 }

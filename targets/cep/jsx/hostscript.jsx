@@ -1,4 +1,4 @@
-// hostscript.jsx — AE 合成导出 PNG 序列（ExtendScript ES3）
+﻿// hostscript.jsx — AE 合成导出 PNG 序列（ExtendScript ES3）
 // 方法对齐 webp_apng helper.jsx：savePNG + 渲染队列备份恢复
 // 约束：仅 ES3（var / function / for）；勿写 AT 指令式注释；返回值必须是字符串（JSON）
 
@@ -711,6 +711,14 @@ function ispartaExportCompPngSequence (comp, location) {
     if (saved.indexOf('ERR:') === 0) {
         return ispartaErr(saved.substring(4));
     }
+    // 渲后必须校验帧数：否则 0 帧也会当成功，下游只报「生成失败」
+    try {
+        var checkFolder = new Folder(parent.fsName);
+        var pngs = checkFolder.getFiles('*.png');
+        if (!pngs || pngs.length < 1) {
+            return ispartaErr('render produced 0 PNG frames in ' + parent.fsName);
+        }
+    } catch (eChk) { /* 列目录失败不挡返回 */ }
 
     return ispartaOk({
         path: saved,
