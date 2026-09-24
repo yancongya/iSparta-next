@@ -60,6 +60,10 @@ function runWithConcurrency (tasks, limit) {
 export default function (store, sameOutputPath, locale) {
   var action = new Action(store)
   var taskFactories = []
+  // 输出目录尾空格会并行渲出「闪闪」和「闪闪 」两套帧
+  if (sameOutputPath != null && sameOutputPath !== '') {
+    sameOutputPath = String(sameOutputPath).replace(/^[\s　]+|[\s　]+$/g, '')
+  }
 
   for (var i = 0; i < action.items.length; i++) {
     let item = action.items[i]

@@ -234,6 +234,18 @@ export function prepareCompSequence (item, opts) {
   const location = outDir + (String(outDir).slice(-1) === '/' ? '' : (path.sep || '/'))
   const expectedFrames = Number(basic.frameCount) || 0
 
+  // 同一输出目录只允许一个导出在跑：防双任务同时渲出「闪闪」和「闪闪 」两套帧
+  const exportKey = String(outDir).toLowerCase()
+  if (!prepareCompSequence._inflight) { prepareCompSequence._inflight = {} }
+  const inflight = prepareCompSequence._inflight
+  if (inflight[exportKey]) {
+    return Promise.reject(new Error('export already running for: ' + outDir))
+  }
+  inflight[exportKey] = true
+  function releaseInflight () {
+    try { delete inflight[exportKey] } catch (e) { inflight[exportKey] = false }
+  }
+
   // —— 绑定 jsx 渲染进度事件（渲前/渲后/错误）；结束时解绑避免泄漏 ——
   let onRenderEvent = null
   let pollTimer = null
@@ -245,7 +257,7 @@ export function prepareCompSequence (item, opts) {
     try {
       if (fs && typeof fs.readdirSync === 'function') {
         return fs.readdirSync(folder)
-          .filter(function (n) { return /\.png$/i.test(n) })
+          .filter(function (n) { return /\.png$/i.test(n) || /^\S+\.png\d+$/i.test(n) })
           .length
       }
     } catch (e) { /* ignore */ }
@@ -359,7 +371,7 @@ export function prepareCompSequence (item, opts) {
         } else if (fs && typeof fs.readdirSync === 'function') {
           try {
             files = fs.readdirSync(folder)
-              .filter(function (n) { return /\.png$/i.test(n) })
+              .filter(function (n) { return /\.png$/i.test(n) || /^\S+\.png\d+$/i.test(n) })
               .map(function (n) {
                 return folder + (String(folder).slice(-1) === '/' ? '' : '/') + n
               })
@@ -385,9 +397,11 @@ export function prepareCompSequence (item, opts) {
     return Promise.reject(err)
   }).then((ready) => {
     teardownProgress()
+    releaseInflight()
     return ready
   }, (err) => {
     teardownProgress()
+    releaseInflight()
     return Promise.reject(err)
   })
 }
