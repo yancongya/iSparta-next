@@ -1,7 +1,7 @@
 // AE 合成输入源 sourceAdapter（docs/EXEC-WAVE2.md §2.2）
 // 列表=合成树（扁平 + parent 预留）；拖入/粘贴/树勾选 → 与 drag/file.js 同形 item
 import _ from 'lodash'
-import { path, fs } from '../util/node-env'
+import { path, fs, getAerender } from '../util/node-env'
 import { resolveOutputPath } from '../util/outputPath'
 import { buildInitialOutputName } from '../util/tokenizeName'
 import hostAdapter, { registerSourceAdapter as registerHostSource } from '../util/host-env'
@@ -348,13 +348,97 @@ export function prepareCompSequence (item, opts) {
     total: expectedFrames
   })
 
+  /** 定位 aerender.exe（RenderSmith 同款：app.path 旁 / Support Files） */
+  function findAerender (appPath) {
+    const cands = []
+    const a = String(appPath || '')
+    if (a) {
+      cands.push(path.join(a, 'aerender.exe'))
+      cands.push(path.join(a, 'aerender'))
+      cands.push(path.join(a, 'Support Files', 'aerender.exe'))
+      cands.push(path.join(a, '..', 'Support Files', 'aerender.exe'))
+    }
+    // 常见 Windows 安装位（app.path 异常时兜底）
+    const roots = [
+      'C:\\Program Files\\Adobe',
+      'C:\\Program Files (x86)\\Adobe'
+    ]
+    for (let r = 0; r < roots.length; r++) {
+      try {
+        if (!fs.existsSync(roots[r])) { continue }
+        const kids = fs.readdirSync(roots[r])
+        for (let k = 0; k < kids.length; k++) {
+          if (!/after effects/i.test(String(kids[k]))) { continue }
+          cands.push(path.join(roots[r], kids[k], 'Support Files', 'aerender.exe'))
+        }
+      } catch (eScan) { /* ignore */ }
+    }
+    for (let i = 0; i < cands.length; i++) {
+      try {
+        if (fs.existsSync(cands[i])) { return cands[i] }
+      } catch (eChk) { /* ignore */ }
+    }
+    return null
+  }
+
+  /**
+   * 优先 aerender（拷贝自 RenderSmith forge）：后台渲、PROGRESS/ETA、挂起检测。
+   * 不可用/失败则 reject，由调用方回退 renderQueue 导出。
+   */
+  function tryAerenderExport () {
+    const forge = getAerender()
+    if (!forge || typeof forge.launch !== 'function') {
+      return Promise.reject(new Error('aerender forge unavailable'))
+    }
+    return evalJson('ispartaGetAeHostInfo()').then((info) => {
+      if (!info || !info.ok || !info.isSaved || !info.projectPath) {
+        throw new Error('project not saved for aerender')
+      }
+      const aerenderPath = findAerender(info.appPath)
+      if (!aerenderPath) {
+        throw new Error('aerender.exe not found')
+      }
+      const outBase = path.join(outDir, 'frame.png')
+      const total = expectedFrames
+      return new Promise(function (resolve, reject) {
+        try {
+          forge.launch(aerenderPath, {
+            projectPath: info.projectPath,
+            compName: name,
+            outputPath: outBase,
+            startFrame: 0,
+            endFrame: total > 0 ? (total - 1) : null,
+            totalFrames: total,
+            omTemplate: '_HIDDEN X-Factor 8 Premul',
+            mode: 'single'
+          }, {
+            onProgress: function (p) {
+              applyProgress(Number(p && p.currentFrame) || 0, Number(p && p.totalFrames) || total, 'progress')
+            },
+            onComplete: function () { resolve() },
+            onError: function (err) {
+              reject(new Error((err && err.message) || 'aerender failed'))
+            },
+            onLog: function (m) {
+              try { console.log('[aerender]', m) } catch (e) { /* ignore */ }
+            }
+          })
+        } catch (eLaunch) {
+          reject(eLaunch)
+        }
+      }).then(function () {
+        return { ok: true, folder: outDir, compName: name, via: 'aerender' }
+      })
+    })
+  }
+
   const script = isFinite(idx)
     ? 'ispartaExportPngSequenceByIndex(' + idx + ',' + JSON.stringify(location) + ')'
     : 'ispartaMatchComps(' + JSON.stringify([{ name: name }]) + ')'
   // 先进 Promise 再 evalJson：同步抛错也走 teardown，不泄漏 listener/timer
-  // 统一走模块 evalJson（与 list 相同，ispartaCS 缺省时回退 cep.evalScript）
+  // aerender 优先（后台/真进度）；失败回退 renderQueue 的 ispartaExportPngSequenceByIndex
   return Promise.resolve()
-    .then(() => evalJson(script))
+    .then(() => tryAerenderExport().catch(() => evalJson(script)))
     .then((res) => {
     if (!res || !res.ok) {
       throw new Error((res && res.error) || 'export comp sequence failed')

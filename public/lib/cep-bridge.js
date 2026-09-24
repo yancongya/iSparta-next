@@ -332,7 +332,10 @@
         })
         return
       }
-      var opts = Object.assign({ maxBuffer: 1024 * 1024 * 64 }, options || {})
+      var opts = Object.assign({
+        maxBuffer: 1024 * 1024 * 64,
+        timeout: 30 * 60 * 1000
+      }, options || {})
       var child = nodeCp.execFile(command, args || [], opts, function (err, stdout, stderr) {
         var idx = runningProcs.indexOf(child)
         if (idx >= 0) { runningProcs.splice(idx, 1) }
@@ -341,6 +344,7 @@
           resolve({
             ok: false,
             cancelled: /killed|terminated|abort/i.test(msg),
+            timedOut: /timeout|ETIMEDOUT/i.test(msg) || err.code === 'ETIMEDOUT',
             error: msg,
             stdout: String(stdout || ''),
             stderr: String(stderr || '')
@@ -426,6 +430,17 @@
     execFile: execFile
   }
 
+  // RenderSmith forge.js 拷贝：aerender 启停 / PROGRESS / ETA / 挂起检测
+  var aerender = null
+  try {
+    if (typeof require === 'function') {
+      aerender = require('./forge.js')
+    }
+  } catch (eForge) { /* 浏览器无 require */ }
+  if (!aerender && typeof window !== 'undefined' && window.ispartaForge) {
+    aerender = window.ispartaForge
+  }
+
   var api = {
     hasNode: hasNode,
     fs: fs,
@@ -436,7 +451,8 @@
     execFile: execFile,
     ipc: ipc,
     process: processBridge,
-    childProcess: childProcess
+    childProcess: childProcess,
+    aerender: aerender
   }
 
   // 注入 ispartaAPI：processor/* 经 node-env 只认这个形状（docs/BRIDGE.md）
@@ -448,7 +464,8 @@
       storage: storage,
       ipc: ipc,
       process: processBridge,
-      childProcess: childProcess
+      childProcess: childProcess,
+      aerender: aerender
     }
   }
   if (typeof window !== 'undefined') {

@@ -924,6 +924,26 @@ function ispartaExportCompPngSequence (comp, location) {
  * 工程状态：启动扫描前判定是否已打开/已保存。
  * code: ok | noProject | unsaved
  */
+/** AE 宿主信息：供 aerender 定位（app.path / 工程路径 / 是否已保存） */
+function ispartaGetAeHostInfo () {
+    try {
+        var appPath = '';
+        try { appPath = ispartaDecodePath(String(app.path || '')); } catch (e1) { appPath = ''; }
+        var projectPath = (app.project && app.project.file)
+            ? ispartaDecodePath(app.project.file.fsName)
+            : '';
+        return ispartaOk({
+            appPath: appPath,
+            projectPath: projectPath,
+            isSaved: !!projectPath,
+            version: String(app.version || ''),
+            os: String($.os || '')
+        });
+    } catch (e) {
+        return ispartaErr(e);
+    }
+}
+
 function ispartaGetProjectStatus () {
     try {
         if (!app.project) {

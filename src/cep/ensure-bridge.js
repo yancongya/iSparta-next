@@ -25,7 +25,8 @@ export default function ensureBridge () {
     storage: b.storage,
     ipc: b.ipc,
     process: b.process,
-    childProcess: b.childProcess
+    childProcess: b.childProcess,
+    aerender: b.aerender || (typeof window !== 'undefined' && window.ispartaForge) || null
   }
   return true
 }

@@ -88,3 +88,13 @@ export function getChildProcess () {
   if (a && a.childProcess) { return a.childProcess }
   throw new Error('ispartaAPI.childProcess missing: preload not loaded?')
 }
+
+/** 可选：RenderSmith forge（aerender）；桌面/浏览器无则 null，由调用方回退 renderQueue */
+export function getAerender () {
+  try {
+    const a = api()
+    return (a && a.aerender) || null
+  } catch (e) {
+    return null
+  }
+}
