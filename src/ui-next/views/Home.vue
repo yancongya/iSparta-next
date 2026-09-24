@@ -604,18 +604,8 @@ export default {
         self.projectStatusMsg = ''
         return src.list()
       }).then(function (comps) {
-        if (!comps || !comps.length) return
-        var gen = src.toItems(comps)
-        var old = store.getters.getterItems || []
-        var existing = {}
-        for (var i = 0; i < old.length; i++) {
-          var b = old[i] && old[i].basic
-          if (b && b.type === 'Comp') {
-            existing[b.compIndex + ':' + (b.compName || '')] = true
-          }
-        }
-        // 先记下勾选：ITEMS_ADD 会清空其它项 isSelected，不能在 add 之后再读
-        // 用 index:name 复合键，避免 compIndex 全为 0 时误恢复/误全选
+        // CEP 实时同步：AE 当前合成列表整表替换 Comp 任务（含删除/重命名）；空列表也清空
+        var gen = (comps && comps.length) ? src.toItems(comps) : []
         var selected = []
         var beforeItems = store.getters.getterItems || []
         for (var k = 0; k < beforeItems.length; k++) {
@@ -624,18 +614,7 @@ export default {
             selected.push(Number(it.basic.compIndex) + ':' + String(it.basic.compName || ''))
           }
         }
-        for (var j = 0; j < gen.length; j++) {
-          var gb = gen[j].basic
-          var gKey = Number(gb.compIndex) + ':' + String(gb.compName || '')
-          if (!existing[gKey]) {
-            store.dispatch('add', {
-              basic: gen[j].basic,
-              options: gen[j].options
-            })
-          }
-        }
-        // 铺底后按先前勾选恢复；全空则默认全不选，由树/列表再勾
-        store.dispatch('syncCompSelected', selected)
+        store.dispatch('syncCompTasks', { items: gen, selectedKeys: selected })
         self.wakeCompThumbs()
       }).catch(function () {
         self.projectStatusMsg = self.$t('compScanFailed')
@@ -655,9 +634,11 @@ export default {
     toggleCompTree () {
       if (this.compTreeOpen) {
         this.compTreeOpen = false
-        // 切到桌面任务 UI：任务条渲染完整合成列表
+        // 切回任务列表：刷新为 AE 当前合成
         this.loadAllCompsAsTasks()
       } else {
+        // 打开树前也刷新，两边都是实时列表
+        this.loadAllCompsAsTasks()
         this.onPickComps()
       }
     },

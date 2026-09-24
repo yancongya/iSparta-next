@@ -174,6 +174,8 @@ if (localData) {
   var localItems = JSON.parse(localData)
   let items = [];
   _.each(localItems, function (item) {
+    // CEP 合成任务实时同步，不恢复本地旧列表
+    if (item && item.basic && item.basic.type === 'Comp') { return }
     let isError = false;
     for (let i = 0; i < item.basic.fileList.length; i++) {
 
@@ -500,8 +502,29 @@ const actions = {
     _.extend(item.basic, payload.patch || {})
     persistItems()
   },
-  /** 合成树勾选：只改 Comp 任务的 isSelected，不增删任务（与列表共用真相源）
-   * selectedCompKeys: ['{index}:{name}', ...] 或 [{index,name}]；禁止只用 index（可能全为 0） */
+  /** CEP：用 AE 当前合成列表整表替换 Comp 任务（实时，不保留已删除合成） */
+  syncCompTasks(context, payload) {
+    if (context.rootState.locked) { return }
+    var gen = (payload && payload.items) || []
+    var selectedSet = {}
+    _.each((payload && payload.selectedKeys) || [], function (k) {
+      selectedSet[String(k)] = true
+    })
+    var tempState = JSON.parse(storage.getItem('globalSetting'))
+    var remain = _.filter(state.items, function (it) {
+      return !(it && it.basic && it.basic.type === 'Comp')
+    })
+    _.each(gen, function (g) {
+      var itemData = _.cloneDeep(_.extend({}, tempState, { basic: g.basic, options: g.options }))
+      var key = Number(g.basic.compIndex) + ':' + String(g.basic.compName || '')
+      itemData.isSelected = !!selectedSet[key]
+      if (!itemData.process) { itemData.process = { text: '', schedule: 0 } }
+      remain.push(itemData)
+    })
+    state.items = remain
+    persistItems()
+  },
+  /** 合成树勾选：只改 Comp 任务的 isSelected（index:name 复合键） */
   syncCompSelected(context, selectedCompKeys) {
     if (context.rootState.locked) { return }
     var set = {}
