@@ -119,23 +119,7 @@
 
         <!-- 右侧：输出设置（单选打开）+ 帧预览/延时（二者独立，勿合并） -->
         <div class="side">
-          <button
-            type="button"
-            class="iconbtn iconbtn--flat"
-            :title="$t('tipTaskSetting')"
-            :disabled="isLocked"
-            @click.stop="onTaskSetting(project, index)"
-          ><is-icon name="sliders" size="sm" /></button>
-
-          <button
-            v-if="canOpenFramePanel(project)"
-            type="button"
-            class="iconbtn"
-            :title="framePanelTitle(project)"
-            @click.stop="onDelaySetting(project)"
-          ><is-icon name="settings" size="sm" /></button>
-
-          <!-- 状态点：长文案在标题区，进度条覆在卡片底边 -->
+          <!-- 状态点靠左；按钮组始终贴右，避免有无状态时左右跳动 -->
           <div v-if="showMeta(project)" class="meta">
             <span class="status" :class="'is-' + stateOf(project.process)">
               <is-pacman
@@ -146,6 +130,22 @@
               />
               <is-icon v-else :name="statusIcon(project.process)" size="sm" />
             </span>
+          </div>
+          <div class="side__btns">
+            <button
+              type="button"
+              class="iconbtn"
+              :title="$t('tipTaskSetting')"
+              :disabled="isLocked"
+              @click.stop="onTaskSetting(project, index)"
+            ><is-icon name="sliders" size="sm" /></button>
+            <button
+              v-if="canOpenFramePanel(project)"
+              type="button"
+              class="iconbtn"
+              :title="framePanelTitle(project)"
+              @click.stop="onDelaySetting(project)"
+            ><is-icon name="settings" size="sm" /></button>
           </div>
         </div>
         <div

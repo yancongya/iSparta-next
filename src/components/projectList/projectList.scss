@@ -262,6 +262,7 @@
     font-weight: var(--is-fw-medium);
   }
 
+  /* 与顶栏 .ib-iconbtn 同一视觉语言（描边/卡片底/悬停强调），两套 UI 设置钮统一 */
   .iconbtn {
     display: inline-flex;
     align-items: center;
@@ -270,31 +271,27 @@
     width: 24px;
     height: 24px;
     padding: 0;
-    border: none;
-    border-radius: var(--is-r-xs);
-    background: transparent;
-    color: var(--is-text-3);
+    border: 1px solid var(--is-border);
+    border-radius: var(--is-r-xs, 6px);
+    background: var(--is-card);
+    color: var(--is-text-2);
     cursor: pointer;
-    transition: background-color var(--is-dur-fast) var(--is-ease-std),
-      color var(--is-dur-fast) var(--is-ease-std),
-      transform var(--is-dur-base) var(--is-ease-std);
+    transition: color var(--is-dur-fast) var(--is-ease-std),
+      border-color var(--is-dur-fast) var(--is-ease-std),
+      background-color var(--is-dur-fast) var(--is-ease-std);
 
     &:hover {
-      background: var(--is-accent-dim);
+      border-color: var(--is-border-hi);
+      background: var(--is-accent-soft, var(--is-accent-dim));
       color: var(--is-accent);
-      transform: rotate(45deg);
     }
 
     &:disabled {
       opacity: 0.4;
       cursor: not-allowed;
-      transform: none;
     }
 
-    // 输出设置（sliders）：不旋转，避免与延时齿轮混淆
-    &--flat:hover {
-      transform: none;
-    }
+    &--flat:hover { transform: none; }
   }
 
   // ---------- 摘要行：每项独立配色 + hover 反馈 ----------
@@ -358,8 +355,17 @@
   .side {
     display: flex;
     align-items: center;
+    justify-content: flex-end;
     gap: var(--is-s-2);
     flex: none;
+    min-width: 56px;
+  }
+
+  .side__btns {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: auto;
   }
 
   // ---------- 状态与进度 ----------
@@ -408,7 +414,7 @@
   .item-proc.is-fail { color: var(--is-bad); }
 
   /* 右侧状态列/独立进度条已由底边条 + 标题文案替代 */
-  .status { display: none !important; }
+  /* 旧独立进度条已由底边条替代；.status 仍作右侧状态图标 */
   .progress { display: none !important; }
 
   .status {
