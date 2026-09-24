@@ -1,4 +1,4 @@
-// hostscript.jsx — AE 合成导出 PNG 序列（ExtendScript ES3）
+﻿// hostscript.jsx — AE 合成导出 PNG 序列（ExtendScript ES3）
 // 方法对齐 webp_apng helper.jsx：savePNG + 渲染队列备份恢复
 // 约束：仅 ES3（var / function / for）；勿写 AT 指令式注释；返回值必须是字符串（JSON）
 
@@ -424,6 +424,19 @@ function ispartaGetCompositions () {
   }
 }
 
+function ispartaProjectIndexOf (item) {
+    if (!item) { return 0 }
+    try {
+        if (item.index != null && item.index !== '') { return item.index }
+    } catch (ex) { }
+    try {
+        for (var p = 1; p <= app.project.numItems; p++) {
+            if (app.project.item(p).id === item.id) { return p }
+        }
+    } catch (ex2) { }
+    return 0
+}
+
 function ispartaGetProjectTree () {
   try {
     var proj = app.project;
@@ -452,7 +465,8 @@ function ispartaGetProjectTree () {
           } catch (ex) { }
           children.push({
             id: item.id,
-            index: item.index,
+            // AE ItemCollection 取到的 item.index 可能为 null：按 id 回查工程序号
+            index: ispartaProjectIndexOf(item),
             name: item.name,
             type: 'composition',
             width: item.width,

@@ -213,10 +213,9 @@ export function prepareCompSequence (item, opts) {
   if (basic.fileList && basic.fileList.length) {
     return Promise.resolve(item)
   }
+  // 与 list() 同一通道：ispartaCS 可选，缺省时 evalJson 会回退 cep.evalScript
+  // （禁止只认 ispartaCS，否则转换报 AE host unavailable 而列表却正常）
   const host = cs()
-  if (!host) {
-    return Promise.reject(new Error('AE host unavailable'))
-  }
   const idx = Number(basic.compIndex)
   const name = basic.compName || ''
   // 序列帧与合成输出同目录：优先 processor 已解析的 outputPath（含 sameOutputPath），
@@ -339,13 +338,9 @@ export function prepareCompSequence (item, opts) {
     ? 'ispartaExportPngSequenceByIndex(' + idx + ',' + JSON.stringify(location) + ')'
     : 'ispartaMatchComps(' + JSON.stringify([{ name: name }]) + ')'
   // 先进 Promise 再 evalJson：同步抛错也走 teardown，不泄漏 listener/timer
+  // 统一走模块 evalJson（与 list 相同，ispartaCS 缺省时回退 cep.evalScript）
   return Promise.resolve()
-    .then(() => {
-      if (!host || typeof host.evalJson !== 'function') {
-        throw new Error('AE host unavailable')
-      }
-      return host.evalJson(script)
-    })
+    .then(() => evalJson(script))
     .then((res) => {
     if (!res || !res.ok) {
       throw new Error((res && res.error) || 'export comp sequence failed')
@@ -353,12 +348,7 @@ export function prepareCompSequence (item, opts) {
     const folder = res.folder || outDir
     // jsx ispartaListPngs 优先；退回 readdirSync
     return Promise.resolve()
-      .then(() => {
-        if (typeof host.evalJson === 'function') {
-          return host.evalJson('ispartaListPngs(' + JSON.stringify(folder) + ')')
-        }
-        return null
-      })
+      .then(() => evalJson('ispartaListPngs(' + JSON.stringify(folder) + ')'))
       .catch(() => null)
       .then((listRes) => {
         let files = []
