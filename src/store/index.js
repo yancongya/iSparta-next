@@ -629,6 +629,13 @@ store.watch(
       var s = (it.process && typeof it.process.schedule === 'number') ? it.process.schedule : 0
       var prev = lastSchedule.get(k)
       if (prev === s) { return }
+      // 10% 节流：进度轮询会频繁改 schedule，避免「转换中」刷屏
+      var bucket = (s > 0 && s < 1) ? Math.floor(s * 10) : s
+      var prevBucket = (prev > 0 && prev < 1) ? Math.floor(prev * 10) : prev
+      if (prev !== undefined && bucket === prevBucket && s !== 1 && s !== -1) {
+        lastSchedule.set(k, s)
+        return
+      }
       lastSchedule.set(k, s)
       var name = (it.options && it.options.outputName) ||
         (it.basic && it.basic.fileList && it.basic.fileList[0]) || ''

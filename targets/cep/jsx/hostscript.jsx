@@ -924,6 +924,22 @@ function ispartaExportCompPngSequence (comp, location) {
  * 工程状态：启动扫描前判定是否已打开/已保存。
  * code: ok | noProject | unsaved
  */
+/** aerender 前静默保存工程（读磁盘 .aep）；不碰 renderQueue */
+function ispartaSaveProjectQuiet () {
+    try {
+        if (!app.project || !app.project.file) {
+            return ispartaOk({ saved: false, reason: 'unsaved project' });
+        }
+        app.project.save();
+        return ispartaOk({
+            saved: true,
+            path: ispartaDecodePath(app.project.file.fsName)
+        });
+    } catch (e) {
+        return ispartaErr(e);
+    }
+}
+
 /** AE 宿主信息：供 aerender 定位（app.path / 工程路径 / 是否已保存） */
 function ispartaGetAeHostInfo () {
     try {

@@ -49,7 +49,35 @@ export default function (item, store, locale) {
     })
   }
 
-  return runCopyLimited(copyJobs, 8).then(() => {
+  // 大图（序列帧可能 2K/4K）并发过高会打爆磁盘/内存；默认 4，超大帧降到 2
+  var copyLimit = 4
+  try {
+    var probeSize = item.basic.fileList[0] && fs.statSize && fs.statSize(item.basic.fileList[0])
+    if (probeSize && probeSize > 4 * 1024 * 1024) { copyLimit = 2 }
+  } catch (eSz) { /* ignore */ }
+  var copied = 0
+  var totalCopy = copyJobs.length
+  var wrapped = copyJobs.map(function (job) {
+    return function () {
+      return Promise.resolve().then(job).then(function (r) {
+        copied++
+        if (copied % 5 === 0 || copied === totalCopy) {
+          store.dispatch('editProcess', {
+            index: item.index,
+            text: locale.analysing + ' ' + copied + '/' + totalCopy,
+            schedule: 0.4
+          })
+        }
+        return r
+      })
+    }
+  })
+  return runCopyLimited(wrapped, copyLimit).then(() => {
+    store.dispatch('editProcess', {
+      index: item.index,
+      text: locale.analysing + '...',
+      schedule: 0.45
+    })
 	// apngasm：中间产物用 ASCII 文件名（outputName 可能是中文，部分工具会失败）
     var toolBase = 'out'
     return action.exec(action.bin('apngasm'), [
@@ -59,7 +87,7 @@ export default function (item, store, locale) {
       String(item.options.frameRate),
       '-l' + (item.options.loop || 0),
       '-kc'
-    ], item, store, locale)
+    ], item, store, locale, { timeout: 60 * 60 * 1000 })
   }).then(() => {
 		// reset fileList
     item.basic.fileList = [

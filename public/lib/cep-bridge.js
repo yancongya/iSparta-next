@@ -130,6 +130,17 @@
 
   function copy (a, b) {
     return new Promise(function (resolve, reject) {
+      // 大图必须异步：copySync 会堵住面板，表现为「解析图片」假死
+      if (hasNode && nodeFs && typeof nodeFs.copyFile === 'function') {
+        nodeFs.copyFile(a, b, function (err) {
+          if (err) {
+            reject(err)
+            return
+          }
+          resolve({ ok: true })
+        })
+        return
+      }
       try {
         copySync(a, b)
         resolve()

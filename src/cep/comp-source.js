@@ -98,6 +98,8 @@ export function toCompItem (comp, optionsOverride) {
   temp.basic.compName = String(node.name || '').replace(/^[\s\u3000]+|[\s\u3000]+$/g, '')
   temp.basic.fileList = []
   temp.basic.thumbPath = ''
+  temp.basic.compFps = Number(node.fps) || 0
+  temp.basic.folderPath = String(node.folderPath || '').replace(/^\/+|\/+$/g, '')
 
   // 初始输出名：合成名，经 tokenizeName/joinTokens 同规则 + outputSuffix
   if (!temp.options.outputName) {
@@ -119,6 +121,10 @@ export function toCompItem (comp, optionsOverride) {
   temp.basic.projectPath = projectPath
   // 帧数：渲染进度分母（0.15–0.38）
   temp.basic.frameCount = Number(node.frames) || 0
+  // CEP：帧率默认跟合成（可在输出设置改）
+  if (temp.basic.compFps > 0) {
+    temp.options.frameRate = Math.round(temp.basic.compFps * 100) / 100
+  }
   // CEP 默认输出 = 项目旁「合成名」子目录（对应桌面输出到文件夹）
   if (!temp.options.outputTo || !temp.options.outputTo.template) {
     temp.options.outputTo = Object.assign({}, temp.options.outputTo, {
@@ -390,7 +396,10 @@ export function prepareCompSequence (item, opts) {
     if (!forge || typeof forge.launch !== 'function') {
       return Promise.reject(new Error('aerender forge unavailable'))
     }
-    return evalJson('ispartaGetAeHostInfo()').then((info) => {
+    return evalJson('ispartaSaveProjectQuiet()')
+      .catch(() => null)
+      .then(() => evalJson('ispartaGetAeHostInfo()'))
+      .then((info) => {
       if (!info || !info.ok) {
         throw new Error('aerender host info unavailable')
       }
@@ -451,9 +460,15 @@ export function prepareCompSequence (item, opts) {
     ? 'ispartaExportPngSequenceByIndex(' + idx + ',' + JSON.stringify(location) + ')'
     : 'ispartaMatchComps(' + JSON.stringify([{ name: name }]) + ')'
   // 先进 Promise 再 evalJson：同步抛错也走 teardown，不泄漏 listener/timer
-  // aerender 优先（后台/真进度）；失败回退 renderQueue 的 ispartaExportPngSequenceByIndex
+  // 有 aerender 时禁止回退 renderQueue.render()（会卡死 AE）
   return Promise.resolve()
-    .then(() => tryAerenderExport().catch(() => evalJson(script)))
+    .then(() => tryAerenderExport().catch((err) => {
+      const forge = getAerender()
+      if (forge && typeof forge.launch === 'function') {
+        return Promise.reject(err)
+      }
+      return evalJson(script)
+    }))
     .then((res) => {
     if (!res || !res.ok) {
       throw new Error((res && res.error) || 'export comp sequence failed')

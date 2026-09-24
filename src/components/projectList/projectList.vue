@@ -348,6 +348,10 @@ export default {
         if (this.titleOf(this.projectList[i]) === title) same++
       }
       if (same <= 1) return title
+      // 同名合成：优先用工程文件夹路径区分
+      var bSame = (project && project.basic) || {}
+      var folder = String(bSame.folderPath || '').replace(/^\/+|\/+$/g, '')
+      if (folder) return title + ' · ' + folder
       var extra = this.shortPathOf(this.outPathOf(project) ||
         ((project && project.basic && project.basic.inputPath) || ''))
       if (extra && extra !== title) return title + ' · ' + extra

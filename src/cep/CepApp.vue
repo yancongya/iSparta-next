@@ -134,7 +134,7 @@ export default {
       loop: 0,
       quality: 80,
       useCompress: true,
-      fpsFromComp: false,
+      fpsFromComp: true,
       progressText: '就绪',
       progressKind: ''
     }
