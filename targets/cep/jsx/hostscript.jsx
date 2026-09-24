@@ -684,29 +684,21 @@ function ispartaExportCompPngSequence (comp, location) {
     }
     location = ispartaDecodePath(location);
 
-    var targetPath = location;
-    var lastChar = location.charAt(location.length - 1);
-    var isDir = (lastChar === '/' || lastChar === '\\');
-    if (isDir) {
-        targetPath = location + 'temp.png';
-    } else {
-        var probe = new File(location);
-        var folderProbe = new Folder(location);
-        if (!probe.exists && folderProbe.exists) {
-            if (location.charAt(location.length - 1) !== '/' &&
-                location.charAt(location.length - 1) !== '\\') {
-                if ($.os.toLowerCase().indexOf('mac') === 0) {
-                    targetPath = location + '/temp.png';
-                } else {
-                    targetPath = location + '\\temp.png';
-                }
-            }
-        }
+    // 统一：输出目录 + frame.png 基名 → AE PNG Sequence 写出 frame00000.png…
+    // （禁止把目录本身当 file；目录不存在时也要落到 dir/frame.png）
+    var dir = location;
+    while (dir.length > 1 && (dir.charAt(dir.length - 1) === '/' || dir.charAt(dir.length - 1) === '\\')) {
+        dir = dir.substring(0, dir.length - 1);
     }
+    var sep = ($.os.toLowerCase().indexOf('mac') === 0) ? '/' : '\\';
+    var targetPath = dir + sep + 'frame.png';
 
     var parent = new File(targetPath).parent;
     if (!parent.exists) {
         ispartaNewFolder(parent.fsName);
+    }
+    if (!parent.exists) {
+        return ispartaErr('cannot create output folder: ' + parent.fsName);
     }
 
     var fps = 1 / comp.frameDuration;

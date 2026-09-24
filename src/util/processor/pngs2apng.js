@@ -50,23 +50,24 @@ export default function (item, store, locale) {
   }
 
   return runCopyLimited(copyJobs, 8).then(() => {
-	// apngasm
+	// apngasm：中间产物用 ASCII 文件名（outputName 可能是中文，部分工具会失败）
+    var toolBase = 'out'
     return action.exec(action.bin('apngasm'), [
-      path.join(item.basic.tmpOutputDir, item.options.outputName + '.png'),
+      path.join(item.basic.tmpOutputDir, toolBase + '.png'),
       path.join(tmpDir, firstPNG),
       '1',
       String(item.options.frameRate),
-      '-l' + item.options.loop,
+      '-l' + (item.options.loop || 0),
       '-kc'
     ], item, store, locale)
   }).then(() => {
 		// reset fileList
     item.basic.fileList = [
-      path.join(item.basic.tmpOutputDir, item.options.outputName + '.png')
+      path.join(item.basic.tmpOutputDir, 'out.png')
     ]
     // 保留未压缩母版，供大小阈值降质量重压
     try {
-      const assembled = path.join(item.basic.tmpOutputDir, item.options.outputName + '.png')
+      const assembled = path.join(item.basic.tmpOutputDir, 'out.png')
       const src = assembled + '-src.png'
       fs.copySync(assembled, src)
       item.basic.assembledApng = src

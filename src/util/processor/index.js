@@ -167,12 +167,13 @@ export default function (store, sameOutputPath, locale) {
 }
 function apng2other (item, store, locale) {
   var funcArr = []
-  item.basic.fileList[0] = path.join(item.basic.tmpOutputDir, item.options.outputName + '.png')
+  // 中间产物 ASCII 名 out.*；最终输出仍用用户 outputName
+  item.basic.fileList[0] = path.join(item.basic.tmpOutputDir, 'out.png')
   item.options.outputFormat.forEach((el) => {
     switch (el) {
       case TYPE.APNG:
         funcArr.push(fs.copy(
-				path.join(item.basic.tmpOutputDir, item.options.outputName + '.png'),
+				path.join(item.basic.tmpOutputDir, 'out.png'),
 				path.join(item.basic.outputPath, item.options.outputName + '.png')
 			))
         break
@@ -180,7 +181,7 @@ function apng2other (item, store, locale) {
       case TYPE.GIF:
         funcArr.push(apng2gif(item, store, locale).then(() => {
           return fs.copy(
-					path.join(item.basic.tmpOutputDir, item.options.outputName + '.gif'),
+					path.join(item.basic.tmpOutputDir, 'out.gif'),
 					path.join(item.basic.outputPath, item.options.outputName + '.gif')
 				)
         }))
@@ -189,7 +190,7 @@ function apng2other (item, store, locale) {
       case TYPE.WEBP:
         funcArr.push(apng2webp(item, store, locale).then(() => {
           return fs.copy(
-					path.join(item.basic.tmpOutputDir, item.options.outputName + '.webp'),
+					path.join(item.basic.tmpOutputDir, 'out.webp'),
 					path.join(item.basic.outputPath, item.options.outputName + '.webp')
 				)
         }))
