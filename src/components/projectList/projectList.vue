@@ -53,7 +53,8 @@
         <div class="info">
           <!-- 第一行：类型标签 + 主标题（合成名/输出名）；路径降为次要行 -->
           <div class="input">
-            <is-tag :tone="tagTone(project.basic && project.basic.type)">
+            <!-- CEP 全是合成，Comp 胶囊无信息量；桌面混类型才显示 -->
+            <is-tag v-if="showOutPath" :tone="tagTone(project.basic && project.basic.type)">
               {{ project.basic && project.basic.type }}
             </is-tag>
             <div class="item-names">
