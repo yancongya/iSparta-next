@@ -296,7 +296,7 @@ export default {
       return {
         active: !!project.isSelected,
         'is-running': this.stateOf(project.process) === 'running',
-        'is-no-thumb': !showThumb(project),
+        'is-no-thumb': !this.showThumb(),
         'is-fail': this.stateOf(project.process) === 'fail'
       }
     },

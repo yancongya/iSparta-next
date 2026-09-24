@@ -64,7 +64,7 @@
         <span class="mod-ct__c mod-ct__c--num" :title="String(node.frames || 0)">{{ node.frames || 0 }}</span>
         <span class="mod-ct__c mod-ct__c--act">
           <button type="button" class="iconbtn" :title="$t('outputConfig')" @click.stop="$emit('configure', node)">
-            <is-icon name="sliders" size="sm" />
+            <is-icon name="settings" size="sm" />
           </button>
         </span>
       </li>
