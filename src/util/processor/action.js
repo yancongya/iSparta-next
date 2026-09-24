@@ -11,10 +11,40 @@ ipc.on('got-app-path', function(path) {
 function fsSyncExists (p) {
   try {
     var f = getFs()
-    return !!(f && f.existsSync && f.existsSync(p))
-  } catch (e) {
-    return false
+    if (f && typeof f.existsSync === 'function' && f.existsSync(p)) { return true }
+  } catch (e) { /* fall through */ }
+  try {
+    if (typeof window !== 'undefined' && window.ispartaAPI && window.ispartaAPI.fs &&
+      typeof window.ispartaAPI.fs.existsSync === 'function' &&
+      window.ispartaAPI.fs.existsSync(p)) {
+      return true
+    }
+  } catch (e2) { /* ignore */ }
+  return false
+}
+
+/** CEP 扩展 Id（装机目录名）；getSystemPath 有时只给到 CEP\extensions */
+const CEP_EXT_ID = 'io.github.isparta-next'
+
+function toolSearchBases () {
+  var bases = []
+  function push (p) {
+    if (!p) { return }
+    var s = String(p).replace(/^file:\/+/i, '').replace(/[\\/]+$/, '')
+    if (s && bases.indexOf(s) < 0) { bases.push(s) }
   }
+  var bp = basePath
+  if (bp) {
+    bp = String(bp).replace(/^file:\/+/i, '').replace(/[\\/]+$/, '')
+    push(bp)
+    // getSystemPath 有时返回 …\CEP\extensions，工具在 …\extensions\<extId>\ 下
+    push(path.join(bp, CEP_EXT_ID))
+    try { push(path.join(path.dirname(bp), CEP_EXT_ID)) } catch (eP) { /* ignore */ }
+  }
+  try {
+    if (procEnv && procEnv.cwd) { push(path.join(procEnv.cwd(), 'public')) }
+  } catch (eCwd) { /* ignore */ }
+  return bases
 }
 
 const tmpDir = path.join(os.tmpdir(), 'iSparta')
@@ -57,21 +87,13 @@ export default class Action {
   static bin(exec) {
     var pf = getOsInfo()
     var exe = (pf == 'win32' || pf == 'win64') ? (exec + '.exe') : exec
-    // 多候选：CEP 装机布局可能是 bin/（扁平）或 ui/bin/<pf>/；开发用 public/bin/<pf>/
-    // 禁止 path.join(x, '/bin/') 前导斜杠——部分环境下会拼歪
-    var bases = []
-    if (basePath) {
-      var bp = String(basePath).replace(/^file:\/+/i, '').replace(/[\\/]+$/, '')
-      bases.push(bp)
-    }
-    if (procEnv.env.NODE_ENV == 'development' && procEnv.cwd) {
-      try { bases.push(procEnv.cwd()) } catch (eCwd) { /* ignore */ }
-    }
+    // 多候选：CEP 装机在 ui/bin/<pf>/；开发用 public/bin/<pf>/；也有扁平 bin/
+    var bases = toolSearchBases()
     var rels = [
-      ['bin', pf],
-      ['bin'],
       ['ui', 'bin', pf],
       ['ui', 'bin'],
+      ['bin', pf],
+      ['bin'],
       ['public', 'bin', pf],
       ['static', 'bin', pf]
     ]
@@ -87,9 +109,10 @@ export default class Action {
         } catch (eChk) { /* next */ }
       }
     }
-    // 都找不到时仍返回旧布局，让 exec 报出真实路径便于排查
-    var fallbackBase = basePath
-      ? path.join(basePath, 'bin', pf)
+    // 都找不到：返回最可能的装机路径，让 ENOENT 带出真实查找位置
+    var firstBase = bases[0] || ''
+    var fallbackBase = firstBase
+      ? path.join(firstBase, 'ui', 'bin', pf)
       : path.join(procEnv.cwd(), 'public', 'bin', pf)
     ensureExecutable(fallbackBase, pf)
     return path.join(fallbackBase, exe)
