@@ -1,4 +1,4 @@
-﻿// hostscript.jsx — AE 合成导出 PNG 序列（ExtendScript ES3）
+// hostscript.jsx — AE 合成导出 PNG 序列（ExtendScript ES3）
 // 方法对齐 webp_apng helper.jsx：savePNG + 渲染队列备份恢复
 // 约束：仅 ES3（var / function / for）；勿写 AT 指令式注释；返回值必须是字符串（JSON）
 
@@ -522,12 +522,33 @@ function ispartaStoreRenderQueue () {
 function ispartaRestoreRenderQueue (checkedItems) {
     for (var q = 0; q < checkedItems.length; q++) {
         if (typeof checkedItems[q] === 'number') {
-            app.project.renderQueue.item(checkedItems[q]).render = true;
+            try {
+                var it = app.project.renderQueue.item(checkedItems[q]);
+                // 仅 UNQUEUED 可改 render；DONE/STOPPED/RENDERING 会抛错
+                if (it && it.status == RQItemStatus.UNQUEUED) {
+                    it.render = true;
+                }
+            } catch (eRq) { /* ignore */ }
         }
     }
 }
 
-// save png sequence via renderQueue（思路对齐 helper.jsx savePNG）
+/** 选 PNG 序列输出模板：优先按名称，退回最后一个隐藏模板（helper.jsx 同款） */
+function ispartaPickPngTemplate (om) {
+    try {
+        var tpls = om.templates;
+        if (!tpls || !tpls.length) { return '' }
+        for (var i = tpls.length - 1; i >= 0; i--) {
+            var n = String(tpls[i] || '');
+            if (n.indexOf('PNG') >= 0 || n.indexOf('X-Factor') >= 0 || n.indexOf('_HIDDEN') >= 0) {
+                return tpls[i];
+            }
+        }
+        return tpls[tpls.length - 1];
+    } catch (e) { return '' }
+}
+
+// save png sequence via renderQueue（对齐 helper.jsx savePNG，但用 items.add 免弹「另存帧」）
 // theLocation 由调用方 ispartaDecodePath 解码；此处不再二次 decode。
 function ispartaSavePngSequence (theComp, theLocation) {
     var res = [1, 1];
@@ -558,30 +579,31 @@ function ispartaSavePngSequence (theComp, theLocation) {
     var rqItem = null;
     try {
         app.project.renderQueue.showWindow(false);
-        theComp.openInViewer();
-        app.executeCommand(2104);
-        rqItem = app.project.renderQueue.item(app.project.renderQueue.numItems);
-        rqItem.render = true;
+        // items.add 不会弹「另存帧」对话框；executeCommand(2104) 在部分环境会逐帧要目录
+        rqItem = app.project.renderQueue.items.add(theComp);
         var om = rqItem.outputModule(1);
-        var templateTemp = om.templates;
-        // 隐藏模板 _HIDDEN X-Factor 16 Premul：带 alpha 的 PNG 序列
-        var setPNG = templateTemp[templateTemp.length - 1];
-        om.applyTemplate(setPNG);
+        var setPNG = ispartaPickPngTemplate(om);
+        if (setPNG) {
+            om.applyTemplate(setPNG);
+        }
+        // 必须是 .png 基名，AE PNG Sequence 才会写 temp00000.png… 而不是逐帧询问
         om.file = new File(theLocation);
 
-        var rednerSettings = {
+        rqItem.setSettings({
             'Time Span Duration': dur,
             'Time Span Start': start
-        };
-        var outputSettings = {
+        });
+        om.setSettings({
             'Use Comp Frame Number': false,
             'Starting #': '0'
-        };
-        rqItem.setSettings(rednerSettings);
-        om.setSettings(outputSettings);
+        });
+
+        // 仅 UNQUEUED 才允许 render=true（DONE/STOPPED/RENDERING 会抛 AE 错误）
+        if (rqItem.status == RQItemStatus.UNQUEUED) {
+            rqItem.render = true;
+        }
 
         var finalpath = om.file.fsName;
-        // 渲前事件：面板据此把状态置为「正在渲染合成」
         ispartaDispatchRenderProgress({
             phase: 'start',
             token: renderToken,
@@ -783,26 +805,26 @@ function ispartaExportCompThumb (comp, filePath) {
     var rqItem = null;
     try {
         app.project.renderQueue.showWindow(false);
-        comp.openInViewer();
-        app.executeCommand(2104);
-        rqItem = app.project.renderQueue.item(app.project.renderQueue.numItems);
-        rqItem.render = true;
+        // 与 savePngSequence 同：items.add 免弹「另存帧」
+        rqItem = app.project.renderQueue.items.add(comp);
         var om = rqItem.outputModule(1);
-        var templateTemp = om.templates;
-        var setPNG = templateTemp[templateTemp.length - 1];
-        om.applyTemplate(setPNG);
+        var setPNG = ispartaPickPngTemplate(om);
+        if (setPNG) {
+            om.applyTemplate(setPNG);
+        }
         om.file = target;
 
-        var rednerSettings = {
+        rqItem.setSettings({
             'Time Span Duration': dur,
             'Time Span Start': start
-        };
-        var outputSettings = {
+        });
+        om.setSettings({
             'Use Comp Frame Number': false,
             'Starting #': '0'
-        };
-        rqItem.setSettings(rednerSettings);
-        om.setSettings(outputSettings);
+        });
+        if (rqItem.status == RQItemStatus.UNQUEUED) {
+            rqItem.render = true;
+        }
 
         var finalpath = om.file.fsName;
         app.project.renderQueue.render();
