@@ -621,8 +621,8 @@ function ispartaPickPngTemplate (om) {
     try {
         var tpls = om.templates;
         if (!tpls || !tpls.length) { return ''; }
-        // helper.jsx 用的是 16 Premul；本机可能只有 8 Premul，优先 16 再 8
-        var prefer = ['X-Factor 16', 'X-Factor 8', 'PNG', '_HIDDEN'];
+        // 8bit 优先：16 Premul 在 8bpc 工程上会弹「输出颜色深度超过项目颜色深度」
+        var prefer = ['X-Factor 8', 'X-Factor 16', 'PNG', '_HIDDEN'];
         for (var p = 0; p < prefer.length; p++) {
             for (var j = tpls.length - 1; j >= 0; j--) {
                 var pn = String(tpls[j] || '');

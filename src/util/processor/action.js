@@ -1,5 +1,5 @@
 import _ from 'lodash'
-import { ipc, path, os, getProcessBridge } from '../node-env'
+import { ipc, path, os, getProcessBridge, getFs } from '../node-env'
 
 const procEnv = getProcessBridge()
 ipc.send('get-app-path')
@@ -7,6 +7,15 @@ var basePath = ''
 ipc.on('got-app-path', function(path) {
   basePath = path
 })
+
+function fsSyncExists (p) {
+  try {
+    var f = getFs()
+    return !!(f && f.existsSync && f.existsSync(p))
+  } catch (e) {
+    return false
+  }
+}
 
 const tmpDir = path.join(os.tmpdir(), 'iSparta')
 
@@ -47,18 +56,43 @@ export default class Action {
 
   static bin(exec) {
     var pf = getOsInfo()
-    var baseDir
-    if (procEnv.env.NODE_ENV == 'development') {
-      baseDir = path.join(procEnv.cwd(), '/public/bin/', pf)
-    } else {
-      baseDir = path.join(basePath, '/bin/', pf)
+    var exe = (pf == 'win32' || pf == 'win64') ? (exec + '.exe') : exec
+    // 多候选：CEP 装机布局可能是 bin/（扁平）或 ui/bin/<pf>/；开发用 public/bin/<pf>/
+    // 禁止 path.join(x, '/bin/') 前导斜杠——部分环境下会拼歪
+    var bases = []
+    if (basePath) {
+      var bp = String(basePath).replace(/^file:\/+/i, '').replace(/[\\/]+$/, '')
+      bases.push(bp)
     }
-    ensureExecutable(baseDir, pf)
-    var bin = path.join(baseDir, exec)
-    if (pf == 'win32' || pf == 'win64') {
-      bin = bin + '.exe'
+    if (procEnv.env.NODE_ENV == 'development' && procEnv.cwd) {
+      try { bases.push(procEnv.cwd()) } catch (eCwd) { /* ignore */ }
     }
-    return bin
+    var rels = [
+      ['bin', pf],
+      ['bin'],
+      ['ui', 'bin', pf],
+      ['ui', 'bin'],
+      ['public', 'bin', pf],
+      ['static', 'bin', pf]
+    ]
+    for (var i = 0; i < bases.length; i++) {
+      for (var j = 0; j < rels.length; j++) {
+        var parts = [bases[i]].concat(rels[j]).concat([exe])
+        var cand = path.join.apply(path, parts)
+        try {
+          if (fsSyncExists(cand)) {
+            ensureExecutable(path.dirname(cand), pf)
+            return cand
+          }
+        } catch (eChk) { /* next */ }
+      }
+    }
+    // 都找不到时仍返回旧布局，让 exec 报出真实路径便于排查
+    var fallbackBase = basePath
+      ? path.join(basePath, 'bin', pf)
+      : path.join(procEnv.cwd(), 'public', 'bin', pf)
+    ensureExecutable(fallbackBase, pf)
+    return path.join(fallbackBase, exe)
   }
   // add 0 to num
   static pad(num, n) {

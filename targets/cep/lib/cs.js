@@ -16,7 +16,12 @@
   function getSystemPath (pathType) {
     var a = adobe()
     if (!a || !a.getSystemPath) { return '' }
-    return decodeURI(a.getSystemPath(pathType || 'extension'))
+    var raw = String(a.getSystemPath(pathType || 'extension') || '')
+    try { raw = decodeURI(raw) } catch (e) { /* keep raw */ }
+    // CEP 可能给 file:///C:/... 或 /C:/...，统一成 Windows 路径，避免 bin 拼到 CEP\extensions\
+    raw = raw.replace(/^file:\/+/i, '')
+    if (/^\/[A-Za-z]:/.test(raw)) { raw = raw.substring(1) }
+    return raw.replace(/[\\/]+$/, '')
   }
 
   function getExtensionPath () {
