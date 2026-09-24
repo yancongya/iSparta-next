@@ -61,6 +61,11 @@
               <div class="item-title is-ellipsis" v-tip="titleTipOf(project)">
                 {{ displayTitleOf(project, index) }}
               </div>
+              <div
+                v-if="project.process && project.process.text"
+                class="item-proc is-ellipsis"
+                :class="'is-' + stateOf(project.process)"
+              >{{ project.process.text }}</div>
               <!-- 桌面：点击改输出目录；CEP：只读短路径（勿把 ae-comp/路径当名字） -->
               <button
                 v-if="showOutPath && isRealFsPath(outPathOf(project))"
@@ -130,7 +135,7 @@
             @click.stop="onDelaySetting(project)"
           ><is-icon name="settings" size="sm" /></button>
 
-          <!-- 状态与四态进度：未处理时整块不出现，避免空图标与空槽位成噪音 -->
+          <!-- 状态点：长文案在标题区，进度条覆在卡片底边 -->
           <div v-if="showMeta(project)" class="meta">
             <span class="status" :class="'is-' + stateOf(project.process)">
               <is-pacman
@@ -140,16 +145,19 @@
                 :label="$t('statRunning')"
               />
               <is-icon v-else :name="statusIcon(project.process)" size="sm" />
-              {{ project.process && project.process.text }}
             </span>
-            <div class="progress" :class="'is-' + stateOf(project.process)">
-              <span
-                class="progress__fill"
-                :class="{ 'is-shimmer': stateOf(project.process) === 'running' }"
-                :style="{ width: processPrecent(project.process && project.process.schedule) + '%' }"
-              ></span>
-            </div>
           </div>
+        </div>
+        <div
+          class="item-bar"
+          :class="'is-' + stateOf(project.process)"
+          aria-hidden="true"
+        >
+          <span
+            class="item-bar__fill"
+            :class="{ 'is-shimmer': stateOf(project.process) === 'running' }"
+            :style="{ width: processPrecent(project.process && project.process.schedule) + '%' }"
+          ></span>
         </div>
       </div>
     </transition-group>
