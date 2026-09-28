@@ -475,40 +475,77 @@ export function prepareCompSequence (item, opts) {
       }
       const outBase = path.join(outDir, 'frame.png')
       const total = expectedFrames
-      var launchOpts = {
-        projectPath: proj,
-        compName: name,
-        outputPath: outBase,
-        startFrame: 0,
-        endFrame: total > 0 ? (total - 1) : null,
-        totalFrames: total,
-        omTemplate: '_HIDDEN X-Factor 8 Premul',
-        mode: 'single'
-      }
-      return new Promise(function (resolve, reject) {
-        if (forge && typeof forge.launch === 'function') {
-          try {
-            forge.launch(aerenderPath, launchOpts, {
-              onProgress: function (p) {
-                applyProgress(Number(p && p.currentFrame) || 0, Number(p && p.totalFrames) || total, 'progress')
-              },
-              onComplete: function () { resolve() },
-              onError: function (err) {
-                reject(new Error((err && err.message) || 'aerender failed'))
-              },
-              onLog: function (m) {
-                try { console.log('[aerender]', m) } catch (e) { /* ignore */ }
-              }
-            })
-          } catch (eLaunch) {
-            reject(eLaunch)
-          }
-          return
+      // OM 模板按序尝试：本机隐藏 PNG 模板名不一致时，0 帧会重试
+      var omCandidates = [
+        '_HIDDEN X-Factor 8 Premul',
+        '_HIDDEN X-Factor 16 Premul',
+        'PNG Sequence',
+        ''
+      ]
+      function runOne (omTpl) {
+        var launchOpts = {
+          projectPath: proj,
+          compName: name,
+          outputPath: outBase,
+          startFrame: 0,
+          endFrame: total > 0 ? (total - 1) : null,
+          totalFrames: total,
+          omTemplate: omTpl,
+          mode: 'single'
         }
-        // forge 未加载：仍走独立 aerender 进程，绝不 renderQueue.render
-        spawnAerenderRaw(aerenderPath, launchOpts).then(function () { resolve() }, reject)
+        return new Promise(function (resolve, reject) {
+          if (forge && typeof forge.launch === 'function') {
+            try {
+              forge.launch(aerenderPath, launchOpts, {
+                onProgress: function (p) {
+                  applyProgress(Number(p && p.currentFrame) || 0, Number(p && p.totalFrames) || total, 'progress')
+                },
+                onComplete: function () { resolve(launchOpts) },
+                onError: function (err) {
+                  reject(new Error((err && err.message) || 'aerender failed'))
+                },
+                onLog: function (m) {
+                  try { console.log('[aerender]', m) } catch (e) { /* ignore */ }
+                }
+              })
+            } catch (eLaunch) {
+              reject(eLaunch)
+            }
+            return
+          }
+          spawnAerenderRaw(aerenderPath, launchOpts).then(function () { resolve(launchOpts) }, reject)
+        })
+      }
+      return omCandidates.reduce(function (chain, omTpl) {
+        return chain.then(function (prev) {
+          if (prev) { return prev }
+          return runOne(omTpl).then(function (opts) {
+            return countPngs(outDir) > 0 ? opts : null
+          }, function () {
+            return null
+          })
+        })
+      }, Promise.resolve(null)).then(function (okOpts) {
+        if (!okOpts) {
+          // 最后再跑一次拿默认错误
+          return runOne('').then(function (o) { return o }, function (e) { throw e })
+        }
+        return okOpts
       }).then(function () {
-        return { ok: true, folder: outDir, compName: name, via: 'aerender' }
+        // aerender 常「退出 0 但 0 帧」（OM 模板不对时写成 mov 或不写）
+        var pngCount = countPngs(outDir)
+        if (pngCount < 1) {
+          var extras = []
+          try {
+            if (fs && typeof fs.readdirSync === 'function') {
+              extras = fs.readdirSync(outDir).slice(0, 12)
+            }
+          } catch (eL) { /* ignore */ }
+          throw new Error('aerender produced 0 PNG frames in ' + outDir +
+            ' | om=' + launchOpts.omTemplate +
+            ' | files=[' + extras.join(', ') + ']')
+        }
+        return { ok: true, folder: outDir, compName: name, via: 'aerender', frames: pngCount }
       })
     })
   }

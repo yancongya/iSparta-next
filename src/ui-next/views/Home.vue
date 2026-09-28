@@ -413,6 +413,7 @@ export default {
     // projectList 等子组件要求打开「任务输出设置」：CEP 用全屏覆盖层，桌面展开右栏
     if (this.$root && this.$root.eventBus) {
       this.$root.eventBus.$on('open-task-setting', this.onOpenTaskSetting)
+      this.$root.eventBus.$on('task-setting-started', this.onTaskSettingStarted)
     }
     // CEP：任务条默认就是合成列表（不依赖先勾选）
     if (this.supportsCompImport) {
@@ -433,6 +434,7 @@ export default {
     window.removeEventListener('blur', this.resetDrag)
     if (this.$root && this.$root.eventBus) {
       this.$root.eventBus.$off('open-task-setting', this.onOpenTaskSetting)
+      this.$root.eventBus.$off('task-setting-started', this.onTaskSettingStarted)
     }
     if (this._updateTimer) { clearTimeout(this._updateTimer); this._updateTimer = null }
     if (this._unsubTheme) this._unsubTheme()
@@ -559,6 +561,15 @@ export default {
         this.settingsDialogOpen = true
       } else {
         this.settingsOpen = true
+      }
+    },
+    /** 任务设置里点「开始」后收起面板，回主列表看进度 */
+    onTaskSettingStarted () {
+      this.settingsDialogOpen = false
+      if (this.supportsCompImport) {
+        // CEP 覆盖层已关
+      } else {
+        this.settingsOpen = false
       }
     },
     openGlobalSetting () {

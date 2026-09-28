@@ -901,6 +901,12 @@ export default {
           schedule: 0
         })
       }
+      // 点开始即回到主面板，转换在后台跑
+      try {
+        if (this.$root && this.$root.eventBus) {
+          this.$root.eventBus.$emit('task-setting-started')
+        }
+      } catch (eBus) { /* ignore */ }
       setTimeout(() => {
         this.$store.dispatch('setLock', true)
         processor(this.$store, sameOutputPath, locale)
