@@ -535,12 +535,13 @@ export function prepareCompSequence (item, opts) {
         })
       }, Promise.resolve(null)).then(function (okOpts) {
         if (!okOpts) {
-          // 最后再跑一次拿默认错误
-          return runOne('').then(function (o) { return o }, function (e) { throw e })
+          // 不再用空 OM 模板兜底：默认无损会写成 mov，下游只要 PNG 序列
+          throw new Error('all PNG Sequence OM templates failed (no frames) in ' + outDir)
         }
         return okOpts
-      }).then(function () {
+      }).then(function (okOpts) {
         // aerender 常「退出 0 但 0 帧」（OM 模板不对时写成 mov 或不写）
+        var usedOm = (okOpts && okOpts.omTemplate) || ''
         var pngCount = countPngs(outDir)
         var extras = []
         try {
@@ -553,11 +554,11 @@ export function prepareCompSequence (item, opts) {
         })
         if (movieHit.length && pngCount < 1) {
           throw new Error('aerender wrote movie not PNG sequence: ' + movieHit.join(', ') +
-            ' | om=' + launchOpts.omTemplate)
+            ' | om=' + usedOm)
         }
         if (pngCount < 1) {
           throw new Error('aerender produced 0 PNG frames in ' + outDir +
-            ' | om=' + launchOpts.omTemplate +
+            ' | om=' + usedOm +
             ' | files=[' + extras.join(', ') + ']')
         }
         return { ok: true, folder: outDir, compName: name, via: 'aerender', frames: pngCount }
