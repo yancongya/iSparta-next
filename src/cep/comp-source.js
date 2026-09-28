@@ -1,7 +1,7 @@
 // AE 合成输入源 sourceAdapter（docs/EXEC-WAVE2.md §2.2）
 // 列表=合成树（扁平 + parent 预留）；拖入/粘贴/树勾选 → 与 drag/file.js 同形 item
 import _ from 'lodash'
-import { path, fs, getAerender } from '../util/node-env'
+import { path, fs, getAerender, getChildProcess } from '../util/node-env'
 import { resolveOutputPath } from '../util/outputPath'
 import { buildInitialOutputName } from '../util/tokenizeName'
 import hostAdapter, { registerSourceAdapter as registerHostSource } from '../util/host-env'
@@ -403,15 +403,50 @@ export function prepareCompSequence (item, opts) {
     return null
   }
 
+  /** 无 forge 时的最小 aerender 后台进程（对齐 bgrender：独立进程，不堵 AE） */
+  function spawnAerenderRaw (aerenderPath, opts) {
+    return new Promise(function (resolve, reject) {
+      var cp = null
+      try {
+        cp = getChildProcess()
+      } catch (eCp) { cp = null }
+      if (!cp || typeof cp.execFile !== 'function') {
+        reject(new Error('no child_process for aerender'))
+        return
+      }
+      var args = []
+      function kv (k, v) {
+        var s = String(v == null ? '' : v).replace(/"/g, '\\"')
+        args.push(k + '="' + s + '"')
+      }
+      kv('project', opts.projectPath)
+      kv('comp', opts.compName)
+      kv('output', opts.outputPath)
+      if (opts.endFrame != null && opts.endFrame !== '') {
+        kv('start', String(opts.startFrame || 0))
+        kv('end', String(opts.endFrame))
+      }
+      if (opts.omTemplate) { kv('OMtemplate', opts.omTemplate) }
+      try {
+        cp.execFile(aerenderPath, args, { timeout: 60 * 60 * 1000 }, function (err, stdout, stderr) {
+          if (err) {
+            reject(new Error(String(err.message || err)))
+            return
+          }
+          resolve({ ok: true, stdout: String(stdout || ''), stderr: String(stderr || '') })
+        })
+      } catch (eSpawn) {
+        reject(eSpawn)
+      }
+    })
+  }
+
   /**
-   * 优先 aerender（拷贝自 RenderSmith forge）：后台渲、PROGRESS/ETA、挂起检测。
-   * 不可用/失败则 reject，由调用方回退 renderQueue 导出。
+   * aerender 后台渲（拷贝自 RenderSmith forge + bgrender 思路）：独立进程，不堵 AE。
+   * 禁止回退 renderQueue.render()——那会锁死 AE。
    */
   function tryAerenderExport () {
-    const forge = getAerender()
-    if (!forge || typeof forge.launch !== 'function') {
-      return Promise.reject(new Error('aerender forge unavailable'))
-    }
+    var forge = getAerender()
     return evalJson('ispartaSaveProjectQuiet()')
       .catch(() => null)
       .then(() => evalJson('ispartaGetAeHostInfo()'))
@@ -440,32 +475,38 @@ export function prepareCompSequence (item, opts) {
       }
       const outBase = path.join(outDir, 'frame.png')
       const total = expectedFrames
+      var launchOpts = {
+        projectPath: proj,
+        compName: name,
+        outputPath: outBase,
+        startFrame: 0,
+        endFrame: total > 0 ? (total - 1) : null,
+        totalFrames: total,
+        omTemplate: '_HIDDEN X-Factor 8 Premul',
+        mode: 'single'
+      }
       return new Promise(function (resolve, reject) {
-        try {
-          forge.launch(aerenderPath, {
-            projectPath: proj,
-            compName: name,
-            outputPath: outBase,
-            startFrame: 0,
-            endFrame: total > 0 ? (total - 1) : null,
-            totalFrames: total,
-            omTemplate: '_HIDDEN X-Factor 8 Premul',
-            mode: 'single'
-          }, {
-            onProgress: function (p) {
-              applyProgress(Number(p && p.currentFrame) || 0, Number(p && p.totalFrames) || total, 'progress')
-            },
-            onComplete: function () { resolve() },
-            onError: function (err) {
-              reject(new Error((err && err.message) || 'aerender failed'))
-            },
-            onLog: function (m) {
-              try { console.log('[aerender]', m) } catch (e) { /* ignore */ }
-            }
-          })
-        } catch (eLaunch) {
-          reject(eLaunch)
+        if (forge && typeof forge.launch === 'function') {
+          try {
+            forge.launch(aerenderPath, launchOpts, {
+              onProgress: function (p) {
+                applyProgress(Number(p && p.currentFrame) || 0, Number(p && p.totalFrames) || total, 'progress')
+              },
+              onComplete: function () { resolve() },
+              onError: function (err) {
+                reject(new Error((err && err.message) || 'aerender failed'))
+              },
+              onLog: function (m) {
+                try { console.log('[aerender]', m) } catch (e) { /* ignore */ }
+              }
+            })
+          } catch (eLaunch) {
+            reject(eLaunch)
+          }
+          return
         }
+        // forge 未加载：仍走独立 aerender 进程，绝不 renderQueue.render
+        spawnAerenderRaw(aerenderPath, launchOpts).then(function () { resolve() }, reject)
       }).then(function () {
         return { ok: true, folder: outDir, compName: name, via: 'aerender' }
       })
@@ -475,16 +516,9 @@ export function prepareCompSequence (item, opts) {
   const script = isFinite(idx)
     ? 'ispartaExportPngSequenceByIndex(' + idx + ',' + JSON.stringify(location) + ')'
     : 'ispartaMatchComps(' + JSON.stringify([{ name: name }]) + ')'
-  // 先进 Promise 再 evalJson：同步抛错也走 teardown，不泄漏 listener/timer
-  // 有 aerender 时禁止回退 renderQueue.render()（会卡死 AE）
+  // CEP 渲序列只走 aerender 后台进程；禁止 renderQueue.render()（会锁死 AE）
   return Promise.resolve()
-    .then(() => tryAerenderExport().catch((err) => {
-      const forge = getAerender()
-      if (forge && typeof forge.launch === 'function') {
-        return Promise.reject(err)
-      }
-      return evalJson(script)
-    }))
+    .then(() => tryAerenderExport())
     .then((res) => {
     if (!res || !res.ok) {
       throw new Error((res && res.error) || 'export comp sequence failed')

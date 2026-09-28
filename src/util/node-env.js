@@ -89,12 +89,22 @@ export function getChildProcess () {
   throw new Error('ispartaAPI.childProcess missing: preload not loaded?')
 }
 
-/** 可选：RenderSmith forge（aerender）；桌面/浏览器无则 null，由调用方回退 renderQueue */
+/** RenderSmith forge（aerender）；懒加载，兼容脚本先后顺序 */
 export function getAerender () {
   try {
     const a = api()
-    return (a && a.aerender) || null
-  } catch (e) {
-    return null
-  }
+    if (a && a.aerender && typeof a.aerender.launch === 'function') { return a.aerender }
+  } catch (e) { /* fall through */ }
+  try {
+    if (typeof window !== 'undefined') {
+      if (window.ispartaForge && typeof window.ispartaForge.launch === 'function') {
+        return window.ispartaForge
+      }
+      if (window.ispartaAPI && window.ispartaAPI.aerender &&
+        typeof window.ispartaAPI.aerender.launch === 'function') {
+        return window.ispartaAPI.aerender
+      }
+    }
+  } catch (e2) { /* ignore */ }
+  return null
 }
