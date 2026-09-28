@@ -447,8 +447,22 @@ export function prepareCompSequence (item, opts) {
    */
   function tryAerenderExport () {
     var forge = getAerender()
+    // 只用 PNG 序列模板——空/错误模板会写成 mov，下游要的是序列帧
+    var omCandidates = [
+      'iSparta PNG Sequence',
+      '_HIDDEN X-Factor 8 Premul',
+      '_HIDDEN X-Factor 16 Premul',
+      'PNG Sequence',
+      'PNG 序列'
+    ]
     return evalJson('ispartaSaveProjectQuiet()')
       .catch(() => null)
+      .then(() => evalJson('ispartaEnsurePngOmTemplate()').catch(() => null))
+      .then((tplRes) => {
+        if (tplRes && tplRes.ok && tplRes.template) {
+          omCandidates.unshift(tplRes.template)
+        }
+      })
       .then(() => evalJson('ispartaGetAeHostInfo()'))
       .then((info) => {
       if (!info || !info.ok) {
@@ -476,12 +490,6 @@ export function prepareCompSequence (item, opts) {
       const outBase = path.join(outDir, 'frame.png')
       const total = expectedFrames
       // OM 模板按序尝试：本机隐藏 PNG 模板名不一致时，0 帧会重试
-      var omCandidates = [
-        '_HIDDEN X-Factor 8 Premul',
-        '_HIDDEN X-Factor 16 Premul',
-        'PNG Sequence',
-        ''
-      ]
       function runOne (omTpl) {
         var launchOpts = {
           projectPath: proj,
@@ -534,13 +542,20 @@ export function prepareCompSequence (item, opts) {
       }).then(function () {
         // aerender 常「退出 0 但 0 帧」（OM 模板不对时写成 mov 或不写）
         var pngCount = countPngs(outDir)
+        var extras = []
+        try {
+          if (fs && typeof fs.readdirSync === 'function') {
+            extras = fs.readdirSync(outDir).slice(0, 12)
+          }
+        } catch (eL) { /* ignore */ }
+        var movieHit = extras.filter(function (n) {
+          return /\.(mov|avi|mp4|mxf)$/i.test(String(n || ''))
+        })
+        if (movieHit.length && pngCount < 1) {
+          throw new Error('aerender wrote movie not PNG sequence: ' + movieHit.join(', ') +
+            ' | om=' + launchOpts.omTemplate)
+        }
         if (pngCount < 1) {
-          var extras = []
-          try {
-            if (fs && typeof fs.readdirSync === 'function') {
-              extras = fs.readdirSync(outDir).slice(0, 12)
-            }
-          } catch (eL) { /* ignore */ }
           throw new Error('aerender produced 0 PNG frames in ' + outDir +
             ' | om=' + launchOpts.omTemplate +
             ' | files=[' + extras.join(', ') + ']')

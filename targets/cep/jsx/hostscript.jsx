@@ -639,6 +639,52 @@ function ispartaPickPngTemplate (om) {
  * 强制 Output Module 为 PNG 序列（RenderSmith 同款多语言重试）。
  * 模板名因语言/版本而异，仅 applyTemplate 不够——Format 若仍是 QuickTime 会写出 mov。
  */
+/**
+ * 确保工程里有「iSparta PNG Sequence」输出模块模板，并返回模板名。
+ * aerender 用 -OMtemplate 指定；没有 PNG 序列模板时会默认写成 mov。
+ */
+function ispartaEnsurePngOmTemplate () {
+    var tplName = 'iSparta PNG Sequence';
+    try {
+        // 借一个临时 RQ 项拿 OutputModule（与 RenderSmith ensureRSTemplateRegistered 同法）
+        var comp = null
+        var n = app.project.numItems
+        for (var i = 1; i <= n; i++) {
+            var it = app.project.item(i)
+            if (it instanceof CompItem) { comp = it; break }
+        }
+        if (!comp) {
+            return ispartaErr('no comp to build PNG OM template');
+        }
+        var rq = app.project.renderQueue
+        var rqi = rq.items.add(comp)
+        var om = rqi.outputModule(1)
+        var pick = ispartaPickPngTemplate(om)
+        if (pick) {
+            try { om.applyTemplate(pick); } catch (eT) { /* ignore */ }
+        }
+        var fmt = ispartaForcePngOutput(om)
+        try { rqi.remove(); } catch (eR) { /* ignore */ }
+        if (!fmt) {
+            return ispartaErr('cannot set PNG Sequence format for OM template');
+        }
+        // 再开一个临时项 saveAsTemplate（remove 后模板仍在 om.templates 里）
+        var rqi2 = rq.items.add(comp)
+        var om2 = rqi2.outputModule(1)
+        try { om2.applyTemplate(pick || tplName); } catch (eT2) { /* ignore */ }
+        ispartaForcePngOutput(om2)
+        try {
+            om2.saveAsTemplate(tplName)
+        } catch (eSave) {
+            // 已存在同名模板时忽略
+        }
+        try { rqi2.remove(); } catch (eR2) { /* ignore */ }
+        return ispartaOk({ template: tplName, format: fmt });
+    } catch (e) {
+        return ispartaErr(e);
+    }
+}
+
 function ispartaForcePngOutput (om) {
     var applied = '';
     // 1) STRING 多语言 Format 名
