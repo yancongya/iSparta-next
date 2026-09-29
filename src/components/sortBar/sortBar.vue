@@ -10,7 +10,10 @@
 
     <span class="bar-label">
       {{ $t('inputItems') }}
-      <b class="bar-count"><is-number-tween :value="itemCount" /></b>
+      <b class="bar-count">
+        <template v-if="isCepHost">{{ selectedCount }} / {{ itemCount }}</template>
+        <is-number-tween v-else :value="itemCount" />
+      </b>
     </span>
 
     <!-- 统计：一眼看出成功/失败/进行中，不必逐条扫列表 -->

@@ -37,6 +37,7 @@
         :data-index="index"
         @contextmenu.prevent="itemRightClick($event, project, index)"
         @click="onItemClick(index)"
+        @dblclick="onItemDblclick($event, project)"
       >
         <!-- 勾选：多选切换，阻止冒泡以免触发单选 -->
         <div class="check" @click.stop>
@@ -598,6 +599,21 @@ export default {
       return -1
     },
     // 点击条目空白处 = 单选（勾选框负责多选）
+    /** 双击任务条：在 AE 中定位/打开对应合成 */
+    onItemDblclick (ev, project) {
+      if (ev && ev.target && ev.target.closest) {
+        // 勾选/缩略图/设置等子控件有自己的双击语义
+        if (ev.target.closest('.check, .thumb, .iconbtn, button, input, a')) return
+      }
+      var basic = (project && project.basic) || {}
+      if (basic.type !== 'Comp' && basic.compIndex == null && !basic.compName) return
+      try {
+        var src = getSourceAdapter()
+        if (src && typeof src.openSource === 'function') {
+          src.openSource({ basic: basic })
+        }
+      } catch (e) { /* 定位失败不打断 */ }
+    },
     onItemClick (index) {
       if (this.isLocked) return
       var project = this.projectList[index]

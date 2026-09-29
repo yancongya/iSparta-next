@@ -50,6 +50,7 @@
         :data-id="node.id"
         draggable="true"
         @contextmenu.prevent="onRowContext($event, node)"
+        @dblclick="onRowDblclick($event, node)"
         @dragstart="onRowDrag($event, node)"
       >
         <span class="mod-ct__c mod-ct__c--cb">
@@ -57,9 +58,9 @@
             <is-checkbox :value="!!selectedMap[node.id]" :readonly="true" />
           </span>
         </span>
-        <span class="mod-ct__c mod-ct__c--name" :title="node.name">
+        <span class="mod-ct__c mod-ct__c--name" :title="titleOf(node)">
           <img class="mod-ct__ico" :src="compIcon" alt="" width="16" height="16" />
-          <span class="mod-ct__txt">{{ node.name }}</span>
+          <span class="mod-ct__txt">{{ displayNameOf(node) }}</span>
         </span>
         <span class="mod-ct__c mod-ct__c--num" :title="sizeText(node)">{{ sizeText(node) }}</span>
         <span class="mod-ct__c mod-ct__c--num" :title="String(node.fps)">{{ node.fps | fps }}</span>
@@ -239,6 +240,27 @@ export default {
     sizeText (n) {
       return (n.width || 0) + '×' + (n.height || 0)
     },
+    /** 同名才追加工程文件夹路径（与任务列表 displayTitleOf 同一策略） */
+    displayNameOf (node) {
+      var name = String((node && node.name) || '')
+      var same = 0
+      var list = this.rows
+      for (var i = 0; i < list.length; i++) {
+        if (String(list[i].name || '') === name) same++
+      }
+      if (same <= 1) return name
+      var folder = String((node && node.folderPath) || '').replace(/^\/+|\/+$/g, '')
+      if (folder) return name + ' · ' + folder
+      return name + ' · #' + (Number(node && node.index) + 1)
+    },
+    /** tooltip 始终给全信息：名称 / 文件夹 / index */
+    titleOf (node) {
+      var lines = [String((node && node.name) || '')]
+      var folder = String((node && node.folderPath) || '').replace(/^\/+|\/+$/g, '')
+      if (folder) lines.push(folder)
+      lines.push('#' + (Number(node && node.index) + 1))
+      return lines.join('\n')
+    },
     sortMark (key) {
       if (this.sortKey !== key) return ''
       return this.sortDir > 0 ? ' ↑' : ' ↓'
@@ -301,6 +323,21 @@ export default {
     emitAdd () {
       const items = sourceAdapter.toItems(this.selectedNodes)
       this.$emit('add', items)
+    },
+    /** 双击合成行：在 AE 中定位/打开该合成 */
+    onRowDblclick (ev, node) {
+      if (ev && ev.target && ev.target.closest) {
+        if (ev.target.closest('.mod-ct__cb, .iconbtn, button, input, a')) return
+      }
+      try {
+        sourceAdapter.openSource({
+          basic: {
+            type: 'Comp',
+            compIndex: node.index,
+            compName: node.name
+          }
+        })
+      } catch (e) { /* 定位失败不打断 */ }
     },
     onRowContext (ev, node) {
       if (ev && ev.preventDefault) ev.preventDefault()
