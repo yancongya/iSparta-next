@@ -725,7 +725,146 @@ function ispartaForcePngOutput (om) {
 
 // save png sequence via renderQueue（对齐 helper.jsx savePNG + RenderSmith 的 Format 强制）
 // theLocation 由调用方 ispartaDecodePath 解码；此处不再二次 decode。
+/**
+ * 只把合成+PNG Sequence 输出模块放进渲染队列，不调用 render()。
+ * 对齐 bgrenderer 的 buildRQandGetItems：先建 RQ，再由外部 aerender/BGRendererMax 渲。
+ * 返回 RQ 项序号（1-based）。
+ */
+function ispartaPreparePngRqItem (compIndex, targetPath) {
+    var comp = ispartaGetCompByIndex(compIndex);
+    if (!comp) {
+        return ispartaErr('composition not found at index ' + compIndex);
+    }
+    targetPath = ispartaTrimPath(ispartaDecodePath(targetPath));
+    var res = [1, 1];
+    var start = comp.workAreaStart;
+    var dur = comp.workAreaDuration;
+    if (comp.resolutionFactor != '1,1') {
+        res = comp.resolutionFactor;
+        comp.resolutionFactor = [1, 1];
+    }
+    try {
+        app.project.renderQueue.showWindow(false);
+        var rqItem = app.project.renderQueue.items.add(comp);
+        try {
+            rqItem.timeSpanStart = start;
+            rqItem.timeSpanDuration = dur;
+        } catch (eTs) { /* ignore */ }
+        try {
+            rqItem.setSettings({
+                'Time Span Duration': dur,
+                'Time Span Start': start
+            });
+        } catch (eTs2) { /* ignore */ }
+        var om = rqItem.outputModule(1);
+        var setPNG = ispartaPickPngTemplate(om);
+        if (setPNG) {
+            try { om.applyTemplate(setPNG); } catch (eTpl) { /* ignore */ }
+        }
+        ispartaForcePngOutput(om);
+        om.file = new File(targetPath);
+        try {
+            om.setSettings({
+                'Use Comp Frame Number': false,
+                'Starting #': '0'
+            });
+        } catch (eN) { /* ignore */ }
+        if (rqItem.status == RQItemStatus.UNQUEUED) {
+            rqItem.render = true;
+        }
+        var outFs = om.file.fsName;
+        var rqIndex = app.project.renderQueue.numItems;
+        try { comp.resolutionFactor = res; } catch (eR) { /* ignore */ }
+        return ispartaOk({
+            rqIndex: rqIndex,
+            file: outFs,
+            start: start,
+            dur: dur,
+            template: setPNG || ''
+        });
+    } catch (e) {
+        try { comp.resolutionFactor = res; } catch (e2) { /* ignore */ }
+        return ispartaErr(e);
+    }
+}
+
+/**
+ * 只把合成+PNG Sequence 输出模块放进渲染队列，不调用 render()。
+ * 对齐 bgrenderer 的 buildRQandGetItems：先建 RQ，再由外部 aerender/BGRendererMax 渲。
+ * 返回 RQ 项序号（1-based）。
+ */
+function ispartaPreparePngRqItem (compIndex, targetPath) {
+    var comp = ispartaGetCompByIndex(compIndex);
+    if (!comp) {
+        return ispartaErr('composition not found at index ' + compIndex);
+    }
+    targetPath = ispartaTrimPath(ispartaDecodePath(targetPath));
+    var res = [1, 1];
+    var start = comp.workAreaStart;
+    var dur = comp.workAreaDuration;
+    if (comp.resolutionFactor != '1,1') {
+        res = comp.resolutionFactor;
+        comp.resolutionFactor = [1, 1];
+    }
+    try {
+        app.project.renderQueue.showWindow(false);
+        var rqItem = app.project.renderQueue.items.add(comp);
+        try {
+            rqItem.timeSpanStart = start;
+            rqItem.timeSpanDuration = dur;
+        } catch (eTs) { /* ignore */ }
+        try {
+            rqItem.setSettings({
+                'Time Span Duration': dur,
+                'Time Span Start': start
+            });
+        } catch (eTs2) { /* ignore */ }
+        var om = rqItem.outputModule(1);
+        var setPNG = ispartaPickPngTemplate(om);
+        if (setPNG) {
+            try { om.applyTemplate(setPNG); } catch (eTpl) { /* ignore */ }
+        }
+        ispartaForcePngOutput(om);
+        om.file = new File(targetPath);
+        try {
+            om.setSettings({
+                'Use Comp Frame Number': false,
+                'Starting #': '0'
+            });
+        } catch (eN) { /* ignore */ }
+        if (rqItem.status == RQItemStatus.UNQUEUED) {
+            rqItem.render = true;
+        }
+        var outFs = om.file.fsName;
+        var rqIndex = app.project.renderQueue.numItems;
+        try { comp.resolutionFactor = res; } catch (eR) { /* ignore */ }
+        return ispartaOk({
+            rqIndex: rqIndex,
+            file: outFs,
+            start: start,
+            dur: dur,
+            template: setPNG || ''
+        });
+    } catch (e) {
+        try { comp.resolutionFactor = res; } catch (e2) { /* ignore */ }
+        return ispartaErr(e);
+    }
+}
+
 function ispartaSavePngSequence (theComp, theLocation) {
+    // 清掉同合成残留 RQ 项（prepareRqItem / ensureTemplate 可能留下）
+    try {
+        var rq0 = app.project.renderQueue;
+        for (var r0 = rq0.numItems; r0 >= 1; r0--) {
+            try {
+                var it0 = rq0.item(r0);
+                if (it0 && it0.comp && it0.comp === theComp && it0.status != RQItemStatus.RENDERING) {
+                    it0.remove();
+                }
+            } catch (eR0) { /* ignore */ }
+        }
+    } catch (eRq0) { /* ignore */ }
+
     var res = [1, 1];
     var start = theComp.workAreaStart;
     var dur = theComp.workAreaDuration;

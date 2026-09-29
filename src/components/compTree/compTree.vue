@@ -9,6 +9,7 @@
     :aria-label="$t('compTree')"
     @click="onBlankClick"
     @dblclick="onBlankDblclick"
+    @contextmenu.prevent
   >
     <div class="mod-ct__head">
       <span class="mod-ct__c mod-ct__c--cb">
@@ -48,6 +49,7 @@
         :class="{ 'is-on': !!selectedMap[node.id] }"
         :data-id="node.id"
         draggable="true"
+        @contextmenu.prevent="onRowContext($event, node)"
         @dragstart="onRowDrag($event, node)"
       >
         <span class="mod-ct__c mod-ct__c--cb">
@@ -75,6 +77,7 @@
 <script>
 import sourceAdapter, { normalizeCompNode } from '../../cep/comp-source'
 import IsCheckbox from '../../ui-next/components/ui/IsCheckbox.vue'
+import rightMenu from '../projectList/menu'
 
 export default {
   name: 'CompTree',
@@ -298,6 +301,29 @@ export default {
     emitAdd () {
       const items = sourceAdapter.toItems(this.selectedNodes)
       this.$emit('add', items)
+    },
+    onRowContext (ev, node) {
+      if (ev && ev.preventDefault) ev.preventDefault()
+      if (typeof window !== 'undefined') {
+        window.__ispartaCtxX = ev && ev.clientX
+        window.__ispartaCtxY = ev && ev.clientY
+      }
+      var locale = this.$i18n && this.$i18n.messages && this.$i18n.messages[this.$i18n.locale]
+      rightMenu.init(
+        this.$store,
+        {
+          type: 'Comp',
+          compIndex: node.index,
+          compName: node.name,
+          projectPath: node.projectPath,
+          inputPath: node.projectPath,
+          isRunning: false,
+          index: -1
+        },
+        -1,
+        false,
+        locale
+      )
     },
     onRowDrag (ev, node) {
       if (!ev.dataTransfer) return

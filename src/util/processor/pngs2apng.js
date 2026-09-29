@@ -81,13 +81,16 @@ export default function (item, store, locale) {
     })
 	// apngasm：中间产物用 ASCII 文件名（outputName 可能是中文，部分工具会失败）
     var toolBase = 'out'
+    // APNG Assembler 2.91：1 24 = 帧延时 1/24s；大图用 -z0 zlib + -i5，7zip 易 OOM
     return action.exec(action.bin('apngasm'), [
       path.join(item.basic.tmpOutputDir, toolBase + '.png'),
       path.join(tmpDir, firstPNG),
       '1',
       String(item.options.frameRate),
       '-l' + (item.options.loop || 0),
-      '-kc'
+      '-kc',
+      '-z0',
+      '-i5'
     ], item, store, locale, { timeout: 60 * 60 * 1000 })
   }).then(() => {
 		// reset fileList

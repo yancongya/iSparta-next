@@ -5,6 +5,26 @@
     @dblclick="onBlankDblclick"
     @mousedown="onListMouseDown"
   >
+    <!-- CEP/桌面任务列表过滤条：对齐合成树表头，列改为搜索 / 帧率 / 帧数 -->
+    <div v-if="showFilterBar" class="mod-list__filter">
+      <span class="mod-list__fcol mod-list__fcol--name">
+        <input
+          v-model="filterKeyword"
+          type="search"
+          class="mod-list__search"
+          :placeholder="$t('search')"
+          spellcheck="false"
+        />
+      </span>
+      <button type="button" class="mod-list__fcol mod-list__fcol--num" @click="sortBy('fps')">
+        {{ $t('compColFps') }}{{ sortMark('fps') }}
+      </button>
+      <button type="button" class="mod-list__fcol mod-list__fcol--num" @click="sortBy('frames')">
+        {{ $t('compColFrames') }}{{ sortMark('frames') }}
+      </button>
+      <span class="mod-list__fcol mod-list__fcol--act"></span>
+    </div>
+
     <!-- 注意：不加 appear —— Vue 2 transition-group 初始挂载时 enter-active 类
          不会挂上（enter-to 残留），实测动画不生效且留脏类；stagger 仅在
          「向已有列表追加」的常规 enter 路径上生效（已实测验证） -->
@@ -15,7 +35,7 @@
         class="item"
         :class="itemClass(project)"
         :data-index="index"
-        @contextmenu.prevent="itemRightClick(project, index)"
+        @contextmenu.prevent="itemRightClick($event, project, index)"
         @click="onItemClick(index)"
       >
         <!-- 勾选：多选切换，阻止冒泡以免触发单选 -->
@@ -218,6 +238,10 @@ export default {
       compareProject: null,
       thumbCache: {},
       hoverIdx: -1,
+      // 过滤条：搜索 + 帧率/帧数排序（对齐合成树）
+      filterKeyword: '',
+      sortKey: '',
+      sortDir: 1,
       hoverFrame: 0,
       hoverTimer: null,
       // 空白处框选
@@ -249,19 +273,40 @@ export default {
     },
     projectList () {
       var items = this.$store.getters.getterItems || []
+      var isCompLike = hostAdapter && (hostAdapter.supportsCompImport || hostAdapter.kind === 'cep')
+      // 搜索过滤：名称 / 输出名
+      var kw = String(this.filterKeyword || '').trim().toLowerCase()
+      if (kw) {
+        items = items.filter(function (it) {
+          var b = (it && it.basic) || {}
+          var name = String(b.compName || b.name || b.outputName || '')
+          return name.toLowerCase().indexOf(kw) > -1
+        })
+      }
       // CEP 合成：与合成树「默认可排序态」一致（sortKey 空 = index → 名称）
-      if (!(hostAdapter && (hostAdapter.supportsCompImport || hostAdapter.kind === 'cep'))) {
+      if (!isCompLike) {
         return items
       }
+      var sk = this.sortKey
+      var sd = this.sortDir
       return items.slice().sort(function (a, b) {
         var ba = (a && a.basic) || {}
         var bb = (b && b.basic) || {}
+        if (sk === 'fps' || sk === 'frames') {
+          var va = sk === 'fps' ? (Number(ba.compFps) || 0) : (Number(ba.frameCount) || 0)
+          var vb = sk === 'fps' ? (Number(bb.compFps) || 0) : (Number(bb.frameCount) || 0)
+          if (va !== vb) { return (va - vb) * sd }
+        }
         if (ba.type !== 'Comp' || bb.type !== 'Comp') return 0
         var ia = Number(ba.compIndex) || 0
         var ib = Number(bb.compIndex) || 0
         if (ia !== ib) return ia - ib
         return String(ba.compName || '').localeCompare(String(bb.compName || ''))
       })
+    },
+    showFilterBar () {
+      // CEP / 合成任务列表显示过滤条；桌面文件任务保持原样
+      return !!(hostAdapter && (hostAdapter.supportsCompImport || hostAdapter.kind === 'cep'))
     },
     isLocked () {
       return this.$store.getters.getterLocked
@@ -572,8 +617,8 @@ export default {
       if (this.isLocked || !this.projectList.length) return
       var t = e.target
       if (!t || !t.closest) return
-      // 条目与底部按钮有自己的交互，不算空白
-      if (t.closest('.item') || t.closest('.open-folder')) return
+      // 条目、底部按钮、过滤条有自己的交互，不算空白
+      if (t.closest('.item') || t.closest('.open-folder') || t.closest('.mod-list__filter')) return
       this.$store.dispatch('noneSelect')
     },
     // 双击列表空白处 = 全选（dblclick 前会有两次 click，最终状态以全选为准）
@@ -581,7 +626,7 @@ export default {
       if (this.isLocked || !this.projectList.length) return
       var t = e.target
       if (!t || !t.closest) return
-      if (t.closest('.item') || t.closest('.open-folder')) return
+      if (t.closest('.item') || t.closest('.open-folder') || t.closest('.mod-list__filter')) return
       this.$store.dispatch('allSelect')
     },
     // 空白处按下 → 拖拽框选
@@ -590,7 +635,7 @@ export default {
       if (e.button !== 0) return
       var t = e.target
       if (!t || !t.closest) return
-      if (t.closest('.item') || t.closest('.open-folder') || t.closest('.mod-list__marquee')) return
+      if (t.closest('.item') || t.closest('.open-folder') || t.closest('.mod-list__marquee') || t.closest('.mod-list__filter')) return
       // 立刻抑制原生文字/图片拖选
       e.preventDefault()
       var rect = this.$el.getBoundingClientRect()
@@ -671,6 +716,18 @@ export default {
         this._onMarqueeUp = null
       }
     },
+    sortMark (key) {
+      if (this.sortKey !== key) return ''
+      return this.sortDir > 0 ? ' ↑' : ' ↓'
+    },
+    sortBy (key) {
+      if (this.sortKey === key) {
+        this.sortDir = -this.sortDir
+      } else {
+        this.sortKey = key
+        this.sortDir = 1
+      }
+    },
     toggleSelect (index) {
       if (this.isLocked) {
         return false
@@ -679,35 +736,26 @@ export default {
       var si = this.storeIndexOf(project)
       if (si >= 0) this.$store.dispatch('multiSelect', si)
     },
-    itemRightClick (project, index) {
+    itemRightClick (ev, project, index) {
+      // 右键只出菜单，不改选中（避免被当成「选中合成作为任务」）
+      if (ev) {
+        if (ev.preventDefault) ev.preventDefault()
+        if (typeof window !== 'undefined') {
+          window.__ispartaCtxX = ev.clientX
+          window.__ispartaCtxY = ev.clientY
+        }
+      }
       var locale = this.$i18n.messages[this.$i18n.locale]
       var procState = this.stateOf(project && project.process)
       var isRunning = procState === 'running'
-      this.$store.dispatch('setSelected', index)
-      // CEP：右键可终止运行中任务；否则定位合成（无删除/改路径）
-      if (!this.showOutPath) {
-        if (isRunning) {
-          this.$store.dispatch('stopSelectedTasks')
-          return
-        }
-        try {
-          var src = getSourceAdapter && getSourceAdapter()
-          if (src && typeof src.openSource === 'function') {
-            src.openSource(project)
-          }
-        } catch (e) { /* 定位失败不打断 */ }
-        return
-      }
-      // 让 store 先完成选中态更新，再取当前选中数量构建菜单
-      window.setTimeout(() => {
-        rightMenu.init(
-          this.$store,
-          Object.assign({}, project && project.basic, { isRunning: isRunning }),
-          index,
-          this.isMultiItems,
-          locale
-        )
-      }, 10)
+      var basic = (project && project.basic) || {}
+      rightMenu.init(
+        this.$store,
+        Object.assign({}, basic, { isRunning: isRunning, index: index }),
+        index,
+        this.isMultiItems,
+        locale
+      )
     },
     changeFold (outputPath, index) {
       if (this.isLocked || !this.showOutPath) {

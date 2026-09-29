@@ -1435,10 +1435,30 @@ body.is-scroll-locked {
   }
 }
 
+/* 日志面板：CEP 小屏铺满可用区（含左右），列表吃掉剩余高度 */
+.is-dialog.log-dialog {
+  padding: 6px;
+}
+
+.is-dialog__panel.log-panel {
+  width: 100%;
+  height: calc(100vh - 12px);
+  max-height: calc(100vh - 12px);
+
+  .is-dialog__body {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    padding: var(--is-s-4) var(--is-s-5);
+    overflow: hidden;
+  }
+}
+
 .log {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  flex: 1;
   min-height: 0;
   width: 100%;
   max-width: 100%;
@@ -1448,22 +1468,32 @@ body.is-scroll-locked {
 .log__bar {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 8px;
+  flex: none;
   padding: 0 0 10px;
   border-bottom: 1px solid var(--is-border);
 }
 
-.log__bar-spacer {
-  flex: 1 1 auto;
+.log__chips {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 6px;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar { display: none; }
 }
 
 .log__chip {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  flex: none;
   height: 26px;
-  padding: 0 11px;
+  padding: 0 10px;
   border: 1px solid var(--is-border);
   border-radius: var(--is-r-pill);
   background: var(--is-card-hi);
@@ -1471,6 +1501,7 @@ body.is-scroll-locked {
   font-family: inherit;
   font-size: var(--is-fs-xs);
   font-weight: 500;
+  white-space: nowrap;
   cursor: pointer;
   transition: border-color var(--is-dur-fast) var(--is-ease-std),
     background-color var(--is-dur-fast) var(--is-ease-std),
@@ -1507,17 +1538,14 @@ body.is-scroll-locked {
 }
 
 .log__follow {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
+  flex: none;
+  margin-left: auto;
   color: var(--is-text-3);
   font-size: var(--is-fs-xs);
-  cursor: pointer;
-  user-select: none;
+  white-space: nowrap;
 
-  input {
-    accent-color: var(--is-accent);
-  }
+  .is-check__label { color: var(--is-text-3); }
+  .is-check { gap: 6px; }
 }
 
 .log__list {
@@ -1526,8 +1554,8 @@ body.is-scroll-locked {
   gap: 3px;
   width: 100%;
   max-width: 100%;
-  min-height: 280px;
-  height: 340px;
+  flex: 1;
+  min-height: 160px;
   padding: 8px;
   overflow-y: auto;
   border: 1px solid var(--is-border);
@@ -1559,7 +1587,7 @@ body.is-scroll-locked {
 
 .log__row {
   /* 与落地页 .log-row 同构：三列网格 + 基线对齐。
-     时间/级别钉在消息首行，消息换行也不会把首行挤歪（旧 flex 方案反复返工的根因） */
+     消息列单行省略（title 悬停看全文），避免长路径/JSON 把列表撑成瀑布 */
   display: grid;
   grid-template-columns: 70px 56px minmax(0, 1fr);
   gap: 2px 10px;
@@ -1568,7 +1596,7 @@ body.is-scroll-locked {
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
-  padding: 7px 10px;
+  padding: 6px 10px;
   border: 1px solid transparent;
   border-radius: 8px;
   background: var(--is-card);
@@ -1623,20 +1651,21 @@ body.is-scroll-locked {
   white-space: nowrap;
 }
 
-/* 日志要能读完整，不做 ellipsis 截断；长路径在消息列内折行（与落地页一致） */
+/* 长日志单行省略（悬停 title 看全文）；要读完整走「复制全部」 */
 .log__msg {
   min-width: 0;
   color: var(--is-text);
-  word-break: break-word;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-/* detail 内联在消息尾部：短的跟着同行，长的和消息一起在本列内折行 */
+/* detail 内联在消息尾部，跟着整行一起省略 */
 .log__detail {
   margin-left: 7px;
   color: var(--is-text-3);
   font-size: var(--is-fs-xs);
-  overflow-wrap: anywhere;
-  word-break: break-word;
+  white-space: nowrap;
 
   &::before {
     content: "·";

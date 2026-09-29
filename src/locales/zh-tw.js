@@ -52,6 +52,7 @@ module.exports = {
     "demoName":"輸出名",
     "demoParent":"上級目錄",
     //menu
+    "openCompLoc":"打開合成位置",
     "openOriginal":"打開文件目錄",
     "openDist":"打開輸出目錄",
     "changeDist":"修改輸出目錄",

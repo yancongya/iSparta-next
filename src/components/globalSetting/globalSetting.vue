@@ -571,9 +571,7 @@ export default {
       else ThemeManager.set(mode)
     },
     showDialog () {
-      if (this.$store.getters.getterLocked) {
-        return false
-      }
+      // 锁定时也允许打开：转换失败若未解锁，按钮会「点了没反应」
       this.dialogFormVisible = true
     },
     resetVarible () {

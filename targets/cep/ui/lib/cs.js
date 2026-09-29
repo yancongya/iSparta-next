@@ -30,11 +30,19 @@
 
   function evalScript (script) {
     return new Promise(function (resolve, reject) {
-      if (typeof window === 'undefined' || !window.cep || !window.cep.evalScript) {
+      if (typeof window === 'undefined') {
         reject(new Error('window.cep.evalScript unavailable'))
         return
       }
-      window.cep.evalScript(script, function (result) {
+      // CEP 原生桥是 __adobe_cep__；window.cep 仅在加载 CSInterface 等脚本后存在
+      var host = (window.cep && window.cep.evalScript && window.cep) ||
+        (window.__adobe_cep__ && window.__adobe_cep__.evalScript && window.__adobe_cep__) ||
+        null
+      if (!host) {
+        reject(new Error('window.cep.evalScript unavailable'))
+        return
+      }
+      host.evalScript(script, function (result) {
         if (result === 'EvalScript error.') {
           reject(new Error('EvalScript error'))
           return

@@ -11,32 +11,35 @@ import i18n from '../i18n'
 const _ = require("lodash");
 // 【bug fix】修复初次使用时读取缓存错误的问题
 let storagePath = "";
-if (getProcessBridge().env.NODE_ENV == "development") {
-
-  storagePath = path.join(os.tmpdir(), 'iSparta/localstorage-dev.json');
-} else {
-  storagePath = path.join(os.tmpdir(), 'iSparta/localstorage.json');
-}
-if (!fs.existsSync(storagePath)) {
-  fs.ensureFileSync(storagePath)
-
-}
-// 【bug fix】仅当内容非合法 JSON 时才重置为 "{}"，避免每次启动清空已持久化数据
-let __rawStorage = fs.readFileSync(storagePath, "utf-8").trim()
-let __validStorage = false
-if (__rawStorage) {
-  try {
-    JSON.parse(__rawStorage)
-    __validStorage = true
-  } catch (e) {
-    __validStorage = false
+try {
+  if (getProcessBridge().env.NODE_ENV == "development") {
+    storagePath = path.join(os.tmpdir(), 'iSparta/localstorage-dev.json');
+  } else {
+    storagePath = path.join(os.tmpdir(), 'iSparta/localstorage.json');
   }
-}
-if (!__validStorage) {
-  fs.writeFileSync(storagePath, "{}", "utf-8")
+  if (!fs.existsSync(storagePath)) {
+    fs.ensureFileSync(storagePath)
+  }
+  // 【bug fix】仅当内容非合法 JSON 时才重置为 "{}"，避免每次启动清空已持久化数据
+  let __rawStorage = fs.readFileSync(storagePath, "utf-8").trim()
+  let __validStorage = false
+  if (__rawStorage) {
+    try {
+      JSON.parse(__rawStorage)
+      __validStorage = true
+    } catch (e) {
+      __validStorage = false
+    }
+  }
+  if (!__validStorage) {
+    fs.writeFileSync(storagePath, "{}", "utf-8")
+  }
+} catch (eStoreFs) {
+  // 桥不完整时不能让整个 bundle 求值失败（Vue 将永远挂不上）
+  try { console.error('[store] storage init failed', eStoreFs) } catch (e) { /* ignore */ }
 }
 
-storage.setStoragePath(storagePath);
+try { storage.setStoragePath(storagePath); } catch (eSetPath) { /* ignore */ }
 window.storage = storage;
 Vue.use(Vuex)
 // 原始数据

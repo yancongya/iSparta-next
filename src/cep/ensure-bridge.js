@@ -13,22 +13,20 @@
 
 export default function ensureBridge () {
   if (typeof window === 'undefined') { return false }
-  if (window.ispartaAPI) { return true }
-
-  var b = window.ispartaCepBridge
-  if (!b) { return false }
-
-  window.ispartaAPI = {
-    fs: b.fs,
-    path: b.path,
-    os: b.os,
-    storage: b.storage,
-    ipc: b.ipc,
-    process: b.process,
-    childProcess: b.childProcess,
-    aerender: b.aerender || (typeof window !== 'undefined' && window.ispartaForge) || null
+  var b = window.ispartaCepBridge || {}
+  var api = window.ispartaAPI || {}
+  // 不能「有对象就 return」：HMR 后可能是残缺 ispartaAPI，store 顶层 fs/storage 会抛错
+  var keys = ['fs', 'path', 'os', 'storage', 'ipc', 'process', 'childProcess', 'aerender']
+  for (var i = 0; i < keys.length; i++) {
+    var k = keys[i]
+    if (!api[k] && b[k]) { api[k] = b[k] }
   }
-  return true
+  if (!api.aerender && window.ispartaForge) { api.aerender = window.ispartaForge }
+  if (api.fs || api.storage || api.ipc) {
+    window.ispartaAPI = api
+    return true
+  }
+  return !!window.ispartaAPI
 }
 
 ensureBridge()

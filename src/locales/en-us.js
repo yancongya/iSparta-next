@@ -52,6 +52,7 @@ module.exports = {
     "demoName":"output name",
     "demoParent":"parent folder",
     //menu
+    "openCompLoc":"Open composition folder",
     "openOriginal":"Open source folder",
     "openDist":"Open output folder",
     "changeDist":"Change output folder",

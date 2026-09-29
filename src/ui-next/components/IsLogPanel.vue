@@ -2,7 +2,9 @@
   <is-dialog
     :visible="visible"
     :title="$t('logTitle')"
-    width="800px"
+    width="100%"
+    panel-class="log-panel"
+    root-class="log-dialog"
     @close="$emit('close')"
   >
     <template #title>
@@ -15,22 +17,20 @@
 
     <div class="log">
       <div class="log__bar" role="group" :aria-label="$t('logFilter')">
-        <button
-          v-for="f in filters"
-          :key="f"
-          type="button"
-          class="log__chip"
-          :class="{ 'is-on': filter === f }"
-          @click="filter = f"
-        >
-          {{ $t(levelKey(f)) }}
-          <span v-if="f !== 'all' && counts[f]" class="log__chip-n mono">{{ counts[f] }}</span>
-        </button>
-        <span class="log__bar-spacer" />
-        <label class="log__follow">
-          <input type="checkbox" v-model="follow" />
-          <span>{{ $t('logFollow') }}</span>
-        </label>
+        <div class="log__chips">
+          <button
+            v-for="f in filters"
+            :key="f"
+            type="button"
+            class="log__chip"
+            :class="{ 'is-on': filter === f }"
+            @click="filter = f"
+          >
+            {{ $t(levelKey(f)) }}
+            <span v-if="f !== 'all' && counts[f]" class="log__chip-n mono">{{ counts[f] }}</span>
+          </button>
+        </div>
+        <is-checkbox v-model="follow" class="log__follow">{{ $t('logFollow') }}</is-checkbox>
       </div>
 
       <is-scroll-fade ref="list" class="log__list" tabindex="0" :aria-label="$t('logTitle')">
@@ -40,6 +40,7 @@
           :key="e.id"
           class="log__row"
           :class="'log__row--' + e.level"
+          :title="fullText(e)"
         >
           <span class="log__t mono">{{ e.t }}</span>
           <span class="log__lv mono">{{ e.level }}</span>
@@ -62,15 +63,17 @@
 <!--
   全局运行日志面板：工具条上的日志按钮打开。
   自动跟随滚动只在用户本来就停在底部时生效——否则用户往上翻看历史时会被强行拽走。
+  条目单行省略（悬停 title 看全文），筛选 chips 固定一行；面板在 CEP 小屏铺满可用区。
 -->
 <script>
 import IsDialog from './ui/IsDialog.vue'
 import IsIcon from './ui/IsIcon.vue'
+import IsCheckbox from './ui/IsCheckbox.vue'
 import log from '../log'
 
 export default {
   name: 'IsLogPanel',
-  components: { IsDialog, IsIcon },
+  components: { IsDialog, IsIcon, IsCheckbox },
   props: {
     visible: { type: Boolean, default: false }
   },
@@ -115,6 +118,9 @@ export default {
     // 本仓库字典是扁平键，vue-i18n 会把「logLevel.all」当路径解析，故显式映射
     levelKey (f) {
       return { all: 'logLvAll', info: 'logLvInfo', ok: 'logLvOk', warn: 'logLvWarn', error: 'logLvError' }[f] || 'logLvAll'
+    },
+    fullText (e) {
+      return e.detail ? e.msg + ' · ' + e.detail : e.msg
     },
     scrollToEnd () {
       var host = this.$refs.list

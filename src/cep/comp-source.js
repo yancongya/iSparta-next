@@ -414,26 +414,36 @@ export function prepareCompSequence (item, opts) {
         reject(new Error('no child_process for aerender'))
         return
       }
+      // 官方 -project / -comp / -output；queue 模式只渲 RQ（对齐 bgrenderer）
       var args = []
-      function kv (k, v) {
-        var s = String(v == null ? '' : v).replace(/"/g, '\\"')
-        args.push(k + '="' + s + '"')
+      if (opts.reuse) { args.push('-reuse') }
+      args.push('-project', String(opts.projectPath || ''))
+      if (opts.compName) {
+        args.push('-comp', String(opts.compName))
       }
-      kv('project', opts.projectPath)
-      kv('comp', opts.compName)
-      kv('output', opts.outputPath)
-      if (opts.endFrame != null && opts.endFrame !== '') {
-        kv('start', String(opts.startFrame || 0))
-        kv('end', String(opts.endFrame))
+      if (opts.mode !== 'queue' && opts.outputPath) {
+        args.push('-output', String(opts.outputPath))
       }
-      if (opts.omTemplate) { kv('OMtemplate', opts.omTemplate) }
+      if (opts.mode !== 'queue' && opts.endFrame != null && opts.endFrame !== '') {
+        args.push('-s', String(opts.startFrame || 0))
+        args.push('-e', String(opts.endFrame))
+      }
+      if (opts.mode !== 'queue' && opts.omTemplate) {
+        args.push('-OMtemplate', String(opts.omTemplate))
+      }
+      args.push('-v', 'ERRORS_AND_PROGRESS')
+      args.push('-continueOnMissingFootage')
+      if (opts.reuse) { args.push('-close', 'DO_NOT_CLOSE') }
       try {
-        cp.execFile(aerenderPath, args, { timeout: 60 * 60 * 1000 }, function (err, stdout, stderr) {
+        // aerender 在本机常「只打 version 就挂住」：3 分钟强制结束，避免任务永久卡死
+        cp.execFile(aerenderPath, args, { timeout: 45 * 1000, maxBuffer: 1024 * 1024 * 8 }, function (err, stdout, stderr) {
+          var so = String(stdout || '')
+          var se = String(stderr || '')
           if (err) {
-            reject(new Error(String(err.message || err)))
+            reject(new Error(String(err.message || err) + ' | out=' + so.slice(-300) + ' | err=' + se.slice(-300)))
             return
           }
-          resolve({ ok: true, stdout: String(stdout || ''), stderr: String(stderr || '') })
+          resolve({ ok: true, stdout: so, stderr: se })
         })
       } catch (eSpawn) {
         reject(eSpawn)
@@ -455,6 +465,7 @@ export function prepareCompSequence (item, opts) {
       'PNG Sequence',
       'PNG 序列'
     ]
+    // 不再 ispartaPreparePngRqItem：会多出一个 RQ 项（frame_[####].png）
     return evalJson('ispartaSaveProjectQuiet()')
       .catch(() => null)
       .then(() => evalJson('ispartaEnsurePngOmTemplate()').catch(() => null))
@@ -491,52 +502,62 @@ export function prepareCompSequence (item, opts) {
       const total = expectedFrames
       // OM 模板按序尝试：本机隐藏 PNG 模板名不一致时，0 帧会重试
       function runOne (omTpl) {
-        var launchOpts = {
+        try {
+          console.log('[aerender] try om=' + (omTpl || '(none)') + ' comp=' + name + ' out=' + outBase)
+          applyProgress(0, total || 1, 'progress')
+        } catch (eLog) { /* ignore */ }
+        // 无 -comp：渲整个 RQ（bgrenderer 模式）；输出已由 RQ 项指定
+      var launchOpts = {
           projectPath: proj,
-          compName: name,
+          compName: '',
           outputPath: outBase,
           startFrame: 0,
           endFrame: total > 0 ? (total - 1) : null,
           totalFrames: total,
-          omTemplate: omTpl,
-          mode: 'single'
+          omTemplate: '',
+          mode: 'queue',
+          reuse: true
         }
-        return new Promise(function (resolve, reject) {
-          if (forge && typeof forge.launch === 'function') {
-            try {
-              forge.launch(aerenderPath, launchOpts, {
-                onProgress: function (p) {
-                  applyProgress(Number(p && p.currentFrame) || 0, Number(p && p.totalFrames) || total, 'progress')
-                },
-                onComplete: function () { resolve(launchOpts) },
-                onError: function (err) {
-                  reject(new Error((err && err.message) || 'aerender failed'))
-                },
-                onLog: function (m) {
-                  try { console.log('[aerender]', m) } catch (e) { /* ignore */ }
-                }
-              })
-            } catch (eLaunch) {
-              reject(eLaunch)
-            }
-            return
-          }
-          spawnAerenderRaw(aerenderPath, launchOpts).then(function () { resolve(launchOpts) }, reject)
+        // 强制 spawnAerenderRaw：能拿到 stdout/stderr（forge.launch 不回传输出）
+        return spawnAerenderRaw(aerenderPath, launchOpts).then(function (r) {
+          launchOpts.stdout = (r && r.stdout) || ''
+          launchOpts.stderr = (r && r.stderr) || ''
+          return launchOpts
         })
       }
+      var lastErr = ''
       return omCandidates.reduce(function (chain, omTpl) {
         return chain.then(function (prev) {
           if (prev) { return prev }
           return runOne(omTpl).then(function (opts) {
-            return countPngs(outDir) > 0 ? opts : null
-          }, function () {
+            var n = countPngs(outDir)
+            if (n > 0) { return opts }
+            lastErr = 'resolved but 0 frames, om=' + omTpl +
+              (opts && opts.stdout ? ' | out=' + String(opts.stdout).slice(-200) : '') +
+              (opts && opts.stderr ? ' | err=' + String(opts.stderr).slice(-200) : '')
+            try { console.warn('[aerender]', lastErr) } catch (eL) { /* ignore */ }
+            return null
+          }, function (e) {
+            lastErr = String((e && e.message) || e || '')
+            try { console.warn('[aerender]', omTpl, lastErr) } catch (eL2) { /* ignore */ }
             return null
           })
         })
       }, Promise.resolve(null)).then(function (okOpts) {
         if (!okOpts) {
-          // 不再用空 OM 模板兜底：默认无损会写成 mov，下游只要 PNG 序列
-          throw new Error('all PNG Sequence OM templates failed (no frames) in ' + outDir)
+          // 最后：不带 OMtemplate（按扩展名 .png 认序列）；再失败才报错
+          return runOne('').then(function (o) {
+            return countPngs(outDir) > 0 ? o : null
+          }, function (e) {
+            lastErr = String((e && e.message) || e || '')
+            return null
+          }).then(function (o2) {
+            if (!o2) {
+              throw new Error('all PNG Sequence OM templates failed (no frames) in ' + outDir +
+                (lastErr ? ' | lastError=' + lastErr : ''))
+            }
+            return o2
+          })
         }
         return okOpts
       }).then(function (okOpts) {
@@ -557,9 +578,17 @@ export function prepareCompSequence (item, opts) {
             ' | om=' + usedOm)
         }
         if (pngCount < 1) {
+          var aeroOut = ''
+          try {
+            if (fs && typeof fs.readFileSync === 'function') {
+              aeroOut = String(fs.readFileSync(path.join(outDir, 'aerender-last.log') || '') || '')
+            }
+          } catch (eRd) { /* ignore */ }
           throw new Error('aerender produced 0 PNG frames in ' + outDir +
             ' | om=' + usedOm +
-            ' | files=[' + extras.join(', ') + ']')
+            ' | files=[' + extras.join(', ') + ']' +
+            (lastErr ? ' | lastError=' + lastErr : '') +
+            (aeroOut ? ' | aero=' + aeroOut.slice(-200) : ''))
         }
         return { ok: true, folder: outDir, compName: name, via: 'aerender', frames: pngCount }
       })
@@ -569,9 +598,10 @@ export function prepareCompSequence (item, opts) {
   const script = isFinite(idx)
     ? 'ispartaExportPngSequenceByIndex(' + idx + ',' + JSON.stringify(location) + ')'
     : 'ispartaMatchComps(' + JSON.stringify([{ name: name }]) + ')'
-  // CEP 渲序列只走 aerender 后台进程；禁止 renderQueue.render()（会锁死 AE）
+  // 本机 aerender 实测会挂死（只打 version 就不动），不再空等。
+  // 主路径走 renderQueue（能出 PNG 序列）；渲完统一归一化为 合成名_序号.png。
   return Promise.resolve()
-    .then(() => tryAerenderExport())
+    .then(() => evalJson(script))
     .then((res) => {
     if (!res || !res.ok) {
       throw new Error((res && res.error) || 'export comp sequence failed')

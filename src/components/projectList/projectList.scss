@@ -19,6 +19,76 @@
     padding: var(--is-s-3) var(--is-s-3) var(--is-s-1);
   }
 
+  // 过滤条：对齐合成树表头（搜索 / 帧率 / 帧数）
+  &__filter {
+    display: flex;
+    align-items: center;
+    min-height: 28px;
+    padding: 2px 8px 2px 12px;
+    gap: 0;
+    border-bottom: 1px solid var(--is-line, rgba(128, 128, 128, 0.25));
+    font-size: var(--is-fs-sm, 12px);
+    font-weight: 600;
+    opacity: 0.9;
+  }
+
+  &__fcol {
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  &__fcol--name {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    padding-right: 8px;
+  }
+
+  &__fcol--num {
+    width: 64px;
+    flex: 0 1 64px;
+    min-width: 40px;
+    text-align: right;
+    padding-right: 8px;
+    background: transparent;
+    border: 0;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+
+    &:hover { color: var(--is-accent, #c8f542); }
+  }
+
+  &__fcol--act {
+    width: 36px;
+    flex: 0 0 36px;
+  }
+
+  &__search {
+    width: 100%;
+    min-width: 0;
+    height: 22px;
+    padding: 0 8px;
+    border: 1px solid var(--is-line, rgba(128, 128, 128, 0.3));
+    border-radius: var(--is-r-sm, 4px);
+    background: var(--is-inset, transparent);
+    color: var(--is-text);
+    font: inherit;
+    font-weight: 400;
+    outline: none;
+
+    &:focus {
+      border-color: var(--is-accent, #c8f542);
+    }
+
+    &::-webkit-search-cancel-button {
+      cursor: pointer;
+    }
+  }
+
   // 空白拖拽框选
   &__marquee {
     position: absolute;

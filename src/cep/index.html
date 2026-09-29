@@ -8,6 +8,15 @@
 <body>
   <div id="app"></div>
   <script>
+    window.__ispartaBootErr = ''
+    window.addEventListener('error', function (e) {
+      window.__ispartaBootErr = (e && e.message) || 'unknown error'
+    })
+    window.addEventListener('unhandledrejection', function (e) {
+      window.__ispartaBootErr = String((e && e.reason && (e.reason.message || e.reason)) || 'unhandledrejection')
+    })
+  </script>
+  <script>
     (function () {
       var http = location.protocol === 'http:' || location.protocol === 'https:'
       var base = http ? '/lib/' : '../lib/'
@@ -17,14 +26,16 @@
     })()
   </script>
   <script>
+    // #app 空白 ≠ 桥丢失。不自动 reload（会循环）；只提示看控制台。
     window.addEventListener('DOMContentLoaded', function () {
       setTimeout(function () {
         var el = document.getElementById('app')
         if (el && el.childElementCount === 0) {
-          el.innerHTML = '<p style="color:#f88;font:12px monospace;padding:12px">bridge missing: ispartaAPI=' +
-            !!window.ispartaAPI + ' cepBridge=' + !!window.ispartaCepBridge + '</p>'
+          el.innerHTML = '<p style="color:#c95;font:12px monospace;padding:12px;word-break:break-all">界面未挂载<br>err=' +
+            (window.__ispartaBootErr || '(none)') +
+            '<br>bridge ispartaAPI=' + !!window.ispartaAPI + ' cepBridge=' + !!window.ispartaCepBridge + '</p>'
         }
-      }, 800)
+      }, 2500)
     })
   </script>
 </body>

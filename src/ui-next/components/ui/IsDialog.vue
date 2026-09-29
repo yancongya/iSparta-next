@@ -3,6 +3,7 @@
     <div
       v-if="showModel"
       class="is-dialog"
+      :class="rootClass"
       :style="{ zIndex: zIndex }"
       @keydown.esc="onEsc"
     >
@@ -64,6 +65,8 @@ export default {
     top: { type: String, default: '' },
     hideHeader: { type: Boolean, default: false },
     panelClass: { type: [String, Array, Object], default: '' },
+    // 外层遮罩容器类名：日志等「铺满」面板用来收紧 .is-dialog 的四周 padding
+    rootClass: { type: [String, Array, Object], default: '' },
     showClose: { type: Boolean, default: true },
     closeOnClickModal: { type: Boolean, default: true },
     closeOnEsc: { type: Boolean, default: true },

@@ -52,6 +52,7 @@ module.exports = {
     "demoName":"输出名",
     "demoParent":"上级目录",
     //menu
+    "openCompLoc":"打开合成位置",
     "openOriginal":"打开文件目录",
     "openDist":"打开输出目录",
     "changeDist":"修改输出目录",

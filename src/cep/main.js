@@ -54,3 +54,14 @@ new Vue({
     eventBus: new Vue()
   }
 }).$mount('#app')
+
+// CEP + webpack HMR：仅在「发生更新并被 accept」后整页刷新一次。
+// 禁止用 status==='ready' 触发 reload——那会在每次进页时循环刷新。
+if (module.hot) {
+  var _hotReloaded = false
+  module.hot.accept(function () {
+    if (_hotReloaded) { return }
+    _hotReloaded = true
+    window.location.reload()
+  })
+}
