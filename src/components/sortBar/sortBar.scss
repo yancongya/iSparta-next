@@ -1,6 +1,7 @@
 // ==========================================================================
 // 底栏：全选 / 计数 / 状态统计 / 总进度 / 快捷键提示
 // ==========================================================================
+@import "../../ui-next/styles/bp";
 
 .mod-bar {
   display: flex;
@@ -201,8 +202,9 @@
 }
 
 // 窄屏仍保留键盘图标（可点开说明），不再常驻键帽
-@media (max-width: 820px) {
-  .mod-bar .bar-kbd__panel {
+// 断点统一见 ui-next/styles/_bp.scss；严格 CEP 注入，不作用于桌面收窄
+@media (max-width: $bp-wide) {
+  body.is-cep .mod-bar .bar-kbd__panel {
     min-width: 200px;
   }
 }

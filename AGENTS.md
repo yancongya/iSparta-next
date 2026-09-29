@@ -154,11 +154,27 @@ CI：`release.yml` 负责 bump、打包、挂 Release（notes 模板见该 workf
 - 不用 Bolt/Nx；一体安装走现有 NSIS 组件页；发版仍须用户点名（§2.2）。
 - 实现阶段同步更新本节与 `docs/PLAN-DUAL-TARGET.md` 勾选状态。
 
+## 8.2 视口断点统一约束（强制）
+
+**唯一来源**（同值同步改，禁止在组件里手写 320/360/479/720/900 等邻近值）：
+
+| Token | 值 | 文件 | 用途 |
+| --- | --- | --- | --- |
+| `$bp-narrow` / `BP_NARROW` | 360 | `src/ui-next/styles/_bp.scss`、`breakpoints.js` | CEP 极窄：壳层单列、藏侧栏、禁拖出 |
+| `$bp-compact` / `BP_COMPACT` | 480 | 同上 | 条目卡片降档（视口级备用） |
+| `$bp-wide` / `BP_WIDE` | 820 | 同上 | 底栏/列表列简化；主列最小宽收缩 |
+
+- SCSS 用 `@import ".../bp"` 取 `$bp-*`；JS 用 `import { BP_* } from '.../breakpoints'`。
+- **严格 CEP 注入**：断点样式必须包在 `body.is-cep` 内；JS 判定须加 `hostAdapter.supportsCompImport`。桌面窗口收窄不走这套。
+- **条目 `@container` 340/480** 是组件内部几何断点，与视口断点分层，不共用 token，但需注释标明。
+- 改断点值必须同时改 `_bp.scss` 与 `breakpoints.js`，并在本表更新。
+
 ## 9. 文档索引
 
 | 文档 | 用途 |
 | --- | --- |
 | `AGENTS.md` | 开发约定（本文） |
+| `docs/CEP-UPGRADE-SCOPE.md` | CEP 升级范围与双端边界（共有 vs 注入） |
 | `docs/PLAN-DUAL-TARGET.md` | 双端（桌面+CEP）计划与分工 |
 | `docs/CHANGELOG.md` | 版本摘要（中文） |
 | `docs/BRIDGE.md` | 转换核桥接口冻结（ispartaAPI / node-env / processor） |

@@ -1,0 +1,11 @@
+// 视口断点（全站唯一来源，禁止在组件里手写 320/360/479/720/900 等邻近值）
+// JS 侧请用 src/ui-next/styles/breakpoints.js，两边同值同步改。
+// 用途：
+//   $bp-narrow  360px  CEP 极窄：壳层单列、藏侧栏、禁拖出
+//   $bp-compact 480px  条目卡片降档（@container 条目几何断点除外）
+//   $bp-wide    820px  底栏/列表列简化；窗口过窄时主列最小宽收缩
+// 条目 @container 340/480 是组件内部几何，与视口断点分层，不在此表。
+
+$bp-narrow: 360px;
+$bp-compact: 480px;
+$bp-wide: 820px;

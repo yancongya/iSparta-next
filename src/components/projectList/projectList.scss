@@ -2,6 +2,7 @@
 // 项目列表
 // 颜色/尺寸一律取自 tokens.css，不再出现硬编码色值。
 // ==========================================================================
+@import "../../ui-next/styles/bp";
 
 .mod-list {
   // 撑满滚动区，条目下方的空白才落在本容器上（供取消全选判定）
@@ -589,8 +590,10 @@
 }
 
 // ---------- 窄屏：状态文字让位给进度 ----------
-@media (max-width: 900px) {
-  .mod-list {
+// 断点统一见 ui-next/styles/_bp.scss（与 sortBar 同档 $bp-wide，原 900 并入）
+// 严格 CEP 注入，不作用于桌面收窄
+@media (max-width: $bp-wide) {
+  body.is-cep .mod-list {
     .meta { gap: var(--is-s-2); }
     .status { min-width: 0; }
     .progress { width: 64px; }
@@ -600,6 +603,7 @@
 // ---------- 卡片密度降档（容器查询） ----------
 // 右栏开合、面板拖宽、窗口 resize 都会实时驱动卡片换档，无需 JS。
 // 中档：缩略图收缩 + 配置芯片只留图标（数值走现有 v-tip 气泡）
+// 注：340/480 是条目容器几何断点，与视口断点（_bp.scss）分层，不共用 token。
 @container is-item (max-width: 480px) {
   .mod-list {
     .item {

@@ -1,7 +1,7 @@
 // AE 合成输入源 sourceAdapter（docs/EXEC-WAVE2.md §2.2）
 // 列表=合成树（扁平 + parent 预留）；拖入/粘贴/树勾选 → 与 drag/file.js 同形 item
 import _ from 'lodash'
-import { path, fs, getAerender, getChildProcess } from '../util/node-env'
+import { path, fs } from '../util/node-env'
 import { resolveOutputPath } from '../util/outputPath'
 import { buildInitialOutputName } from '../util/tokenizeName'
 import hostAdapter, { registerSourceAdapter as registerHostSource } from '../util/host-env'
@@ -370,236 +370,12 @@ export function prepareCompSequence (item, opts) {
     total: expectedFrames
   })
 
-  /** 定位 aerender.exe（RenderSmith 同款：app.path 旁 / Support Files） */
-  function findAerender (appPath) {
-    const cands = []
-    const a = String(appPath || '')
-    if (a) {
-      cands.push(path.join(a, 'aerender.exe'))
-      cands.push(path.join(a, 'aerender'))
-      cands.push(path.join(a, 'Support Files', 'aerender.exe'))
-      cands.push(path.join(a, '..', 'Support Files', 'aerender.exe'))
-    }
-    // 常见 Windows 安装位（app.path 异常时兜底）
-    const roots = [
-      'C:\\Program Files\\Adobe',
-      'C:\\Program Files (x86)\\Adobe'
-    ]
-    for (let r = 0; r < roots.length; r++) {
-      try {
-        if (!fs.existsSync(roots[r])) { continue }
-        const kids = fs.readdirSync(roots[r])
-        for (let k = 0; k < kids.length; k++) {
-          if (!/after effects/i.test(String(kids[k]))) { continue }
-          cands.push(path.join(roots[r], kids[k], 'Support Files', 'aerender.exe'))
-        }
-      } catch (eScan) { /* ignore */ }
-    }
-    for (let i = 0; i < cands.length; i++) {
-      try {
-        if (fs.existsSync(cands[i])) { return cands[i] }
-      } catch (eChk) { /* ignore */ }
-    }
-    return null
-  }
-
-  /** 无 forge 时的最小 aerender 后台进程（对齐 bgrender：独立进程，不堵 AE） */
-  function spawnAerenderRaw (aerenderPath, opts) {
-    return new Promise(function (resolve, reject) {
-      var cp = null
-      try {
-        cp = getChildProcess()
-      } catch (eCp) { cp = null }
-      if (!cp || typeof cp.execFile !== 'function') {
-        reject(new Error('no child_process for aerender'))
-        return
-      }
-      // 官方 -project / -comp / -output；queue 模式只渲 RQ（对齐 bgrenderer）
-      var args = []
-      if (opts.reuse) { args.push('-reuse') }
-      args.push('-project', String(opts.projectPath || ''))
-      if (opts.compName) {
-        args.push('-comp', String(opts.compName))
-      }
-      if (opts.mode !== 'queue' && opts.outputPath) {
-        args.push('-output', String(opts.outputPath))
-      }
-      if (opts.mode !== 'queue' && opts.endFrame != null && opts.endFrame !== '') {
-        args.push('-s', String(opts.startFrame || 0))
-        args.push('-e', String(opts.endFrame))
-      }
-      if (opts.mode !== 'queue' && opts.omTemplate) {
-        args.push('-OMtemplate', String(opts.omTemplate))
-      }
-      args.push('-v', 'ERRORS_AND_PROGRESS')
-      args.push('-continueOnMissingFootage')
-      if (opts.reuse) { args.push('-close', 'DO_NOT_CLOSE') }
-      try {
-        // aerender 在本机常「只打 version 就挂住」：3 分钟强制结束，避免任务永久卡死
-        cp.execFile(aerenderPath, args, { timeout: 45 * 1000, maxBuffer: 1024 * 1024 * 8 }, function (err, stdout, stderr) {
-          var so = String(stdout || '')
-          var se = String(stderr || '')
-          if (err) {
-            reject(new Error(String(err.message || err) + ' | out=' + so.slice(-300) + ' | err=' + se.slice(-300)))
-            return
-          }
-          resolve({ ok: true, stdout: so, stderr: se })
-        })
-      } catch (eSpawn) {
-        reject(eSpawn)
-      }
-    })
-  }
-
-  /**
-   * aerender 后台渲（拷贝自 RenderSmith forge + bgrender 思路）：独立进程，不堵 AE。
-   * 禁止回退 renderQueue.render()——那会锁死 AE。
-   */
-  function tryAerenderExport () {
-    var forge = getAerender()
-    // 只用 PNG 序列模板——空/错误模板会写成 mov，下游要的是序列帧
-    var omCandidates = [
-      'iSparta PNG Sequence',
-      '_HIDDEN X-Factor 8 Premul',
-      '_HIDDEN X-Factor 16 Premul',
-      'PNG Sequence',
-      'PNG 序列'
-    ]
-    // 不再 ispartaPreparePngRqItem：会多出一个 RQ 项（frame_[####].png）
-    return evalJson('ispartaSaveProjectQuiet()')
-      .catch(() => null)
-      .then(() => evalJson('ispartaEnsurePngOmTemplate()').catch(() => null))
-      .then((tplRes) => {
-        if (tplRes && tplRes.ok && tplRes.template) {
-          omCandidates.unshift(tplRes.template)
-        }
-      })
-      .then(() => evalJson('ispartaGetAeHostInfo()'))
-      .then((info) => {
-      if (!info || !info.ok) {
-        throw new Error('aerender host info unavailable')
-      }
-      // 只接受真实 .aep；输出目录绝不能当 project（会弹「找不到该项目 …\\闪闪」）
-      let proj = ''
-      const cands = [basic.projectPath, info.projectPath]
-      for (let i = 0; i < cands.length; i++) {
-        const p = String(cands[i] || '').replace(/^[\s　]+|[\s　]+$/g, '')
-        if (/\.aep$/i.test(p)) {
-          try {
-            if (fs.existsSync(p)) { proj = p; break }
-          } catch (eChk) { /* ignore */ }
-          if (!proj) { proj = p }
-        }
-      }
-      if (!proj) {
-        throw new Error('no .aep projectPath for aerender (got: ' + (info.projectPath || basic.projectPath || '') + ')')
-      }
-      const aerenderPath = findAerender(info.appPath)
-      if (!aerenderPath) {
-        throw new Error('aerender.exe not found')
-      }
-      const outBase = path.join(outDir, 'frame.png')
-      const total = expectedFrames
-      // OM 模板按序尝试：本机隐藏 PNG 模板名不一致时，0 帧会重试
-      function runOne (omTpl) {
-        try {
-          console.log('[aerender] try om=' + (omTpl || '(none)') + ' comp=' + name + ' out=' + outBase)
-          applyProgress(0, total || 1, 'progress')
-        } catch (eLog) { /* ignore */ }
-        // 无 -comp：渲整个 RQ（bgrenderer 模式）；输出已由 RQ 项指定
-      var launchOpts = {
-          projectPath: proj,
-          compName: '',
-          outputPath: outBase,
-          startFrame: 0,
-          endFrame: total > 0 ? (total - 1) : null,
-          totalFrames: total,
-          omTemplate: '',
-          mode: 'queue',
-          reuse: true
-        }
-        // 强制 spawnAerenderRaw：能拿到 stdout/stderr（forge.launch 不回传输出）
-        return spawnAerenderRaw(aerenderPath, launchOpts).then(function (r) {
-          launchOpts.stdout = (r && r.stdout) || ''
-          launchOpts.stderr = (r && r.stderr) || ''
-          return launchOpts
-        })
-      }
-      var lastErr = ''
-      return omCandidates.reduce(function (chain, omTpl) {
-        return chain.then(function (prev) {
-          if (prev) { return prev }
-          return runOne(omTpl).then(function (opts) {
-            var n = countPngs(outDir)
-            if (n > 0) { return opts }
-            lastErr = 'resolved but 0 frames, om=' + omTpl +
-              (opts && opts.stdout ? ' | out=' + String(opts.stdout).slice(-200) : '') +
-              (opts && opts.stderr ? ' | err=' + String(opts.stderr).slice(-200) : '')
-            try { console.warn('[aerender]', lastErr) } catch (eL) { /* ignore */ }
-            return null
-          }, function (e) {
-            lastErr = String((e && e.message) || e || '')
-            try { console.warn('[aerender]', omTpl, lastErr) } catch (eL2) { /* ignore */ }
-            return null
-          })
-        })
-      }, Promise.resolve(null)).then(function (okOpts) {
-        if (!okOpts) {
-          // 最后：不带 OMtemplate（按扩展名 .png 认序列）；再失败才报错
-          return runOne('').then(function (o) {
-            return countPngs(outDir) > 0 ? o : null
-          }, function (e) {
-            lastErr = String((e && e.message) || e || '')
-            return null
-          }).then(function (o2) {
-            if (!o2) {
-              throw new Error('all PNG Sequence OM templates failed (no frames) in ' + outDir +
-                (lastErr ? ' | lastError=' + lastErr : ''))
-            }
-            return o2
-          })
-        }
-        return okOpts
-      }).then(function (okOpts) {
-        // aerender 常「退出 0 但 0 帧」（OM 模板不对时写成 mov 或不写）
-        var usedOm = (okOpts && okOpts.omTemplate) || ''
-        var pngCount = countPngs(outDir)
-        var extras = []
-        try {
-          if (fs && typeof fs.readdirSync === 'function') {
-            extras = fs.readdirSync(outDir).slice(0, 12)
-          }
-        } catch (eL) { /* ignore */ }
-        var movieHit = extras.filter(function (n) {
-          return /\.(mov|avi|mp4|mxf)$/i.test(String(n || ''))
-        })
-        if (movieHit.length && pngCount < 1) {
-          throw new Error('aerender wrote movie not PNG sequence: ' + movieHit.join(', ') +
-            ' | om=' + usedOm)
-        }
-        if (pngCount < 1) {
-          var aeroOut = ''
-          try {
-            if (fs && typeof fs.readFileSync === 'function') {
-              aeroOut = String(fs.readFileSync(path.join(outDir, 'aerender-last.log') || '') || '')
-            }
-          } catch (eRd) { /* ignore */ }
-          throw new Error('aerender produced 0 PNG frames in ' + outDir +
-            ' | om=' + usedOm +
-            ' | files=[' + extras.join(', ') + ']' +
-            (lastErr ? ' | lastError=' + lastErr : '') +
-            (aeroOut ? ' | aero=' + aeroOut.slice(-200) : ''))
-        }
-        return { ok: true, folder: outDir, compName: name, via: 'aerender', frames: pngCount }
-      })
-    })
-  }
 
   const script = isFinite(idx)
     ? 'ispartaExportPngSequenceByIndex(' + idx + ',' + JSON.stringify(location) + ')'
     : 'ispartaMatchComps(' + JSON.stringify([{ name: name }]) + ')'
-  // 本机 aerender 实测会挂死（只打 version 就不动），不再空等。
-  // 主路径走 renderQueue（能出 PNG 序列）；渲完统一归一化为 合成名_序号.png。
+  // 主路径：jsx 内 renderQueue（能出 PNG 序列）；渲完统一归一化为 合成名_序号.png。
+  // （aerender 后台渲本机挂死，整条链路删除；接受 renderQueue 阻塞。）
   return Promise.resolve()
     .then(() => evalJson(script))
     .then((res) => {
@@ -749,49 +525,6 @@ export function getProjectStatus () {
   })
 }
 
-/**
- * 为 Comp 任务异步补首帧封面（不阻塞勾选/列表）。
- * onChange(storeIndex, thumbPath) 由调用方写回 store。
- */
-export function ensureThumbs (items, onChange) {
-  if (!enabled() || typeof onChange !== 'function') return
-  const list = items || []
-  const pending = []
-  for (let i = 0; i < list.length; i++) {
-    const it = list[i]
-    const b = it && it.basic
-    if (!b || b.type !== 'Comp') continue
-    if (b.thumbPath) continue
-    const idx = Number(b.compIndex)
-    if (!isFinite(idx)) continue
-    pending.push({ storeIndex: i, compIndex: idx, name: b.compName || 'comp' })
-  }
-  if (!pending.length) return
-
-  const osBridge = require('../util/node-env').os
-  const pathBridge = require('../util/node-env').path
-  let thumbDir = ''
-  try {
-    thumbDir = pathBridge.join(osBridge.tmpdir(), 'iSparta', 'comp-thumbs')
-  } catch (e) {
-    return
-  }
-
-  // 串行：render queue 同时只能跑一个
-  let p = Promise.resolve()
-  pending.forEach(function (job) {
-    p = p.then(function () {
-      const file = pathBridge.join(thumbDir, 'c' + job.compIndex + '-' + Date.now() + '.png')
-      const script = 'ispartaExportCompThumbByIndex(' + job.compIndex + ',' + JSON.stringify(file) + ')'
-      return evalJson(script).then(function (res) {
-        if (res && res.ok && res.path) {
-          onChange(job.storeIndex, res.path)
-        }
-      }).catch(function () { /* 封面失败不挡任务 */ })
-    })
-  })
-}
-
 export const sourceAdapter = {
   id: 'comp',
   kind: 'comp',
@@ -890,7 +623,6 @@ export const sourceAdapter = {
   },
 
   createItem: toCompItem,
-  ensureThumbs,
   getProjectStatus,
   COMP_MIME
 }
@@ -906,7 +638,6 @@ registerHostSource({
   onDrop: function () { return sourceAdapter.onDrop.apply(sourceAdapter, arguments) },
   onPaste: function () { return sourceAdapter.onPaste.apply(sourceAdapter, arguments) },
   toItems: function () { return sourceAdapter.toItems.apply(sourceAdapter, arguments) },
-  ensureThumbs: function () { return sourceAdapter.ensureThumbs.apply(sourceAdapter, arguments) },
   getProjectStatus: function () { return sourceAdapter.getProjectStatus.apply(sourceAdapter, arguments) },
   openSource: function () { return sourceAdapter.openSource.apply(sourceAdapter, arguments) },
   addByIdentifiers: function () { return sourceAdapter.addByIdentifiers.apply(sourceAdapter, arguments) },

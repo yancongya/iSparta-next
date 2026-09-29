@@ -245,6 +245,7 @@ import appLog from '../log'
 import { f as fsOperate } from '../../components/drag/file.js'
 import { naturalSort } from '../../util/sort'
 import ThemeManager from '../theme'
+import { BP_NARROW, BP_WIDE } from '../styles/breakpoints'
 import { storage } from '../../util/node-env'
 import notice from '../notice'
 import { APP_NAME } from '../../brand'
@@ -265,8 +266,9 @@ const MIN_MAIN_W = 300
 // CEP 窄面板：主列表可更窄，否则右栏被挤死无法拖宽
 function minMainW () {
   if (typeof window === 'undefined') return MIN_MAIN_W
-  // 与壳层断点一致：≤720 视作窄面板（CEP 小屏此时侧栏 display:none，拖拽无意义）
-  return window.innerWidth <= 720 ? 120 : MIN_MAIN_W
+  // 断点统一见 styles/_bp.scss / breakpoints.js；严格 CEP 注入
+  if (hostAdapter.supportsCompImport && window.innerWidth <= BP_WIDE) return 120
+  return MIN_MAIN_W
 }
 // 拖拽折叠阈值：两个值不同形成迟滞区间，避免卡在临界点时反复开合抖动。
 // 展开阈值旧值 230 过大：折叠态 grip 贴在右缘，要先把光标拽出 230px 才有反应，
@@ -479,8 +481,8 @@ export default {
     },
     startResize (e) {
       if (e.button !== 0) return
-      // CEP 极窄面板也允许拖出侧栏（只在真正放不下时禁用）
-      if (window.innerWidth < 360) return
+      // CEP 极窄面板也允许拖出侧栏（只在真正放不下时禁用；断点统一见 styles/_bp.scss，仅 CEP）
+      if (this.supportsCompImport && window.innerWidth < BP_NARROW) return
       e.preventDefault()
       this.resizing = true
       this.langOpen = false

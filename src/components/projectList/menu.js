@@ -16,8 +16,10 @@ function isCepLike () {
 function isElectronHost () {
   if (isCepLike()) { return false }
   try {
-    return !!(window.ispartaAPI && window.ispartaAPI.ipc &&
-      window.process && window.process.versions && window.process.versions.electron)
+    // contextIsolation 下渲染进程无 window.process，不能靠 versions.electron
+    var ua = (typeof navigator !== 'undefined' && navigator.userAgent) || ''
+    if (ua.indexOf('Electron') > -1) { return true }
+    return !!(window.ispartaAPI && window.ispartaAPI.ipc && !window.ispartaCS)
   } catch (e) { return false }
 }
 
@@ -40,6 +42,13 @@ function onMenuKey (ev) {
 function openOsDir (dir) {
   if (!dir) { return }
   var target = String(dir)
+  // 桌面 Electron：优先 shell IPC（showItemInFolder / openPath），不经子进程
+  if (isElectronHost()) {
+    try {
+      ipc.invoke('shell:showItemInFolder', target)
+      return
+    } catch (e0) { /* fall through */ }
+  }
   try {
     var cp = require('../../util/node-env').getChildProcess()
     var os = require('../../util/node-env').os
@@ -193,9 +202,24 @@ function bindMenuClicked () {
         if (outDir) { openOsDir(outDir) }
         break
       }
+      case 'changeDist':
+        // 桌面原生菜单仍在用；CEP DOM 菜单不展示此项
+        ipc.send('change-item-fold', payload.outputPath, payload.index)
+        break
+      case 'delItem':
+        try {
+          if (storeRef && storeRef.dispatch) {
+            storeRef.dispatch('deleteSelected')
+          }
+        } catch (eDel) { /* ignore */ }
+        break
       case 'stopItem': {
         try {
-          if (payload && typeof payload.index === 'number' && storeRef && storeRef.dispatch) {
+          // 桌面：多选时对已选中项批量终止（保持原语义）
+          // CEP：右键不改选中，该项未选中时先定位再停
+          const items = storeRef && storeRef.getters && storeRef.getters.getterItems
+          const it = items && payload && items[payload.index]
+          if (it && !it.isSelected && storeRef.dispatch) {
             storeRef.dispatch('singleSelect', payload.index)
           }
           if (storeRef && storeRef.dispatch) {
@@ -233,6 +257,8 @@ class rightMenu {
         openCompLoc: locale && locale.openCompLoc,
         openOriginal: locale && locale.openOriginal,
         openDist: locale && locale.openDist,
+        changeDist: locale && locale.changeDist,
+        delItem: locale && locale.delItem,
         stopItem: locale && locale.stopItem
       }
     }
