@@ -130,3 +130,24 @@
 
   &__vars { margin-top: 0; }
 }
+
+// --------------------------------------------------------------------------
+// CEP 注入：默认设置弹窗铺满（对齐日志面板 log-panel / log-dialog）；桌面仍 560px 居中
+// 严格 CEP 门控，见 AGENTS.md §8.2 / docs/CEP-UPGRADE-SCOPE.md
+// --------------------------------------------------------------------------
+html.is-cep {
+  // 外层遮罩容器收紧 padding——与 log-dialog 同法，否则左右被 --is-s-6 卡住
+  .is-dialog.gs-dialog {
+    padding: 6px;
+  }
+
+  .is-dialog__panel.gs-panel {
+    width: 100%;
+    height: calc(100vh - 12px);
+    max-height: calc(100vh - 12px);
+
+    .is-dialog__body {
+      overflow-y: auto;
+    }
+  }
+}

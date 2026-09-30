@@ -3,7 +3,9 @@
     <is-dialog
       :visible.sync="dialogFormVisible"
       :title="$t('defaultSetting')"
-      width="560px"
+      :width="dialogWidth"
+      panel-class="gs-panel"
+      root-class="gs-dialog"
       :close-on-click-modal="false"
       @open="resetVarible"
     >
@@ -266,6 +268,7 @@ import {
 import updateService from '../../util/updateService'
 import IsProgress from '../../ui-next/components/ui/IsProgress.vue'
 import notice from '../../ui-next/notice'
+import hostAdapter from '../../util/host-env'
 
 const DEFAULT_SIZE_LIMIT = {
   enabled: false,
@@ -301,6 +304,10 @@ export default {
     }
   },
   computed: {
+    // CEP：铺满（IsDialog 内联 width 会盖 CSS，必须在 prop 层给）；桌面 560px
+    dialogWidth () {
+      return (hostAdapter && hostAdapter.supportsCompImport) ? '100%' : '560px'
+    },
     updateUi () {
       return updateService.getUpdateState()
     },
