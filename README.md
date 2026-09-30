@@ -22,10 +22,12 @@
 - **Windows（NSIS 安装版）/ Linux（AppImage）** 支持应用内自动更新通道；**macOS** 未签名，下载 zip 后解压覆盖（系统设置 → 隐私与安全性 → 仍要打开）。
 - 架构、限制与测试入口：[`docs/UPDATER.md`](docs/UPDATER.md)；发版步骤：[`docs/RELEASE.md`](docs/RELEASE.md)；版本摘要：[`docs/CHANGELOG.md`](docs/CHANGELOG.md)。
 - Windows 免费开源签名申请步骤见 [docs/SIGNPATH.md](docs/SIGNPATH.md)。
-- **AE 扩展（开发中）**：After Effects CEP 面板与桌面共用转换核，计划见 [`docs/PLAN-DUAL-TARGET.md`](docs/PLAN-DUAL-TARGET.md)。
+- **AE 扩展（一体安装）**：After Effects 内直接选合成 → 渲 PNG 序列 → APNG / WebP / GIF，与桌面同一套转换核。Windows 安装向导可同时装桌面 + AE 扩展；升级边界见 [`docs/CEP-UPGRADE-SCOPE.md`](docs/CEP-UPGRADE-SCOPE.md)、计划见 [`docs/PLAN-DUAL-TARGET.md`](docs/PLAN-DUAL-TARGET.md)。
 
 ### 近期体验更新
 
+- **AE 扩展**：合成树 / 任务列表双视图一键切换；右键打开合成位置 / 输出目录 / 终止任务；双击定位合成；过滤条钉顶
+- **一体安装**：组件页可选「所有用户（推荐）/ 仅当前用户」，自动扫描 AE 版本；桌面与扩展均显示版本号
 - 空态导入面板：文件夹开合动画 + 立体键帽粘贴提示
 - 空态标题蓝渐变，支持点击 / 拖拽 / Ctrl+V 导入
 
