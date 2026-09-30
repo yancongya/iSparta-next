@@ -152,6 +152,7 @@ CI：`release.yml` 负责 bump、打包、挂 Release（notes 模板见该 workf
 - **禁止简化版 UI**：扩展完整复用桌面工作台（列表/设置/命名/路径）；AE 特殊化仅通过 **注入/适配层**（jsx 宿主、合成输入源、host adapter），不得维护平行精简面板。
 - **双端一起更**：同一 NSIS/Release 更新桌面与 AE 扩展；扩展不单独热更。桌面 electron-updater 完成后由应用自检并刷新 CEP 目录；CEP 内不跑 electron-updater。
 - 不用 Bolt/Nx；一体安装走现有 NSIS 组件页；发版仍须用户点名（§2.2）。
+- **安装范围与 AE 探测**：系统级 Common Files（推荐，需管理员）与用户级 APPDATA **互斥禁双写**；AE 版本用注册表+多盘枚举探测，仅用于校验/展示/PlayerDebugMode，不装多份。详见 [`docs/PLAN-DUAL-TARGET.md`](docs/PLAN-DUAL-TARGET.md) §9。
 - 实现阶段同步更新本节与 `docs/PLAN-DUAL-TARGET.md` 勾选状态。
 
 ## 8.2 视口断点统一约束（强制）

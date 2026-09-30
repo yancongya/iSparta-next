@@ -142,3 +142,74 @@
   - T5.4 P3 一体安装（W3）  
   - T5.5 P4 CI/CD（W4）  
   - T5.6 P5 文档与 AGENTS 同步（W5）
+
+## 9. 安装范围 / AE 版本探测 / 回退链（设计说明，待实现）
+
+> 调研结论：CEP 扩展目录**不分 AE 版本**，一份拷贝通吃 2023/2024/2025。
+> 「选版本」的正确语义 = 校验兼容 + 展示 + 写对应 CSXS 的 PlayerDebugMode，**不是装多份**。
+
+### 9.1 AE 版本探测（多盘，不只 C 盘）
+
+| 手段 | 说明 | 优先级 |
+| --- | --- | --- |
+| 注册表 | `HKLM\\SOFTWARE\\Adobe\\After Effects\\<ver>`（含 WOW6432Node），取 InstallPath | ★★★ 首选，与盘符无关 |
+| 全盘枚举 | `DriveGet` 取固定盘符 → `\\Program Files\\Adobe\\Adobe After Effects *\\Support Files`（含 x86） | ★★ 兜底，覆盖手动挪盘/绿色安装 |
+| 安装清单 | `%ProgramData%\\Adobe\\Install\\` | ★ 偶发补充 |
+| 运行时 | jsx `app.path` | 仅 AE 内，不用于安装器 |
+
+用途：展示「检测到 AE 2023 / 2024 / 2025」、校验 manifest `[15.0,99.9]` 兼容、按 CSXS 主版本写 PlayerDebugMode。
+
+### 9.2 安装目标（两候选，**互斥**）
+
+| 级别 | 路径 | 权限 | 覆盖 |
+| --- | --- | --- | --- |
+| **系统级（推荐）** | `C:\\Program Files (x86)\\Common Files\\Adobe\\CEP\\extensions` | 需管理员（UAC 提权） | 所有用户 × 所有 AE 版本 |
+| 用户级 | `%APPDATA%\\Adobe\\CEP\\extensions` | 免管理员 | 当前用户 × 所有 AE 版本 |
+
+**互斥规则**：二选一，**禁止双写**（Common Files 与 APPDATA 并存会引发 CEP 加载优先级歧义 / 重复加载）。
+当前 `installer.nsh` 的 `UAC_IsAdmin` 顺带双写行为**须改**。
+
+### 9.3 UAC 流程
+
+```
+组件页勾「AE 扩展」
+    ↓
+询问安装范围（UAC）
+├─ 推荐：管理员安装（统一 Common Files）
+│     → RequestExecutionLevel admin / UAC 提权
+│     → 写 Common Files\\Adobe\\CEP\\extensions\\<EXT_ID>
+│     → 所有 AE 版本 + 所有用户
+└─ 仅当前用户（不提权）
+      → 写 %APPDATA%\\Adobe\\CEP\\extensions\\<EXT_ID>
+      → 仅当前用户（AE 全版本仍可用）
+```
+
+### 9.4 识别失败回退链
+
+```
+1. 注册表扫到 AE 安装路径 → 校验目标盘可写
+2. 全盘目录枚举（D/E/F…）→ 找 *After Effects *\\Support Files
+3. 都识别不到 → 提示「未检测到 AE」
+   ├─ 仍可按默认 CEP 目录安装（后续装 AE 也能加载）
+   └─ 或用户手动 Browse / 自填目录
+```
+
+> 一个 AE 都没扫到时仍可装：CEP 扩展不绑定 AE 安装路径，装 AE 后自然加载。
+
+### 9.5 升级测试关注点
+
+1. 多盘 AE 探测展示正确
+2. 管理员 → Common Files 单份；user-only → APPDATA 单份；**不双写**
+3. 热更 `cepSync.js` 目标目录与安装级别对齐（Common Files 需提权/提示）
+4. PlayerDebugMode 按探测到的 CSXS 主版本写（现 6–14；AE2025 若 CSXS 15 需补）
+5. CI/CD：`build.yml`/`release.yml` 的 cep job **须先 `npm run build:cep`**（当前只 rsync `targets/cep/`，会打进过时 UI）
+
+### 9.6 现状缺口（实现前必改）
+
+| 项 | 现状 | 目标 |
+| --- | --- | --- |
+| AE 多盘探测 | 无 | 注册表 + 全盘枚举 |
+| 安装互斥 | UAC_IsAdmin 顺带双写 | 二选一，禁双写 |
+| UAC 推荐流 | 无 | 组件页区分「推荐管理员 / 仅当前用户」 |
+| 手动选目录 | 无 | 识别失败时 Browse 兜底 |
+| CI 构建 CEP UI | 只 rsync 旧产物 | 打 zip 前 `build:cep` |

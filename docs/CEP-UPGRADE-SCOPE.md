@@ -105,3 +105,11 @@ CEP 下「日志 / 默认设置」等弹窗要铺满面板时，**必须同时�
 - `src/components/globalSetting/globalSetting.vue` → `gs-dialog` / `gs-panel`（globalSetting.scss）
 
 桌面不得铺满：宽度走 `dialogWidth` 这类宿主判定（`hostAdapter.supportsCompImport`），样式包 `body.is-cep`。
+
+## 9. 安装范围与 AE 探测
+
+见 [`docs/PLAN-DUAL-TARGET.md`](PLAN-DUAL-TARGET.md) **§9**：
+- AE 版本多盘探测（注册表 + 全盘枚举）→ 校验/展示/PlayerDebugMode，不装多份
+- 系统级 Common Files（推荐，管理员）与用户级 APPDATA **互斥禁双写**
+- 识别失败三级回退：注册表 → 全盘枚举 → 提示/手动选目录
+- CI 打 CEP zip 前须 `npm run build:cep`
