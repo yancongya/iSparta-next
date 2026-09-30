@@ -163,26 +163,26 @@ Var ispartaAeFound
       Abort
     ${endIf}
 
-    ${NSD_CreateLabel} 0u 0u 100% 24u "选择要安装的组件（至少一项）：桌面工作台和 / 或 After Effects 扩展面板。"
+    ${NSD_CreateLabel} 0u 0u 100% 18u "选择要安装的组件（至少一项）：桌面工作台和 / 或 After Effects 扩展面板。"
     Pop $0
 
-    ${NSD_CreateCheckbox} 10u 36u 90% 20u "桌面版 iSparta-next（开始菜单 / 桌面快捷方式）"
+    ${NSD_CreateCheckbox} 10u 22u 90% 18u "桌面版 iSparta-next（开始菜单 / 桌面快捷方式）"
     Pop $ispartaChkDesktop
     ${if} $ispartaInstallDesktop == "1"
       ${NSD_Check} $ispartaChkDesktop
     ${endIf}
 
-    ${NSD_CreateCheckbox} 10u 64u 90% 20u "After Effects 扩展 iSparta（CEP 面板）"
+    ${NSD_CreateCheckbox} 10u 42u 90% 18u "After Effects 扩展 iSparta（CEP 面板）"
     Pop $ispartaChkAe
     ${if} $ispartaInstallAe == "1"
       ${NSD_Check} $ispartaChkAe
     ${endIf}
 
     ; 安装范围互斥（§9）：系统级 vs 用户级，二选一禁双写
-    ${NSD_CreateGroupBox} 10u 96u 90% 74u "AE 扩展安装范围（二选一，不重复落盘）"
+    ${NSD_CreateGroupBox} 10u 66u 90% 62u "AE 扩展安装范围（二选一，不重复落盘）"
     Pop $0
 
-    ${NSD_CreateRadioButton} 20u 114u 88% 18u "所有用户 —— 统一 CEP 目录（推荐，需管理员）"
+    ${NSD_CreateRadioButton} 20u 82u 88% 16u "所有用户 —— 统一 CEP 目录（推荐，需管理员）"
     Pop $ispartaRadAll
     ${if} $ispartaCepScope == "all"
       ${NSD_Check} $ispartaRadAll
@@ -190,21 +190,21 @@ Var ispartaAeFound
       ${NSD_Check} $ispartaRadAll
     ${endIf}
 
-    ${NSD_CreateRadioButton} 20u 134u 88% 18u "仅当前用户（免管理员，不提权）"
+    ${NSD_CreateRadioButton} 20u 100u 88% 16u "仅当前用户（免管理员，不提权）"
     Pop $ispartaRadUser
     ${if} $ispartaCepScope == "user"
       ${NSD_Check} $ispartaRadUser
     ${endIf}
 
-    ${NSD_CreateLabel} 20u 154u 88% 14u "推荐管理员安装：所有用户 × 所有 AE 版本一份拷贝"
+    ${NSD_CreateLabel} 20u 118u 88% 12u "推荐管理员安装：所有用户 × 所有 AE 版本一份拷贝"
     Pop $0
 
     ; AE 探测结果展示
     Call ispartaDetectAe
-    ${NSD_CreateLabel} 10u 176u 90% 30u "AE 检测：$ispartaAeDetectLabel"
+    ${NSD_CreateLabel} 10u 134u 90% 16u "AE 检测：$ispartaAeDetectLabel"
     Pop $ispartaAeDetectLabel
 
-    ${NSD_CreateLabel} 10u 210u 90% 40u "未签名扩展会自动开启 CSXS PlayerDebugMode。安装后请重启 After Effects。识别不到 AE 时仍可安装（装 AE 后自动加载），或解压 zip 手动放入 CEP extensions 目录。"
+    ${NSD_CreateLabel} 10u 154u 90% 26u "未签名扩展会自动开启 CSXS PlayerDebugMode。安装后请重启 After Effects。识别不到 AE 时仍可安装（装 AE 后自动加载）。"
     Pop $0
 
     nsDialogs::Show
