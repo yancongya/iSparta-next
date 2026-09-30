@@ -92,6 +92,7 @@
       <a href="#naming" data-i18n="nav.naming">命名</a>
       <a href="#log" data-i18n="nav.log">日志</a>
       <a href="#compare" data-i18n="nav.compare">对比</a>
+      <a href="#ae" data-i18n="nav.ae">AE</a>
       <a href="#shots" data-i18n="nav.shots">界面</a>
       <a href="#lineage" data-i18n="nav.lineage">脉络</a>
       <a class="nav-gh" href="https://github.com/yancongya/iSparta-next" target="_blank" rel="noopener" data-i18n-aria="nav.github" title="GitHub">
@@ -328,6 +329,36 @@
         </div>
         <p class="pipeline-note" id="pipeline-note">当前路径：<strong>PNG 序列 → APNG</strong></p>
       </div>
+    </div>
+  </section>
+
+  <!-- 双端一体：桌面 + AE 扩展 -->
+  <section class="section section-ae" id="ae">
+    <div class="section-head">
+      <p class="eyebrow mono" data-i18n="ae.eb">02 · AFTER EFFECTS</p>
+      <h2 data-i18n="ae.h2">装一次，桌面与 AE 都能用</h2>
+      <p class="section-sub" data-i18n="ae.sub">
+        同一套 Vue 工作台与同一套转换核：桌面管文件动图，After Effects 扩展管合成导出。
+        AE 里选合成 → 渲 PNG 序列 → 直接出 APNG / WebP / GIF，不用再开别的工具。
+      </p>
+    </div>
+    <div class="about-grid">
+      <article class="about-card">
+        <h3 data-i18n="ae.1t">一体安装</h3>
+        <p data-i18n="ae.1d">一个安装包，组件页勾选「桌面版 / AE 扩展」，可只装其一；安装范围支持所有用户或仅当前用户。</p>
+      </article>
+      <article class="about-card">
+        <h3 data-i18n="ae.2t">AE 内完成渲染合成</h3>
+        <p data-i18n="ae.2d">在 After Effects 里选合成、渲 PNG 序列、压缩合成动图，全流程不出 AE；合成树与任务列表可一键切换。</p>
+      </article>
+      <article class="about-card">
+        <h3 data-i18n="ae.3t">UI 注入式适配</h3>
+        <p data-i18n="ae.3d">不是另做一套精简面板：同一套工作台 UI，针对 AE 小屏做注入式升级——顶栏布局、断点铺满、合成语义右键菜单，全部按宿主适配。</p>
+      </article>
+      <article class="about-card">
+        <h3 data-i18n="ae.4t">同一转换核</h3>
+        <p data-i18n="ae.4d">两端共用压缩 / 合成 / 降质流水线，输出体积阈值、路径变量、命名拆词行为完全一致。</p>
+      </article>
     </div>
   </section>
 
@@ -583,7 +614,7 @@
       <div>
         <p class="eyebrow mono" data-i18n="dl.eb">07 · GET IT</p>
         <h2 data-i18n="dl.h2">选一个系统，直接开箱</h2>
-        <p class="section-sub" data-i18n="dl.sub">安装包由 GitHub Actions 构建。Windows / Linux 安装版支持应用内自动更新；macOS 未签名，首次打开见 Release 说明。</p>
+        <p class="section-sub" data-i18n="dl.sub">安装包由 GitHub Actions 构建。Windows 包可同时安装桌面与 AE 扩展。Windows / Linux 安装版支持应用内自动更新；macOS 未签名，首次打开见 Release 说明。</p>
       </div>
       <div class="dl-grid">
         <a class="dl-card" data-dl="win" href="https://github.com/yancongya/iSparta-next/releases/latest/download/isparta-next-win-x64.exe" target="_blank" rel="noopener">
@@ -601,6 +632,15 @@
         <a class="dl-card" data-dl="linux" href="https://github.com/yancongya/iSparta-next/releases/latest/download/isparta-next-linux-x64.AppImage" target="_blank" rel="noopener">
           <span class="dl-os">Linux</span>
           <span class="dl-file mono">linux-x64.AppImage · latest</span>
+        </a>
+
+        <a class="dl-card" data-dl="cepWin" href="https://github.com/yancongya/iSparta-next/releases/latest/download/isparta-next-cep-win.zip" target="_blank" rel="noopener">
+          <span class="dl-os">AE 扩展 · Windows</span>
+          <span class="dl-file mono">cep-win.zip · 解压到 CEP extensions</span>
+        </a>
+        <a class="dl-card" data-dl="cepMac" href="https://github.com/yancongya/iSparta-next/releases/latest/download/isparta-next-cep-mac.zip" target="_blank" rel="noopener">
+          <span class="dl-os">AE 扩展 · macOS</span>
+          <span class="dl-file mono">cep-mac.zip · 解压到 CEP extensions</span>
         </a>
       </div>
     </div>
