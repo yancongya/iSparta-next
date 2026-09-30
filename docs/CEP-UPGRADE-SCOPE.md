@@ -89,3 +89,19 @@
 | 视口断点误伤桌面收窄 | **已修**：`body.is-cep` + `supportsCompImport` 门控 |
 | 过滤条 / 底栏选中总数 / 双击定位 | 门控 `isCepHost` / type=Comp，桌面文件任务不触发 |
 | 合成缩略图删除 | 桌面文件缩略图（`fileList` 首帧）路径不受影响 |
+
+## 8. 弹窗铺满写法（CEP 强制）
+
+CEP 下「日志 / 默认设置」等弹窗要铺满面板时，**必须同时做三件事**，少一件都会被内联样式或外层 padding 卡住：
+
+| 步骤 | 做法 | 反例 |
+| --- | --- | --- |
+| 1. 内联宽度 | IsDialog 的 `width` prop 传 `'100%'`（CEP 动态计算，桌面保留固定值） | 只写 CSS `width:100%` 会被内联 `width:560px` 盖掉 |
+| 2. 外层 padding | 传 `root-class`（如 `log-dialog` / `gs-dialog`），CSS 收紧 `.is-dialog.xxx { padding: 6px; }` | 不收 padding 时左右被默认 `--is-s-6` 卡出边距 |
+| 3. 面板尺寸 | `panel-class`（如 `log-panel` / `gs-panel`）+ `body.is-cep` 门控，给 `width/height/max-height: calc(100vh - 12px)` | 不加 `max-height` 覆盖会被基类 `calc(100vh - s-12)` 限制 |
+
+参考实现：
+- `src/ui-next/components/IsLogPanel.vue` → `log-dialog` / `log-panel`（ui.scss）
+- `src/components/globalSetting/globalSetting.vue` → `gs-dialog` / `gs-panel`（globalSetting.scss）
+
+桌面不得铺满：宽度走 `dialogWidth` 这类宿主判定（`hostAdapter.supportsCompImport`），样式包 `body.is-cep`。

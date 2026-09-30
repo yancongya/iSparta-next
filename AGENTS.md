@@ -169,6 +169,16 @@ CI：`release.yml` 负责 bump、打包、挂 Release（notes 模板见该 workf
 - **条目 `@container` 340/480** 是组件内部几何断点，与视口断点分层，不共用 token，但需注释标明。
 - 改断点值必须同时改 `_bp.scss` 与 `breakpoints.js`，并在本表更新。
 
+## 8.3 CEP 弹窗铺满（强制）
+
+CEP 下弹窗要铺满时必须三件套同时做，缺一就会被内联样式 / 外层 padding 卡住：
+
+1. IsDialog `width` prop 传 `'100%'`（宿主动态，桌面保留固定值）
+2. `root-class` 收紧 `.is-dialog` 外层 `padding: 6px`（如 `log-dialog` / `gs-dialog`）
+3. `panel-class` + `body.is-cep` 门控，覆盖 `width/height/max-height`
+
+细节与反例见 [`docs/CEP-UPGRADE-SCOPE.md`](docs/CEP-UPGRADE-SCOPE.md) §8。参考：`IsLogPanel.vue`、`globalSetting.vue`。
+
 ## 9. 文档索引
 
 | 文档 | 用途 |
