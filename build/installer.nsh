@@ -235,9 +235,23 @@ Var ispartaAeFound
     ${andIfNot} ${UAC_IsAdmin}
       MessageBox MB_YESNO|MB_ICONQUESTION "推荐以管理员身份安装到统一 CEP 目录（所有用户 × 所有 AE 版本一份拷贝）。$\r$\n是否以管理员继续？$\r$\n选「否」则退回仅当前用户安装。" IDYES ispartaElevate IDNO ispartaFallbackUser
       ispartaElevate:
-        ; UAC 提权重跑（electron-builder 自带 UAC.nsh：UAC_RunElevated → UAC::_ 0）
+        ; UAC_RunElevated 返回码：$0=0 成功；$1=1 子进程已起(Quit) / 2 已是管理员 / 3 需重试
         !insertmacro UAC_RunElevated
-        Quit
+        ${If} $0 = 0
+          ${If} $1 = 1
+            ; 高权限子进程已接管，本进程退出
+            Quit
+          ${ElseIf} $1 = 3
+            ; runas 里填了非管理员账号 → 再申请一次
+            MessageBox MB_OK|MB_ICONEXCLAMATION "刚才的账号没有管理员权限。$\r$\n请重新授权，或改选「仅当前用户」。"
+            Goto ispartaElevate
+          ${EndIf}
+          ; $1=2：当前已是管理员，继续安装
+        ${Else}
+          ; 提权被取消 / 失败：警告并留在本页重试
+          MessageBox MB_OK|MB_ICONEXCLAMATION "申请管理员权限失败或已取消。$\r$\n请点「下一步」重新授权，或改选「仅当前用户」。"
+          Abort
+        ${EndIf}
       ispartaFallbackUser:
         StrCpy $ispartaCepScope "user"
     ${endIf}
