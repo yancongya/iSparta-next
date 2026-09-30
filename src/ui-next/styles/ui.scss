@@ -17,6 +17,8 @@
   height: 1em;
   color: inherit;
   vertical-align: -0.15em;
+  // 图标不吃点击，事件落到外层按钮
+  pointer-events: none;
 
   svg {
     display: block;

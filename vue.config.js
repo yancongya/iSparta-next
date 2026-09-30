@@ -14,7 +14,8 @@ module.exports = {
     config.target('web')
     config.resolve.alias.set('events', require.resolve('events/'))
     try { config.plugins.delete('hmr') } catch (e) { /* ignore */ }
-  },
+
+      },
   configureWebpack: {
     target: 'web'
   },

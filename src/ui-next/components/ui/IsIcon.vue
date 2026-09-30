@@ -11,6 +11,10 @@
 <script>
 import { ICONS, SIZES } from './icons'
 
+/**
+ * 图标渲染：icons.js 内联 path（源文件 src/ui-next/icons/*.svg），
+ * 包一层 <svg> 后 v-html；CSS 里 svg{stroke:currentColor} 随主题着色。
+ */
 export default {
   name: 'IsIcon',
   props: {
