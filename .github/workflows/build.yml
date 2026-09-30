@@ -135,6 +135,14 @@ jobs:
         with:
           node-version-file: '.nvmrc'
 
+
+      - name: Build CEP UI (fresh)
+        shell: bash
+        run: |
+          set -euo pipefail
+          # 必须先构建 UI：targets/cep/ui/js 入库产物可能过时，zip 内不许带旧包
+          npm ci --ignore-scripts
+          npm run build:cep
       - name: Pack CEP extension zip
         shell: bash
         env:
