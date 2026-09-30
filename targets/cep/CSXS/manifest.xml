@@ -22,7 +22,7 @@
         <Extension Id="io.github.isparta-next">
             <DispatchInfo>
                 <Resources>
-                    <MainPath>./dev-hmr.html</MainPath>
+                    <MainPath>./ui/index.html</MainPath>
                     <ScriptPath>./jsx/hostscript.jsx</ScriptPath>
                     <CEFCommandLine>
                         <Parameter>--enable-nodejs</Parameter>

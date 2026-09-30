@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <title>iSparta 输出设置</title>
+    <script>
+      (function () {
+        var http = location.protocol === 'http:' || location.protocol === 'https:'
+        var base = http ? '/lib/' : '../lib/'
+        document.write('<script src="' + base + 'cep-bridge.js"><\/script>')
+        document.write('<script src="' + base + 'forge.js"><\/script>')
+        document.write('<script src="' + base + 'cs.js"><\/script>')
+      })()
+    </script>
+  <link href="js/chunk-common.js" rel="preload" as="script"><link href="js/chunk-vendors.js" rel="preload" as="script"><link href="js/settings.js" rel="preload" as="script"></head>
+  <body>
+    <div id="app"></div>
+  <script type="text/javascript" src="js/chunk-vendors.js"></script><script type="text/javascript" src="js/chunk-common.js"></script><script type="text/javascript" src="js/settings.js"></script></body>
+</html>
