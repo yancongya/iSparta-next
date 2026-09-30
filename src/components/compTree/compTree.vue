@@ -390,7 +390,11 @@ export default {
   overflow: hidden;
 }
 .mod-ct__head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
   border-bottom: 1px solid var(--is-line, rgba(128, 128, 128, 0.25));
+  background: var(--is-bg, #0c0f0e);
   font-weight: 600;
   opacity: 0.85;
 }

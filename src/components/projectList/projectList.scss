@@ -20,17 +20,19 @@
     padding: var(--is-s-3) var(--is-s-3) var(--is-s-1);
   }
 
-  // 过滤条：对齐合成树表头（搜索 / 帧率 / 帧数）
+  // 过滤工具条（非表头）：勾选 + 搜索 + 排序 chips；钉在滚动区顶部不随内容滚
   &__filter {
+    position: sticky;
+    top: 0;
+    z-index: 2;
     display: flex;
     align-items: center;
-    min-height: 28px;
-    padding: 2px 8px 2px 12px;
-    gap: 0;
-    border-bottom: 1px solid var(--is-line, rgba(128, 128, 128, 0.25));
+    min-height: 32px;
+    padding: 4px 8px;
+    gap: 6px;
+    border-bottom: 1px solid var(--is-border);
+    background: var(--is-bg, #0c0f0e);
     font-size: var(--is-fs-sm, 12px);
-    font-weight: 600;
-    opacity: 0.9;
   }
 
   &__fcol {
@@ -40,41 +42,64 @@
     text-overflow: ellipsis;
   }
 
+  &__fcol--cb {
+    flex: 0 0 28px;
+    width: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
   &__fcol--name {
     flex: 1 1 0;
     min-width: 0;
     display: flex;
     align-items: center;
-    padding-right: 8px;
-  }
-
-  &__fcol--num {
-    width: 64px;
-    flex: 0 1 64px;
-    min-width: 40px;
-    text-align: right;
-    padding-right: 8px;
-    background: transparent;
-    border: 0;
-    color: inherit;
-    font: inherit;
-    cursor: pointer;
-
-    &:hover { color: var(--is-accent, #c8f542); }
+    padding-right: 4px;
   }
 
   &__fcol--act {
-    width: 36px;
-    flex: 0 0 36px;
+    flex: 0 0 32px;
+    width: 32px;
+  }
+
+  // 排序 chips：与日志筛选 chip 同语言，不再冒充表格列头
+  &__chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    flex: none;
+    height: 24px;
+    padding: 0 10px;
+    border: 1px solid var(--is-border);
+    border-radius: var(--is-r-pill);
+    background: var(--is-card-hi);
+    color: var(--is-text-2);
+    font-family: inherit;
+    font-size: var(--is-fs-xs);
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+
+    &:hover {
+      border-color: var(--is-border-strong);
+      color: var(--is-text);
+    }
+
+    &.is-on {
+      border-color: rgba(var(--is-accent-rgb), 0.45);
+      background: var(--is-accent-soft);
+      color: var(--is-accent);
+    }
   }
 
   &__search {
     width: 100%;
     min-width: 0;
-    height: 22px;
+    height: 24px;
     padding: 0 8px;
-    border: 1px solid var(--is-line, rgba(128, 128, 128, 0.3));
-    border-radius: var(--is-r-sm, 4px);
+    border: 1px solid var(--is-border);
+    border-radius: var(--is-r-pill);
     background: var(--is-inset, transparent);
     color: var(--is-text);
     font: inherit;
@@ -82,7 +107,7 @@
     outline: none;
 
     &:focus {
-      border-color: var(--is-accent, #c8f542);
+      border-color: var(--is-accent);
     }
 
     &::-webkit-search-cancel-button {
@@ -593,7 +618,7 @@
 // 断点统一见 ui-next/styles/_bp.scss（与 sortBar 同档 $bp-wide，原 900 并入）
 // 严格 CEP 注入，不作用于桌面收窄
 @media (max-width: $bp-wide) {
-  body.is-cep .mod-list {
+  html.is-cep .mod-list {
     .meta { gap: var(--is-s-2); }
     .status { min-width: 0; }
     .progress { width: 64px; }

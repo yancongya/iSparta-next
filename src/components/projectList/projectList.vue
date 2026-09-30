@@ -6,7 +6,17 @@
     @mousedown="onListMouseDown"
   >
     <!-- CEP/桌面任务列表过滤条：对齐合成树表头，列改为搜索 / 帧率 / 帧数 -->
+    <!-- 任务列表工具条（非表头）：勾选占位 + 搜索 + 排序 chips；钉在滚动区顶部 -->
     <div v-if="showFilterBar" class="mod-list__filter">
+      <span class="mod-list__fcol mod-list__fcol--cb">
+        <is-checkbox
+          :value="allChecked"
+          :indeterminate="indeterminate"
+          :disabled="isLocked"
+          :aria-label="$t('selectAll')"
+          @change="toggleAllChecked"
+        />
+      </span>
       <span class="mod-list__fcol mod-list__fcol--name">
         <input
           v-model="filterKeyword"
@@ -16,10 +26,10 @@
           spellcheck="false"
         />
       </span>
-      <button type="button" class="mod-list__fcol mod-list__fcol--num" @click="sortBy('fps')">
+      <button type="button" class="mod-list__chip" :class="{ 'is-on': sortKey === 'fps' }" @click="sortBy('fps')">
         {{ $t('compColFps') }}{{ sortMark('fps') }}
       </button>
-      <button type="button" class="mod-list__fcol mod-list__fcol--num" @click="sortBy('frames')">
+      <button type="button" class="mod-list__chip" :class="{ 'is-on': sortKey === 'frames' }" @click="sortBy('frames')">
         {{ $t('compColFrames') }}{{ sortMark('frames') }}
       </button>
       <span class="mod-list__fcol mod-list__fcol--act"></span>
@@ -271,6 +281,18 @@ export default {
     },
     isMultiItems () {
       return this.selectedList.length > 1
+    },
+    itemCount () {
+      return (this.$store.getters.getterItems || []).length
+    },
+    selectedCount () {
+      return this.selectedList.length
+    },
+    allChecked () {
+      return this.itemCount > 0 && this.selectedCount === this.itemCount
+    },
+    indeterminate () {
+      return this.selectedCount > 0 && this.selectedCount < this.itemCount
     },
     projectList () {
       var items = this.$store.getters.getterItems || []
@@ -751,6 +773,14 @@ export default {
       var project = this.projectList[index]
       var si = this.storeIndexOf(project)
       if (si >= 0) this.$store.dispatch('multiSelect', si)
+    },
+    toggleAllChecked () {
+      if (this.isLocked) return
+      if (this.allChecked) {
+        this.$store.dispatch('noneSelect')
+      } else {
+        this.$store.dispatch('allSelect')
+      }
     },
     itemRightClick (ev, project, index) {
       // 右键只出菜单，不改选中（避免被当成「选中合成作为任务」）

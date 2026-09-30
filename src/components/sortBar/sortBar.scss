@@ -204,7 +204,7 @@
 // 窄屏仍保留键盘图标（可点开说明），不再常驻键帽
 // 断点统一见 ui-next/styles/_bp.scss；严格 CEP 注入，不作用于桌面收窄
 @media (max-width: $bp-wide) {
-  body.is-cep .mod-bar .bar-kbd__panel {
+  html.is-cep .mod-bar .bar-kbd__panel {
     min-width: 200px;
   }
 }
