@@ -63,7 +63,7 @@ function createWindow () {
     // Electron 默认图标。exe 文件自身的图标由 electron-builder 的 rcedit 负责，另一回事。
     icon: path.join(__static, 'icons/icon.' + (process.platform === 'win32' ? 'ico'
       : process.platform === 'darwin' ? 'icns' : 'png')),
-    title: app.getName(),
+    title: app.getName() + ' ' + app.getVersion(),
     show: false,
     autoHideMenuBar: true,
     webPreferences: {
@@ -89,12 +89,12 @@ function createWindow () {
   win.on('closed', () => {
     win = null
   })
-  // 页面 <title> 会覆盖窗口标题，统一锁到 productName（iSparta-next）
+  // 页面 <title> 会覆盖窗口标题，统一锁到 productName + 版本号
   win.on('page-title-updated', (event) => {
     event.preventDefault()
   })
   win.once('ready-to-show', () => {
-    win.setTitle(app.getName())
+    win.setTitle(app.getName() + ' ' + app.getVersion())
     win.show()
   })
 }

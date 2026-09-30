@@ -106,6 +106,20 @@ function main () {
     copyFile(path.join(srcCep, 'bin', 'README.md'), path.join(outExt, 'bin', 'README.md'))
   }
 
+  // 扩展显示名带版本号：AE「窗口→扩展」菜单可见（payload 内改，不污染源码）
+  try {
+    const pkgVer = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8')).version
+    const mfOut = path.join(outExt, 'CSXS', 'manifest.xml')
+    if (fs.existsSync(mfOut) && pkgVer) {
+      let xml = fs.readFileSync(mfOut, 'utf8')
+      xml = xml.replace(/<Menu>[^<]*<\/Menu>/, '<Menu>iSparta-next ' + pkgVer + '<\/Menu>')
+      fs.writeFileSync(mfOut, xml)
+      console.log('  menu    iSparta-next ' + pkgVer)
+    }
+  } catch (eMenu) {
+    console.warn('prepare-cep-payload WARN manifest Menu 版本注入失败', eMenu && eMenu.message)
+  }
+
   const stagedBins = stageBinaries()
   const win64 = stagedBins.filter((s) => s.startsWith('win64/'))
   if (!win64.length) {

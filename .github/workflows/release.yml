@@ -409,7 +409,10 @@ jobs:
             --exclude '.idea/' \
             targets/cep/ "${STAGE}/"
 
-          # 编码器小工具子集（见 targets/cep/bin/README.md）
+
+          # 扩展显示名带版本号（AE 窗口→扩展菜单可见）
+          sed -i "s|<Menu>[^<]*</Menu>|<Menu>iSparta-next ${VERSION}</Menu>|" "${STAGE}/CSXS/manifest.xml"
+                    # 编码器小工具子集（见 targets/cep/bin/README.md）
           rm -rf "${STAGE}/bin"
           for bp in ${BIN_PLATS}; do
             mkdir -p "${STAGE}/bin/${bp}"
