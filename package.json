@@ -17,7 +17,7 @@
     "dev:all": "node scripts/dev-all.js",
     "dev:all:electron": "node scripts/dev-all.js --electron",
     "build": "vue-cli-service electron:build -mwl ",
-    "build:windows": "node scripts/prepare-cep-payload.js && vue-cli-service electron:build --windows",
+    "build:windows": "node scripts/cep-manifest-dev.js off && vue-cli-service build --mode cep && node scripts/prepare-cep-payload.js && vue-cli-service electron:build --windows",
     "build:cep": "vue-cli-service build --mode cep",
     "build:cep:watch": "vue-cli-service build --mode cep --watch",
     "serve:cep": "vue-cli-service serve --mode cep --port 8082",
