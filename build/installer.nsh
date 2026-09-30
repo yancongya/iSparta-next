@@ -163,26 +163,25 @@ Var ispartaAeFound
       Abort
     ${endIf}
 
-    ${NSD_CreateLabel} 0u 0u 100% 18u "选择要安装的组件（至少一项）：桌面工作台和 / 或 After Effects 扩展面板。"
+    ${NSD_CreateLabel} 0u 0u 100% 16u "勾选要安装的组件（至少一项）："
     Pop $0
 
-    ${NSD_CreateCheckbox} 10u 22u 90% 18u "桌面版 iSparta-next（开始菜单 / 桌面快捷方式）"
+    ${NSD_CreateCheckbox} 10u 18u 90% 16u "桌面版 iSparta-next（开始菜单 / 桌面快捷方式）"
     Pop $ispartaChkDesktop
     ${if} $ispartaInstallDesktop == "1"
       ${NSD_Check} $ispartaChkDesktop
     ${endIf}
 
-    ${NSD_CreateCheckbox} 10u 42u 90% 18u "After Effects 扩展 iSparta（CEP 面板）"
+    ${NSD_CreateCheckbox} 10u 36u 90% 16u "After Effects 扩展 iSparta（CEP 面板）"
     Pop $ispartaChkAe
     ${if} $ispartaInstallAe == "1"
       ${NSD_Check} $ispartaChkAe
     ${endIf}
 
-    ; 安装范围互斥（§9）：系统级 vs 用户级，二选一禁双写
-    ${NSD_CreateGroupBox} 10u 66u 90% 62u "AE 扩展安装范围（二选一，不重复落盘）"
+    ${NSD_CreateGroupBox} 10u 56u 90% 52u "AE 扩展安装范围（二选一）"
     Pop $0
 
-    ${NSD_CreateRadioButton} 20u 82u 88% 16u "所有用户 —— 统一 CEP 目录（推荐，需管理员）"
+    ${NSD_CreateRadioButton} 20u 70u 88% 14u "所有用户（推荐，需管理员）"
     Pop $ispartaRadAll
     ${if} $ispartaCepScope == "all"
       ${NSD_Check} $ispartaRadAll
@@ -190,21 +189,20 @@ Var ispartaAeFound
       ${NSD_Check} $ispartaRadAll
     ${endIf}
 
-    ${NSD_CreateRadioButton} 20u 100u 88% 16u "仅当前用户（免管理员，不提权）"
+    ${NSD_CreateRadioButton} 20u 86u 88% 14u "仅当前用户（免管理员）"
     Pop $ispartaRadUser
     ${if} $ispartaCepScope == "user"
       ${NSD_Check} $ispartaRadUser
     ${endIf}
 
-    ${NSD_CreateLabel} 20u 118u 88% 12u "推荐管理员安装：所有用户 × 所有 AE 版本一份拷贝"
+    ${NSD_CreateLabel} 20u 102u 88% 12u "推荐管理员：所有用户 × 全部 AE 版本一份拷贝"
     Pop $0
 
-    ; AE 探测结果展示
     Call ispartaDetectAe
-    ${NSD_CreateLabel} 10u 134u 90% 16u "AE 检测：$ispartaAeDetectLabel"
+    ${NSD_CreateLabel} 10u 114u 90% 14u "AE 检测：$ispartaAeDetectLabel"
     Pop $ispartaAeDetectLabel
 
-    ${NSD_CreateLabel} 10u 154u 90% 26u "未签名扩展会自动开启 CSXS PlayerDebugMode。安装后请重启 After Effects。识别不到 AE 时仍可安装（装 AE 后自动加载）。"
+    ${NSD_CreateLabel} 10u 132u 90% 22u "装后请重启 After Effects；未签名扩展会自动开启 PlayerDebugMode。"
     Pop $0
 
     nsDialogs::Show
