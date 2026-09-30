@@ -25,23 +25,10 @@ Var ispartaRadAll
 Var ispartaAeDetectLabel
 Var ispartaAeFound
 
+
 ; ---------- 文件级辅助函数（customHeader 在页声明之后展开） ----------
 !macro customHeader
-  Function ispartaEnablePlayerDebugMode
-    ; 未签名 CEP：对常见 CSXS 主版本写 HKCU PlayerDebugMode=1
-    WriteRegStr HKCU "Software\Adobe\CSXS.6"  "PlayerDebugMode" "1"
-    WriteRegStr HKCU "Software\Adobe\CSXS.7"  "PlayerDebugMode" "1"
-    WriteRegStr HKCU "Software\Adobe\CSXS.8"  "PlayerDebugMode" "1"
-    WriteRegStr HKCU "Software\Adobe\CSXS.9"  "PlayerDebugMode" "1"
-    WriteRegStr HKCU "Software\Adobe\CSXS.10" "PlayerDebugMode" "1"
-    WriteRegStr HKCU "Software\Adobe\CSXS.11" "PlayerDebugMode" "1"
-    WriteRegStr HKCU "Software\Adobe\CSXS.12" "PlayerDebugMode" "1"
-    WriteRegStr HKCU "Software\Adobe\CSXS.13" "PlayerDebugMode" "1"
-    WriteRegStr HKCU "Software\Adobe\CSXS.14" "PlayerDebugMode" "1"
-  FunctionEnd
-
-  ; $ispartaCepSrc = payload 源目录；$ispartaCepUserParent/$1 = 目标父目录
-  ; 成功 $ispartaCopyOk=1，并在 $1\<EXT_ID> 落盘 + 写 version.json
+; ---------- 函数定义（顶层：NSIS 才能解析 Call 引用，避免 6010 清零代码） ----------
   Function ispartaCopyCepToParent
     StrCpy $ispartaCopyOk "0"
     ${ifNot} ${FileExists} "$ispartaCepSrc\CSXS\manifest.xml"
@@ -67,7 +54,6 @@ Var ispartaAeFound
     StrCpy $ispartaCopyOk "1"
   FunctionEnd
 
-  ; $1 = 要删除的扩展目录；仅当含本扩展 manifest/version.json 时删除
   Function ispartaRemoveCepDir
     ${if} ${FileExists} "$1\CSXS\manifest.xml"
     ${orIf} ${FileExists} "$1\version.json"
@@ -75,8 +61,27 @@ Var ispartaAeFound
     ${endIf}
   FunctionEnd
 
-  ; ---------- AE 多盘探测（注册表优先 + 全盘枚举，不只 C 盘） ----------
-  ; 结果：$ispartaAeFound="1" 且 $ispartaAeDetectLabel 含检测到的版本列表
+  Function un.ispartaRemoveCepDir
+    ${if} ${FileExists} "$1\CSXS\manifest.xml"
+    ${orIf} ${FileExists} "$1\version.json"
+      RMDir /r "$1"
+    ${endIf}
+  FunctionEnd
+
+  Function ispartaScanAeDir
+    FindFirst $0 $1 "$R6\After Effects *"
+    ${DoWhile} $1 != ""
+      ${If} ${FileExists} "$R6\$1\Support Files"
+        ${If} $ispartaAeFound != "1"
+          StrCpy $ispartaAeDetectLabel "已检测到 AE（目录扫描）"
+        ${EndIf}
+        StrCpy $ispartaAeFound "1"
+      ${EndIf}
+      FindNext $0 $1
+    ${Loop}
+    FindClose $0
+  FunctionEnd
+
   Function ispartaDetectAe
     StrCpy $ispartaAeFound "0"
     StrCpy $ispartaAeDetectLabel ""
@@ -113,27 +118,35 @@ Var ispartaAeFound
     ${Loop}
 
     ; 2) 全盘固定盘枚举兜底（D/E/F…，覆盖手动挪盘/绿色安装）
-    DriveGet $R7 "List" "Fixed"
-    ${Do} ${While} $R7 != ""
-      StrCpy $R8 $R7 3
-      StrCpy $R7 $R7 "" 3
-      ${If} ${FileExists} "$R8Program Files\Adobe\Adobe After Effects*\Support Files"
-        ${If} $ispartaAeFound != "1"
-          StrCpy $ispartaAeDetectLabel "已检测到 AE（目录）"
-        ${EndIf}
-        StrCpy $ispartaAeFound "1"
-      ${ElseIf} ${FileExists} "$R8Program Files (x86)\Adobe\Adobe After Effects*\Support Files"
-        ${If} $ispartaAeFound != "1"
-          StrCpy $ispartaAeDetectLabel "已检测到 AE（目录）"
-        ${EndIf}
-        StrCpy $ispartaAeFound "1"
-      ${EndIf}
+    ; DriveGet 部分 makensis 不认；FileExists 不支持通配符 → 用 FindFirst 扫目录
+    StrCpy $R7 "CDEFGHIJKLMNOPQRSTUVWXYZ"
+    ${DoWhile} $R7 != ""
+      StrCpy $R8 $R7 1
+      StrCpy $R7 $R7 "" 1
+      StrCpy $R6 "$R8:\Program Files\Adobe"
+      Call ispartaScanAeDir
+      StrCpy $R6 "$R8:\Program Files (x86)\Adobe"
+      Call ispartaScanAeDir
     ${Loop}
 
     ${If} $ispartaAeFound == "0"
       StrCpy $ispartaAeDetectLabel "未检测到 After Effects（仍可安装，装 AE 后自动加载）"
     ${EndIf}
   FunctionEnd
+
+
+
+  ; $ispartaCepSrc = payload 源目录；$ispartaCepUserParent/$1 = 目标父目录
+  ; 成功 $ispartaCopyOk=1，并在 $1\<EXT_ID> 落盘 + 写 version.json
+
+  ; $1 = 要删除的扩展目录；仅当含本扩展 manifest/version.json 时删除
+
+  ; 卸载段只能调 un. 前缀函数
+
+  ; $R6 = Adobe 父目录；找 After Effects * 子目录
+
+  ; ---------- AE 多盘探测（注册表优先 + 全盘枚举，不只 C 盘） ----------
+  ; 结果：$ispartaAeFound="1" 且 $ispartaAeDetectLabel 含检测到的版本列表
 !macroend
 
 ; ---------- 组件页（在「选择安装位置」之后、「正在安装」之前） ----------
@@ -298,7 +311,15 @@ Var ispartaAeFound
       ${if} $ispartaCopyOk != "1"
         MessageBox MB_OK|MB_ICONEXCLAMATION "After Effects 扩展复制到统一 CEP 目录失败。$\r$\n可手动复制到 $ispartaCepCommonDest$\r$\n或改用「仅当前用户」重新安装。"
       ${else}
-        Call ispartaEnablePlayerDebugMode
+        WriteRegStr HKCU "Software\Adobe\CSXS.6" "PlayerDebugMode" "1"
+        WriteRegStr HKCU "Software\Adobe\CSXS.7" "PlayerDebugMode" "1"
+        WriteRegStr HKCU "Software\Adobe\CSXS.8" "PlayerDebugMode" "1"
+        WriteRegStr HKCU "Software\Adobe\CSXS.9" "PlayerDebugMode" "1"
+        WriteRegStr HKCU "Software\Adobe\CSXS.10" "PlayerDebugMode" "1"
+        WriteRegStr HKCU "Software\Adobe\CSXS.11" "PlayerDebugMode" "1"
+        WriteRegStr HKCU "Software\Adobe\CSXS.12" "PlayerDebugMode" "1"
+        WriteRegStr HKCU "Software\Adobe\CSXS.13" "PlayerDebugMode" "1"
+        WriteRegStr HKCU "Software\Adobe\CSXS.14" "PlayerDebugMode" "1"
         WriteRegStr SHELL_CONTEXT "${INSTALL_REGISTRY_KEY}" CepInstalled "1"
         WriteRegStr SHELL_CONTEXT "${INSTALL_REGISTRY_KEY}" CepScope "all"
         WriteRegStr SHELL_CONTEXT "${INSTALL_REGISTRY_KEY}" CepCommonPath "$ispartaCepCommonDest"
@@ -313,7 +334,15 @@ Var ispartaAeFound
       ${if} $ispartaCopyOk != "1"
         MessageBox MB_OK|MB_ICONEXCLAMATION "After Effects 扩展复制失败。$\r$\n可手动将 $ispartaCepSrc 复制到 $APPDATA\Adobe\CEP\extensions\${ISPARTA_CEP_ID}$\r$\n或使用已签名 ZXP / ExManCmd 安装后重试。"
       ${else}
-        Call ispartaEnablePlayerDebugMode
+        WriteRegStr HKCU "Software\Adobe\CSXS.6" "PlayerDebugMode" "1"
+        WriteRegStr HKCU "Software\Adobe\CSXS.7" "PlayerDebugMode" "1"
+        WriteRegStr HKCU "Software\Adobe\CSXS.8" "PlayerDebugMode" "1"
+        WriteRegStr HKCU "Software\Adobe\CSXS.9" "PlayerDebugMode" "1"
+        WriteRegStr HKCU "Software\Adobe\CSXS.10" "PlayerDebugMode" "1"
+        WriteRegStr HKCU "Software\Adobe\CSXS.11" "PlayerDebugMode" "1"
+        WriteRegStr HKCU "Software\Adobe\CSXS.12" "PlayerDebugMode" "1"
+        WriteRegStr HKCU "Software\Adobe\CSXS.13" "PlayerDebugMode" "1"
+        WriteRegStr HKCU "Software\Adobe\CSXS.14" "PlayerDebugMode" "1"
         WriteRegStr SHELL_CONTEXT "${INSTALL_REGISTRY_KEY}" CepInstalled "1"
         WriteRegStr SHELL_CONTEXT "${INSTALL_REGISTRY_KEY}" CepScope "user"
         WriteRegStr SHELL_CONTEXT "${INSTALL_REGISTRY_KEY}" CepUserPath "$ispartaCepUserDest"
@@ -345,18 +374,18 @@ Var ispartaAeFound
 ; ---------- 卸载：清理 CEP 落盘（替换默认 RMDir /r $INSTDIR） ----------
 !macro customRemoveFiles
   StrCpy $1 "$APPDATA\Adobe\CEP\extensions\${ISPARTA_CEP_ID}"
-  Call ispartaRemoveCepDir
+  Call un.ispartaRemoveCepDir
 
   StrCpy $1 "$COMMONFILES\Adobe\CEP\extensions\${ISPARTA_CEP_ID}"
-  Call ispartaRemoveCepDir
+  Call un.ispartaRemoveCepDir
 
   ReadRegStr $1 SHELL_CONTEXT "${INSTALL_REGISTRY_KEY}" CepUserPath
   ${if} $1 != ""
-    Call ispartaRemoveCepDir
+    Call un.ispartaRemoveCepDir
   ${endIf}
   ReadRegStr $1 SHELL_CONTEXT "${INSTALL_REGISTRY_KEY}" CepCommonPath
   ${if} $1 != ""
-    Call ispartaRemoveCepDir
+    Call un.ispartaRemoveCepDir
   ${endIf}
 
   RMDir /r $INSTDIR

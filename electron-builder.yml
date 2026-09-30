@@ -33,6 +33,8 @@ nsis:
   # oneClick:false + perMachine:false → electron-builder 自带 install mode 页（zh_CN）
   oneClick: false
   perMachine: false
+  # NSIS 6010「函数未引用」是宏内 Call 的误报，会零化代码；关掉 warning-as-error
+  warningsAsErrors: false
   allowToChangeInstallationDirectory: true
   # 完成页「运行 iSparta-next」勾选
   runAfterFinish: true
