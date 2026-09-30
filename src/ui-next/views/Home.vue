@@ -1,6 +1,7 @@
 <template>
   <div
     class="ib"
+    @contextmenu.prevent
     @dragenter.prevent="onDragEnter"
     @dragover.prevent
     @dragleave.prevent="onDragLeave"
@@ -12,16 +13,29 @@
     <!-- 空态：无任务时全屏导入（CEP 先铺合成列表，仍为空才显示） -->
     <section v-if="!items.length && !compTreeOpen" class="ib-import">
       <div class="ib-import__top">
-        <span class="ib-brand">{{ appName }}</span>
+        <button type="button" class="ib-brand ib-brand--link" :title="appName" @click="openLanding">
+          <span class="ib-brand__mark" aria-hidden="true">
+            <!-- 与 public/icons/icon-brand.svg 同源：品牌色 #c8f542 圆形播放标 -->
+            <svg width="18" height="18" viewBox="0 0 1024 1024" fill="none">
+              <g transform="translate(512 512) scale(2.05) translate(-512 -395.636364)">
+                <path d="M512 395.636364m-232.727273 0a232.727273 232.727273 0 1 0 465.454546 0 232.727273 232.727273 0 1 0-465.454546 0Z" fill="#c8f542"/>
+                <path d="M453.806545 289.764848a7.214545 7.214545 0 0 1 8.168728-6.112969l77.548606 11.155394c1.881212 0.271515 3.580121 1.272242 4.728242 2.788848l70.943031 93.796849a7.214545 7.214545 0 0 1 0.100848 8.564363L544.267636 498.722909a7.214545 7.214545 0 0 1-4.871757 2.936243L461.459394 512.391758a7.214545 7.214545 0 0 1-6.997333-11.132122l67.285333-101.558303a7.214545 7.214545 0 0 0-0.077576-8.079515L455.00897 294.888727a7.214545 7.214545 0 0 1-1.202425-5.12z m-6.729697 37.783273a3.607273 3.607273 0 0 1 5.054061 0.702061l47.736243 63.146666a7.214545 7.214545 0 0 1 0.104727 8.556607L452.189091 466.540606a3.607273 3.607273 0 0 1-6.543515-2.102303V330.426182a3.607273 3.607273 0 0 1 1.435151-2.878061z" fill="#0c0f0e"/>
+              </g>
+            </svg>
+          </span>
+          <span class="ib-brand__text">{{ appName }}</span>
+        </button>
         <div class="ib-import__acts">
+          <!-- 单按钮切换视图：图标跟当前模式走（任务列表 list ↔ 合成树 layers） -->
           <button
             v-if="supportsCompImport"
             type="button"
             class="ib-iconbtn"
-            title="合成树"
-            @click="onPickComps"
+            :class="{ 'is-active': compTreeOpen }"
+            :title="compTreeOpen ? $t('inputItems') : $t('compTreeOpen')"
+            @click="toggleView"
           >
-            <is-icon name="layers" />
+            <is-icon :name="compTreeOpen ? 'list' : 'layers'" />
           </button>
           <button type="button" class="ib-iconbtn" :title="$t('helpTip') || '帮助'" @click="openLanding">
             <is-icon name="question" />
@@ -91,25 +105,46 @@
         class="ib-rail"
         :class="{ 'is-resizing': resizing }"
       >
+        <!-- CEP 顶栏左侧 logo：点击跳落地页（openExternal 内部走 cep.util） -->
         <button
           v-if="supportsCompImport"
           type="button"
-          class="ib-rail__btn"
-          :class="{ 'is-active': compTreeOpen }"
-          :title="compTreeOpen ? $t('compTreeOpen') : $t('compTreeOpen')"
-          @click="toggleCompTree"
+          class="ib-rail__brand"
+          :title="appName"
+          @click="openLanding"
         >
-          <is-icon name="layers" size="sm" />
+          <span class="ib-rail__brand-mark" aria-hidden="true">
+            <!-- 与 public/icons/icon-brand.svg 同源 -->
+            <svg width="18" height="18" viewBox="0 0 1024 1024" fill="none">
+              <g transform="translate(512 512) scale(2.05) translate(-512 -395.636364)">
+                <path d="M512 395.636364m-232.727273 0a232.727273 232.727273 0 1 0 465.454546 0 232.727273 232.727273 0 1 0-465.454546 0Z" fill="#c8f542"/>
+                <path d="M453.806545 289.764848a7.214545 7.214545 0 0 1 8.168728-6.112969l77.548606 11.155394c1.881212 0.271515 3.580121 1.272242 4.728242 2.788848l70.943031 93.796849a7.214545 7.214545 0 0 1 0.100848 8.564363L544.267636 498.722909a7.214545 7.214545 0 0 1-4.871757 2.936243L461.459394 512.391758a7.214545 7.214545 0 0 1-6.997333-11.132122l67.285333-101.558303a7.214545 7.214545 0 0 0-0.077576-8.079515L455.00897 294.888727a7.214545 7.214545 0 0 1-1.202425-5.12z m-6.729697 37.783273a3.607273 3.607273 0 0 1 5.054061 0.702061l47.736243 63.146666a7.214545 7.214545 0 0 1 0.104727 8.556607L452.189091 466.540606a3.607273 3.607273 0 0 1-6.543515-2.102303V330.426182a3.607273 3.607273 0 0 1 1.435151-2.878061z" fill="#0c0f0e"/>
+              </g>
+            </svg>
+          </span>
+          <span class="ib-rail__brand-text">{{ appName }}</span>
         </button>
 
-        <button type="button" class="ib-rail__btn" :title="themeTitle" @click="toggleTheme">
+        <!-- 视图切换：单按钮，图标跟当前模式走（任务列表 list ↔ 合成树 layers） -->
+        <button
+          v-if="supportsCompImport"
+          type="button"
+          class="ib-rail__btn ib-rail__btn--layers"
+          :class="{ 'is-active': compTreeOpen }"
+          :title="compTreeOpen ? $t('inputItems') : $t('compTreeOpen')"
+          @click="toggleView"
+        >
+          <is-icon :name="compTreeOpen ? 'list' : 'layers'" size="sm" />
+        </button>
+
+        <button type="button" class="ib-rail__btn ib-rail__btn--theme" :title="themeTitle" @click="toggleTheme">
           <is-icon :name="theme === 'dark' ? 'sun' : 'moon'" size="sm" />
         </button>
 
         <div class="ib-rail__lang">
           <button
             type="button"
-            class="ib-rail__btn"
+            class="ib-rail__btn ib-rail__btn--lang"
             :title="$t('language') + '：' + currentLangLabel"
             @click="langOpen = !langOpen"
           >
@@ -129,7 +164,7 @@
           </transition>
         </div>
 
-        <button type="button" class="ib-rail__btn" :title="$t('defaultSetting')" @click="openGlobalSetting">
+        <button type="button" class="ib-rail__btn ib-rail__btn--settings" :title="$t('defaultSetting')" @click="openGlobalSetting">
           <is-icon name="settings" size="sm" />
           <span v-if="updateBadge" class="ib-rail__badge" aria-hidden="true" />
         </button>
@@ -150,7 +185,7 @@
         <!-- 运行日志：未读时右上角亮小点，warn/error 才计数，普通 info 不打扰 -->
         <button
           type="button"
-          class="ib-rail__btn"
+          class="ib-rail__btn ib-rail__btn--log"
           :class="{ 'is-active': logOpen }"
           :title="$t('logTip')"
           @click="logOpen = true"
@@ -168,11 +203,11 @@
 
         <button
           type="button"
-          class="ib-rail__btn"
-          :title="settingsOpen ? $t('foldSettings') : $t('expandSettings')"
+          class="ib-rail__btn ib-rail__btn--end"
+          :title="(supportsCompImport ? settingsDialogOpen : settingsOpen) ? $t('foldSettings') : $t('expandSettings')"
           @click="toggleSettings"
         >
-          <is-icon :name="settingsOpen ? 'chevron-right' : 'chevron-left'" size="sm" />
+          <is-icon :name="(supportsCompImport ? settingsDialogOpen : settingsOpen) ? 'chevron-right' : 'chevron-left'" size="sm" />
         </button>
       </div>
 
@@ -256,6 +291,11 @@ import { LANDING_URL } from '../../brand'
 
 // 中间工具条列宽（px，与 tokens.css --is-rail-w 保持一致）
 const RAIL_W = 36
+// CEP 工具条改顶栏横排（见 shell.scss body.is-cep），不再夹在列表与侧栏之间
+function railW () {
+  if (hostAdapter.supportsCompImport) { return 0 }
+  return RAIL_W
+}
 const DEFAULT_SIDE_W = 340
 // 允许拖到的最小右栏宽：必须 ≤ EXPAND_SIDE_W，否则折叠态拖出时宽度会被垫高、不跟手
 const MIN_SIDE_W = 160
@@ -489,7 +529,7 @@ export default {
       document.body.classList.add('is-column-resizing')
       // 期望侧栏宽 = 光标右侧剩余空间（扣掉中栏）。rail 宽 36px，按在中段会让
       // rawWant 瞬间偏小、面板跳一下——用 bias 把抓取点归零，宽度才严格跟手。
-      const rawWant = (clientX) => window.innerWidth - clientX - RAIL_W
+      const rawWant = (clientX) => window.innerWidth - clientX - railW()
       this._resizeBias = rawWant(e.clientX) - (this.settingsOpen ? this.sideW : 0)
       this._onMove = (ev) => {
         const want = rawWant(ev.clientX) - this._resizeBias
@@ -497,7 +537,7 @@ export default {
         // 允许区间：main 至少留 minMainW，且绝不能把 sideW 顶到 maxByMain 之上
         // （旧写法 Math.max(MIN, min(MAX, maxByMain, want)) 在 maxByMain < MIN 时会
         // 强行垫到 MIN，反过来挤掉 main 的最小宽度）
-        const maxByMain = Math.max(0, window.innerWidth - RAIL_W - minMainW())
+        const maxByMain = Math.max(0, window.innerWidth - railW() - minMainW())
         const upper = Math.min(MAX_SIDE_W, Math.max(maxByMain, 1))
         const lower = Math.min(MIN_SIDE_W, upper)
         const clampW = (w) => Math.round(Math.max(lower, Math.min(upper, w)))
@@ -552,6 +592,11 @@ export default {
       ThemeManager.toggle()
     },
     toggleSettings () {
+      // CEP：展开 = 铺满屏的输出设置覆盖层（侧栏在小屏无意义）
+      if (this.supportsCompImport) {
+        this.settingsDialogOpen = !this.settingsDialogOpen
+        return
+      }
       this.settingsOpen = !this.settingsOpen
     },
     /**
@@ -653,6 +698,20 @@ export default {
         // 打开树前也刷新，两边都是实时列表
         this.loadAllCompsAsTasks()
         this.onPickComps()
+      }
+    },
+    /** 视图切换：单按钮 toggle（任务列表 ↔ 合成树） */
+    toggleView () {
+      this.compTreeOpen = !this.compTreeOpen
+      if (this.compTreeOpen) {
+        this.loadAllCompsAsTasks()
+        this.$nextTick(() => {
+          if (this.$root && this.$root.eventBus) {
+            this.$root.eventBus.$emit('comp-tree-refresh')
+          }
+        })
+      } else {
+        this.loadAllCompsAsTasks()
       }
     },
     /** PAG 式：独立 OS 窗口（不撑开侧栏） */

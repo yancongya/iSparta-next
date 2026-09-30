@@ -41,11 +41,73 @@
 }
 
 .ib-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   color: var(--is-text);
   font-size: var(--is-fs-sm);
   font-weight: var(--is-fw-bold);
   letter-spacing: 0.14em;
   text-transform: uppercase;
+
+  &__mark {
+    display: inline-flex;
+    flex: none;
+    line-height: 0;
+
+    svg { display: block; }
+  }
+
+  // 可点击跳落地页（桌面空态 + CEP 顶栏）
+  &--link {
+    padding: 0;
+    border: none;
+    background: transparent;
+    font: inherit;
+    letter-spacing: 0.14em;
+    cursor: pointer;
+    transition: color var(--is-dur-fast) var(--is-ease-std);
+
+    &:hover { color: var(--is-accent); }
+  }
+}
+
+// CEP 顶栏左侧品牌（图标 + 名称）
+.ib-rail__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  max-width: 42%;
+  margin-right: var(--is-s-2);
+  padding: 0 2px;
+  border: none;
+  background: transparent;
+  color: var(--is-text);
+  font-family: inherit;
+  font-size: var(--is-fs-xs);
+  font-weight: var(--is-fw-bold);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color var(--is-dur-fast) var(--is-ease-std);
+
+  &:hover { color: var(--is-accent); }
+
+  &-mark {
+    display: inline-flex;
+    flex: none;
+    line-height: 0;
+
+    svg { display: block; }
+  }
+
+  &-text {
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
 }
 
 .ib-iconbtn {
@@ -62,6 +124,7 @@
   color: var(--is-text-2);
   font-size: var(--is-fs-lg);
   cursor: pointer;
+  outline: none;
   transition: color var(--is-dur-fast) var(--is-ease-std),
     border-color var(--is-dur-fast) var(--is-ease-std),
     background-color var(--is-dur-fast) var(--is-ease-std),
@@ -72,6 +135,13 @@
     background: var(--is-accent-soft);
     color: var(--is-accent);
     transform: translateY(-1px);
+  }
+
+  // 视图切换等：当前态点亮
+  &.is-active {
+    border-color: rgba(var(--is-accent-rgb), 0.45);
+    background: var(--is-accent-soft);
+    color: var(--is-accent);
   }
 
   &--sm {
@@ -538,8 +608,16 @@ body.is-theme-light .ib-drop .keyboard-key {
     background: transparent;
     color: var(--is-text-3);
     cursor: pointer;
+    outline: none;
     transition: color var(--is-dur-fast) var(--is-ease-std),
       background-color var(--is-dur-fast) var(--is-ease-std);
+
+    // 点击后不保留定位边框；仅键盘 Tab 时给焦点提示
+    &:focus { outline: none; box-shadow: none; }
+    &:focus-visible {
+      outline: none;
+      box-shadow: var(--is-focus);
+    }
 
     &:hover {
       background: var(--is-accent-soft);
@@ -736,6 +814,98 @@ body.is-theme-light .ib-drop .keyboard-key {
   color: var(--is-bad-fg);
 }
 
+// --------------------------------------------------------------------------
+// 工具条图标异色（桌面 / CEP 共用；亮暗随 token 自适配）
+// 色值全部取自 tokens.css 语义色，禁止在此硬编码十六进制
+// --------------------------------------------------------------------------
+// 视图切换：任务列表 / 合成树 各自图标与色，当前视图 is-active 点亮
+// 不带 is-active 的 inset 描边（切换按钮只要变色，不要定位框）
+.ib-rail__btn--list,
+.ib-rail__btn--layers {
+  &.is-active {
+    box-shadow: none;
+  }
+}
+
+.ib-rail__btn--list {
+  color: var(--is-ok);
+}
+.ib-rail__btn--list:hover,
+.ib-rail__btn--list.is-active {
+  color: var(--is-ok);
+  background: var(--is-ok-bg);
+  box-shadow: none;
+}
+
+.ib-rail__btn--layers {
+  color: var(--is-cool);
+}
+.ib-rail__btn--layers:hover,
+.ib-rail__btn--layers.is-active {
+  color: var(--is-cool);
+  background: rgba(var(--is-cool-rgb), 0.14);
+  box-shadow: none;
+}
+
+// 亮色模式下 cool/ok 对面板底不够跳，压深保证可辨
+.is-theme-light {
+  .ib-rail__btn--layers { color: var(--is-accent); }
+  .ib-rail__btn--layers:hover,
+  .ib-rail__btn--layers.is-active {
+    color: var(--is-accent);
+    background: var(--is-accent-soft);
+    box-shadow: none;
+  }
+  .ib-rail__btn--list { color: #0b5f2e; }
+  .ib-rail__btn--list:hover,
+  .ib-rail__btn--list.is-active {
+    color: #0b5f2e;
+    background: rgba(21, 128, 61, 0.16);
+    box-shadow: none;
+  }
+}
+
+.ib-rail__btn--theme {
+  color: var(--is-warn);
+}
+.ib-rail__btn--theme:hover {
+  color: var(--is-warn-fg);
+  background: var(--is-warn-bg);
+}
+
+.ib-rail__btn--lang {
+  color: var(--is-violet);
+}
+.ib-rail__btn--lang:hover {
+  color: var(--is-violet);
+  background: rgba(var(--is-violet-rgb), 0.14);
+}
+
+.ib-rail__btn--settings {
+  color: var(--is-accent);
+}
+.ib-rail__btn--settings:hover {
+  color: var(--is-accent);
+  background: var(--is-accent-soft);
+}
+
+.ib-rail__btn--log {
+  color: var(--is-ok);
+}
+.ib-rail__btn--log:hover,
+.ib-rail__btn--log.is-active {
+  color: var(--is-ok);
+  background: var(--is-ok-bg);
+}
+
+.ib-rail__btn--end {
+  color: var(--is-text-3);
+}
+.ib-rail__btn--end:hover {
+  color: var(--is-text);
+  background: var(--is-card-hi);
+}
+
 .ib-rail__count {
   position: absolute;
   top: 2px;
@@ -752,11 +922,70 @@ body.is-theme-light .ib-drop .keyboard-key {
 }
 
 // --------------------------------------------------------------------------
+// CEP：中间工具条改顶栏横排，不占任务列表左侧竖条
+// flex-wrap + order:-1 —— 按钮水平铺一行，下方仍是 列表 + 侧栏
+// 断点统一见 _bp.scss，禁止再手写邻近值
+// --------------------------------------------------------------------------
+html.is-cep {
+  .ib-ws {
+    flex-wrap: wrap;
+    align-content: stretch;
+  }
+
+  .ib-rail {
+    order: -1;
+    flex: 0 0 100%;
+    width: 100%;
+    height: 34px;
+    flex-direction: row;
+    align-items: center;
+    gap: var(--is-s-1);
+    padding: 2px var(--is-s-2);
+    border-left: none;
+    border-bottom: 1px solid var(--is-border);
+  }
+
+  // logo 独占左侧，功能按钮整体右对齐
+  .ib-rail__brand {
+    margin-right: auto;
+  }
+
+  // 第二行：列表 + 侧栏 吃掉剩余高度（wrap 后需显式给高，否则两行平分）
+  .ib-main,
+  .ib-side {
+    height: calc(100% - 34px);
+    min-height: 0;
+  }
+
+  .ib-rail__btn {
+    flex: none;
+    width: 28px;
+    height: 28px;
+  }
+
+  // 拖拽手柄：CEP 顶栏不显示（侧栏改由展开按钮/覆盖层控制）
+  .ib-rail__grip {
+    display: none;
+  }
+
+  // 折叠按钮与其它功能按钮同行右对齐（由 .ib-rail__brand 的 margin-right:auto 统一推右）
+  .ib-rail__btn--end {
+    margin-left: 0;
+  }
+
+  .ib-rail__pop {
+    top: calc(100% + 4px);
+    left: 0;
+    right: auto;
+  }
+}
+
+// --------------------------------------------------------------------------
 // CEP 极窄（≤$bp-narrow）才单列藏侧栏；AE 面板常见 ~420px 仍可拖出侧栏
 // 断点统一见 _bp.scss，禁止再手写邻近值
 // --------------------------------------------------------------------------
 @media (max-width: $bp-narrow) {
-  body.is-cep {
+  html.is-cep {
     .ib-main {
       flex: 1 1 auto;
       width: auto;
