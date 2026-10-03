@@ -97,7 +97,10 @@ jobs:
             else
               dest="isparta-next-${VERSION}-linux-x64.${ext}"
             fi
-            mv "$f" "release/$dest"
+            # 产物名已符合目标命名时 mv 同路径会报 "same file"，跳过
+            if [ "$(basename "$f")" != "$dest" ]; then
+              mv "$f" "release/$dest"
+            fi
           done
           ls -lh release
 
