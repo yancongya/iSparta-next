@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>iSparta-next 官网 · APNG / GIF / WebP 动图转换工具（iSparta 维护版替代）</title>
-  <meta name="description" content="iSparta-next 官方产品页：开源桌面动图工作台。PNG 序列、APNG、Animated WebP、GIF 互转与压缩；输出大小阈值、路径变量、批量导出；Windows / macOS / Linux 免费下载。在长期停更的 iSparta 基础上重构维护。" />
+  <meta name="description" content="iSparta-next 官方产品页：开源动图工具。图片序列转 APNG、Animated WebP、GIF，动图压缩、大小超限自动压小、命名与保存位置自定义，桌面版 + After Effects 扩展双端一体，支持 Win / macOS / Linux 免费下载。" />
   <meta name="keywords" content="iSparta-next,iSparta-next官网,iSparta替代,iSparta维护版,APNG转GIF,APNG转WebP,GIF转APNG,WebP转APNG,PNG序列合成动图,表情包压缩,动图压缩,APNG工具,Animated WebP,GIF优化,开源桌面转换工具,Electron动图工具" />
   <meta name="author" content="yancongya" />
   <meta name="robots" content="index, follow, max-image-preview:large" />
@@ -14,7 +14,7 @@
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="iSparta-next" />
   <meta property="og:title" content="iSparta-next 官网 · APNG / GIF / WebP 动图转换工具" />
-  <meta property="og:description" content="开源桌面动图工作台：PNG 序列 / APNG / Animated WebP / GIF 互转与压缩。大小阈值、路径变量、批量导出。Win / macOS / Linux。" />
+  <meta property="og:description" content="开源动图工具：图片序列转 APNG / WebP / GIF，超限自动压小，命名与保存位置自定义；桌面版 + AE 扩展双端一体，Win / macOS / Linux 免费下载。" />
   <meta property="og:url" content="https://yancongya.github.io/iSparta-next/" />
   <meta property="og:image" content="https://yancongya.github.io/iSparta-next/assets/main.png" />
   <meta property="og:locale" content="zh_CN" />
@@ -28,7 +28,7 @@
 
   <link rel="icon" href="assets/icon.png" />
   <link rel="apple-touch-icon" href="assets/icon.png" />
-  <link rel="stylesheet" href="styles.css?v=20260918-live-cache" />
+  <link rel="stylesheet" href="styles.css?v=20261004-copy2" />
 
   <!-- Structured data -->
   <script type="application/ld+json">
@@ -39,7 +39,7 @@
     "alternateName": "iSparta",
     "applicationCategory": "MultimediaApplication",
     "operatingSystem": "Windows, macOS, Linux",
-    "description": "iSparta-next 官方产品页：开源桌面动图转换工具。PNG 序列、APNG、Animated WebP、GIF 互转与压缩；输出大小阈值、路径变量、批量导出。在长期停更的 iSparta 基础上重构。",
+    \g<1>"iSparta-next 官方产品页：开源动图转换工具。PNG 序列、APNG、Animated WebP、GIF 互转与压缩，大小超限自动压小、路径与命名自定义。停更原版 iSparta 的现代化替代，桌面版与 After Effects 扩展双端一体。",
     "url": "https://yancongya.github.io/iSparta-next/",
     "downloadUrl": "https://github.com/yancongya/iSparta-next/releases/latest",
     "softwareVersion": "3.3.8",
@@ -72,6 +72,7 @@
 </head>
 <body>
   <div class="noise" aria-hidden="true"></div>
+  <div class="scroll-rail" id="scroll-rail" aria-hidden="true"></div>
 
   <header class="top">
     <a class="brand" href="https://yancongya.github.io/iSparta-next/">
@@ -88,7 +89,7 @@
     </a>
     <nav class="nav">
       <a href="#convert" data-i18n="nav.convert">能力</a>
-      <a href="#play" data-i18n="nav.play">阈值</a>
+      <a href="#play" data-i18n="nav.play">压体积</a>
       <a href="#naming" data-i18n="nav.naming">命名</a>
       <a href="#log" data-i18n="nav.log">日志</a>
       <a href="#compare" data-i18n="nav.compare">对比</a>
@@ -107,16 +108,17 @@
       </button>
     </nav>
   </header>
+  <main>
 
   <section class="hero">
     <div class="hero-copy">
-      <p class="eyebrow mono" data-i18n="hero.eyebrow">DROP · PASTE · CONVERT</p>
+      <p class="eyebrow mono" data-i18n="hero.eyebrow">桌面软件 + AE 插件，功能双份</p>
       <h1 class="hero-title">
-        <span data-i18n="hero.h1a">把一叠帧</span><br />
-        <span class="hero-accent" id="hero-accent-word" data-i18n="hero.h1b">变成动图</span>
+        <span data-i18n="hero.h1a">装一次，</span><br />
+        <span class="hero-accent" id="hero-accent-word" data-i18n="hero.h1b">桌面和 AE 里都好使</span>
       </h1>
       <p class="hero-sub" data-i18n="hero.sub">
-        iSparta-next 是重构后的桌面动图工作台：PNG 序列、APNG、Animated WebP、GIF 互转与压缩，带上大小阈值、路径模板和前后对比。
+        把一堆图片变成 APNG / WebP / GIF 动图，也能把现有动图改小。桌面端拖文件就开工；在 After Effects 里自动读出工程全部合成，勾选就导出，两边功能一模一样，文件太大自动压到合适。
       </p>
       <div class="hero-actions">
         <a class="btn btn-primary" href="https://github.com/yancongya/iSparta-next/releases/latest/download/isparta-next-win-x64.exe" target="_blank" rel="noopener">
@@ -128,7 +130,7 @@
       <ul class="hero-meta mono">
         <li data-i18n="hero.m1">Win / macOS / Linux</li>
         <li data-i18n="hero.m2">Electron 28</li>
-        <li id="hero-version" title="最新 Release 版本">v3.3.6<span class="hero-version-date mono"> · 2026-09-18</span></li>
+        <li id="hero-version" title="最新 Release 版本">v3.4.0<span class="hero-version-date mono"> · 2026-09-22</span></li>
       </ul>
     </div>
 
@@ -145,26 +147,35 @@
           </filter>
         </defs>
 
-        <path id="rail" d="M40 300 C160 300, 200 140, 260 140 S360 300, 480 300" fill="none" stroke="#e4d0bf" stroke-width="10" stroke-linecap="round"/>
-        <path d="M40 300 C160 300, 200 140, 260 140 S360 300, 480 300" fill="none" stroke="#c2410c" stroke-width="2" stroke-dasharray="6 8" opacity=".55"/>
-
-        <g id="film" filter="url(#soft)">
-          <g class="frame frame--grab" data-i="0" tabindex="0" role="button" aria-label="把第 1 帧投进收集器">
-            <rect x="28" y="56" width="72" height="72" rx="10" fill="url(#checker)" stroke="#c2410c" stroke-width="1.5"/>
-            <rect x="40" y="78" width="28" height="20" rx="3" fill="#c2410c" opacity=".85"/>
-            <text x="64" y="140" text-anchor="middle" class="svg-label">01</text>
+        <!-- ① 帧堆：可点/可拖投喂 -->
+        <g id="film">
+          <g class="frame frame--grab" data-i="0" tabindex="0" role="button" aria-label="把第 1 帧投进收集器" transform="rotate(-7 88 92)">
+            <rect x="52" y="48" width="72" height="72" rx="10" fill="url(#checker)" stroke="#c2410c" stroke-width="1.5"/>
+            <rect x="66" y="66" width="28" height="20" rx="3" fill="#c2410c" opacity=".85"/>
+            <text x="112" y="112" text-anchor="middle" class="svg-label">01</text>
           </g>
-          <g class="frame frame--grab" data-i="1" tabindex="0" role="button" aria-label="把第 2 帧投进收集器">
-            <rect x="108" y="56" width="72" height="72" rx="10" fill="url(#checker)" stroke="#c2410c" stroke-width="1.5"/>
-            <rect x="124" y="70" width="36" height="36" rx="18" fill="#ea580c" opacity=".75"/>
-            <text x="144" y="140" text-anchor="middle" class="svg-label">02</text>
+          <g class="frame frame--grab" data-i="1" tabindex="0" role="button" aria-label="把第 2 帧投进收集器" transform="rotate(2 136 100)">
+            <rect x="100" y="56" width="72" height="72" rx="10" fill="url(#checker)" stroke="#c2410c" stroke-width="1.5"/>
+            <circle cx="136" cy="92" r="17" fill="#ea580c" opacity=".75"/>
+            <text x="160" y="120" text-anchor="middle" class="svg-label">02</text>
           </g>
-          <g class="frame frame--grab" data-i="2" tabindex="0" role="button" aria-label="把第 3 帧投进收集器">
-            <rect x="188" y="56" width="72" height="72" rx="10" fill="url(#checker)" stroke="#c2410c" stroke-width="1.5"/>
-            <path d="M204 112 L224 76 L244 112 Z" fill="#c2410c" opacity=".8"/>
-            <text x="224" y="140" text-anchor="middle" class="svg-label">03</text>
+          <g class="frame frame--grab" data-i="2" tabindex="0" role="button" aria-label="把第 3 帧投进收集器" transform="rotate(9 184 108)">
+            <rect x="148" y="64" width="72" height="72" rx="10" fill="url(#checker)" stroke="#c2410c" stroke-width="1.5"/>
+            <path d="M166 116 L184 84 L202 116 Z" fill="#c2410c" opacity=".8"/>
+            <text x="208" y="128" text-anchor="middle" class="svg-label">03</text>
           </g>
         </g>
+
+        <!-- ③ 转换核 -->
+        <g id="core-node" filter="url(#soft)">
+          <rect x="196" y="196" width="128" height="56" rx="12" fill="#fffdf8" stroke="#c2410c" stroke-width="1.5"/>
+          <circle cx="226" cy="224" r="11" fill="none" stroke="#c2410c" stroke-width="2.2"/>
+          <circle cx="226" cy="224" r="3.6" fill="#c2410c"/>
+          <path d="M226 210.5 v4 M226 233.5 v4 M212.5 224 h4 M235.5 224 h4" stroke="#c2410c" stroke-width="1.8" stroke-linecap="round"/>
+          <text x="290" y="229" text-anchor="middle" class="svg-chip" fill="#c2410c">自动转换</text>
+        </g>
+        <path d="M120 210 C150 226, 168 222, 196 220" fill="none" stroke="#e4d0bf" stroke-width="3" stroke-dasharray="4 6" opacity=".85"/>
+        <path d="M324 214 C352 200, 356 176, 372 156" fill="none" stroke="#e4d0bf" stroke-width="3" stroke-dasharray="4 6" opacity=".85"/>
 
         <g id="outputs">
           <g class="out-chip" data-out="APNG">
@@ -181,9 +192,59 @@
           </g>
         </g>
 
+        <!-- ④ 分流轨道 + 双端出品卡 -->
+        <g id="dual-flow" aria-hidden="true">
+          <path id="branch-a" d="M226 252 C204 288, 158 292, 118 306" fill="none" stroke="#e4d0bf" stroke-width="4" stroke-linecap="round" opacity=".75"/>
+          <path id="branch-b" d="M294 252 C316 288, 360 292, 400 306" fill="none" stroke="#e4d0bf" stroke-width="4" stroke-linecap="round" opacity=".75"/>
+          <g class="engine-card" id="engine-desktop">
+            <rect x="28" y="306" width="164" height="88" rx="10" fill="#fffdf8" stroke="#c2410c" stroke-width="1.5"/>
+            <rect x="28" y="306" width="164" height="16" rx="8" fill="#2d2d30"/>
+            <circle cx="40" cy="314" r="2.4" fill="#e07a6a"/><circle cx="49" cy="314" r="2.4" fill="#e0c56a"/><circle cx="58" cy="314" r="2.4" fill="#7acb8a"/>
+            <text x="150" y="317" text-anchor="middle" class="svg-label" fill="#c9c9c9">iSparta</text>
+            <rect x="42" y="334" width="96" height="8" rx="4" fill="#e4d0bf"/>
+            <rect x="42" y="350" width="72" height="8" rx="4" fill="#efe3d2"/>
+            <rect x="42" y="368" width="52" height="18" rx="9" fill="#fff" stroke="#c2410c" stroke-width="1.2"/>
+            <text x="68" y="381" text-anchor="middle" class="svg-chip" font-size="9">GIF</text>
+            <text x="150" y="381" text-anchor="middle" class="svg-label">桌面工作台</text>
+          </g>
+          <g class="engine-card" id="engine-ae">
+            <rect x="328" y="306" width="164" height="88" rx="10" fill="#fffdf8" stroke="#c2410c" stroke-width="1.5"/>
+            <rect x="328" y="306" width="164" height="16" rx="8" fill="#2d2d30"/>
+            <text x="478" y="317" text-anchor="middle" class="svg-label" fill="#c9c9c9">Ae 面板</text>
+            <text x="342" y="342" class="svg-label">walk_cycle</text>
+            <text x="342" y="358" class="svg-label">fx_spark</text>
+            <rect x="342" y="368" width="52" height="18" rx="9" fill="#fff" stroke="#c2410c" stroke-width="1.2"/>
+            <text x="368" y="381" text-anchor="middle" class="svg-chip" font-size="9">APNG</text>
+            <rect x="400" y="368" width="48" height="18" rx="9" fill="#fff" stroke="#c2410c" stroke-width="1.2"/>
+            <text x="424" y="381" text-anchor="middle" class="svg-chip" font-size="9">WebP</text>
+            <text x="466" y="346" text-anchor="end" class="svg-label" opacity=".75">自动找全合成</text>
+          </g>
+          <circle id="flow-dot-a" class="flow-dot" r="5.5" cx="0" cy="0"/>
+          <circle id="flow-dot-b" class="flow-dot" r="5.5" cx="0" cy="0"/>
+        </g>
+
+        <!-- 背景漂浮装饰：胶片孔 / 星点 / 虚线弧 -->
+        <g id="hero-deco" aria-hidden="true">
+          <g class="deco-float d1">
+            <rect x="48" y="180" width="10" height="14" rx="2" fill="none" stroke="#c2410c" stroke-width="1.2" opacity=".35"/>
+          </g>
+          <g class="deco-float d2">
+            <rect x="470" y="200" width="10" height="14" rx="2" fill="none" stroke="#c2410c" stroke-width="1.2" opacity=".35"/>
+          </g>
+          <g class="deco-float d3">
+            <circle cx="300" cy="220" r="3" fill="#c2410c" opacity=".3"/>
+          </g>
+          <g class="deco-float d4">
+            <path d="M240 250 l4 8 8 1 -6 5 2 8 -8-4 -8 4 2-8 -6-5 8-1 z" fill="#c2410c" opacity=".22"/>
+          </g>
+          <g class="deco-float d5">
+            <path d="M90 220 C130 200, 160 240, 200 220" fill="none" stroke="#c2410c" stroke-width="1.2" stroke-dasharray="3 5" opacity=".28"/>
+          </g>
+        </g>
+
         <!-- 收集器：#packet 由 GSAP 沿轨道定位，#packet-inner 交给 CSS 做接住/弹跳
              （同层会互相覆盖：GSAP 写的是内联 transform，优先级压过 class 变换） -->
-        <g id="packet" role="img" aria-label="帧收集器">
+        <g id="packet" transform="translate(96 186)" role="img" aria-label="帧收集器">
           <g id="packet-inner">
             <rect x="-24" y="-24" width="48" height="48" rx="10" fill="url(#checker)" stroke="#c2410c" stroke-width="2"/>
             <rect x="-10" y="-8" width="20" height="14" rx="2" fill="#c2410c"/>
@@ -192,7 +253,7 @@
         </g>
 
         <!-- 小机器狗：#pet 定位，#pet-inner 做待机漂浮与奔跑（速度由 --pet-speed 驱动） -->
-        <g id="pet" transform="translate(450 330)">
+        <g id="pet" transform="translate(226 330)">
           <g id="pet-inner">
           <rect x="0" y="8" width="36" height="28" rx="6" fill="#fffdf8" stroke="#c2410c" stroke-width="1.5"/>
           <rect x="6" y="16" width="6" height="6" fill="#c2410c"/>
@@ -219,19 +280,62 @@
       </p>
     </div>
     <div class="about-grid">
-      <article class="about-card">
+      <article class="about-card about-card--ill">
+        <div class="ill" aria-hidden="true">
+          <svg class="ill-svg ill-convert" viewBox="0 0 160 88" xmlns="http://www.w3.org/2000/svg">
+            <rect class="ill-frame f1" x="10" y="22" width="34" height="34" rx="6"/>
+            <rect class="ill-frame f2" x="10" y="22" width="34" height="34" rx="6"/>
+            <rect class="ill-frame f3" x="10" y="22" width="34" height="34" rx="6"/>
+            <path class="ill-rail" d="M52 39 H108" />
+            <g class="ill-chip c1"><rect x="112" y="14" width="40" height="20" rx="10"/><text x="132" y="28" text-anchor="middle">APNG</text></g>
+            <g class="ill-chip c2"><rect x="112" y="38" width="40" height="20" rx="10"/><text x="132" y="52" text-anchor="middle">WebP</text></g>
+            <g class="ill-chip c3"><rect x="112" y="62" width="40" height="20" rx="10"/><text x="132" y="76" text-anchor="middle">GIF</text></g>
+          </svg>
+        </div>
         <h3>格式互转</h3>
         <p>支持 PNG 序列合成 APNG / GIF / Animated WebP，以及 APNG、GIF、WebP 之间的互转与再压缩，适合表情包、贴纸与帧动画导出。</p>
       </article>
-      <article class="about-card">
+      <article class="about-card about-card--ill">
+        <div class="ill" aria-hidden="true">
+          <svg class="ill-svg ill-gate" viewBox="0 0 160 88" xmlns="http://www.w3.org/2000/svg">
+            <rect class="ill-tank" x="18" y="16" width="70" height="56" rx="8"/>
+            <rect class="ill-fill" x="24" y="40" width="58" height="28" rx="5"/>
+            <line class="ill-limit" x1="18" y1="36" x2="88" y2="36"/>
+            <text class="ill-cap" x="53" y="12" text-anchor="middle">1MB</text>
+            <g class="ill-scale">
+              <rect class="ill-needle" x="118" y="28" width="6" height="32" rx="3"/>
+              <circle class="ill-dial" cx="121" cy="64" r="14"/>
+              <path class="ill-tick" d="M121 52 V58"/>
+            </g>
+          </svg>
+        </div>
         <h3>体积可控</h3>
         <p>输出大小阈值可在超出上限时自动按步长降质量重压，适配平台 1MB 等体积限制，减少手动反复试压缩。</p>
       </article>
-      <article class="about-card">
+      <article class="about-card about-card--ill">
+        <div class="ill" aria-hidden="true">
+          <svg class="ill-svg ill-batch" viewBox="0 0 160 88" xmlns="http://www.w3.org/2000/svg">
+            <rect class="ill-folder fo1" x="12" y="18" width="40" height="30" rx="5"/>
+            <path class="ill-folder-tab" d="M18 18 h12 l4 6 h18 v0"/>
+            <rect class="ill-folder fo2" x="12" y="52" width="40" height="22" rx="5" opacity=".55"/>
+            <path class="ill-flow" d="M60 34 H88 M60 62 H88 M88 34 V62 M88 48 H112"/>
+            <rect class="ill-out" x="112" y="34" width="36" height="28" rx="6"/>
+            <text class="ill-cap" x="130" y="52" text-anchor="middle">{src}</text>
+          </svg>
+        </div>
         <h3>批量与路径</h3>
         <p>拖拽 / 粘贴导入多组帧目录；路径变量模板与源目录输出策略，便于按项目批量导出与归档。</p>
       </article>
-      <article class="about-card">
+      <article class="about-card about-card--ill">
+        <div class="ill" aria-hidden="true">
+          <svg class="ill-svg ill-dl" viewBox="0 0 160 88" xmlns="http://www.w3.org/2000/svg">
+            <rect class="ill-tray" x="36" y="54" width="88" height="18" rx="6"/>
+            <path class="ill-arrow" d="M80 12 V42 M68 32 L80 44 L92 32"/>
+            <circle class="ill-orb o1" cx="48" cy="28" r="5"/>
+            <circle class="ill-orb o2" cx="112" cy="24" r="4"/>
+            <circle class="ill-orb o3" cx="128" cy="40" r="3.5"/>
+          </svg>
+        </div>
         <h3>系统与下载</h3>
         <p>Windows / macOS / Linux 免费使用。安装包由 GitHub Actions 构建，可在
           <a href="https://github.com/yancongya/iSparta-next/releases" target="_blank" rel="noopener">GitHub Releases</a>
@@ -240,11 +344,164 @@
     </div>
   </section>
 
+  <div class="film-holes" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+
+
+  <section class="section section-ae" id="ae">
+    <div class="section-head">
+      <p class="eyebrow mono" data-i18n="ae.eb">02 · AFTER EFFECTS</p>
+      <h2 data-i18n="ae.h2">不出 AE，直接出片</h2>
+      <p class="section-sub" data-i18n="ae.sub">
+        打开面板就自动读出工程里的全部合成，勾选直接出 APNG / WebP / GIF，文件就存在工程旁边，不用来回切软件。
+      </p>
+    </div>
+    <div class="ae-stage" id="ae-stage" role="group" aria-label="AE 合成导出演示">
+      <svg class="ae-svg" id="ae-svg" viewBox="0 0 720 300" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id="ae-checker" width="10" height="10" patternUnits="userSpaceOnUse">
+            <rect width="10" height="10" fill="#f7f1e8"/>
+            <rect width="5" height="5" fill="#e8dfd0"/>
+            <rect x="5" y="5" width="5" height="5" fill="#e8dfd0"/>
+          </pattern>
+          <filter id="ae-soft" x="-20%" y="-20%" width="140%" height="140%">
+            <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#c2410c" flood-opacity="0.12"/>
+          </filter>
+        </defs>
+
+        <!-- AE 面板 -->
+        <g filter="url(#ae-soft)">
+          <rect x="24" y="36" width="220" height="228" rx="12" fill="#fffdf8" stroke="#e4d0bf" stroke-width="1.5"/>
+          <rect x="24" y="36" width="220" height="30" rx="12" fill="#2d2d30"/>
+          <rect x="24" y="54" width="220" height="12" fill="#2d2d30"/>
+          <circle cx="42" cy="51" r="4" fill="#e07a6a"/>
+          <circle cx="56" cy="51" r="4" fill="#e0c56a"/>
+          <circle cx="70" cy="51" r="4" fill="#7acb8a"/>
+          <text x="86" y="55" class="svg-label" fill="#c9c9c9">After Effects</text>
+
+          <!-- 图层行 -->
+          <g class="ae-row" data-row="0">
+            <rect x="38" y="80" width="192" height="26" rx="6" fill="#fff" stroke="#e8dfd0"/>
+            <rect x="46" y="88" width="10" height="10" rx="2" fill="#c2410c"/>
+            <text x="64" y="97" class="svg-label">comp · walk_cycle</text>
+          </g>
+          <g class="ae-row" data-row="1">
+            <rect x="38" y="112" width="192" height="26" rx="6" fill="#fff" stroke="#e8dfd0"/>
+            <rect x="46" y="120" width="10" height="10" rx="2" fill="#ea580c"/>
+            <text x="64" y="129" class="svg-label">comp · fx_spark</text>
+          </g>
+          <g class="ae-row" data-row="2">
+            <rect x="38" y="144" width="192" height="26" rx="6" fill="#fff" stroke="#e8dfd0"/>
+            <rect x="46" y="152" width="10" height="10" rx="2" fill="#f0a06a"/>
+            <text x="64" y="161" class="svg-label">comp · intro_title</text>
+          </g>
+
+          <!-- 渲染进度条 -->
+          <rect x="38" y="192" width="192" height="8" rx="4" fill="#f0e8dc"/>
+          <rect id="ae-bar" x="38" y="192" width="40" height="8" rx="4" fill="#c2410c"/>
+          <text x="38" y="218" class="svg-label">导出图片序列 → 存到工程旁边</text>
+          <text x="38" y="238" class="svg-label" id="ae-count">0 / 24</text>
+        </g>
+
+        <!-- 流水线轨道 -->
+        <path id="ae-rail" d="M250 150 C320 150, 340 110, 400 110 S480 150, 540 150" fill="none" stroke="#e4d0bf" stroke-width="8" stroke-linecap="round"/>
+        <path d="M250 150 C320 150, 340 110, 400 110 S480 150, 540 150" fill="none" stroke="#c2410c" stroke-width="2" stroke-dasharray="5 7" opacity=".5"/>
+
+        <!-- 流动的帧包 -->
+        <g id="ae-packet">
+          <rect x="-14" y="-14" width="28" height="28" rx="6" fill="url(#ae-checker)" stroke="#c2410c" stroke-width="1.5"/>
+          <rect x="-8" y="-5" width="16" height="10" rx="2" fill="#c2410c" opacity=".8"/>
+        </g>
+
+        <!-- 输出格式芯片 -->
+        <g class="ae-out" data-out="0">
+          <rect x="556" y="82" width="128" height="40" rx="10" fill="#fff" stroke="#e4d0bf" stroke-width="1.5"/>
+          <text x="620" y="107" text-anchor="middle" class="svg-chip">APNG</text>
+        </g>
+        <g class="ae-out" data-out="1">
+          <rect x="556" y="132" width="128" height="40" rx="10" fill="#fff" stroke="#e4d0bf" stroke-width="1.5"/>
+          <text x="620" y="157" text-anchor="middle" class="svg-chip">WebP</text>
+        </g>
+        <g class="ae-out" data-out="2">
+          <rect x="556" y="182" width="128" height="40" rx="10" fill="#fff" stroke="#e4d0bf" stroke-width="1.5"/>
+          <text x="620" y="207" text-anchor="middle" class="svg-chip">GIF</text>
+        </g>
+
+        <!-- 小星标：AE 特色拟物，待机漂浮 -->
+        <g id="ae-star" transform="translate(620 250)">
+          <g id="ae-star-inner">
+            <path d="M0 -18 L5 -5 L18 -5 L8 3 L12 16 L0 8 L-12 16 L-8 3 L-18 -5 L-5 -5 Z" fill="#c2410c" opacity=".9"/>
+          </g>
+        </g>
+      </svg>
+      <p class="ae-stage-note mono" id="ae-note">AE 合成 → PNG 序列 → APNG / WebP / GIF</p>
+    </div>
+
+    <div class="about-grid">
+      <article class="about-card about-card--ill">
+        <div class="ill" aria-hidden="true">
+          <svg class="ill-svg ill-ae-install" viewBox="0 0 160 88" xmlns="http://www.w3.org/2000/svg">
+            <rect class="ill-tank" x="28" y="18" width="104" height="52" rx="8"/>
+            <rect class="ill-fill" x="40" y="30" width="36" height="12" rx="3"/>
+            <rect class="ill-fill" x="40" y="48" width="36" height="12" rx="3" opacity=".45"/>
+            <path class="ill-arrow" d="M110 32 v22 M100 44 l10 12 10-12"/>
+            <text class="ill-cap" x="58" y="78" text-anchor="middle">NSIS</text>
+          </svg>
+        </div>
+        <h3 data-i18n="ae.1t">一体安装</h3>
+        <p data-i18n="ae.1d">一个安装包，组件页勾选「桌面版 / AE 扩展」，可只装其一；安装范围支持所有用户或仅当前用户。</p>
+      </article>
+      <article class="about-card about-card--ill">
+        <div class="ill" aria-hidden="true">
+          <svg class="ill-svg ill-ae-render" viewBox="0 0 160 88" xmlns="http://www.w3.org/2000/svg">
+            <rect class="ill-tank" x="18" y="16" width="70" height="56" rx="8"/>
+            <rect class="ill-fill" x="28" y="28" width="50" height="8" rx="2"/>
+            <rect class="ill-fill" x="28" y="42" width="38" height="8" rx="2" opacity=".65"/>
+            <rect class="ill-fill" x="28" y="56" width="44" height="8" rx="2" opacity=".4"/>
+            <path class="ill-flow" d="M96 44 H120"/>
+            <rect class="ill-out" x="120" y="30" width="28" height="28" rx="6"/>
+            <text class="ill-cap" x="134" y="48" text-anchor="middle">.png</text>
+          </svg>
+        </div>
+        <h3 data-i18n="ae.2t">在 AE 里，它懂你的工程</h3>
+        <p data-i18n="ae.2d">合成列表自动刷新，藏在里面的子合成也找得全；任务列表、合成树两种视图随便切；双击一下就跳到那个合成。</p>
+      </article>
+      <article class="about-card about-card--ill">
+        <div class="ill" aria-hidden="true">
+          <svg class="ill-svg ill-ae-ui" viewBox="0 0 160 88" xmlns="http://www.w3.org/2000/svg">
+            <rect class="ill-tank" x="16" y="14" width="128" height="60" rx="8"/>
+            <rect class="ill-fill" x="16" y="14" width="128" height="12" rx="8" opacity=".25"/>
+            <rect class="ill-out" x="28" y="36" width="44" height="26" rx="5"/>
+            <rect class="ill-out" x="80" y="36" width="52" height="26" rx="5" opacity=".55"/>
+            <text class="ill-cap" x="50" y="53" text-anchor="middle">Desk</text>
+            <text class="ill-cap" x="106" y="53" text-anchor="middle">AE</text>
+          </svg>
+        </div>
+        <h3 data-i18n="ae.3t">在 AE 里也是完整界面，不缺功能</h3>
+        <p data-i18n="ae.3d">不是砍出来的精简版：任务列表、设置、命名、日志，桌面有的 AE 里都有，还专门为小窗口重新排了版。</p>
+      </article>
+      <article class="about-card about-card--ill">
+        <div class="ill" aria-hidden="true">
+          <svg class="ill-svg ill-ae-core" viewBox="0 0 160 88" xmlns="http://www.w3.org/2000/svg">
+            <circle class="ill-dial" cx="80" cy="44" r="18"/>
+            <circle class="ill-fill" cx="80" cy="44" r="8"/>
+            <path class="ill-flow" d="M80 18 V28 M80 60 V70 M50 44 H60 M100 44 H110"/>
+            <rect class="ill-frame" x="28" y="34" width="16" height="20" rx="3"/>
+            <rect class="ill-frame" x="116" y="34" width="16" height="20" rx="3"/>
+            <text class="ill-cap" x="36" y="68" text-anchor="middle">CEP</text>
+            <text class="ill-cap" x="124" y="68" text-anchor="middle">Desk</text>
+          </svg>
+        </div>
+        <h3 data-i18n="ae.4t">两边同一颗引擎，结果一致</h3>
+        <p data-i18n="ae.4d">压缩、合成、降质的算法完全相同：桌面出的文件和 AE 出的文件，大小规则、命名习惯一模一样。</p>
+      </article>
+    </div>
+  </section>
+
   <section class="section" id="convert">
     <div class="section-head">
       <p class="eyebrow mono" data-i18n="convert.eb">01 · WORKBENCH</p>
       <h2 data-i18n="convert.h2">一条任务，就是一次完整导出</h2>
-      <p class="section-sub" data-i18n="convert.sub">任务卡汇总类型、目录、帧频循环、格式、阈值、输出名与路径模板。选中任务后，下方输出设置与应用右栏一致。</p>
+      <p class="section-sub" data-i18n="convert.sub">选哪个文件夹、出什么格式、每秒几帧、循环几次、最大多大、文件叫什么、存到哪儿——全在一张卡片上配好，点开始就完事。</p>
     </div>
 
     <div class="workbench">
@@ -323,7 +580,7 @@
           <span class="flow-sep"></span>
           <span class="flow-step" data-step="pack" data-i18n="flow.pack">编码</span>
           <span class="flow-sep"></span>
-          <span class="flow-step" data-step="size" data-i18n="flow.size">阈值</span>
+          <span class="flow-step" data-step="size" data-i18n="flow.size">压大小</span>
           <span class="flow-sep"></span>
           <span class="flow-step" data-step="out" data-i18n="flow.out">写出</span>
         </div>
@@ -332,41 +589,17 @@
     </div>
   </section>
 
+  <div class="film-holes" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+
   <!-- 双端一体：桌面 + AE 扩展 -->
-  <section class="section section-ae" id="ae">
-    <div class="section-head">
-      <p class="eyebrow mono" data-i18n="ae.eb">02 · AFTER EFFECTS</p>
-      <h2 data-i18n="ae.h2">装一次，桌面与 AE 都能用</h2>
-      <p class="section-sub" data-i18n="ae.sub">
-        同一套 Vue 工作台与同一套转换核：桌面管文件动图，After Effects 扩展管合成导出。
-        AE 里选合成 → 渲 PNG 序列 → 直接出 APNG / WebP / GIF，不用再开别的工具。
-      </p>
-    </div>
-    <div class="about-grid">
-      <article class="about-card">
-        <h3 data-i18n="ae.1t">一体安装</h3>
-        <p data-i18n="ae.1d">一个安装包，组件页勾选「桌面版 / AE 扩展」，可只装其一；安装范围支持所有用户或仅当前用户。</p>
-      </article>
-      <article class="about-card">
-        <h3 data-i18n="ae.2t">AE 内完成渲染合成</h3>
-        <p data-i18n="ae.2d">在 After Effects 里选合成、渲 PNG 序列、压缩合成动图，全流程不出 AE；合成树与任务列表可一键切换。</p>
-      </article>
-      <article class="about-card">
-        <h3 data-i18n="ae.3t">UI 注入式适配</h3>
-        <p data-i18n="ae.3d">不是另做一套精简面板：同一套工作台 UI，针对 AE 小屏做注入式升级——顶栏布局、断点铺满、合成语义右键菜单，全部按宿主适配。</p>
-      </article>
-      <article class="about-card">
-        <h3 data-i18n="ae.4t">同一转换核</h3>
-        <p data-i18n="ae.4d">两端共用压缩 / 合成 / 降质流水线，输出体积阈值、路径变量、命名拆词行为完全一致。</p>
-      </article>
-    </div>
-  </section>
+
+  <div class="film-holes" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
 
   <section class="section section-play" id="play">
     <div class="section-head">
       <p class="eyebrow mono" data-i18n="play.eb">02 · SIZE GATE</p>
-      <h2 data-i18n="play.h2">输出大小阈值 · 自动重压到阈值内</h2>
-      <p class="section-sub" data-i18n="play.sub">导出 APNG / GIF / WebP 后检查体积。若超过阈值，自动从母版按步长降质量重编码，直到进入阈值或达到最大重试次数。主要为开发调试时控制反复导出的资源体积。</p>
+      <h2 data-i18n="play.h2">文件太大？自动压小，压到合适为止</h2>
+      <p class="section-sub" data-i18n="play.sub">导出 APNG / GIF / WebP 时先称一称：超过你设定的大小上限，就从更好的画质开始一档档降质量重压，直到达标。想自己定重试次数也可以。</p>
     </div>
 
     <div class="gate-board">
@@ -449,8 +682,8 @@
   <section class="section section-name" id="naming">
     <div class="section-head">
       <p class="eyebrow mono" data-i18n="naming.eb">03 · NAMING</p>
-      <h2 data-i18n="naming.h2">输出名拆词 · 路径变量</h2>
-      <p class="section-sub" data-i18n="naming.sub">输出设置里的命名能力：长名自动拆成可取消的字词胶囊，一键只留文字；输出目录用变量拼模板，真实路径实时展开。</p>
+      <h2 data-i18n="naming.h2">文件名能拆开挑，存放位置你说了算</h2>
+      <p class="section-sub" data-i18n="naming.sub">长文件名自动拆成词，点一下留一个，也能只留文字；存放位置用 {工程名} 这类积木拼，实际路径马上预览给你看。</p>
     </div>
 
     <div class="name-grid">
@@ -584,7 +817,7 @@
     <div class="section-head">
       <p class="eyebrow mono" data-i18n="shots.eb">06 · REAL UI</p>
       <h2 data-i18n="shots.h2">真实软件界面，不是概念稿</h2>
-      <p class="section-sub" data-i18n="shots.sub">应用真实界面：空状态导入、任务胶片列表与输出设置、默认设置（主题 / 路径模板 / 大小阈值）。</p>
+      <p class="section-sub" data-i18n="shots.sub">应用真实界面：空状态导入、任务卡片列表、参数设置、默认设置（命名 / 路径 / 大小上限）。</p>
     </div>
     <p class="shots-intro">
       <strong data-i18n="shots.brand">iSparta-next 工作台</strong>
@@ -655,31 +888,49 @@
     </div>
     <div class="why-cards">
       <article class="why-card">
+        <div class="why-ill" aria-hidden="true">
+          <svg viewBox="0 0 64 40" class="why-svg"><rect x="8" y="8" width="48" height="28" rx="6" class="wy-box"/><path d="M20 22h24M32 14v16" class="wy-stroke wy-plus"/><circle cx="48" cy="14" r="3" class="wy-dot"/></svg>
+        </div>
         <p class="why-card__tag mono" data-i18n="why.tag1">运行时</p>
         <h3 data-i18n="why.1t">Electron 28 · 安全隔离</h3>
         <p data-i18n="why.1d">contextIsolation、sandbox，能力走 IPC 白名单，不再依赖 remote / 裸 Node。</p>
       </article>
       <article class="why-card">
+        <div class="why-ill" aria-hidden="true">
+          <svg viewBox="0 0 64 40" class="why-svg"><rect x="6" y="6" width="22" height="28" rx="4" class="wy-box"/><rect x="34" y="6" width="24" height="12" rx="3" class="wy-fill"/><rect x="34" y="22" width="24" height="12" rx="3" class="wy-box"/></svg>
+        </div>
         <p class="why-card__tag mono" data-i18n="why.tag2">界面</p>
         <h3 data-i18n="why.2t">自研工作台</h3>
         <p data-i18n="why.2d">两栏任务列表、亮暗主题、前后对比；不再绑定 Element UI。</p>
       </article>
       <article class="why-card">
+        <div class="why-ill" aria-hidden="true">
+          <svg viewBox="0 0 64 40" class="why-svg"><path d="M8 28c8-16 16-16 24 0s16 16 24 0" class="wy-stroke"/><circle cx="32" cy="14" r="4" class="wy-dot"/><path d="M28 32h8" class="wy-stroke"/></svg>
+        </div>
         <p class="why-card__tag mono" data-i18n="why.tag3">导出</p>
-        <h3 data-i18n="why.3t">阈值 · 路径 · 命名</h3>
-        <p data-i18n="why.3d">大小阈值自动重压；路径变量；输出名拆字拼装。</p>
+        <h3 data-i18n="why.3t">自动压小 · 存放随心 · 命名可控</h3>
+        <p data-i18n="why.3d">大小超限自动降质量重压；保存位置和文件名都由你拼。</p>
       </article>
       <article class="why-card">
+        <div class="why-ill" aria-hidden="true">
+          <svg viewBox="0 0 64 40" class="why-svg"><rect x="8" y="10" width="12" height="20" rx="2" class="wy-box"/><rect x="26" y="6" width="12" height="28" rx="2" class="wy-fill"/><rect x="44" y="12" width="12" height="16" rx="2" class="wy-box"/><path d="M8 34h48" class="wy-stroke"/></svg>
+        </div>
         <p class="why-card__tag mono" data-i18n="why.tag4">批量</p>
         <h3 data-i18n="why.4t">任务流水线</h3>
         <p data-i18n="why.4d">多选、粘贴导入、全局默认设置、四态进度与批量开始。</p>
       </article>
       <article class="why-card">
+        <div class="why-ill" aria-hidden="true">
+          <svg viewBox="0 0 64 40" class="why-svg"><path d="M32 6l18 8v10c0 10-8 16-18 20-10-4-18-10-18-20V14z" class="wy-box"/><path d="M24 22l6 6 12-12" class="wy-stroke"/></svg>
+        </div>
         <p class="why-card__tag mono" data-i18n="why.tag5">依赖</p>
         <h3 data-i18n="why.5t">安全基线</h3>
         <p data-i18n="why.5d">libwebp 1.5（修 CVE-2023-4863）；受控 execFile，降低注入风险。</p>
       </article>
       <article class="why-card">
+        <div class="why-ill" aria-hidden="true">
+          <svg viewBox="0 0 64 40" class="why-svg"><circle cx="18" cy="20" r="8" class="wy-box"/><circle cx="46" cy="12" r="6" class="wy-fill"/><circle cx="46" cy="28" r="6" class="wy-box"/><path d="M26 20h12M40 14l-4 4M40 26l-4-4" class="wy-stroke"/></svg>
+        </div>
         <p class="why-card__tag mono" data-i18n="why.tag6">发版</p>
         <h3 data-i18n="why.6t">三端 CI</h3>
         <p data-i18n="why.6d">GitHub Actions 构建 Win / macOS / Linux，自动版本与 Release Notes。</p>
@@ -817,6 +1068,7 @@
     </div>
   </section>
 
+  </main>
   <footer class="foot">
     <div class="foot-inner">
       <p><strong>iSparta-next</strong> · <span data-i18n="foot.note">基于经典 iSparta 与社区 fork 重构</span></p>
@@ -833,7 +1085,7 @@
        本地副本 72KB + 43KB，GreenSock 标准许可允许自托管部署，许可头保留在文件内 -->
   <script src="assets/vendor/gsap.min.js"></script>
   <script src="assets/vendor/ScrollTrigger.min.js"></script>
-  <script src="i18n.js?v=20260918-live-cache"></script>
-  <script src="main.js?v=20260918-live-cache"></script>
+  <script src="i18n.js?v=20261004-copy2"></script>
+  <script src="main.js?v=20261004-copy2"></script>
 </body>
 </html>

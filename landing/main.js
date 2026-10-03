@@ -113,7 +113,7 @@
 
     const key = currentIn + ">" + currentOut;
     const n = NOTE[key] || {};
-    const tip = (isEn() ? n.en : n.zh) || (isEn() ? "Batch tasks & path templates" : "支持批量任务与输出路径模板");
+    const tip = (isEn() ? n.en : n.zh) || (isEn() ? "Batch tasks, your own output paths" : "支持批量任务，输出位置随你定");
     noteEl.innerHTML =
       (isEn() ? "Path: " : "当前路径：<strong>") +
       labelOf(currentIn) +
@@ -360,6 +360,12 @@
       if (btnAuto) btnAuto.disabled = false;
       if (ok && hasGsap && !reduceMotion && resultCard) {
         window.gsap.fromTo(resultCard, { scale: 1 }, { scale: 1.02, duration: 0.2, yoyo: true, repeat: 1 });
+        var badge = document.getElementById("result-badge");
+        if (badge) {
+          badge.classList.remove("is-pop");
+          void badge.getBoundingClientRect();
+          badge.classList.add("is-pop");
+        }
       }
     }
 
@@ -500,8 +506,8 @@
       if (rotTimer !== null || !el) return;
       rotTimer = window.setInterval(function () {
         const list = isEn()
-          ? ["into motion", "under limit", "batch export", "compare"]
-          : ["变成动图", "压进阈值", "批量导出", "前后对比"];
+          ? ["works in desktop & AE", "too big? auto-shrinks", "export dozens at once", "compare before & after"]
+          : ["桌面和 AE 里都好使", "太大？自动压小", "一次导几十个", "转前转后一眼看"];
         const i = (Number(el.dataset.i || 0) + 1) % list.length;
         el.dataset.i = String(i);
         window.gsap.to(el, {
@@ -577,6 +583,24 @@
         delay: (idx % 3) * 0.06,
       });
     });
+    gsap.utils.toArray(".about-card--ill").forEach(function (card, idx) {
+      gsap.from(card, {
+        scrollTrigger: { trigger: card, start: "top 92%" },
+        opacity: 0,
+        y: 26,
+        duration: 0.5,
+        delay: (idx % 4) * 0.07,
+        ease: "power2.out",
+      });
+    });
+    if (document.querySelector(".ae-stage")) {
+      gsap.from(".ae-stage", {
+        scrollTrigger: { trigger: ".ae-stage", start: "top 88%" },
+        opacity: 0,
+        y: 28,
+        duration: 0.65,
+      });
+    }
     gsap.from(".gate-board", {
       scrollTrigger: { trigger: ".gate-board", start: "top 85%" },
       opacity: 0,
@@ -1711,11 +1735,280 @@
     play()
   }
 
+  /* ---------- AE 双端区块：合成 → 序列 → 动图 流水线演示 ---------- */
+  function setupAeStage() {
+    const packet = document.getElementById("ae-packet");
+    const path = document.getElementById("ae-rail");
+    const bar = document.getElementById("ae-bar");
+    const count = document.getElementById("ae-count");
+    const star = document.getElementById("ae-star");
+    const outs = document.querySelectorAll(".ae-out");
+    if (!packet || !path || !path.getTotalLength) return;
+
+    const TOTAL = 24;
+    const len = path.getTotalLength();
+    const state = { t: 0, n: 0 };
+
+    function litOut(i) {
+      outs.forEach(function (o, k) {
+        o.classList.toggle("is-lit", k === i);
+      });
+    }
+
+    if (reduceMotion || !hasGsap) {
+      // 降级：静态终态，不跑动画
+      if (bar) bar.setAttribute("width", String(192));
+      if (count) count.textContent = TOTAL + " / " + TOTAL;
+      litOut(0);
+      return;
+    }
+
+    // 帧包沿轨道流动
+    window.gsap.to(state, {
+      t: 1,
+      duration: 4.2,
+      repeat: -1,
+      ease: "none",
+      onUpdate: function () {
+        const pt = path.getPointAtLength(state.t * len);
+        packet.setAttribute("transform", "translate(" + pt.x + " " + pt.y + ")");
+        // 走完一圈：进度 +1，写满则亮点芯片并撒花
+        if (state.t > 0.97 && !state._hit) {
+          state._hit = true;
+          state.n = (state.n + 1) % (TOTAL + 1);
+          if (bar) bar.setAttribute("width", String(Math.round((state.n / TOTAL) * 192)));
+          if (count) count.textContent = state.n + " / " + TOTAL;
+          litOut(state.n === 0 ? 0 : Math.min(2, Math.floor(state.n / (TOTAL / 3))));
+          if (state.n === 0 && star) {
+            star.classList.add("is-spark");
+            window.setTimeout(function () { star.classList.remove("is-spark"); }, 600);
+          }
+        }
+        if (state.t < 0.05) state._hit = false;
+      },
+    });
+
+    // 图层行轻微错落浮动
+    window.gsap.to("#ae-svg .ae-row", {
+      y: -4,
+      duration: 1.6,
+      stagger: 0.22,
+      yoyo: true,
+      repeat: -1,
+      ease: "sine.inOut",
+    });
+
+    // 点击合成行：高亮 + 进度冲刺 + 星标闪光
+    const rows = document.querySelectorAll("#ae-svg .ae-row");
+    const note = document.getElementById("ae-note");
+    rows.forEach(function (row, idx) {
+      row.style.cursor = "pointer";
+      row.addEventListener("click", function () {
+        rows.forEach(function (r) { r.classList.remove("is-picked"); });
+        row.classList.add("is-picked");
+        if (bar) {
+          window.gsap.fromTo(bar, { attr: { width: 20 } }, {
+            attr: { width: 192 },
+            duration: 1.1,
+            ease: "power1.inOut",
+          });
+        }
+        if (count) {
+          const labels = ["8 / 24", "16 / 24", "24 / 24"];
+          count.textContent = labels[idx] || "24 / 24";
+        }
+        litOut(idx % 3);
+        if (star) {
+          star.classList.add("is-spark");
+          window.setTimeout(function () { star.classList.remove("is-spark"); }, 600);
+        }
+        if (note) {
+          const texts = [
+            "已选合成 · 星铃夜咏 → 导出 APNG",
+            "已选合成 · 闪闪 → 导出 WebP",
+            "已选合成 · 开始星星 → 导出 GIF",
+          ];
+          note.textContent = texts[idx] || note.textContent;
+        }
+      });
+    });
+
+    // 点击输出芯片：闪一下
+    outs.forEach(function (o) {
+      o.style.cursor = "pointer";
+      o.addEventListener("click", function () {
+        litOut(Number(o.getAttribute("data-out")) || 0);
+        if (star) {
+          star.classList.add("is-spark");
+          window.setTimeout(function () { star.classList.remove("is-spark"); }, 550);
+        }
+      });
+    });
+  }
+
   resolveLatestDownloads();
 
   setupCompare();
   setupLogBoard();
   setupHeroFeeder();
   setupPacket();
+  setupAeStage();
   setupScroll();
+
+  /* ---------- 微交互：滚动进度 / 磁吸 / 倾斜 / 火花 / 视差 ---------- */
+  function setupMicro() {
+    if (reduceMotion) return;
+
+    // 滚动进度条
+    const rail = document.getElementById("scroll-rail");
+    if (rail) {
+      const onScroll = function () {
+        const max = document.documentElement.scrollHeight - window.innerHeight;
+        const p = max > 0 ? (window.scrollY / max) * 100 : 0;
+        rail.style.width = p.toFixed(2) + "%";
+      };
+      window.addEventListener("scroll", onScroll, { passive: true });
+      onScroll();
+    }
+
+    // 磁吸：主按钮 / 下载卡 / 导航 CTA
+    const magnets = document.querySelectorAll(".btn-primary, .nav-cta, .dl-card");
+    magnets.forEach(function (el) {
+      el.addEventListener("pointermove", function (e) {
+        const r = el.getBoundingClientRect();
+        const dx = (e.clientX - r.left - r.width / 2) * 0.18;
+        const dy = (e.clientY - r.top - r.height / 2) * 0.22;
+        el.style.setProperty("--mx", dx.toFixed(1) + "px");
+        el.style.setProperty("--my", dy.toFixed(1) + "px");
+      });
+      el.addEventListener("pointerleave", function () {
+        el.style.setProperty("--mx", "0px");
+        el.style.setProperty("--my", "0px");
+      });
+    });
+
+    // 卡片轻微 3D 倾斜
+    const tilts = document.querySelectorAll(".about-card--ill, .why-card");
+    tilts.forEach(function (el) {
+      el.addEventListener("pointermove", function (e) {
+        const r = el.getBoundingClientRect();
+        const px = (e.clientX - r.left) / r.width - 0.5;
+        const py = (e.clientY - r.top) / r.height - 0.5;
+        el.style.setProperty("--ry", (px * 8).toFixed(2) + "deg");
+        el.style.setProperty("--rx", (-py * 8).toFixed(2) + "deg");
+      });
+      el.addEventListener("pointerleave", function () {
+        el.style.setProperty("--rx", "0deg");
+        el.style.setProperty("--ry", "0deg");
+      });
+    });
+
+    // hero 舞台鼠标视差
+    const heroStage = document.getElementById("hero-stage");
+    const hero = document.querySelector(".hero");
+    if (heroStage && hero) {
+      hero.addEventListener("pointermove", function (e) {
+        const r = hero.getBoundingClientRect();
+        const dx = (e.clientX - r.left - r.width / 2) / r.width;
+        const dy = (e.clientY - r.top - r.height / 2) / r.height;
+        heroStage.style.setProperty("--hx", (dx * 10).toFixed(1) + "px");
+        heroStage.style.setProperty("--hy", (dy * 8).toFixed(1) + "px");
+      });
+      hero.addEventListener("pointerleave", function () {
+        heroStage.style.setProperty("--hx", "0px");
+        heroStage.style.setProperty("--hy", "0px");
+      });
+    }
+  }
+
+  function burstSparks(x, y, n) {
+    if (reduceMotion) return;
+    const count = n || 8;
+    for (let i = 0; i < count; i++) {
+      const s = document.createElement("i");
+      s.className = "spark";
+      const ang = (Math.PI * 2 * i) / count + Math.random() * 0.4;
+      const dist = 28 + Math.random() * 36;
+      s.style.left = x + "px";
+      s.style.top = y + "px";
+      s.style.setProperty("--dx", Math.cos(ang) * dist + "px");
+      s.style.setProperty("--dy", Math.sin(ang) * dist + "px");
+      s.style.opacity = String(0.55 + Math.random() * 0.45);
+      document.body.appendChild(s);
+      window.setTimeout(function () {
+        s.remove();
+      }, 600);
+    }
+  }
+
+  // 把火花绑定到 hero 投喂
+  (function bindFeedSparks() {
+    const stage = document.getElementById("hero-stage");
+    if (!stage) return;
+    stage.addEventListener("click", function (e) {
+      const frame = e.target.closest && e.target.closest(".frame--grab");
+      if (frame && !frame.classList.contains("is-fed")) {
+        burstSparks(e.clientX, e.clientY, 10);
+      }
+    });
+  })();
+
+  // 下载卡点击火花
+  document.querySelectorAll(".dl-card").forEach(function (card) {
+    card.addEventListener("click", function (e) {
+      burstSparks(e.clientX, e.clientY, 12);
+    });
+  });
+  setupMicro();
+})();
+
+
+/* ---------- hero 双引擎自主出品流 v2：转换核 → 桌面 / AE 双路流光 ---------- */
+(function () {
+  function boot() {
+    var brA = document.getElementById('branch-a');
+    var brB = document.getElementById('branch-b');
+    var dotA = document.getElementById('flow-dot-a');
+    var dotB = document.getElementById('flow-dot-b');
+    var hero = document.querySelector('.hero');
+    if (!brA || !brB || !dotA || !dotB || !hero) return;
+    var rm = window.matchMedia('(prefers-reduced-motion: reduce)');
+    var cardA = document.getElementById('engine-desktop');
+    var cardB = document.getElementById('engine-ae');
+    var chips = Array.prototype.slice.call(document.querySelectorAll('#outputs .out-chip'));
+    var raf = null, t0 = 0, visible = false;
+    var LOOP = 4400;
+
+    function place(dot, path, u) {
+      var pt = path.getPointAtLength(u * path.getTotalLength());
+      dot.setAttribute('transform', 'translate(' + pt.x + ' ' + pt.y + ')');
+      dot.style.opacity = u > 0.94 ? String(Math.max(0, 1 - (u - 0.94) / 0.06)) : '1';
+    }
+    function hit(card) {
+      if (!card || rm.matches) return;
+      card.classList.remove('is-hit'); void card.getBoundingClientRect(); card.classList.add('is-hit');
+      var chip = chips[Math.floor(Math.random() * chips.length)];
+      if (chip) { chip.classList.remove('is-hit'); void chip.getBoundingClientRect(); chip.classList.add('is-hit'); }
+    }
+    function frame(ts) {
+      if (!t0) t0 = ts;
+      var e = (ts - t0) % LOOP;
+      var uA = e / LOOP, uB = ((e + LOOP / 2) % LOOP) / LOOP;
+      place(dotA, brA, uA); place(dotB, brB, uB);
+      if (uA > 0.985 && !dotA._h) { dotA._h = 1; hit(cardA); }
+      if (uA < 0.5) dotA._h = 0;
+      if (uB > 0.985 && !dotB._h) { dotB._h = 1; hit(cardB); }
+      if (uB < 0.5) dotB._h = 0;
+      raf = window.requestAnimationFrame(frame);
+    }
+    function start() { if (raf === null && visible && !rm.matches) { document.getElementById('dual-flow').classList.add('is-live'); raf = window.requestAnimationFrame(frame); } }
+    function stop() { if (raf !== null) { window.cancelAnimationFrame(raf); raf = null; } }
+    if ('IntersectionObserver' in window) {
+      new IntersectionObserver(function (es) { visible = es[0].isIntersecting; visible ? start() : stop(); }, { threshold: 0.15 }).observe(hero);
+    } else { visible = true; start(); }
+    document.addEventListener('visibilitychange', function () { visible = !document.hidden; visible ? start() : stop(); });
+    if (rm.addEventListener) rm.addEventListener('change', function () { rm.matches ? (stop(), document.getElementById('dual-flow').classList.remove('is-live')) : start(); });
+    if (rm.matches) { place(dotA, brA, 0.5); place(dotB, brB, 0.5); }
+  }
+  document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', boot) : boot();
 })();

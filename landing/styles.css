@@ -3148,3 +3148,610 @@ html[data-theme="dark"] .cmp-tab.is-on { color: #0c0f0e; }
   #packet-inner { transition: none; }
   #packet.is-bump #packet-inner { animation: none; }
 }
+
+
+/* ==========================================================================
+   AE 双端区块：动态插画（对齐 hero-stage / pet 拟物语言）
+   ========================================================================== */
+.ae-stage {
+  margin: 0 0 28px;
+  padding: 18px 14px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius, 14px);
+  background: var(--card);
+}
+
+.ae-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.ae-stage-note {
+  margin: 10px 0 0;
+  text-align: center;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.ae-row {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 0.18s ease;
+}
+.ae-row:hover {
+  transform: translateX(4px);
+}
+
+.ae-out {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1),
+    opacity 0.18s ease;
+  cursor: default;
+}
+.ae-out:hover {
+  transform: scale(1.06);
+}
+.ae-out.is-lit {
+  transform: scale(1.1);
+}
+.ae-out.is-lit rect {
+  fill: var(--accent-soft, #fbe8de);
+  stroke: var(--accent, #c2410c);
+}
+
+#ae-packet {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+#ae-packet.is-bump {
+  animation: packetBump 0.42s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+#ae-star-inner {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: aeStarFloat 2.8s ease-in-out infinite alternate;
+}
+#ae-star.is-spark #ae-star-inner {
+  animation: aeStarSpark 0.55s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes aeStarFloat {
+  from { transform: translateY(-3px) rotate(-6deg); }
+  to   { transform: translateY(3px) rotate(6deg); }
+}
+@keyframes aeStarSpark {
+  0%   { transform: scale(1) rotate(0deg); }
+  40%  { transform: scale(1.35) rotate(18deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+/* about-card 在 AE 区块内：hover 抬升，对齐 .card 手感 */
+.section-ae .about-card {
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+    border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.section-ae .about-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--accent, #c2410c);
+  box-shadow: 0 10px 28px rgba(194, 65, 12, 0.1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ae-row:hover,
+  .ae-out:hover,
+  .ae-out.is-lit,
+  .section-ae .about-card:hover {
+    transform: none;
+  }
+  #ae-star-inner,
+  #ae-packet.is-bump,
+  #ae-star.is-spark #ae-star-inner {
+    animation: none;
+  }
+}
+
+/* ==========================================================================
+   动态插画（about / why 卡片）— 与 hero 棋盘格 / 赤陶色语言对齐
+   ========================================================================== */
+.about-card--ill {
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.22s cubic-bezier(0.34, 1.4, 0.64, 1),
+    border-color 0.2s ease, box-shadow 0.22s ease;
+}
+.about-card--ill:hover {
+  transform: translateY(-4px);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+  box-shadow: 0 14px 32px color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.ill {
+  margin: -4px -4px 12px;
+  height: 88px;
+  display: grid;
+  place-items: center;
+}
+.ill-svg {
+  width: 100%;
+  max-width: 180px;
+  height: 88px;
+  overflow: visible;
+}
+.ill-svg text {
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: 9px;
+  fill: var(--ink);
+}
+.ill-frame,
+.ill-tank,
+.ill-folder,
+.ill-out,
+.ill-tray,
+.ill-dial {
+  fill: var(--card);
+  stroke: var(--accent);
+  stroke-width: 1.5;
+}
+.ill-fill {
+  fill: var(--accent);
+  opacity: 0.85;
+}
+.ill-rail,
+.ill-flow,
+.ill-limit,
+.ill-arrow,
+.ill-tick {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+}
+.ill-limit {
+  stroke-dasharray: 4 3;
+  opacity: 0.75;
+}
+.ill-chip rect {
+  fill: var(--card);
+  stroke: var(--accent);
+  stroke-width: 1.3;
+}
+.ill-chip text {
+  fill: var(--ink);
+}
+.ill-needle {
+  fill: var(--accent);
+}
+.ill-cap {
+  fill: var(--muted);
+  font-size: 8px;
+}
+.ill-orb {
+  fill: var(--accent);
+  opacity: 0.55;
+}
+.ill-folder-tab {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.4;
+}
+
+/* —— 插画循环动画 —— */
+.ill-convert .ill-frame {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: illFlip 2.4s ease-in-out infinite;
+}
+.ill-convert .ill-frame.f2 { animation-delay: 0.25s; }
+.ill-convert .ill-frame.f3 { animation-delay: 0.5s; }
+.ill-convert .ill-rail {
+  stroke-dasharray: 6 6;
+  animation: illDash 1.4s linear infinite;
+}
+.ill-convert .ill-chip {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: illPulse 2.4s ease-in-out infinite;
+}
+.ill-convert .ill-chip.c2 { animation-delay: 0.3s; }
+.ill-convert .ill-chip.c3 { animation-delay: 0.6s; }
+
+.ill-gate .ill-fill {
+  transform-box: fill-box;
+  transform-origin: bottom center;
+  animation: illBreathe 2.8s ease-in-out infinite;
+}
+.ill-gate .ill-needle {
+  transform-box: fill-box;
+  transform-origin: bottom center;
+  animation: illNeedle 2.8s ease-in-out infinite;
+}
+
+.ill-batch .ill-flow {
+  stroke-dasharray: 4 5;
+  animation: illDash 1.6s linear infinite;
+}
+.ill-batch .ill-out {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: illPulse 2s ease-in-out infinite;
+}
+
+.ill-dl .ill-arrow {
+  stroke-dasharray: 40;
+  stroke-dashoffset: 40;
+  animation: illDraw 2.2s ease-in-out infinite;
+}
+.ill-dl .ill-orb {
+  animation: illFloat 2.6s ease-in-out infinite alternate;
+}
+.ill-dl .ill-orb.o2 { animation-delay: 0.4s; }
+.ill-dl .ill-orb.o3 { animation-delay: 0.8s; }
+
+@keyframes illFlip {
+  0%, 100% { transform: translateY(0) rotate(0deg); opacity: 1; }
+  40%      { transform: translateY(-6px) rotate(-4deg); opacity: 0.75; }
+  70%      { transform: translateY(2px) rotate(2deg); opacity: 0.9; }
+}
+@keyframes illDash {
+  to { stroke-dashoffset: -20; }
+}
+@keyframes illPulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.06); }
+}
+@keyframes illBreathe {
+  0%, 100% { transform: scaleY(0.72); }
+  50%      { transform: scaleY(1); }
+}
+@keyframes illNeedle {
+  0%, 100% { transform: rotate(-18deg); }
+  50%      { transform: rotate(16deg); }
+}
+@keyframes illDraw {
+  0%   { stroke-dashoffset: 40; opacity: 0.35; }
+  45%  { stroke-dashoffset: 0; opacity: 1; }
+  100% { stroke-dashoffset: -40; opacity: 0.35; }
+}
+@keyframes illFloat {
+  from { transform: translateY(0); }
+  to   { transform: translateY(-6px); }
+}
+
+/* why 卡片：小图标 + hover 点亮 */
+.why-ill {
+  width: 56px;
+  height: 36px;
+  margin-bottom: 8px;
+  opacity: 0.92;
+}
+.why-svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.wy-box {
+  fill: var(--card);
+  stroke: var(--accent);
+  stroke-width: 1.5;
+}
+.wy-fill {
+  fill: var(--accent);
+  opacity: 0.8;
+}
+.wy-stroke {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.wy-dot {
+  fill: var(--accent);
+}
+.why-card {
+  transition: transform 0.2s cubic-bezier(0.34, 1.4, 0.64, 1),
+    border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.why-card:hover {
+  transform: translateY(-3px);
+}
+.why-card:hover .wy-fill {
+  opacity: 1;
+}
+.why-card:hover .why-ill {
+  animation: illPulse 0.55s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .about-card--ill:hover,
+  .why-card:hover {
+    transform: none;
+  }
+  .ill-convert .ill-frame,
+  .ill-convert .ill-chip,
+  .ill-convert .ill-rail,
+  .ill-gate .ill-fill,
+  .ill-gate .ill-needle,
+  .ill-batch .ill-flow,
+  .ill-batch .ill-out,
+  .ill-dl .ill-arrow,
+  .ill-dl .ill-orb,
+  .why-card:hover .why-ill {
+    animation: none;
+  }
+}
+
+/* ==========================================================================
+   微交互：按钮光泽 / 磁吸 / 卡片倾斜 / 滚动进度 / 火花粒子
+   ========================================================================== */
+
+/* 顶部滚动进度条 */
+.scroll-rail {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 2px;
+  width: 0%;
+  z-index: 80;
+  background: linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 40%, #fbbf24));
+  transform-origin: left center;
+  pointer-events: none;
+}
+
+/* 主按钮光泽扫过 */
+.btn-primary {
+  position: relative;
+  overflow: hidden;
+}
+.btn-primary::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    115deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.35) 48%,
+    transparent 62%
+  );
+  transform: translateX(-120%);
+  transition: transform 0.55s ease;
+  pointer-events: none;
+}
+.btn-primary:hover::after {
+  transform: translateX(120%);
+}
+
+/* 磁吸按钮（JS 写 --mx/--my） */
+.btn-primary,
+.nav-cta,
+.dl-card {
+  --mx: 0px;
+  --my: 0px;
+  transform: translate(var(--mx), var(--my));
+  transition: transform 0.18s cubic-bezier(0.34, 1.4, 0.64, 1),
+    box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+.btn-primary:hover,
+.nav-cta:hover,
+.dl-card:hover {
+  --mx: 0px;
+  --my: 0px;
+  box-shadow: 0 12px 28px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+.btn-primary:active {
+  transform: scale(0.97);
+}
+
+/* about / why 卡片轻微 3D 倾斜（JS 写 --rx/--ry） */
+.about-card--ill,
+.why-card {
+  --rx: 0deg;
+  --ry: 0deg;
+  transform: perspective(700px) rotateX(var(--rx)) rotateY(var(--ry));
+  transform-style: preserve-3d;
+}
+.about-card--ill:hover,
+.why-card:hover {
+  transform: perspective(700px) rotateX(var(--rx)) rotateY(var(--ry)) translateY(-3px);
+}
+
+/* 下载卡：角标箭头滑入 */
+.dl-card {
+  position: relative;
+  overflow: hidden;
+}
+.dl-card::before {
+  content: "↓";
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  translate: 8px -50%;
+  opacity: 0;
+  color: var(--accent);
+  font-size: 18px;
+  font-weight: 700;
+  transition: opacity 0.2s ease, translate 0.22s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+.dl-card:hover::before {
+  opacity: 1;
+  translate: 0 -50%;
+}
+
+/* 火花粒子（feed / 成功时由 JS 注入） */
+.spark {
+  position: fixed;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 70;
+  background: var(--accent);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 60%, transparent);
+  animation: sparkFly 0.55s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+@keyframes sparkFly {
+  0%   { transform: translate(0, 0) scale(1); opacity: 1; }
+  100% { transform: translate(var(--dx), var(--dy)) scale(0.2); opacity: 0; }
+}
+
+/* 区块装饰胶片孔（section-head 前的小点阵） */
+.section-head::before {
+  content: "";
+  display: block;
+  width: 42px;
+  height: 6px;
+  margin-bottom: 14px;
+  border-radius: 999px;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      var(--accent) 0 6px,
+      transparent 6px 10px
+    );
+  opacity: 0.45;
+}
+
+/* hero 舞台鼠标视差层 */
+.hero-stage {
+  --hx: 0px;
+  --hy: 0px;
+  transform: translate(var(--hx), var(--hy));
+  transition: transform 0.25s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn-primary::after,
+  .dl-card::before,
+  .spark {
+    animation: none;
+    transition: none;
+  }
+  .btn-primary,
+  .nav-cta,
+  .dl-card,
+  .about-card--ill,
+  .why-card,
+  .hero-stage {
+    transform: none !important;
+  }
+}
+
+/* AE 合成行选中态 */
+.ae-row.is-picked rect:first-of-type {
+  stroke: var(--accent);
+  stroke-width: 2;
+}
+.ae-row.is-picked {
+  filter: drop-shadow(0 2px 6px color-mix(in srgb, var(--accent) 35%, transparent));
+}
+
+/* 区块之间的胶片孔装饰条 */
+.film-holes {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  padding: 6px 0 2px;
+  opacity: 0.28;
+}
+.film-holes i {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  border: 1.5px solid var(--ink);
+  display: block;
+}
+
+/* hero 标题词下划线呼吸 */
+.hero-accent::after {
+  animation: accentPulse 2.8s ease-in-out infinite;
+}
+@keyframes accentPulse {
+  0%, 100% { opacity: 0.55; transform: scaleX(1); }
+  50%      { opacity: 1; transform: scaleX(1.04); }
+}
+
+/* 阈值演示成功时的徽章弹跳（由 JS 加 .is-pop） */
+.gate-badge.is-pop {
+  animation: badgePop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes badgePop {
+  0%   { transform: scale(1); }
+  45%  { transform: scale(1.12); }
+  100% { transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-accent::after,
+  .gate-badge.is-pop {
+    animation: none;
+  }
+}
+
+/* hero 背景漂浮装饰 */
+.deco-float {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: decoDrift 5.5s ease-in-out infinite alternate;
+}
+.deco-float.d2 { animation-duration: 6.2s; animation-delay: -1.2s; }
+.deco-float.d3 { animation-duration: 4.4s; animation-delay: -0.6s; }
+.deco-float.d4 { animation-duration: 7s; animation-delay: -2s; }
+.deco-float.d5 { animation-duration: 5s; animation-delay: -1s; }
+
+@keyframes decoDrift {
+  from { transform: translate(0, 0) rotate(0deg); }
+  to   { transform: translate(6px, -10px) rotate(8deg); }
+}
+
+/* 输出芯片：hover 浮起 + 赤陶描边加粗 */
+#outputs .out-chip {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  cursor: pointer;
+}
+#outputs .out-chip:hover {
+  transform: translateY(-3px) scale(1.05);
+}
+#outputs .out-chip:hover rect {
+  stroke-width: 2.2;
+}
+
+/* 投喂完成：输出芯片依次点亮 */
+.hero-stage.is-ready #outputs .out-chip {
+  animation: outReady 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+.hero-stage.is-ready #outputs .out-chip:nth-child(2) { animation-delay: 0.12s; }
+.hero-stage.is-ready #outputs .out-chip:nth-child(3) { animation-delay: 0.24s; }
+
+@keyframes outReady {
+  0%   { transform: scale(0.9); }
+  60%  { transform: scale(1.12); }
+  100% { transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .deco-float,
+  #outputs .out-chip:hover,
+  .hero-stage.is-ready #outputs .out-chip {
+    animation: none;
+    transform: none;
+  }
+}
+
+
+/* ---------- hero 双引擎出品流 ---------- */
+.flow-dot { fill: #c2410c; opacity: 0; transition: opacity .4s; filter: drop-shadow(0 0 5px rgba(194, 65, 12, .6)); }
+#dual-flow.is-live .flow-dot { opacity: 1; }
+.engine-card { transform-box: fill-box; }
+.engine-card.is-hit { animation: engineHit .55s ease; }
+@keyframes engineHit { 0%, 100% { transform: translateY(0); } 35% { transform: translateY(-4px); } }
+.out-chip.is-hit { animation: chipHit .5s ease; transform-box: fill-box; }
+@keyframes chipHit { 0%, 100% { transform: scale(1); } 40% { transform: scale(1.12); } }
+@media (prefers-reduced-motion: reduce) {
+  .flow-dot { display: none; }
+  .engine-card.is-hit, .out-chip.is-hit { animation: none; }
+}
