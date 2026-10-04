@@ -255,6 +255,10 @@ jobs:
       - name: Install dependencies
         run: npm ci --ignore-scripts --no-audit --no-fund
 
+      - name: Prepare CEP payload
+        # NSIS 一体安装把 CEP payload 打进安装包；doctor 也校验它必须已暂存
+        run: node scripts/prepare-cep-payload.js
+
       - name: Doctor packaging assets
         run: node scripts/doctor-packaging.js
 
@@ -369,12 +373,22 @@ jobs:
           node-version-file: '.nvmrc'
 
 
+      - name: Install dependencies (fresh)
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Install electron binary
+        # --ignore-scripts 跳过了 electron postinstall；vue-cli 加载 electron-builder
+        # 插件时 require('electron') 需要二进制已就位（与上方 Build 任务一致）
+        run: node node_modules/electron/install.js
+
       - name: Build CEP UI (fresh)
         shell: bash
         run: |
           set -euo pipefail
           # 必须先构建 UI：targets/cep/ui/js 入库产物可能过时，zip 内不许带旧包
-          npm ci --ignore-scripts
           npm run build:cep
       - name: Pack CEP extension zip
         shell: bash
