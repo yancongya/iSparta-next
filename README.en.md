@@ -22,9 +22,16 @@ On startup the app checks GitHub Releases (version + OS type only; you can turn 
 
 - **Windows (NSIS installer) / Linux (AppImage):** in-app auto-update channel after you confirm download
 - **macOS:** unsigned zip — extract over the app; if macOS blocks it, **System Settings → Privacy & Security → Open Anyway**
+- **AE extension (bundled install):** pick a composition in After Effects → render PNG sequence → APNG / WebP / GIF, on the same conversion engine as the desktop app. The Windows installer can set up desktop + AE extension together.
 - Docs: [UPDATER.md](docs/UPDATER.md) · [RELEASE.md](docs/RELEASE.md) · [CHANGELOG.md](docs/CHANGELOG.md)
 - **macOS (unsigned zip):** manual download and replace; see Release notes for Gatekeeper
 - Architecture and limitations: **[docs/UPDATER.md](docs/UPDATER.md)**
+
+### Recent experience updates
+
+- **AE extension:** one-button switch between comp tree and task list; right-click to open comp location / output folder / stop task; double-click to jump to a comp; pinned filter bar (search / frame rate / frames); same-name comps disambiguated by folder
+- **Bundled install:** "All users (recommended) / Current user" on the components page, never both; AE installs auto-detected (registry + multi-drive); version shown in the desktop title bar and the AE extension menu
+- Empty-state import panel: folder open/close animation, 3D keycap paste hint; click / drag / Ctrl+V to import
 
 ### Good for
 
