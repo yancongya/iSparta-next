@@ -11,9 +11,12 @@
 | 落地页静态 | `npm run landing:serve`（默认 8080） |
 | 浏览器 UI 预览 | `npm run serve`（默认 8081） |
 | 依赖安装 | `scripts\dev\run-npm-install.cmd` / `run-clean-install.cmd` / `run-electron-install.cmd` |
-| Lint | `npm run lint` |
-| 出包前自检 | `npm run doctor:pack`（图标 / 向导图 / builder 引用；CI 构建前会跑） |
-| 本地打包 Windows | `npm run build:windows` |
+| Lint | `npm run lint`，或 `node scripts\dev\check.js lint` |
+| 出包前自检 | `npm run doctor:pack`（图标 / 向导图 / builder 引用；CI 构建前会跑），或 `node scripts\dev\check.js pack` |
+| 本地打包 Windows | `node scripts\dev\build.js win`，或 `scripts\dev\run-build-win.cmd`（**自动注入删除守卫豁免**、构建前报告 `targets/cep/ui` 暴露面、构建后直接给出 exe 绝对路径/体积/sha256） |
+| 端口占用排查 | `node scripts\dev\check.js ports`（8080–8099 监听 + 所属进程 + 归属识别，并打印可复制的清理命令） |
+| 统一体检 | `node scripts\dev\check.js all`，或 `scripts\dev\run-check.cmd all`（lint + pack + ports） |
+| 预览（起服务 + 开浏览器） | `node scripts\dev\preview.js guide\|landing\|web\|desktop\|cep`，或 `scripts\dev\run-preview.cmd guide` |
 | AE CEP 开发（**默认 HMR**） | `npm run dev:cep`（MainPath=`./dev-hmr.html`→8082）；刷新=**关面板再开（无 Ctrl+R）**。收工 `dev:cep:off`。出包才 `build:cep` |
 | CEP 铁律 | MainPath **禁 http://**；**禁 mock**；桥 `/lib/`|`../lib/`；外链 `cep.util.openURLInDefaultBrowser` |
 | CEP 载荷/扩展 zip | `npm run prepare:cep`（`build/cep-payload/`）；`npm run pack:cep`（`dist/*-cep-*.zip`） |
@@ -21,6 +24,10 @@
 | 图标再生 | 见 `scripts\build-app-icons.js`、`scripts\make-icons-from-png.py`、`scripts\make-installer-images.py`（勿手改位图当源） |
 
 环境：Node 经 `MIMO_NODE` / `MIMO_NPM` 时用 `& $env:MIMO_NODE $env:MIMO_NPM run <script>`。Windows 上不要用 Unix 登录 shell。
+
+**行尾约定**（见根目录 `.gitattributes`）：会被脚本 / 编辑器重写的文本（`scripts/dev/guide-preview/index.html`、`docs/PLAN-GUIDE-PAGES.md`、`src/util/updateCheck.js`、`targets/cep/CSXS/manifest.xml`）声明为 `text eol=lf`，此后行尾差异不再产生 diff；vendor 进来的 `forge.js` 三份拷贝声明 `-text` 冻结字节。**改这些文件不要再手工还原行尾。**
+
+**写仓库脚本的两个坑**：① Windows 上 Node 不能直接 `spawn` `.cmd`/`.bat`（Node 18.20+ 起为 CVE-2024-27980 抛 `EINVAL`），须过一层 shell —— 用 `scripts/dev/*.js` 里的 `spawnTool()`；② 同步版 `spawnSync` / `execFileSync` 在受限环境会 `EBUSY`，必须显式传 `stdio: ['ignore','pipe','ignore']`（见 `scripts/dev/check.js` 的 `capture()`），且**不要把失败静默吞掉**，否则「查不到」会被误报成「一切正常」。
 
 **图标唯一源**：`public/icons/icon-brand.svg`（品牌色 `#c8f542` + 深色播放标，**无文字**，图形居中并占满画布约 92%）。改 SVG 后再生成 png/ico/icns；同步：
 

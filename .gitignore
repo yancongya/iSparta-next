@@ -67,5 +67,7 @@ build.status
 .lp/
 # 本地任务状态文件（通配覆盖 build-win / dev-cep / landing-serve 等）
 *.status
+# 构建前快照（scripts/dev/build.js win --backup 的落点）
+.bak/
 # 工作区记忆：本地工作日志，非团队共享资产（.workbuddy/skills/ 仍可入库）
 .workbuddy/memory/
