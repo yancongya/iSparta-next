@@ -20,10 +20,14 @@ Var ispartaCepCommonParent
 Var ispartaCepCommonDest
 Var ispartaCopyOk
 Var ispartaCepScope
-Var ispartaRadUser
-Var ispartaRadAll
 Var ispartaAeDetectLabel
 Var ispartaAeFound
+; 组件页控件句柄：范围小标题 / 范围路径说明 / AE 检测行（供勾选联动时整体禁用）
+Var ispartaAeScopeLabel
+Var ispartaAeScopeTip
+Var ispartaAeLabel
+; 范围路径文案（由 $installMode 推导，见 ispartaResolveScope）
+Var ispartaAeScopeText
 
 
 ; ---------- 文件级辅助函数（customHeader 在页声明之后展开） ----------
@@ -150,7 +154,52 @@ Var ispartaAeFound
 !macroend
 
 ; ---------- 组件页（在「选择安装位置」之后、「正在安装」之前） ----------
+; 版式：左右两张等宽卡片（桌面版 / After Effects 扩展）。
+; **安装范围只问一次**：由 electron-builder 自带的「安装模式」页决定（所有用户 / 仅当前用户），
+; 组件页不再放 radio 重复提问，只把结果只读展示出来（见 ispartaResolveScope）。
+; 整页高度控制在 ~102u（MUI 页面区约 300u × 140u）。
 !macro customPageAfterChangeDir
+  ; AE 复选框 ↔ 范围说明联动：没勾 AE 就把位置说明灰掉
+  Function ispartaSyncAeScope
+    ${NSD_GetState} $ispartaChkAe $0
+    ${If} $0 == ${BST_CHECKED}
+      StrCpy $1 "1"
+    ${Else}
+      StrCpy $1 "0"
+    ${EndIf}
+    EnableWindow $ispartaAeScopeLabel $1
+    EnableWindow $ispartaAeScopeTip $1
+  FunctionEnd
+
+  ; 安装范围的**唯一真相源**：electron-builder 的 $installMode（"all" / "CurrentUser"）。
+  ; 该页在选「所有用户」时已负责 UAC 提权，这里只做映射 + 生成展示文案。
+  ; customInstall（含 silent 升级）也会 Call 它，保证无人值守路径同样正确。
+  Function ispartaResolveScope
+    ${if} $installMode == "all"
+      StrCpy $ispartaCepScope "all"
+      StrCpy $ispartaAeScopeText "Common Files（所有用户共用）"
+    ${elseIf} $installMode == "CurrentUser"
+      StrCpy $ispartaCepScope "user"
+      StrCpy $ispartaAeScopeText "%APPDATA%（仅当前用户）"
+    ${else}
+      ; 兜底：拿不到安装模式时按当前进程权限推断
+      ${if} ${UAC_IsAdmin}
+        StrCpy $ispartaCepScope "all"
+        StrCpy $ispartaAeScopeText "Common Files（所有用户共用）"
+      ${else}
+        StrCpy $ispartaCepScope "user"
+        StrCpy $ispartaAeScopeText "%APPDATA%（仅当前用户）"
+      ${endIf}
+    ${endIf}
+  FunctionEnd
+
+  Function ispartaAeToggle
+    ; nsDialogs 回调会压控件 HWND（有的版本再压一个通知码）；栈空时 Pop 返回空串，多弹一次是安全的
+    Pop $0
+    Pop $0
+    Call ispartaSyncAeScope
+  FunctionEnd
+
   Function ispartaComponentsPre
     ${if} ${Silent}
       Abort
@@ -163,47 +212,59 @@ Var ispartaAeFound
       Abort
     ${endIf}
 
-    ${NSD_CreateLabel} 0u 0u 100% 16u "勾选要安装的组件（至少一项）："
+    ; ---- 左卡：桌面版 ----
+    ${NSD_CreateGroupBox} 0% 2u 48% 68u "桌面版"
     Pop $0
 
-    ${NSD_CreateCheckbox} 10u 18u 90% 16u "桌面版 iSparta-next（开始菜单 / 桌面快捷方式）"
+    ${NSD_CreateCheckbox} 3% 14u 42% 10u "iSparta-next 主程序"
     Pop $ispartaChkDesktop
     ${if} $ispartaInstallDesktop == "1"
       ${NSD_Check} $ispartaChkDesktop
     ${endIf}
 
-    ${NSD_CreateCheckbox} 10u 36u 90% 16u "After Effects 扩展 iSparta（CEP 面板）"
+    ${NSD_CreateLabel} 6% 26u 39% 9u "创建开始菜单与桌面快捷方式"
+    Pop $0
+
+    ${NSD_CreateLabel} 6% 36u 39% 9u "APNG / WebP / GIF 序列转换"
+    Pop $0
+
+    ${NSD_CreateLabel} 6% 46u 39% 9u "可与 AE 扩展分开勾选"
+    Pop $0
+
+    ; ---- 右卡：AE 扩展 ----
+    ${NSD_CreateGroupBox} 52% 2u 48% 68u "After Effects 扩展"
+    Pop $0
+
+    ${NSD_CreateCheckbox} 55% 14u 42% 10u "iSparta CEP 面板"
     Pop $ispartaChkAe
     ${if} $ispartaInstallAe == "1"
       ${NSD_Check} $ispartaChkAe
     ${endIf}
 
-    ${NSD_CreateGroupBox} 10u 56u 90% 52u "AE 扩展安装范围（二选一）"
+    ; 安装范围不再重复提问：直接跟随「安装模式」页的选择
+    Call ispartaResolveScope
+
+    ${NSD_CreateLabel} 58% 26u 39% 9u "安装位置（跟随安装模式）"
+    Pop $ispartaAeScopeLabel
+
+    ${NSD_CreateLabel} 58% 37u 39% 10u "$ispartaAeScopeText"
+    Pop $ispartaAeScopeTip
+
+    ${NSD_CreateLabel} 58% 49u 39% 14u "与主程序保持同一安装范围"
     Pop $0
 
-    ${NSD_CreateRadioButton} 20u 70u 88% 14u "所有用户（推荐，需管理员）"
-    Pop $ispartaRadAll
-    ${if} $ispartaCepScope == "all"
-      ${NSD_Check} $ispartaRadAll
-    ${elseIf} $ispartaCepScope == ""
-      ${NSD_Check} $ispartaRadAll
-    ${endIf}
-
-    ${NSD_CreateRadioButton} 20u 86u 88% 14u "仅当前用户（免管理员）"
-    Pop $ispartaRadUser
-    ${if} $ispartaCepScope == "user"
-      ${NSD_Check} $ispartaRadUser
-    ${endIf}
-
-    ${NSD_CreateLabel} 20u 102u 88% 12u "推荐管理员：所有用户 × 全部 AE 版本一份拷贝"
-    Pop $0
-
+    ; ---- 状态行：AE 探测结果（只读展示，不占用卡片宽度） ----
     Call ispartaDetectAe
-    ${NSD_CreateLabel} 10u 114u 90% 14u "AE 检测：$ispartaAeDetectLabel"
-    Pop $ispartaAeDetectLabel
+    ${NSD_CreateLabel} 0% 74u 100% 10u "AE 检测：$ispartaAeDetectLabel"
+    Pop $ispartaAeLabel
 
-    ${NSD_CreateLabel} 10u 132u 90% 22u "装后请重启 After Effects；未签名扩展会自动开启 PlayerDebugMode。"
+    ${NSD_CreateLabel} 0% 86u 100% 18u "装后请重启 After Effects；未签名扩展会自动开启 PlayerDebugMode。"
     Pop $0
+
+    ; 勾选联动（先按当前状态同步一次，覆盖「升级时继承上次选择」的情况）
+    GetFunctionAddress $0 ispartaAeToggle
+    nsDialogs::OnClick $ispartaChkAe $0
+    Call ispartaSyncAeScope
 
     nsDialogs::Show
   FunctionEnd
@@ -220,39 +281,8 @@ Var ispartaAeFound
       StrCpy $ispartaInstallAe "1"
     ${endIf}
 
-    ; 安装范围互斥：读单选
-    StrCpy $ispartaCepScope "user"
-    ${NSD_GetState} $ispartaRadAll $0
-    ${if} $0 == ${BST_CHECKED}
-      StrCpy $ispartaCepScope "all"
-    ${endIf}
-
-    ; 选「所有用户」但当前非管理员 → UAC 提权推荐
-    ${if} $ispartaInstallAe == "1"
-    ${andIf} $ispartaCepScope == "all"
-    ${andIfNot} ${UAC_IsAdmin}
-      MessageBox MB_YESNO|MB_ICONQUESTION "推荐以管理员身份安装到统一 CEP 目录（所有用户 × 所有 AE 版本一份拷贝）。$\r$\n是否以管理员继续？$\r$\n选「否」则退回仅当前用户安装。" IDYES ispartaElevate IDNO ispartaFallbackUser
-      ispartaElevate:
-        ; UAC_RunElevated 返回码：$0=0 成功；$1=1 子进程已起(Quit) / 2 已是管理员 / 3 需重试
-        !insertmacro UAC_RunElevated
-        ${If} $0 = 0
-          ${If} $1 = 1
-            ; 高权限子进程已接管，本进程退出
-            Quit
-          ${ElseIf} $1 = 3
-            ; runas 里填了非管理员账号 → 再申请一次
-            MessageBox MB_OK|MB_ICONEXCLAMATION "刚才的账号没有管理员权限。$\r$\n请重新授权，或改选「仅当前用户」。"
-            Goto ispartaElevate
-          ${EndIf}
-          ; $1=2：当前已是管理员，继续安装
-        ${Else}
-          ; 提权被取消 / 失败：警告并留在本页重试
-          MessageBox MB_OK|MB_ICONEXCLAMATION "申请管理员权限失败或已取消。$\r$\n请点「下一步」重新授权，或改选「仅当前用户」。"
-          Abort
-        ${EndIf}
-      ispartaFallbackUser:
-        StrCpy $ispartaCepScope "user"
-    ${endIf}
+    ; 安装范围已由「安装模式」页决定（选「所有用户」时该页已完成 UAC 提权），
+    ; 组件页只负责勾选组件，不再重复提问，也不在这里申请提权。
 
     ${if} $ispartaInstallDesktop == "0"
     ${andIf} $ispartaInstallAe == "0"
@@ -271,7 +301,7 @@ Var ispartaAeFound
 !macro customInit
   StrCpy $ispartaInstallDesktop "1"
   StrCpy $ispartaInstallAe "1"
-  StrCpy $ispartaCepScope "all"
+  ; 安装范围不在这里定：由「安装模式」页 → $installMode → ispartaResolveScope 推导
 
   ReadRegStr $0 SHELL_CONTEXT "${INSTALL_REGISTRY_KEY}" CepInstalled
   ${if} ${isUpdated}
@@ -290,14 +320,6 @@ Var ispartaAeFound
     ${endIf}
   ${endIf}
 
-  ; 升级保留上次安装范围（互斥两选一）
-  ReadRegStr $0 SHELL_CONTEXT "${INSTALL_REGISTRY_KEY}" CepScope
-  ${if} $0 == "user"
-    StrCpy $ispartaCepScope "user"
-  ${elseif} $0 == "all"
-    StrCpy $ispartaCepScope "all"
-  ${endIf}
-
   StrCpy $ispartaCepSrc "$INSTDIR\${ISPARTA_CEP_REL}"
   StrCpy $ispartaCepUserParent "$APPDATA\Adobe\CEP\extensions"
   StrCpy $ispartaCepUserDest "$ispartaCepUserParent\${ISPARTA_CEP_ID}"
@@ -307,6 +329,9 @@ Var ispartaAeFound
 
 ; ---------- 安装：复制扩展 / 快捷方式按需 ----------
 !macro customInstall
+  ; 安装范围：与主程序安装模式一致（silent 升级不经组件页，这里兜底重推一次）
+  Call ispartaResolveScope
+
   StrCpy $ispartaCepSrc "$INSTDIR\${ISPARTA_CEP_REL}"
   StrCpy $ispartaCepUserParent "$APPDATA\Adobe\CEP\extensions"
   StrCpy $ispartaCepUserDest "$ispartaCepUserParent\${ISPARTA_CEP_ID}"

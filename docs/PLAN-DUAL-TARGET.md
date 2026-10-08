@@ -169,19 +169,29 @@
 **互斥规则**：二选一，**禁止双写**（Common Files 与 APPDATA 并存会引发 CEP 加载优先级歧义 / 重复加载）。
 当前 `installer.nsh` 的 `UAC_IsAdmin` 顺带双写行为**须改**。
 
+**选择口径（已实现）**：范围**不再由组件页询问**，唯一真相源是 electron-builder 自带的「安装模式」页
+（`$installMode` = `all` / `CurrentUser`）—— 它同时决定主程序目录与 CEP 落盘位置，避免同一个问题问两遍。
+组件页只**只读展示**落盘位置（`build/installer.nsh` 的 `ispartaResolveScope`）。
+
 ### 9.3 UAC 流程
 
 ```
-组件页勾「AE 扩展」
-    ↓
-询问安装范围（UAC）
-├─ 推荐：管理员安装（统一 Common Files）
-│     → RequestExecutionLevel admin / UAC 提权
-│     → 写 Common Files\\Adobe\\CEP\\extensions\\<EXT_ID>
-│     → 所有 AE 版本 + 所有用户
-└─ 仅当前用户（不提权）
-      → 写 %APPDATA%\\Adobe\\CEP\\extensions\\<EXT_ID>
+「安装模式」页（electron-builder 自带，欢迎页之后）
+    ↓ 用户选「所有用户 / 仅当前用户」；选前者时该页立即 UAC 提权
+    ↓ 结果写入 $installMode（"all" | "CurrentUser"）
+ispartaResolveScope（唯一推导点）
+├─ all（已是管理员）
+│     → 主程序 $PROGRAMFILES64\isparta-next
+│     → 写 Common Files\Adobe\CEP\extensions\<EXT_ID>
+│     → 所有用户 × 所有 AE 版本
+└─ CurrentUser（免管理员）
+      → 主程序 $LOCALAPPDATA\Programs\isparta-next
+      → 写 %APPDATA%\Adobe\CEP\extensions\<EXT_ID>
       → 仅当前用户（AE 全版本仍可用）
+
+组件页（目录页之后）
+    → 只勾选「桌面版 / AE 扩展」，安装范围只读展示，不再提问、不再申请提权
+    → silent(/S) 升级不经组件页 → 由 customInstall 再 Call 一次 ispartaResolveScope 兜底
 ```
 
 ### 9.4 识别失败回退链
