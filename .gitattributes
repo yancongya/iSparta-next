@@ -1,0 +1,20 @@
+# ── 行尾策略 ──────────────────────────────────────────────────────────────
+# 背景：仓库正文绝大多数是 LF，但少数历史文件混进了 CRLF。编辑器 / 脚本重写这类
+# 文件时会把整份行尾翻成 LF，而 git 默认按字节比较 —— 于是明明只改了几行，却出现
+# 「整个文件都变了」的 diff 噪声（scripts/dev/guide-preview/index.html 每改一次都要
+# 手工 sed 把 CRLF 还原回去）。
+#
+# 下面按「会不会被工具重写」分两类定死，之后不再需要人工还原行尾。
+
+# ① 会被脚本 / 编辑器重写的文本 —— 统一按 LF 归一化。
+#    git 在比较前会先归一化，工作区里写成 LF 还是 CRLF 都不再产生 diff。
+scripts/dev/guide-preview/index.html  text eol=lf
+docs/PLAN-GUIDE-PAGES.md              text eol=lf
+src/util/updateCheck.js               text eol=lf
+targets/cep/CSXS/manifest.xml         text eol=lf
+
+# ② vendor 进来的第三方库 —— 冻结字节，git 不做任何转换（含行尾）。
+#    这三份 node-forge 是随包分发的上游拷贝，改动它们只会污染历史。
+public/lib/forge.js                   -text
+targets/cep/lib/forge.js              -text
+targets/cep/ui/lib/forge.js           -text
