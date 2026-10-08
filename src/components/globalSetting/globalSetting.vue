@@ -269,6 +269,7 @@ import updateService from '../../util/updateService'
 import IsProgress from '../../ui-next/components/ui/IsProgress.vue'
 import notice from '../../ui-next/notice'
 import hostAdapter from '../../util/host-env'
+import { MODE_SYSTEM, resolveLocale } from '../../util/system-locale'
 
 const DEFAULT_SIZE_LIMIT = {
   enabled: false,
@@ -369,7 +370,10 @@ export default {
       return { tone: 'bad', text: this.$t('updateFailed') }
     },
     languages () {
+      // 首项「跟随系统」= 'system' 哨兵：写入存储的是哨兵，实际 locale 由
+      // util/system-locale 在启动/显示时解析（绝不把 'system' 赋给 i18n.locale）。
       return [
+        { label: this.$t('languageSystem'), value: MODE_SYSTEM },
         { label: '简体', value: 'zh-cn' },
         { label: '繁體', value: 'zh-tw' },
         { label: 'EN', value: 'en-us' }
@@ -605,8 +609,11 @@ export default {
         this.applyThemeMode(this.themeMode)
       }
 
-      if (this.$i18n.locale !== this.setting.language) {
-        this.$i18n.locale = this.setting.language
+      // setting.language 可能是 'system' 哨兵，必须解析成真实 locale 再赋给 vue-i18n，
+      // 否则会得到「无翻译」的空界面。
+      const locale = resolveLocale(this.setting.language)
+      if (this.$i18n.locale !== locale) {
+        this.$i18n.locale = locale
       }
 
       // 帧率/循环是全局默认：变更后同步到所有项目，保持输出设置、列表摘要、

@@ -1,0 +1,1847 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="theme-dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>iSparta-next · 引导页预览台（Dev Preview）</title>
+<style>
+/* ============================================================================
+   令牌层 —— 与 src/ui-next/styles/tokens.css 逐条对齐（只摘本页用到的）
+   改 tokens.css 时同步维护此处，避免预览与实际观感漂移。
+
+   ⚠ 主题 class 必须挂在 <html> 上（不是 #app）：
+     自定义属性只向下继承，若挂在 body 的子元素上，body 自身的
+     color:var(--is-text) 会因为变量未定义而回退成黑色（暗色下即"黑字黑底"）。
+   ========================================================================== */
+:root{
+  --is-s-1:4px;--is-s-2:8px;--is-s-3:12px;--is-s-4:16px;--is-s-5:20px;--is-s-6:24px;--is-s-8:32px;--is-s-10:40px;
+  --is-r-xs:4px;--is-r-sm:8px;--is-r-md:12px;--is-r-lg:14px;--is-r-xl:20px;--is-r-pill:999px;
+  --is-fs-xs:11px;--is-fs-sm:12px;--is-fs-md:13px;--is-fs-base:14px;--is-fs-lg:16px;--is-fs-xl:18px;--is-fs-2xl:22px;
+  --is-fw-medium:500;--is-fw-semi:600;--is-fw-bold:700;--is-fw-black:800;
+  --is-dur-fast:120ms;--is-dur-base:200ms;--is-dur-slow:340ms;
+  --is-ease-std:cubic-bezier(.4,0,.2,1);
+  --is-ease-out:cubic-bezier(.16,1,.3,1);
+  --is-ease-overshoot:cubic-bezier(.175,.885,.32,1.275);
+  --is-font:"Segoe UI Variable Text","Segoe UI","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+  --is-mono:"Cascadia Mono","SF Mono",Consolas,monospace;
+  /* 兜底：令牌挂到 :root，确保 body 及其后代表达式始终可解 */
+  --is-accent:#c8f542;--is-accent-rgb:200,245,66;--is-accent-soft:rgba(200,245,66,.08);
+  --is-on-accent:#0c0f0e;
+  --is-bg:#0c0f0e;--is-panel:#141816;--is-card:#1a201c;--is-inset:#101412;
+  --is-border:rgba(232,240,230,.08);--is-border-hi:rgba(200,245,66,.35);--is-border-strong:rgba(232,240,230,.16);--is-divider:rgba(232,240,230,.06);
+  --is-text:#eef3ec;--is-text-2:rgba(238,243,236,.62);--is-text-3:rgba(238,243,236,.36);
+  --is-track:rgba(232,240,230,.10);--is-hover:rgba(232,240,230,.05);
+  /* 路径变量六色（RGB 分量）——漏了这组，.np-tok--c* / .np-var 会取不到值而全部同色 */
+  --is-var-1:122,162,255;--is-var-2:94,222,160;--is-var-3:251,191,119;
+  --is-var-4:196,181,253;--is-var-5:125,211,252;--is-var-6:249,168,212;
+}
+.theme-dark{
+  color-scheme:dark;
+  --is-accent:#c8f542;--is-accent-rgb:200,245,66;--is-accent-dim:rgba(200,245,66,.18);--is-accent-soft:rgba(200,245,66,.08);--is-on-accent:#0c0f0e;
+  --is-ok:#3ddc97;--is-ok-bg:rgba(61,220,151,.14);--is-ok-fg:#6ee7b0;
+  --is-warn:#ffc857;--is-warn-bg:rgba(255,200,87,.14);--is-warn-fg:#ffd782;
+  --is-cool:#6bd7ff;--is-cool-bg:rgba(107,215,255,.14);--is-cool-fg:#93e3ff;
+  --is-violet:#b79bff;--is-violet-bg:rgba(183,155,255,.16);--is-violet-fg:#cbb6ff;
+  --is-bg:#0c0f0e;--is-panel:#141816;--is-card:#1a201c;--is-card-hi:#222a24;--is-elevated:#1c221e;--is-inset:#101412;
+  --is-border:rgba(232,240,230,.08);--is-border-hi:rgba(200,245,66,.35);--is-border-strong:rgba(232,240,230,.16);--is-divider:rgba(232,240,230,.06);
+  --is-text:#eef3ec;--is-text-2:rgba(238,243,236,.62);--is-text-3:rgba(238,243,236,.36);
+  --is-track:rgba(232,240,230,.10);--is-hover:rgba(232,240,230,.05);
+  --is-shadow:0 12px 40px rgba(0,0,0,.45);--is-shadow-lg:0 24px 64px rgba(0,0,0,.6);
+}
+.theme-light{
+  color-scheme:light;
+  --is-accent:#c2410c;--is-accent-rgb:194,65,12;--is-accent-dim:rgba(194,65,12,.14);--is-accent-soft:rgba(194,65,12,.07);--is-on-accent:#fffaf5;
+  --is-ok:#15803d;--is-ok-bg:rgba(21,128,61,.10);--is-ok-fg:#15803d;
+  --is-warn:#b45309;--is-warn-bg:rgba(180,83,9,.10);--is-warn-fg:#b45309;
+  --is-cool:#0e7490;--is-cool-bg:rgba(14,116,144,.10);--is-cool-fg:#0e7490;
+  --is-violet:#6d28d9;--is-violet-bg:rgba(109,40,217,.10);--is-violet-fg:#6d28d9;
+  --is-bg:#f3efe6;--is-panel:#ebe6db;--is-card:#fffdf8;--is-card-hi:#f7f3ea;--is-elevated:#fffdf8;--is-inset:#f5f1e8;
+  --is-border:rgba(28,25,23,.10);--is-border-hi:rgba(194,65,12,.40);--is-border-strong:rgba(28,25,23,.20);--is-divider:rgba(28,25,23,.08);
+  --is-text:#1c1917;--is-text-2:rgba(28,25,23,.62);--is-text-3:rgba(28,25,23,.38);
+  --is-track:rgba(28,25,23,.09);--is-hover:rgba(28,25,23,.05);
+  --is-shadow:0 10px 30px rgba(28,25,23,.08);--is-shadow-lg:0 22px 56px rgba(28,25,23,.18);
+  /* 亮色主题：六色取深调，保证浅底可读（与暗色一一对应） */
+  --is-var-1:37,99,235;--is-var-2:21,128,61;--is-var-3:194,65,12;
+  --is-var-4:109,40,217;--is-var-5:14,116,144;--is-var-6:190,24,93;
+}
+
+/* ============================ 基础 ============================ */
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{
+  background:var(--is-bg);color:var(--is-text);
+  font-family:var(--is-font);font-size:var(--is-fs-base);line-height:1.5;
+  -webkit-font-smoothing:antialiased;overflow:hidden;
+}
+h1,h2,h3,p{margin:0}
+button{font-family:inherit;color:inherit}
+
+/* ============================ 外壳 ============================ */
+.app{display:grid;grid-template-columns:264px 1fr;height:100vh}
+
+/* --- 左侧控制台 --- */
+.ctrl{
+  background:var(--is-panel);border-right:1px solid var(--is-border);
+  padding:var(--is-s-6) var(--is-s-5);overflow-y:auto;
+  display:flex;flex-direction:column;gap:var(--is-s-6);
+}
+.ctrl h1{font-size:var(--is-fs-lg);font-weight:var(--is-fw-bold);letter-spacing:.2px}
+.ctrl .ver{font-size:var(--is-fs-xs);color:var(--is-text-3);margin-top:2px}
+.group{display:flex;flex-direction:column;gap:var(--is-s-2)}
+.group[hidden]{display:none}
+.group > .lbl{
+  font-size:var(--is-fs-xs);font-weight:var(--is-fw-semi);color:var(--is-text-3);
+  letter-spacing:.08em;text-transform:uppercase;
+}
+.seg{display:flex;gap:var(--is-s-1);background:var(--is-inset);border:1px solid var(--is-border);border-radius:var(--is-r-sm);padding:var(--is-s-1)}
+.seg button{
+  flex:1;border:0;background:transparent;border-radius:var(--is-r-xs);
+  font-size:var(--is-fs-sm);padding:6px 4px;cursor:pointer;
+  transition:background var(--is-dur-fast) var(--is-ease-std),color var(--is-dur-fast) var(--is-ease-std);
+}
+.seg button:hover{background:var(--is-hover)}
+.seg button.on{background:var(--is-accent);color:var(--is-on-accent);font-weight:var(--is-fw-semi)}
+.steps{display:flex;flex-direction:column;gap:2px}
+.steps button{
+  display:flex;align-items:center;gap:var(--is-s-2);border:0;background:transparent;
+  text-align:left;padding:7px var(--is-s-2);border-radius:var(--is-r-xs);
+  font-size:var(--is-fs-md);cursor:pointer;color:var(--is-text-2);
+  transition:background var(--is-dur-fast) var(--is-ease-std),color var(--is-dur-fast) var(--is-ease-std);
+}
+.steps button:hover{background:var(--is-hover);color:var(--is-text)}
+.steps button.on{background:var(--is-accent-soft);color:var(--is-text)}
+.steps .n{
+  width:18px;height:18px;flex:0 0 18px;border-radius:var(--is-r-pill);
+  display:grid;place-items:center;font-size:var(--is-fs-xs);font-family:var(--is-mono);
+  border:1px solid var(--is-border-strong);color:var(--is-text-3);
+}
+.steps button.on .n{background:var(--is-accent);border-color:var(--is-accent);color:var(--is-on-accent)}
+.note{
+  margin-top:auto;font-size:var(--is-fs-xs);color:var(--is-text-3);line-height:1.75;
+  border-top:1px solid var(--is-divider);padding-top:var(--is-s-4);white-space:pre-line;
+}
+.note b{color:var(--is-text-2);font-weight:var(--is-fw-semi)}
+.note code{font-family:var(--is-mono);font-size:10px;color:var(--is-accent)}
+
+/* --- 系统环境探测（只读参考）---
+   预览台不参与自适应，此块仅展示「生产环境会从电脑取到什么」，
+   便于在不起 Electron / 不起 CEP 的前提下验证 §5.9 的映射。 */
+.envbox{
+  display:flex;flex-direction:column;gap:3px;
+  background:var(--is-inset);border:1px solid var(--is-border);border-radius:var(--is-r-sm);
+  padding:var(--is-s-2) var(--is-s-3);
+  font-family:var(--is-mono);font-size:var(--is-fs-xs);line-height:1.6;
+}
+.envbox .k{color:var(--is-text-3)}
+.envbox .v{color:var(--is-text-2)}
+.envbox .v.hit{color:var(--is-accent)}
+.envbox .hint{font-family:var(--is-font);font-size:10px;color:var(--is-text-3);opacity:.85;margin-top:2px}
+
+/* --- 右侧舞台 --- */
+.stage{
+  position:relative;display:grid;place-items:center;overflow:auto;padding:var(--is-s-8);
+  background:
+    radial-gradient(720px 420px at 50% 8%,rgba(var(--is-accent-rgb),.07),transparent 70%),
+    var(--is-bg);
+}
+
+/* --- 面板右上角设置（主题 + 语言）—— 属于"指导面板"自身的能力 --- */
+.tb-right{margin-left:auto;position:relative;display:flex;align-items:center}
+.tb-set{
+  display:flex;align-items:center;gap:5px;cursor:pointer;
+  background:var(--is-card);border:1px solid var(--is-border);
+  border-radius:var(--is-r-pill);padding:3px 9px 3px 7px;
+  font-size:10px;color:var(--is-text-3);line-height:1;
+  transition:border-color var(--is-dur-fast) var(--is-ease-std),color var(--is-dur-fast) var(--is-ease-std),background var(--is-dur-fast) var(--is-ease-std);
+}
+.tb-set:hover,.tb-set[aria-expanded="true"]{border-color:var(--is-border-hi);color:var(--is-text)}
+.tb-set svg{width:11px;height:11px;flex:0 0 11px;display:block}
+.tb-set .sep{opacity:.55}
+.pop{
+  position:absolute;top:calc(100% + 8px);right:0;width:206px;z-index:40;
+  background:var(--is-elevated);border:1px solid var(--is-border-strong);
+  border-radius:var(--is-r-md);box-shadow:var(--is-shadow-lg);
+  padding:var(--is-s-4);display:flex;flex-direction:column;gap:var(--is-s-4);
+  animation:k-rise var(--is-dur-base) var(--is-ease-out) both;
+}
+.pop[hidden]{display:none}
+.pop .group > .lbl{font-size:10px}
+
+/* --- 面板窗口 ---
+   overflow:visible —— 右上角设置的下拉需要溢出标题栏；圆角改由
+   titlebar / foot 自行承担，.screen 仍 overflow:hidden 负责步骤裁剪。 */
+.frame{
+  background:var(--is-elevated);border:1px solid var(--is-border-strong);
+  border-radius:var(--is-r-lg);box-shadow:var(--is-shadow-lg);
+  display:flex;flex-direction:column;overflow:visible;
+  transition:width var(--is-dur-slow) var(--is-ease-out),height var(--is-dur-slow) var(--is-ease-out);
+}
+.frame[data-runtime="desktop"]{width:760px;height:500px}
+.frame[data-runtime="cep"]{width:520px;height:560px}
+.frame[hidden]{display:none}
+.titlebar{
+  height:34px;flex:0 0 34px;display:flex;align-items:center;gap:var(--is-s-2);
+  padding:0 var(--is-s-3);background:var(--is-panel);border-bottom:1px solid var(--is-border);
+  border-radius:var(--is-r-lg) var(--is-r-lg) 0 0;
+}
+.tl{display:flex;gap:6px}
+.tl i{width:9px;height:9px;border-radius:var(--is-r-pill);background:var(--is-track);display:block}
+.tl i:first-child{background:rgba(255,92,92,.55)}
+.tb-name{margin-left:var(--is-s-2);font-size:var(--is-fs-xs);color:var(--is-text-3)}
+
+/* --- 进度点 --- */
+.dots{display:flex;gap:6px;justify-content:center;padding:var(--is-s-5) 0 var(--is-s-2)}
+.dots i{
+  width:6px;height:6px;border-radius:var(--is-r-pill);background:var(--is-track);
+  transition:width var(--is-dur-base) var(--is-ease-overshoot),background var(--is-dur-base) var(--is-ease-std);
+}
+.dots i.on{width:20px;background:var(--is-accent)}
+
+/* --- 屏幕 --- */
+.screen{flex:1;position:relative;overflow:hidden}
+.step{
+  position:absolute;inset:0;padding:var(--is-s-4) var(--is-s-8) var(--is-s-5);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--is-s-4);
+  opacity:0;transform:translateY(12px);pointer-events:none;
+  transition:opacity var(--is-dur-base) var(--is-ease-std),transform var(--is-dur-slow) var(--is-ease-out);
+}
+.step.on{opacity:1;transform:none;pointer-events:auto;overflow-y:auto}
+/* 内容高于窗口的步骤（输出 / 命名）改为顶对齐，否则居中会把顶部推出可视区 */
+.step--fill{justify-content:flex-start}
+.step h2{font-size:var(--is-fs-xl);font-weight:var(--is-fw-bold);text-align:center}
+/* 46ch 太窄：中文正文会被挤到第二行只落两三个字。放宽到 72ch，再配 balance
+   兜底——真要折行时也是两行等长，而不是留个孤字。 */
+.step .sub{font-size:var(--is-fs-md);color:var(--is-text-2);text-align:center;max-width:min(100%,72ch);text-wrap:balance}
+.demo{width:100%;max-width:340px;height:auto;display:block}
+.frame[data-runtime="cep"] .demo{max-width:280px}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--is-s-2);width:100%;max-width:420px}
+.card{
+  background:var(--is-card);border:1px solid var(--is-border);border-radius:var(--is-r-md);
+  padding:var(--is-s-3) var(--is-s-2);text-align:center;
+}
+.card .t{font-size:var(--is-fs-sm);font-weight:var(--is-fw-semi)}
+.card .d{font-size:var(--is-fs-xs);color:var(--is-text-3);margin-top:2px}
+.chip{
+  font-family:var(--is-mono);font-size:var(--is-fs-xs);color:var(--is-text-3);
+  border:1px solid var(--is-border);border-radius:var(--is-r-pill);padding:1px 8px;
+}
+
+/* --- 页脚 --- */
+.foot{
+  flex:0 0 52px;display:flex;align-items:center;justify-content:space-between;
+  padding:0 var(--is-s-5);border-top:1px solid var(--is-border);background:var(--is-panel);
+  border-radius:0 0 var(--is-r-lg) var(--is-r-lg);
+}
+.foot .side{display:flex;gap:var(--is-s-2);align-items:center}
+.btn{
+  border:1px solid var(--is-border-strong);background:transparent;border-radius:var(--is-r-sm);
+  padding:6px 14px;font-size:var(--is-fs-md);cursor:pointer;
+  transition:background var(--is-dur-fast) var(--is-ease-std),border-color var(--is-dur-fast) var(--is-ease-std);
+}
+.btn:hover{background:var(--is-hover)}
+.btn.primary{background:var(--is-accent);border-color:var(--is-accent);color:var(--is-on-accent);font-weight:var(--is-fw-semi)}
+.btn.ghost{border-color:transparent;color:var(--is-text-3)}
+.btn:disabled{opacity:.34;cursor:not-allowed}
+.btn:disabled:hover{background:transparent}
+.counter{font-family:var(--is-mono);font-size:var(--is-fs-xs);color:var(--is-text-3)}
+
+/* ============================================================================
+   动图 SVG —— 关键帧（只用 transform / opacity，另加 SVG 描边绘制）
+   约定：可动元素统一挂 .anim，便于「动效关闭」时一次性落到终态。
+   ========================================================================== */
+@keyframes k-rise{0%{opacity:0;transform:translateY(10px)}100%{opacity:1;transform:none}}
+@keyframes k-pop{0%{opacity:0;transform:scale(.8)}60%{opacity:1;transform:scale(1.06)}100%{opacity:1;transform:scale(1)}}
+@keyframes k-spin{to{transform:rotate(360deg)}}
+@keyframes k-tick{from{opacity:.3;transform:translateY(-3px)}to{opacity:1;transform:none}}
+@keyframes k-drop{0%{opacity:0;transform:translateY(-30px)}32%{opacity:1;transform:translateY(0)}78%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-4px)}}
+@keyframes k-pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(.88);opacity:.5}}
+@keyframes k-draw{to{stroke-dashoffset:0}}
+@keyframes k-bar{0%{transform:scaleX(.12)}45%{transform:scaleX(.84)}68%{transform:scaleX(.56)}100%{transform:scaleX(.72)}}
+@keyframes k-slide{0%{opacity:0;transform:translateX(56px)}38%{opacity:1;transform:translateX(0)}84%{opacity:1;transform:translateX(0)}100%{opacity:0;transform:translateX(56px)}}
+@keyframes k-chip{
+  0%{fill:var(--is-accent-soft);stroke:var(--is-border-hi)}
+  33%{fill:var(--is-inset);stroke:var(--is-border)}
+  100%{fill:var(--is-inset);stroke:var(--is-border)}
+}
+@keyframes k-lift{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+
+/* :where() 降权 —— 否则下面 .d-bar 的 transform-origin:left center 会被本行盖掉，
+   滑块变成「从中间长出来」。同因同源：任何需要自定义原点的 .anim 都会被它吃掉。 */
+:where(.demo) .anim{transform-box:fill-box;transform-origin:center}
+.d-rise{animation:k-rise var(--is-dur-slow) var(--is-ease-out) both}
+.d-pop1{animation:k-pop .5s var(--is-ease-overshoot) both}
+.d-pop2{animation:k-pop .5s var(--is-ease-overshoot) .1s both}
+.d-pop3{animation:k-pop .5s var(--is-ease-overshoot) .2s both}
+.d-orbit{transform-box:view-box;transform-origin:110px 68px;animation:k-spin 5s linear infinite}
+.d-card{animation:k-drop 2.6s var(--is-ease-out) infinite}
+.d-key{animation:k-pulse 1.6s var(--is-ease-std) infinite}
+.d-lift{animation:k-lift 2.4s var(--is-ease-std) infinite}
+.d-chip{animation:k-chip 3s steps(1,end) infinite}
+.d-chip.b{animation-delay:-1s}
+.d-chip.c{animation-delay:-2s}
+.d-bar{transform-box:fill-box;transform-origin:left center;animation:k-bar 3s var(--is-ease-out) infinite}
+.d-slide{animation:k-slide 3.2s var(--is-ease-out) infinite}
+.d-spin{transform-box:view-box;transform-origin:308px 100px;animation:k-spin 3.4s linear infinite}
+.d-ring{fill:none;stroke:var(--is-ok);stroke-width:3;stroke-linecap:round;stroke-dasharray:214;stroke-dashoffset:214;animation:k-draw 1.1s var(--is-ease-out) infinite}
+.d-tick{fill:none;stroke:var(--is-ok);stroke-width:3.4;stroke-linecap:round;stroke-dashjoin:round;stroke-dasharray:48;stroke-dashoffset:48;animation:k-draw .7s var(--is-ease-out) .55s infinite}
+
+/* 动效关闭：所有动画停住并落到终态 */
+.no-motion .anim{animation:none!important;opacity:1!important;transform:none!important;stroke-dashoffset:0!important}
+@media (prefers-reduced-motion:reduce){
+  .anim{animation:none!important;opacity:1!important;transform:none!important;stroke-dashoffset:0!important}
+}
+
+/* ============================================================================
+   复用对照区 —— 从 landing/index.html + landing/styles.css 忠实移植
+   关键点：landing 的 .ill-* 早已走 var(--card/--accent/--ink/--muted)，
+   而 landing 的暗色变量又对齐了应用 tokens.css。此处只做「变量名映射」：
+     --card → --is-card   --accent → --is-accent
+     --ink  → --is-text   --muted  → --is-text-2
+   若下方图形在暗色下自动变荧光绿，即证明「零改造可复用」。
+   ============================================================================ */
+.gallery{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(228px,1fr));
+  gap:var(--is-s-4);width:100%;max-width:1060px;align-content:start;
+}
+.gallery[hidden]{display:none}
+.gcard{
+  background:var(--is-card);border:1px solid var(--is-border);border-radius:var(--is-r-md);
+  padding:var(--is-s-3);display:flex;flex-direction:column;gap:var(--is-s-2);
+}
+.ghead{display:flex;align-items:center;justify-content:space-between;gap:var(--is-s-2)}
+.gname{font-family:var(--is-mono);font-size:var(--is-fs-xs);color:var(--is-text-2)}
+.gbadge{
+  font-size:10px;font-family:var(--is-mono);border-radius:var(--is-r-pill);
+  padding:1px 8px;border:1px solid transparent;white-space:nowrap;
+}
+.gbadge.ok{color:var(--is-ok-fg);background:var(--is-ok-bg);border-color:rgba(61,220,151,.3)}
+.gbadge.mid{color:var(--is-warn-fg);background:var(--is-warn-bg);border-color:rgba(255,200,87,.28)}
+.gill{
+  display:grid;place-items:center;background:var(--is-inset);
+  border:1px solid var(--is-border);border-radius:var(--is-r-sm);
+  padding:var(--is-s-2);min-height:96px;
+}
+.gmeta{font-size:10px;color:var(--is-text-3);line-height:1.6;font-family:var(--is-mono)}
+
+/* --- landing .ill-* 规则（变量名映射版） --- */
+.ill-svg{width:100%;max-width:180px;height:auto;overflow:visible}
+.ill-svg text{font-family:var(--is-mono);font-size:9px;fill:var(--is-text)}
+.ill-frame,.ill-tank,.ill-folder,.ill-out,.ill-tray,.ill-dial{
+  fill:var(--is-card);stroke:var(--is-accent);stroke-width:1.5;
+}
+.ill-fill{fill:var(--is-accent);opacity:.85}
+.ill-rail,.ill-flow,.ill-limit,.ill-arrow,.ill-tick{
+  fill:none;stroke:var(--is-accent);stroke-width:1.6;stroke-linecap:round;
+}
+.ill-limit{stroke-dasharray:4 3;opacity:.75}
+.ill-chip rect{fill:var(--is-card);stroke:var(--is-accent);stroke-width:1.3}
+.ill-chip text{fill:var(--is-text)}
+.ill-needle{fill:var(--is-accent)}
+.ill-cap{fill:var(--is-text-2);font-size:8px}
+.ill-orb{fill:var(--is-accent);opacity:.55}
+.ill-folder-tab{fill:none;stroke:var(--is-accent);stroke-width:1.4}
+
+/* --- landing 关键帧（原样照搬） --- */
+@keyframes illFlip{0%,100%{transform:translateY(0) rotate(0)}40%{transform:translateY(-6px) rotate(-4deg);opacity:.75}70%{transform:translateY(2px) rotate(2deg);opacity:.9}}
+@keyframes illDash{to{stroke-dashoffset:-20}}
+@keyframes illPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+@keyframes illBreathe{0%,100%{transform:scaleY(.72)}50%{transform:scaleY(1)}}
+@keyframes illNeedle{0%,100%{transform:rotate(-18deg)}50%{transform:rotate(16deg)}}
+@keyframes illDraw{0%{stroke-dashoffset:40;opacity:.35}45%{stroke-dashoffset:0;opacity:1}100%{stroke-dashoffset:-40;opacity:.35}}
+@keyframes illFloat{from{transform:translateY(0)}to{transform:translateY(-6px)}}
+
+/* --- landing 动画绑定（原样照搬） --- */
+.ill-convert .ill-frame{transform-box:fill-box;transform-origin:center;animation:illFlip 2.4s ease-in-out infinite}
+.ill-convert .ill-frame.f2{animation-delay:.25s}
+.ill-convert .ill-frame.f3{animation-delay:.5s}
+.ill-convert .ill-rail{stroke-dasharray:6 6;animation:illDash 1.4s linear infinite}
+.ill-convert .ill-chip{transform-box:fill-box;transform-origin:center;animation:illPulse 2.4s ease-in-out infinite}
+.ill-convert .ill-chip.c2{animation-delay:.3s}
+.ill-convert .ill-chip.c3{animation-delay:.6s}
+.ill-gate .ill-fill{transform-box:fill-box;transform-origin:bottom center;animation:illBreathe 2.8s ease-in-out infinite}
+.ill-gate .ill-needle{transform-box:fill-box;transform-origin:bottom center;animation:illNeedle 2.8s ease-in-out infinite}
+.ill-batch .ill-flow{stroke-dasharray:4 5;animation:illDash 1.6s linear infinite}
+.ill-batch .ill-out{transform-box:fill-box;transform-origin:center;animation:illPulse 2s ease-in-out infinite}
+.ill-dl .ill-arrow{stroke-dasharray:40;stroke-dashoffset:40;animation:illDraw 2.2s ease-in-out infinite}
+.ill-dl .ill-orb{animation:illFloat 2.6s ease-in-out infinite alternate}
+.ill-dl .ill-orb.o2{animation-delay:.4s}
+.ill-dl .ill-orb.o3{animation-delay:.8s}
+
+/* --- landing 吉祥物 #pet（原 8 处 hex 换变量） --- */
+.pet-inner{transform-box:fill-box;transform-origin:center;animation:petIdle 2.6s ease-in-out infinite alternate}
+.pet-body{fill:var(--is-card);stroke:var(--is-accent);stroke-width:1.5}
+.pet-ink{fill:var(--is-accent)}
+@keyframes petIdle{from{transform:translateY(-2px)}to{transform:translateY(2px)}}
+@keyframes petRun{0%{transform:translateY(0) rotate(-3deg)}25%{transform:translateY(-5px) rotate(0)}50%{transform:translateY(0) rotate(3deg)}75%{transform:translateY(-5px) rotate(0)}100%{transform:translateY(0) rotate(-3deg)}}
+@keyframes petCheer{0%{transform:translateY(0) scale(1)}40%{transform:translateY(-12px) scale(1.08)}100%{transform:translateY(0) scale(1)}}
+
+/* 动效关闭 / reduce：对照区同样停住 */
+.no-motion .ill-svg *,.no-motion .pet-inner{animation:none!important}
+.no-motion .ill-dl .ill-arrow{stroke-dashoffset:0!important}
+@media (prefers-reduced-motion:reduce){
+  .ill-svg *,.pet-inner{animation:none!important}
+  .ill-dl .ill-arrow{stroke-dashoffset:0!important}
+}
+
+/* ============================================================================
+   步骤页新增版式 —— 与 Vue 实现 src/ui-next/onboarding/ 一一对应
+   （欢迎品牌标 / 导入三卡 / 输出 SIZE GATE / 命名面板 / AE 面板滑入）
+   改一边请同步另一边。变量映射：
+     --card→--is-card  --line→--is-border  --paper→--is-inset
+     --ink→--is-text   --muted→--is-text-2 --accent→--is-accent
+   ============================================================================ */
+
+/* --- 欢迎：项目 logo + 字标 --- */
+.demo--brand{max-width:132px}
+.brand-name{
+  margin:0;font-size:var(--is-fs-2xl);font-weight:var(--is-fw-bold);
+  letter-spacing:-.01em;line-height:1.2;text-align:center;color:var(--is-text);
+}
+.brand-name em{font-style:normal;color:var(--is-accent)}
+.d-orbit-brand{transform-box:view-box;transform-origin:66px 66px;animation:k-spin 9s linear infinite}
+.d-orbit-brand circle{animation:k-pulse 2.6s var(--is-ease-std) infinite}
+
+/* --- 导入：图在卡内，标题与说明落在卡外 --- */
+.ways{
+  list-style:none;margin:0;padding:0;width:100%;max-width:600px;
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--is-s-3);
+}
+.way{display:flex;flex-direction:column;align-items:center;min-width:0}
+.way__art{
+  width:100%;min-height:112px;display:flex;align-items:center;justify-content:center;
+  padding:var(--is-s-3);border:1px solid var(--is-border);
+  border-radius:var(--is-r-md);background:var(--is-inset);
+}
+.way__art svg{width:120px;height:84px;display:block;overflow:visible}
+.way__t{margin:var(--is-s-3) 0 0;font-size:var(--is-fs-md);font-weight:var(--is-fw-semi);color:var(--is-text)}
+.way__d{margin:2px 0 0;font-size:var(--is-fs-sm);line-height:1.55;color:var(--is-text-2);text-align:center}
+.d-ae-spin{transform-box:view-box;transform-origin:94px 26px;animation:k-spin 3.2s linear infinite}
+.d-ae-spin2{transform-box:view-box;transform-origin:268px 62px;animation:k-spin 3.4s linear infinite}
+
+/* 步骤内小字提示（区别于控制台侧栏的 .note） */
+.step-note{margin:0;max-width:52ch;font-size:var(--is-fs-xs);line-height:1.6;color:var(--is-text-3);text-align:center;text-wrap:balance}
+
+/* --- 输出：SIZE GATE（与 Vue 侧 OutputGate.vue 同步：横向布局 · 单行日志 · 不竖滚） --- */
+.gp{display:grid;grid-template-columns:minmax(0,1.02fr) minmax(0,.98fr);gap:var(--is-s-3);width:100%;align-items:stretch}
+.gp-stage,.gp-panel{
+  display:flex;flex-direction:column;min-width:0;padding:var(--is-s-3);
+  border:1px solid var(--is-border);border-radius:var(--is-r-lg);background:var(--is-card);
+}
+.gp-q{margin-bottom:var(--is-s-3)}
+.gp-q__head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:var(--is-s-1);font-size:var(--is-fs-xs);color:var(--is-text-2)}
+.gp-q__head b{color:var(--is-text);font-variant-numeric:tabular-nums}
+#gpSlider{display:block;width:100%;margin:0;direction:ltr;accent-color:var(--is-accent);cursor:pointer}
+.gp-result{
+  display:flex;flex-direction:column;gap:var(--is-s-2);
+  padding:var(--is-s-2) var(--is-s-3) var(--is-s-3);margin-bottom:var(--is-s-3);
+  border:1.5px solid var(--is-border);border-radius:var(--is-r-md);background:var(--is-inset);
+  transition:border-color var(--is-dur-base) var(--is-ease-std),background-color var(--is-dur-base) var(--is-ease-std);
+}
+.gp-result.is-pass{border-color:var(--is-ok);background:var(--is-ok-bg)}
+.gp-result.is-over{border-color:var(--is-warn);background:var(--is-warn-bg)}
+.gp-line{display:flex;align-items:center;gap:var(--is-s-2);min-width:0}
+.gp-fmt{flex:0 0 auto;font-family:var(--is-mono);font-size:var(--is-fs-xs);letter-spacing:.06em;color:var(--is-text-2)}
+.gp-badge{
+  flex:0 0 auto;font-family:var(--is-mono);font-size:var(--is-fs-xs);font-weight:var(--is-fw-bold);
+  padding:2px 9px;border:1px solid var(--is-border);border-radius:var(--is-r-pill);
+  color:var(--is-text-2);background:var(--is-card);
+}
+.gp-badge.is-pass{color:var(--is-ok-fg);border-color:var(--is-ok);background:var(--is-ok-bg)}
+.gp-badge.is-over{color:var(--is-warn-fg);border-color:var(--is-warn);background:var(--is-warn-bg)}
+.gp-badge.is-pop{animation:k-pop .6s var(--is-ease-overshoot)}
+.gp-size{
+  flex:0 0 auto;font-size:var(--is-fs-2xl);font-weight:var(--is-fw-black);line-height:1.1;
+  letter-spacing:-.02em;color:var(--is-text);font-variant-numeric:tabular-nums;
+}
+.gp-size.is-tick{animation:k-tick var(--is-dur-slow) var(--is-ease-out)}
+.gp-vs{
+  flex:1 1 auto;min-width:0;margin-left:var(--is-s-2);text-align:right;font-size:var(--is-fs-xs);
+  color:var(--is-text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.gp-meter{position:relative;height:8px;border-radius:var(--is-r-pill);background:var(--is-track)}
+.gp-fill{
+  position:absolute;left:0;top:0;bottom:0;width:0;border-radius:var(--is-r-pill);background:var(--is-accent);
+  transition:width var(--is-dur-slow) var(--is-ease-out),background-color var(--is-dur-base) var(--is-ease-std);
+}
+.gp-fill.is-ok{background:var(--is-ok)}
+.gp-fill.is-over{background:var(--is-warn)}
+.gp-limit{position:absolute;top:-3px;bottom:-3px;width:2px;border-radius:1px;background:var(--is-text);transition:left var(--is-dur-base) var(--is-ease-std)}
+/* 阈值刻度不再挂文字（右侧那行已写明「阈值 1 MB」），否则标签会顶到体积数字上 */
+.gp-fmts{display:flex;flex-wrap:wrap;gap:var(--is-s-2);margin-bottom:var(--is-s-3)}
+.gp-fmt-btn{
+  font-family:var(--is-mono);font-size:var(--is-fs-xs);color:var(--is-text-2);
+  padding:4px 11px;border:1.5px solid var(--is-border);border-radius:var(--is-r-pill);
+  background:var(--is-inset);cursor:pointer;
+}
+.gp-fmt-btn.is-on{color:var(--is-accent);border-color:var(--is-accent);background:var(--is-accent-soft);font-weight:var(--is-fw-semi)}
+/* 只留最新一行，永不出现滚动条 */
+.gp-log{
+  margin:auto 0 0;padding:5px 10px;border:1px solid var(--is-border);border-radius:var(--is-r-sm);
+  background:var(--is-inset);font-family:var(--is-mono);font-size:10px;line-height:1.5;color:var(--is-text-2);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.gp-log.is-pass{border-color:var(--is-ok);color:var(--is-ok-fg);background:var(--is-ok-bg)}
+.gp-log.is-over{border-color:var(--is-warn);color:var(--is-warn-fg);background:var(--is-warn-bg)}
+.gp-title{margin:0 0 var(--is-s-2);font-family:var(--is-mono);font-size:var(--is-fs-xs);letter-spacing:.04em;color:var(--is-text-3)}
+/* 选项横向铺开：阈值独占一行，其余两两并排（5 行压到 3 行） */
+.gp-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--is-s-2) var(--is-s-3);margin-bottom:var(--is-s-3)}
+.gp-field{display:flex;align-items:center;justify-content:space-between;gap:var(--is-s-2);min-width:0;font-size:var(--is-fs-sm);color:var(--is-text-2)}
+.gp-field>span:first-child{min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.gp-field--wide{grid-column:1/-1}
+.gp-row{display:inline-flex;align-items:center;gap:var(--is-s-1);flex:0 0 auto}
+.gp-toggle{display:flex;align-items:center;gap:var(--is-s-2);min-width:0;font-size:var(--is-fs-sm);color:var(--is-text-2);cursor:pointer}
+.gp-toggle>span{min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.gp-toggle input,.gp-check{width:15px;height:15px;flex:0 0 auto;accent-color:var(--is-accent);cursor:pointer}
+.gp-field input[type="number"]{
+  width:58px;padding:4px 6px;border:1.5px solid var(--is-border);border-radius:var(--is-r-sm);
+  background:var(--is-inset);color:var(--is-text);font-family:var(--is-mono);font-size:var(--is-fs-sm);text-align:center;
+}
+.gp-field input[type="number"]:focus{outline:none;border-color:var(--is-accent)}
+.gp-unit{display:inline-flex;overflow:hidden;border:1.5px solid var(--is-border);border-radius:var(--is-r-sm)}
+.gp-unit button{border:0;padding:6px 7px;background:var(--is-inset);color:var(--is-text-3);font-family:var(--is-mono);font-size:10px;font-weight:var(--is-fw-bold);cursor:pointer}
+.gp-unit button.is-on{background:var(--is-accent);color:var(--is-on-accent)}
+.gp-hint{margin:0 0 var(--is-s-3);font-size:var(--is-fs-xs);line-height:1.6;color:var(--is-text-3)}
+.gp-actions{display:flex;margin-top:auto;padding-top:var(--is-s-2)}
+.gp-actions .btn{padding:6px 12px;font-size:var(--is-fs-sm)}
+
+/* --- 命名：分词（第 4 页）单栏，路径变量（第 5 页）横向双栏 --- */
+.np{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--is-s-3);width:100%}
+.np--single{grid-template-columns:minmax(0,1fr)}
+.np--single .np-tokens{min-height:104px}
+/* 路径页：左拼路径、右看结果 —— 竖着排必滚，拆两栏高度砍半 */
+.np--path{grid-template-columns:minmax(0,1.12fr) minmax(0,.88fr)}
+.np-panel{display:flex;flex-direction:column;padding:var(--is-s-3);border:1px solid var(--is-border);border-radius:var(--is-r-md);background:var(--is-card)}
+.np-panel--out{background:var(--is-inset)}
+.np--path .np-preview{flex:1 1 auto;min-height:0}
+.np-label{margin:0 0 var(--is-s-2);font-family:var(--is-mono);font-size:var(--is-fs-xs);letter-spacing:.04em;color:var(--is-text-3)}
+.np-sublabel{margin:0 0 var(--is-s-1);font-size:var(--is-fs-xs);color:var(--is-text-3)}
+.np-row{display:flex;gap:var(--is-s-2);margin-bottom:var(--is-s-3)}
+.np-input{
+  flex:1 1 auto;min-width:0;width:100%;padding:7px 11px;border:1.5px solid var(--is-border);
+  border-radius:var(--is-r-sm);background:var(--is-inset);color:var(--is-text);
+  font-family:var(--is-mono);font-size:var(--is-fs-sm);
+}
+.np-input:focus{outline:none;border-color:var(--is-accent)}
+.np-funnel{
+  flex:0 0 auto;width:36px;height:36px;display:grid;place-items:center;
+  border:1.5px solid var(--is-border);border-radius:var(--is-r-sm);
+  background:var(--is-inset);color:var(--is-text-2);cursor:pointer;
+}
+.np-funnel.is-on{border-color:var(--is-accent);color:var(--is-accent);background:var(--is-accent-soft)}
+.np-tokens{display:flex;flex-wrap:wrap;align-content:flex-start;gap:var(--is-s-1);flex:1 1 auto;min-height:68px;margin-bottom:var(--is-s-3)}
+.np-tok{
+  padding:4px 9px;border:1.5px solid transparent;border-radius:var(--is-r-sm);
+  background:var(--is-inset);color:var(--is-text);font-family:var(--is-mono);
+  font-size:var(--is-fs-xs);font-weight:var(--is-fw-semi);cursor:pointer;
+  transition:opacity var(--is-dur-fast) var(--is-ease-std),transform var(--is-dur-fast) var(--is-ease-std);
+}
+.np-tok:hover{transform:translateY(-1px)}
+.np-tok.is-sep{background:transparent;border-color:var(--is-border);border-style:dashed;color:var(--is-text-3);font-weight:var(--is-fw-medium)}
+.np-tok.is-off{opacity:.32;text-decoration:line-through}
+/* 六色走 var-* 令牌（RGB 分量）。底色 + 同色描边，单独一枚也能看出「这是另一段」 */
+.np-tok--c1{color:rgb(var(--is-var-1));background:rgba(var(--is-var-1),.15);border-color:rgba(var(--is-var-1),.34)}
+.np-tok--c2{color:rgb(var(--is-var-2));background:rgba(var(--is-var-2),.15);border-color:rgba(var(--is-var-2),.34)}
+.np-tok--c3{color:rgb(var(--is-var-3));background:rgba(var(--is-var-3),.15);border-color:rgba(var(--is-var-3),.34)}
+.np-tok--c4{color:rgb(var(--is-var-4));background:rgba(var(--is-var-4),.15);border-color:rgba(var(--is-var-4),.34)}
+.np-tok--c5{color:rgb(var(--is-var-5));background:rgba(var(--is-var-5),.15);border-color:rgba(var(--is-var-5),.34)}
+.np-tok--c6{color:rgb(var(--is-var-6));background:rgba(var(--is-var-6),.15);border-color:rgba(var(--is-var-6),.34)}
+.np-hint{margin:0;font-size:10px;line-height:1.6;color:var(--is-text-3)}
+.np-presets{display:flex;flex-wrap:wrap;gap:var(--is-s-2);margin-bottom:var(--is-s-2)}
+.np-preset{
+  padding:4px 10px;border:1px solid var(--is-border);border-radius:var(--is-r-pill);
+  background:var(--is-inset);color:var(--is-text-2);font-size:var(--is-fs-xs);cursor:pointer;
+}
+.np-preset.is-on{border-color:var(--is-accent);color:var(--is-accent);background:var(--is-accent-soft)}
+.np-vars{display:flex;flex-wrap:wrap;gap:var(--is-s-2);margin:var(--is-s-3) 0 0}
+.np-var{
+  display:inline-flex;align-items:center;gap:var(--is-s-1);max-width:100%;
+  padding:3px 8px;border:1px solid var(--is-border);border-radius:var(--is-r-sm);
+  background:var(--is-inset);font-family:var(--is-mono);font-size:10px;cursor:pointer;
+}
+.np-var:hover{border-color:var(--is-accent)}
+.np-var__key{flex:0 0 auto;color:var(--is-accent);font-weight:var(--is-fw-bold)}
+.np-var__val{min-width:0;max-width:96px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:var(--is-text-3)}
+.np-preview{
+  flex:1 1 auto;min-height:3.2em;margin:0;padding:10px 11px;border:1px dashed var(--is-border);
+  border-radius:var(--is-r-sm);background:var(--is-inset);color:var(--is-text);
+  font-family:var(--is-mono);font-size:var(--is-fs-sm);line-height:1.6;word-break:break-all;
+}
+
+/* --- CEP 极窄（520）：输出单列、命名单列、导入三列降档 --- */
+.frame[data-runtime="cep"] .gp,
+.frame[data-runtime="cep"] .np{grid-template-columns:1fr}
+.frame[data-runtime="cep"] .gp-size{font-size:var(--is-fs-xl)}
+.frame[data-runtime="cep"] .ways{max-width:none;gap:var(--is-s-2)}
+.frame[data-runtime="cep"] .way__art{min-height:88px;padding:var(--is-s-2)}
+.frame[data-runtime="cep"] .way__art svg{width:96px;height:67px}
+.frame[data-runtime="cep"] .way__d{font-size:var(--is-fs-xs)}
+
+.no-motion .gp-fill,.no-motion .gp-limit,.no-motion .gp-result,.no-motion .gp-size.is-tick,.no-motion .gp-log,.no-motion .np-tok,.no-motion .np-var,.no-motion .np-preset{transition:none!important;animation:none!important}
+@media (prefers-reduced-motion:reduce){
+  .gp-fill,.gp-limit,.gp-result,.gp-size.is-tick,.gp-log,.np-tok,.np-var,.np-preset{transition:none!important;animation:none!important}
+  .np-tok:hover,.np-var:hover{transform:none!important}
+}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+
+  <!-- ==================== 控制台 ==================== -->
+  <aside class="ctrl">
+    <div>
+      <h1 data-t="h1">引导页预览台</h1>
+      <div class="ver" data-t="sub">iSparta-next · dev only · 无构建、无依赖</div>
+    </div>
+
+    <div class="group">
+      <span class="lbl" data-t="lblView">视图</span>
+      <div class="seg" id="segView">
+        <button data-v="wizard" class="on" data-t="viewWizard">引导向导</button>
+        <button data-v="reuse" data-t="viewReuse">落地页复用</button>
+      </div>
+    </div>
+
+    <div class="group">
+      <span class="lbl" data-t="lblRuntime">运行时</span>
+      <div class="seg" id="segRuntime">
+        <button data-v="desktop" class="on" data-t="rtDesktop">桌面</button>
+        <button data-v="cep" data-t="rtCep">CEP</button>
+      </div>
+    </div>
+
+    <div class="group">
+      <span class="lbl" data-t="lblMotion">动效</span>
+      <div class="seg" id="segMotion">
+        <button data-v="on" class="on" data-t="motionOn">开</button>
+        <button data-v="off" data-t="motionOff">关</button>
+      </div>
+    </div>
+
+    <!-- 只读：生产环境会从电脑取到什么（本预览不自动应用） -->
+    <div class="group">
+      <span class="lbl" data-t="lblEnv">系统环境 · 生产参考</span>
+      <div class="envbox" id="envBox"></div>
+    </div>
+
+    <!-- 仅"落地页复用"视图（dev 参考区）需要主题切换；引导向导视图下主题/语言由面板自身右上角控制 -->
+    <div class="group" id="devThemeGroup" hidden>
+      <span class="lbl">主题 · dev</span>
+      <div class="seg" id="dTheme">
+        <button data-v="dark" class="on" data-t="thDark">暗色</button>
+        <button data-v="light" data-t="thLight">亮色</button>
+      </div>
+    </div>
+
+    <div class="group">
+      <span class="lbl" data-t="lblSteps">步骤</span>
+      <div class="steps" id="stepList">
+        <button data-i="0"><span class="n">1</span><span data-t="step0">欢迎</span></button>
+        <button data-i="1"><span class="n">2</span><span data-t="step1">导入方式</span></button>
+        <button data-i="2"><span class="n">3</span><span data-t="step2">输出设置</span></button>
+        <button data-i="3"><span class="n">4</span><span data-t="step3">文件名切分</span></button>
+        <button data-i="4"><span class="n">5</span><span data-t="step4">输出路径</span></button>
+        <button data-i="5"><span class="n">6</span><span data-t="step5">AE 扩展</span></button>
+        <button data-i="6"><span class="n">7</span><span data-t="step6">完成导览</span></button>
+      </div>
+    </div>
+
+    <div class="note" data-t="note"></div>
+  </aside>
+
+  <!-- ==================== 舞台 ==================== -->
+  <main class="stage">
+
+    <div class="frame" id="frame" data-runtime="desktop">
+      <div class="titlebar">
+        <span class="tl"><i></i><i></i><i></i></span>
+        <span class="tb-name" id="tbName">iSparta-next — 首次使用引导</span>
+
+        <!-- 面板右上角：主题 + 语言（属于指导面板自身的能力） -->
+        <div class="tb-right">
+          <button class="tb-set" id="setBtn" aria-haspopup="true" aria-expanded="false">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="3.2"/>
+              <path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/>
+            </svg>
+            <span id="setThemeV">暗色</span>
+            <span class="sep">·</span>
+            <span id="setLangV">简中</span>
+          </button>
+
+          <div class="pop" id="pop" hidden>
+            <div class="group">
+              <span class="lbl" data-t="lblTheme">主题</span>
+              <div class="seg" id="pTheme">
+                <button data-v="dark" class="on" data-t="thDark">暗色</button>
+                <button data-v="light" data-t="thLight">亮色</button>
+              </div>
+            </div>
+            <div class="group">
+              <span class="lbl" data-t="lblLang">语言</span>
+              <div class="seg" id="pLang">
+                <button data-v="zh-CN" class="on">简中</button>
+                <button data-v="zh-TW">繁中</button>
+                <button data-v="en">EN</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dots" id="dots">
+        <i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i>
+      </div>
+
+      <div class="screen">
+
+        <!-- ---------- 1 欢迎 ---------- -->
+        <section class="step on" data-i="0">
+          <!-- 项目 logo：与 public/icons/icon-brand.svg 同源几何，色值走 token -->
+          <svg class="demo demo--brand" viewBox="0 0 132 132" role="img" aria-label="iSparta-next">
+            <circle cx="66" cy="66" r="54" fill="none" stroke="var(--is-border-strong)" stroke-width="1.5" opacity=".5"/>
+            <g class="anim d-orbit-brand"><circle cx="66" cy="12" r="4.5" fill="var(--is-accent)"/></g>
+            <g class="anim d-pop3">
+              <g transform="translate(66 66) scale(0.1375) translate(-512 -395.636364)">
+                <path d="M512 395.636364m-232.727273 0a232.727273 232.727273 0 1 0 465.454546 0 232.727273 232.727273 0 1 0-465.454546 0Z" fill="var(--is-accent)"/>
+                <path d="M453.806545 289.764848a7.214545 7.214545 0 0 1 8.168728-6.112969l77.548606 11.155394c1.881212 0.271515 3.580121 1.272242 4.728242 2.788848l70.943031 93.796849a7.214545 7.214545 0 0 1 0.100848 8.564363L544.267636 498.722909a7.214545 7.214545 0 0 1-4.871757 2.936243L461.459394 512.391758a7.214545 7.214545 0 0 1-6.997333-11.132122l67.285333-101.558303a7.214545 7.214545 0 0 0-0.077576-8.079515L455.00897 294.888727a7.214545 7.214545 0 0 1-1.202425-5.12z m-6.729697 37.783273a3.607273 3.607273 0 0 1 5.054061 0.702061l47.736243 63.146666a7.214545 7.214545 0 0 1 0.104727 8.556607L452.189091 466.540606a3.607273 3.607273 0 0 1-6.543515-2.102303V330.426182a3.607273 3.607273 0 0 1 1.435151-2.878061z" fill="var(--is-on-accent)"/>
+              </g>
+            </g>
+          </svg>
+          <h2 class="brand-name">iSparta<em>-next</em></h2>
+          <p class="sub" data-t="s0sub">PNG 序列 / APNG / WebP / GIF 互转与压缩</p>
+          <div class="cards">
+            <div class="card"><div class="t" data-t="c0Lang">多语言</div><div class="d" data-t="c0LangD">简中 · 繁中 · English</div></div>
+            <div class="card"><div class="t" data-t="c0Theme">双主题</div><div class="d" data-t="c0ThemeD">亮色暗色双主题切换</div></div>
+            <div class="card"><div class="t" data-t="c0Multi">多端兼容支持</div><div class="d" data-t="c0MultiD">Windows / MAC，After Effects</div></div>
+          </div>
+        </section>
+
+        <!-- ---------- 2 导入方式（图在卡内，标题与说明落在卡外） ---------- -->
+        <section class="step" data-i="1">
+          <h2 data-t="s1h">三种导入方式</h2>
+          <p class="sub" data-t="s1sub">针对不同场景，桌面端软件与 AE 扩展都支持。</p>
+          <ul class="ways">
+            <li class="way">
+              <div class="way__art">
+                <svg viewBox="0 0 120 84" role="img" aria-label="拖入">
+                  <rect x="14" y="12" width="92" height="60" rx="10" fill="none" stroke="var(--is-border-hi)" stroke-width="1.5" stroke-dasharray="6 5"/>
+                  <g class="anim d-card">
+                    <rect x="52" y="38" width="22" height="17" rx="3.5" fill="var(--is-accent)" opacity=".3"/>
+                    <rect x="56" y="33" width="22" height="17" rx="3.5" fill="var(--is-accent)" opacity=".6"/>
+                    <rect x="60" y="28" width="22" height="17" rx="3.5" fill="var(--is-accent)"/>
+                  </g>
+                </svg>
+              </div>
+              <p class="way__t" data-t="w0t">拖入</p>
+              <p class="way__d" data-t="w0d">图片序列帧 文件 / 文件夹</p>
+            </li>
+            <li class="way">
+              <div class="way__art">
+                <svg viewBox="0 0 120 84" role="img" aria-label="粘贴">
+                  <rect x="22" y="18" width="52" height="54" rx="8" fill="var(--is-card)" stroke="var(--is-border-strong)" stroke-width="1.5"/>
+                  <rect x="36" y="11" width="24" height="13" rx="4" fill="var(--is-cool-bg)" stroke="var(--is-cool)" stroke-width="1.2"/>
+                  <path d="M34 42h28M34 54h20" stroke="var(--is-border-strong)" stroke-width="2.5" stroke-linecap="round"/>
+                  <g class="anim d-key">
+                    <rect x="82" y="48" width="28" height="24" rx="7" fill="var(--is-card-hi)" stroke="var(--is-border-hi)" stroke-width="1.4"/>
+                    <text x="96" y="65" text-anchor="middle" font-size="12" font-family="var(--is-mono)" fill="var(--is-text)">V</text>
+                  </g>
+                </svg>
+              </div>
+              <p class="way__t" data-t="w1t">剪贴板序列帧 / 文件夹</p>
+              <p class="way__d" data-t="w1d">窗口内 Ctrl+V</p>
+            </li>
+            <li class="way">
+              <div class="way__art">
+                <svg viewBox="0 0 120 84" role="img" aria-label="AE 合成">
+                  <g class="anim d-lift">
+                    <path d="M56 30l24 13-24 13-24-13z" fill="var(--is-violet-bg)" stroke="var(--is-violet)" stroke-width="1.4"/>
+                  </g>
+                  <path d="M56 44l24 13-24 13-24-13z" fill="var(--is-card)" stroke="var(--is-border-strong)" stroke-width="1.4"/>
+                  <g class="anim d-ae-spin">
+                    <!-- 圆心 (94,26)、r=13；旋转基准与圆心一致，否则弧会边转边甩 -->
+                    <path d="M105.258 19.5A13 13 0 1 1 94 13" fill="none" stroke="var(--is-accent)" stroke-width="2.2" stroke-linecap="round"/>
+                    <path d="M99 13L93.4 9.8L93.4 16.2Z" fill="var(--is-accent)"/>
+                  </g>
+                </svg>
+              </div>
+              <p class="way__t" data-t="w2t">AE 合成</p>
+              <p class="way__d" data-t="w2d">刷新读取合成树进行渲染与合成</p>
+            </li>
+          </ul>
+        </section>
+
+        <!-- ---------- 3 输出设置（还原落地页 #play SIZE GATE，可交互） ---------- -->
+        <section class="step step--fill" data-i="2">
+          <h2 data-t="s2h">输出格式与大小门槛</h2>
+          <p class="sub" data-t="s2sub">选 APNG / WebP / GIF，设好质量与体积上限——超了会自动压小，不用手动试。</p>
+
+          <div class="gp">
+            <div class="gp-stage">
+              <div class="gp-q">
+                <div class="gp-q__head"><span data-t="gpQuality">压缩质量</span><b id="gpQ">85</b></div>
+                <input type="range" id="gpSlider" min="10" max="100" value="85" aria-label="压缩质量" />
+              </div>
+
+              <div class="gp-result" id="gpResult">
+                <div class="gp-line">
+                  <span class="gp-fmt" id="gpFmt">APNG</span>
+                  <span class="gp-badge" id="gpBadge">—</span>
+                  <span class="gp-size" id="gpSize">0.00 MB</span>
+                  <span class="gp-vs" id="gpVs">阈值 1 MB</span>
+                </div>
+                <div class="gp-meter">
+                  <div class="gp-fill" id="gpFill"></div>
+                  <div class="gp-limit" id="gpLimit"></div>
+                </div>
+              </div>
+
+              <div class="gp-fmts" role="group">
+                <button type="button" class="gp-fmt-btn is-on" data-fmt="APNG">APNG</button>
+                <button type="button" class="gp-fmt-btn" data-fmt="GIF">GIF</button>
+                <button type="button" class="gp-fmt-btn" data-fmt="WEBP">WebP</button>
+              </div>
+
+              <!-- 只留最新一行日志，不产生滚动条 -->
+              <p class="gp-log" id="gpLog"></p>
+            </div>
+
+            <aside class="gp-panel">
+              <p class="gp-title" data-t="gpThreshold">输出大小阈值</p>
+              <div class="gp-grid">
+                <label class="gp-field gp-field--wide">
+                  <span data-t="gpLimit">阈值</span>
+                  <span class="gp-row">
+                    <input type="number" id="gpMax" min="0.1" step="0.1" value="1" />
+                    <span class="gp-unit"><button type="button" class="is-on" data-unit="MB">MB</button><button type="button" data-unit="KB">KB</button></span>
+                  </span>
+                </label>
+                <label class="gp-toggle"><input type="checkbox" id="gpEnabled" checked /><span data-t="gpEnable">启用大小阈值</span></label>
+                <label class="gp-toggle"><input type="checkbox" id="gpAuto" checked class="gp-check" /><span data-t="gpAuto">超出后自动降质量</span></label>
+                <label class="gp-field"><span data-t="gpStep">每次递减</span><span class="gp-row"><input type="number" id="gpStep" min="1" max="20" value="12" /><span class="mono">q</span></span></label>
+                <label class="gp-field"><span data-t="gpTries">最多重试</span><span class="gp-row"><input type="number" id="gpTries" min="3" max="8" value="5" /><span class="mono" data-t="gpTimes">次</span></span></label>
+              </div>
+              <p class="gp-hint" data-t="gpHint">拖质量滑块即时看到体积落在阈值内还是超出；点「自动重压演示」看它一档档降到达标。</p>
+              <div class="gp-actions"><button type="button" class="btn primary" id="gpRun" data-t="gpReplay">自动重压演示</button></div>
+            </aside>
+          </div>
+        </section>
+
+        <!-- ---------- 4 文件名自动切分（还原落地页 #naming 左栏，可交互） ---------- -->
+        <section class="step step--fill" data-i="3">
+          <h2 data-t="s3h">文件名自动切分</h2>
+          <p class="sub" data-t="s3sub">长文件名自动拆成词，点一下留一个；漏斗一键只留文字。</p>
+
+          <div class="np np--single">
+            <div class="np-panel">
+              <p class="np-label" data-t="npOut">输出名字</p>
+              <div class="np-row">
+                <input id="npName" class="np-input" type="text" spellcheck="false" value="示例贴纸-行走循环 高清_v3" aria-label="输出名字" />
+                <button type="button" class="np-funnel" id="npFunnel" title="只留文字 / 恢复全部" aria-pressed="false">
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 3h12l-4.5 5.2V13L6.5 11.5V8.2L2 3z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
+                </button>
+              </div>
+              <div class="np-tokens" id="npTokens"></div>
+              <p class="np-hint" id="npHint" data-t="npHint">点字词可取消；漏斗 = 只留文字</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- ---------- 5 输出路径变量化（还原落地页 #naming 右栏，可交互） ---------- -->
+        <section class="step step--fill" data-i="4">
+          <h2 data-t="s4h">输出路径变量化</h2>
+          <p class="sub" data-t="s4sub">存放位置用 {srcPath} 这类积木拼，拼完的真实路径马上预览给你看。</p>
+
+          <div class="np np--path">
+            <div class="np-panel">
+              <p class="np-label" data-t="npPath">输出路径</p>
+              <div class="np-presets" role="group">
+                <button type="button" class="np-preset is-on" data-preset="src" data-t="npPreSrc">源目录</button>
+                <button type="button" class="np-preset" data-preset="beside" data-t="npPreBeside">目录旁级</button>
+                <button type="button" class="np-preset" data-preset="custom" data-t="npPreCustom">自定义</button>
+              </div>
+              <p class="np-sublabel" data-t="npVar">变量路径</p>
+              <input id="npTpl" class="np-input" type="text" spellcheck="false" value="{srcPath}" aria-label="变量路径" />
+              <div class="np-vars" id="npVars"></div>
+            </div>
+            <div class="np-panel np-panel--out">
+              <p class="np-label" data-t="npReal">真实路径</p>
+              <p class="np-preview" id="npPreview"></p>
+            </div>
+          </div>
+        </section>
+
+        <!-- ---------- 6 AE 扩展 ---------- -->
+        <section class="step" data-i="5">
+          <h2 data-t="s5h">同步支持安装 AE 端扩展！</h2>
+          <p class="sub" data-t="s5sub">第一次安装或者更新后需要重启 After Effects → 顶部菜单「窗口 → 扩展」打开面板。</p>
+          <svg class="demo" viewBox="0 0 300 120" role="img" aria-label="AE 扩展动效">
+            <rect x="8" y="10" width="240" height="96" rx="10" fill="var(--is-card)" stroke="var(--is-border-strong)" stroke-width="1.5"/>
+            <path d="M8 20a10 10 0 0 1 10-10h220a10 10 0 0 1 10 10v12H8z" fill="var(--is-panel)"/>
+            <circle cx="22" cy="21" r="3.2" fill="var(--is-bad)" opacity=".7"/>
+            <circle cx="34" cy="21" r="3.2" fill="var(--is-track)"/>
+            <circle cx="46" cy="21" r="3.2" fill="var(--is-track)"/>
+            <text x="66" y="25" font-size="10" fill="var(--is-text-3)" font-family="var(--is-mono)">After Effects</text>
+            <rect x="20" y="42" width="104" height="54" rx="7" fill="var(--is-inset)" stroke="var(--is-border)"/>
+            <path d="M34 56h58M34 70h42M34 84h68" stroke="var(--is-border-strong)" stroke-width="3" stroke-linecap="round"/>
+            <g class="anim d-slide">
+              <rect x="136" y="42" width="100" height="54" rx="7" fill="var(--is-accent-soft)" stroke="var(--is-accent)" stroke-width="1.5"/>
+              <rect x="148" y="52" width="62" height="8" rx="4" fill="var(--is-accent)"/>
+              <rect x="148" y="66" width="46" height="6" rx="3" fill="var(--is-border-strong)"/>
+              <rect x="148" y="78" width="54" height="6" rx="3" fill="var(--is-border-strong)"/>
+            </g>
+            <g class="anim d-ae-spin2">
+              <!-- 圆心 (268,62)、r=16；旋转基准与圆心重合，否则环会边转边甩 -->
+              <path d="M281.856 54A16 16 0 1 1 268 46" fill="none" stroke="var(--is-warn)" stroke-width="2.6" stroke-linecap="round"/>
+              <path d="M273.6 46L267.8 42.6L267.8 49.4Z" fill="var(--is-warn)"/>
+            </g>
+          </svg>
+          <p class="step-note" data-t="s5note">若菜单里没有出现，说明扩展未签名：需打开 PlayerDebugMode 并重启 AE。</p>
+        </section>
+
+        <!-- ---------- 7 完成 ---------- -->
+        <section class="step" data-i="6">
+          <svg class="demo" viewBox="0 0 220 136" role="img" aria-label="完成动效">
+            <g transform="translate(110,64)">
+              <circle class="anim d-ring" cx="0" cy="0" r="34" transform="rotate(-90)"/>
+              <path class="anim d-tick" d="M-15,1 L-4,12 L16,-11"/>
+              <circle class="anim d-pop1" cx="0" cy="-52" r="3" fill="var(--is-cool)"/>
+              <circle class="anim d-pop2" cx="46" cy="26" r="3" fill="var(--is-violet)"/>
+              <circle class="anim d-pop3" cx="-46" cy="26" r="3" fill="var(--is-ok)"/>
+            </g>
+          </svg>
+          <h2 data-t="s6h">都准备就绪了</h2>
+          <p class="sub" data-t="s6sub">批量转换 · 超限自动压小 · 前后对比滑块 · 主题与语言，随时在设置里调整。</p>
+          <div class="side" style="display:flex;gap:8px">
+            <span class="chip" data-t="chipBatch">批量</span>
+            <span class="chip" data-t="chipDiff">对比滑块</span>
+            <span class="chip" data-t="chipTheme">主题</span>
+          </div>
+        </section>
+
+      </div>
+
+      <div class="foot">
+        <div class="side">
+          <button class="btn ghost" id="btnSkip" data-t="skipBtn">跳过</button>
+        </div>
+        <div class="side">
+          <span class="counter" id="counter">1 / 5</span>
+          <button class="btn" id="btnPrev" data-t="prev">上一步</button>
+          <button class="btn primary" id="btnNext" data-t="next">下一步</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== 落地页组件复用对照 ==================== -->
+    <div class="gallery" id="gallery" hidden>
+
+      <article class="gcard">
+        <div class="ghead"><span class="gname">ill-convert</span><span class="gbadge ok">零改造</span></div>
+        <div class="gill">
+          <svg class="ill-svg ill-convert" viewBox="0 0 160 88">
+            <rect class="ill-frame f1" x="10" y="22" width="34" height="34" rx="6"/>
+            <rect class="ill-frame f2" x="10" y="22" width="34" height="34" rx="6"/>
+            <rect class="ill-frame f3" x="10" y="22" width="34" height="34" rx="6"/>
+            <path class="ill-rail" d="M52 39 H108"/>
+            <g class="ill-chip c1"><rect x="112" y="14" width="40" height="20" rx="10"/><text x="132" y="28" text-anchor="middle">APNG</text></g>
+            <g class="ill-chip c2"><rect x="112" y="38" width="40" height="20" rx="10"/><text x="132" y="52" text-anchor="middle">WebP</text></g>
+            <g class="ill-chip c3"><rect x="112" y="62" width="40" height="20" rx="10"/><text x="132" y="76" text-anchor="middle">GIF</text></g>
+          </svg>
+        </div>
+        <div class="gmeta">160×88 · 纯 CSS illFlip/illDash/illPulse → OutputStep</div>
+      </article>
+
+      <article class="gcard">
+        <div class="ghead"><span class="gname">ill-gate</span><span class="gbadge ok">零改造</span></div>
+        <div class="gill">
+          <svg class="ill-svg ill-gate" viewBox="0 0 160 88">
+            <rect class="ill-tank" x="18" y="16" width="70" height="56" rx="8"/>
+            <rect class="ill-fill" x="24" y="40" width="58" height="28" rx="5"/>
+            <line class="ill-limit" x1="18" y1="36" x2="88" y2="36"/>
+            <text class="ill-cap" x="53" y="12" text-anchor="middle">1MB</text>
+            <g class="ill-scale">
+              <rect class="ill-needle" x="118" y="28" width="6" height="32" rx="3"/>
+              <circle class="ill-dial" cx="121" cy="64" r="14"/>
+              <path class="ill-tick" d="M121 52 V58"/>
+            </g>
+          </svg>
+        </div>
+        <div class="gmeta">160×88 · illBreathe/illNeedle → OutputStep 阈值</div>
+      </article>
+
+      <article class="gcard">
+        <div class="ghead"><span class="gname">ill-batch</span><span class="gbadge ok">零改造</span></div>
+        <div class="gill">
+          <svg class="ill-svg ill-batch" viewBox="0 0 160 88">
+            <rect class="ill-folder fo1" x="12" y="18" width="40" height="30" rx="5"/>
+            <path class="ill-folder-tab" d="M18 18 h12 l4 6 h18 v0"/>
+            <rect class="ill-folder fo2" x="12" y="52" width="40" height="22" rx="5" opacity=".55"/>
+            <path class="ill-flow" d="M60 34 H88 M60 62 H88 M88 34 V62 M88 48 H112"/>
+            <rect class="ill-out" x="112" y="34" width="36" height="28" rx="6"/>
+            <text class="ill-cap" x="130" y="52" text-anchor="middle">{src}</text>
+          </svg>
+        </div>
+        <div class="gmeta">160×88 · illDash/illPulse → ImportStep 批量</div>
+      </article>
+
+      <article class="gcard">
+        <div class="ghead"><span class="gname">ill-dl</span><span class="gbadge ok">零改造</span></div>
+        <div class="gill">
+          <svg class="ill-svg ill-dl" viewBox="0 0 160 88">
+            <rect class="ill-tray" x="36" y="54" width="88" height="18" rx="6"/>
+            <path class="ill-arrow" d="M80 12 V42 M68 32 L80 44 L92 32"/>
+            <circle class="ill-orb o1" cx="48" cy="28" r="5"/>
+            <circle class="ill-orb o2" cx="112" cy="24" r="4"/>
+            <circle class="ill-orb o3" cx="128" cy="40" r="3.5"/>
+          </svg>
+        </div>
+        <div class="gmeta">160×88 · illDraw/illFloat → FinishStep 下载/官网</div>
+      </article>
+
+      <article class="gcard">
+        <div class="ghead"><span class="gname">ill-ae-install</span><span class="gbadge ok">零改造</span></div>
+        <div class="gill">
+          <svg class="ill-svg ill-ae-install" viewBox="0 0 160 88">
+            <rect class="ill-tank" x="28" y="18" width="104" height="52" rx="8"/>
+            <rect class="ill-fill" x="40" y="30" width="36" height="12" rx="3"/>
+            <rect class="ill-fill" x="40" y="48" width="36" height="12" rx="3" opacity=".45"/>
+            <path class="ill-arrow" d="M110 32 v22 M100 44 l10 12 10-12"/>
+            <text class="ill-cap" x="58" y="78" text-anchor="middle">NSIS</text>
+          </svg>
+        </div>
+        <div class="gmeta">160×88 · illDraw → 安装向导页（A）插图</div>
+      </article>
+
+      <article class="gcard">
+        <div class="ghead"><span class="gname">ill-ae-render</span><span class="gbadge ok">零改造</span></div>
+        <div class="gill">
+          <svg class="ill-svg ill-ae-render" viewBox="0 0 160 88">
+            <rect class="ill-tank" x="18" y="16" width="70" height="56" rx="8"/>
+            <rect class="ill-fill" x="28" y="28" width="50" height="8" rx="2"/>
+            <rect class="ill-fill" x="28" y="42" width="38" height="8" rx="2" opacity=".65"/>
+            <rect class="ill-fill" x="28" y="56" width="44" height="8" rx="2" opacity=".4"/>
+            <path class="ill-flow" d="M96 44 H120"/>
+            <rect class="ill-out" x="120" y="30" width="28" height="28" rx="6"/>
+            <text class="ill-cap" x="134" y="48" text-anchor="middle">.png</text>
+          </svg>
+        </div>
+        <div class="gmeta">160×88 · illDash → AeStep 出序列</div>
+      </article>
+
+      <article class="gcard">
+        <div class="ghead"><span class="gname">ill-ae-ui</span><span class="gbadge ok">零改造</span></div>
+        <div class="gill">
+          <svg class="ill-svg ill-ae-ui" viewBox="0 0 160 88">
+            <rect class="ill-tank" x="16" y="14" width="128" height="60" rx="8"/>
+            <rect class="ill-fill" x="16" y="14" width="128" height="12" rx="8" opacity=".25"/>
+            <rect class="ill-out" x="28" y="36" width="44" height="26" rx="5"/>
+            <rect class="ill-out" x="80" y="36" width="52" height="26" rx="5" opacity=".55"/>
+            <text class="ill-cap" x="50" y="53" text-anchor="middle">Desk</text>
+            <text class="ill-cap" x="106" y="53" text-anchor="middle">AE</text>
+          </svg>
+        </div>
+        <div class="gmeta">160×88 · 静态构图 → AeStep 双端</div>
+      </article>
+
+      <article class="gcard">
+        <div class="ghead"><span class="gname">ill-ae-core</span><span class="gbadge ok">零改造</span></div>
+        <div class="gill">
+          <svg class="ill-svg ill-ae-core" viewBox="0 0 160 88">
+            <circle class="ill-dial" cx="80" cy="44" r="18"/>
+            <circle class="ill-fill" cx="80" cy="44" r="8"/>
+            <path class="ill-flow" d="M80 18 V28 M80 60 V70 M50 44 H60 M100 44 H110"/>
+            <rect class="ill-frame" x="28" y="34" width="16" height="20" rx="3"/>
+            <rect class="ill-frame" x="116" y="34" width="16" height="20" rx="3"/>
+            <text class="ill-cap" x="36" y="68" text-anchor="middle">CEP</text>
+            <text class="ill-cap" x="124" y="68" text-anchor="middle">Desk</text>
+          </svg>
+        </div>
+        <div class="gmeta">160×88 · illPulse → AeStep 同引擎</div>
+      </article>
+
+      <article class="gcard">
+        <div class="ghead"><span class="gname">#pet 吉祥物</span><span class="gbadge ok">8 处 hex</span></div>
+        <div class="gill">
+          <svg class="ill-svg" viewBox="0 0 60 56">
+            <g transform="translate(12,14)">
+              <g class="pet-inner">
+                <rect class="pet-body" x="0" y="8" width="36" height="28" rx="6"/>
+                <rect class="pet-ink" x="6" y="16" width="6" height="6"/>
+                <rect class="pet-ink" x="24" y="16" width="6" height="6"/>
+                <rect class="pet-ink" x="12" y="26" width="12" height="4" rx="1" opacity=".7"/>
+                <rect class="pet-ink" x="8" y="0" width="6" height="10" rx="2"/>
+                <rect class="pet-ink" x="22" y="0" width="6" height="10" rx="2"/>
+              </g>
+            </g>
+          </svg>
+        </div>
+        <div class="gmeta">36×38 · petIdle/Run/Cheer → BootSplash 吉祥物</div>
+      </article>
+
+      <article class="gcard">
+        <div class="ghead"><span class="gname">hero-svg / ae-svg</span><span class="gbadge mid">需改造</span></div>
+        <div class="gill">
+          <svg class="ill-svg" viewBox="0 0 160 88">
+            <rect x="10" y="26" width="34" height="34" rx="8" fill="#fffdf8" stroke="#c2410c" stroke-width="1.5"/>
+            <path d="M44 43 H84" stroke="#e4d0bf" stroke-width="3" stroke-dasharray="4 6"/>
+            <rect x="86" y="30" width="62" height="26" rx="8" fill="#fffdf8" stroke="#c2410c" stroke-width="1.5"/>
+            <text x="117" y="47" text-anchor="middle" font-size="9" fill="#1c1917" font-family="var(--is-mono)">自动转换</text>
+          </svg>
+        </div>
+        <div class="gmeta">标记内硬编码 hex（#c2410c ×39）→ 暗色下仍是亮色卡片</div>
+      </article>
+
+    </div>
+  </main>
+</div>
+
+<script>
+(function () {
+  var root = document.documentElement
+  var frame = document.getElementById('frame')
+  var tbName = document.getElementById('tbName')
+  var dots = document.getElementById('dots')
+  var steps = Array.prototype.slice.call(document.querySelectorAll('.step'))
+  var stepBtns = Array.prototype.slice.call(document.querySelectorAll('#stepList button'))
+  var counter = document.getElementById('counter')
+  var btnPrev = document.getElementById('btnPrev')
+  var btnNext = document.getElementById('btnNext')
+  var setBtn = document.getElementById('setBtn')
+  var pop = document.getElementById('pop')
+  var setThemeV = document.getElementById('setThemeV')
+  var setLangV = document.getElementById('setLangV')
+  var devThemeGroup = document.getElementById('devThemeGroup')
+  var gallery = document.getElementById('gallery')
+
+  var cur = 0
+  var lang = 'zh-CN'
+  var runtime = 'desktop'
+  var theme = 'dark'
+
+  /* ------------------------------------------------------------------ i18n */
+  var I18N = {
+    'zh-CN': {
+      docTitle: 'iSparta-next · 引导页预览台（Dev Preview）',
+      winName: 'iSparta-next — 首次使用引导',
+      winNameCep: 'iSparta-next — AE 扩展面板（520×560）',
+      h1: '引导页预览台',
+      sub: 'iSparta-next · dev only · 无构建、无依赖',
+      lblView: '视图', viewWizard: '引导向导', viewReuse: '落地页复用',
+      lblRuntime: '运行时', rtDesktop: '桌面', rtCep: 'CEP',
+      lblMotion: '动效', motionOn: '开', motionOff: '关',
+      lblEnv: '系统环境 · 生产参考',
+      envNoApply: '预览不参与自适应 · 生产环境按此自动跟随系统',
+      lblSteps: '步骤',
+      step0: '欢迎', step1: '导入方式', step2: '输出设置', step3: '文件名切分', step4: '输出路径', step5: 'AE 扩展', step6: '完成导览',
+      s0sub: 'PNG 序列 / APNG / WebP / GIF 互转与压缩',
+      c0Lang: '多语言', c0LangD: '简中 · 繁中 · English',
+      c0Theme: '双主题', c0ThemeD: '亮色暗色双主题切换',
+      c0Multi: '多端兼容支持', c0MultiD: 'Windows / MAC，After Effects',
+      s1h: '三种导入方式',
+      s1sub: '针对不同场景，桌面端软件与 AE 扩展都支持。',
+      w0t: '拖入', w0d: '图片序列帧 文件 / 文件夹',
+      w1t: '剪贴板序列帧 / 文件夹', w1d: '窗口内 Ctrl+V',
+      w2t: 'AE 合成', w2d: '刷新读取合成树进行渲染与合成',
+      s2h: '输出格式与大小门槛',
+      s2sub: '选 APNG / WebP / GIF，设好质量与体积上限——超了会自动压小，不用手动试。',
+      gpQuality: '压缩质量',
+      gpThreshold: '输出大小阈值',
+      gpEnable: '启用大小阈值',
+      gpLimit: '阈值',
+      gpAuto: '超出后自动降质量',
+      gpStep: '每次递减',
+      gpTries: '最多重试',
+      gpTimes: '次',
+      gpReplay: '自动重压演示',
+      gpPass: '通过', gpOver: '超限', gpNoLimit: '不限制', gpLimitOff: '未启用阈值',
+      gpHint: '拖质量滑块即时看到体积落在阈值内还是超出；点「自动重压演示」看它一档档降到达标。',
+      s3h: '文件名自动切分',
+      s3sub: '长文件名自动拆成词，点一下留一个；漏斗一键只留文字。',
+      npOut: '输出名字',
+      npHint: '点字词可取消；漏斗 = 只留文字',
+      npHintWords: '只留文字：分隔符已全部取消',
+      npPath: '输出路径',
+      npPreSrc: '源目录', npPreBeside: '目录旁级', npPreCustom: '自定义',
+      npVar: '变量路径', npReal: '真实路径',
+      s4h: '输出路径变量化',
+      s4sub: '存放位置用 {srcPath} 这类积木拼，拼完的真实路径马上预览给你看。',
+      s5h: '同步支持安装 AE 端扩展！',
+      s5sub: '第一次安装或者更新后需要重启 After Effects → 顶部菜单「窗口 → 扩展」打开面板。',
+      s5note: '若菜单里没有出现，说明扩展未签名：需打开 PlayerDebugMode 并重启 AE。',
+      s6h: '都准备就绪了',
+      s6sub: '批量转换 · 超限自动压小 · 前后对比滑块 · 主题与语言，随时在设置里调整。',
+      chipBatch: '批量', chipDiff: '对比滑块', chipTheme: '主题',
+      skipBtn: '跳过', prev: '上一步', next: '下一步', start: '开始使用',
+      lblTheme: '主题', thDark: '暗色', thLight: '亮色', lblLang: '语言',
+      hudLang: '简中',
+      note: '本页是原型台，不参与打包。\n正式实现落 src/ui-next/onboarding/，组件化后用现成 dev 链预览：\n· 桌面 Web :8081（browser-mock）\n· CEP :8082（HMR）\n图形全部为内联 SVG，无位图、无远程资源。\n面板右上角可切换主题与语言。\n生产环境：主题/语言默认跟随系统（§5.9），本页不参与。'
+    },
+    'zh-TW': {
+      docTitle: 'iSparta-next · 引導頁預覽台（Dev Preview）',
+      winName: 'iSparta-next — 首次使用引導',
+      winNameCep: 'iSparta-next — AE 擴充面板（520×560）',
+      h1: '引導頁預覽台',
+      sub: 'iSparta-next · dev only · 無建置、無相依',
+      lblView: '檢視', viewWizard: '引導精靈', viewReuse: '落地頁重用',
+      lblRuntime: '執行環境', rtDesktop: '桌面', rtCep: 'CEP',
+      lblMotion: '動效', motionOn: '開', motionOff: '關',
+      lblEnv: '系統環境 · 生產參考',
+      envNoApply: '預覽不參與自適應 · 生產環境依此自動跟隨系統',
+      lblSteps: '步驟',
+      step0: '歡迎', step1: '匯入方式', step2: '輸出設定', step3: '檔名切分', step4: '輸出路徑', step5: 'AE 擴充', step6: '完成導覽',
+      s0sub: 'PNG 序列 / APNG / WebP / GIF 互轉與壓縮',
+      c0Lang: '多語言', c0LangD: '繁中 · 簡中 · English',
+      c0Theme: '雙佈景', c0ThemeD: '亮色暗色雙佈景切換',
+      c0Multi: '多端相容支援', c0MultiD: 'Windows / MAC，After Effects',
+      s1h: '三種匯入方式',
+      s1sub: '針對不同情境，桌面端軟體與 AE 擴充都支援。',
+      w0t: '拖入', w0d: '圖片序列幀 檔案 / 資料夾',
+      w1t: '剪貼簿序列幀 / 資料夾', w1d: '視窗內 Ctrl+V',
+      w2t: 'AE 合成', w2d: '重新整理讀取合成樹進行算圖與合成',
+      s2h: '輸出格式與大小門檻',
+      s2sub: '選 APNG / WebP / GIF，設好品質與體積上限——超過了會自動縮小，不用手動試。',
+      gpQuality: '壓縮品質',
+      gpThreshold: '輸出大小門檻',
+      gpEnable: '啟用大小門檻',
+      gpLimit: '門檻',
+      gpAuto: '超出後自動降品質',
+      gpStep: '每次遞減',
+      gpTries: '最多重試',
+      gpTimes: '次',
+      gpReplay: '自動重壓演示',
+      gpPass: '通過', gpOver: '超限', gpNoLimit: '不限制', gpLimitOff: '未啟用門檻',
+      gpHint: '拖品質滑桿即時看到體積落在門檻內還是超出；點「自動重壓演示」看它一檔檔降到達標。',
+      s3h: '檔名自動切分',
+      s3sub: '長檔名自動拆成詞，點一下留一個；漏斗一鍵只留文字。',
+      npOut: '輸出名稱',
+      npHint: '點字詞可取消；漏斗 = 只留文字',
+      npHintWords: '只留文字：分隔符已全部取消',
+      npPath: '輸出路徑',
+      npPreSrc: '來源目錄', npPreBeside: '目錄旁級', npPreCustom: '自訂',
+      npVar: '變數路徑', npReal: '真實路徑',
+      s4h: '輸出路徑變數化',
+      s4sub: '存放位置用 {srcPath} 這類積木拼，拼完的真實路徑馬上預覽給你看。',
+      s5h: '同步支援安裝 AE 端擴充！',
+      s5sub: '第一次安裝或者更新後需要重啟 After Effects → 頂部選單「視窗 → 擴充功能」開啟面板。',
+      s5note: '若選單中沒有出現，代表擴充功能未簽章：需開啟 PlayerDebugMode 並重啟 AE。',
+      s6h: '都準備就緒了',
+      s6sub: '批次轉換 · 超限自動縮小 · 前後對比滑桿 · 佈景與語言，隨時在設定裡調整。',
+      chipBatch: '批次', chipDiff: '對比滑桿', chipTheme: '佈景',
+      skipBtn: '跳過', prev: '上一步', next: '下一步', start: '開始使用',
+      lblTheme: '佈景', thDark: '暗色', thLight: '亮色', lblLang: '語言',
+      hudLang: '繁中',
+      note: '本頁是原型台，不參與打包。\n正式實作落 src/ui-next/onboarding/，元件化後用現成 dev 鏈預覽：\n· 桌面 Web :8081（browser-mock）\n· CEP :8082（HMR）\n圖形全部為內聯 SVG，無位圖、無遠端資源。\n面板右上角可切換佈景與語言。\n生產環境：佈景/語言預設跟隨系統（§5.9），本頁不參與。'
+    },
+    'en': {
+      docTitle: 'iSparta-next · Guide Preview (Dev)',
+      winName: 'iSparta-next — Getting Started',
+      winNameCep: 'iSparta-next — AE Extension Panel (520×560)',
+      h1: 'Guide Preview',
+      sub: 'iSparta-next · dev only · no build, no deps',
+      lblView: 'View', viewWizard: 'Wizard', viewReuse: 'Landing reuse',
+      lblRuntime: 'Runtime', rtDesktop: 'Desktop', rtCep: 'CEP',
+      lblMotion: 'Motion', motionOn: 'On', motionOff: 'Off',
+      lblEnv: 'System env · prod ref',
+      envNoApply: 'Preview does not auto-apply · production follows this',
+      lblSteps: 'Steps',
+      step0: 'Welcome', step1: 'Import', step2: 'Output', step3: 'Naming', step4: 'Path', step5: 'AE Ext', step6: 'Finish',
+      s0sub: 'PNG sequence / APNG / WebP / GIF conversion and compression',
+      c0Lang: 'Multilingual', c0LangD: 'Simplified · Traditional · English',
+      c0Theme: 'Two themes', c0ThemeD: 'Light and dark, switchable',
+      c0Multi: 'Runs everywhere', c0MultiD: 'Windows / Mac, After Effects',
+      s1h: 'Three ways to import',
+      s1sub: 'Each suits a different scenario — both the desktop app and the AE extension support them.',
+      w0t: 'Drop in', w0d: 'Image-sequence files / folders',
+      w1t: 'Clipboard frames / folders', w1d: 'Ctrl+V inside the window',
+      w2t: 'AE comps', w2d: 'Refresh to read the comp tree, then render and encode',
+      s2h: 'Output format & size gate',
+      s2sub: 'Pick APNG / WebP / GIF and set a quality and size cap — anything over is compressed automatically.',
+      gpQuality: 'Quality',
+      gpThreshold: 'Output size limit',
+      gpEnable: 'Enable size limit',
+      gpLimit: 'Limit',
+      gpAuto: 'Lower quality when over',
+      gpStep: 'Step down by',
+      gpTries: 'Max retries',
+      gpTimes: 'times',
+      gpReplay: 'Run auto re-encode',
+      gpPass: 'Pass', gpOver: 'Over', gpNoLimit: 'No limit', gpLimitOff: 'Limit off',
+      gpHint: 'Drag the quality slider to see whether the size fits under the limit; hit “Run auto re-encode” to watch it step down until it passes.',
+      s3h: 'Split the file name automatically',
+      s3sub: 'Long names split into words — click one to drop it; the funnel keeps words only.',
+      npOut: 'Output name',
+      npHint: 'Click tokens to toggle · funnel = words only',
+      npHintWords: 'Words only: all separators removed',
+      npPath: 'Output path',
+      npPreSrc: 'Source folder', npPreBeside: 'Parent folder', npPreCustom: 'Custom',
+      npVar: 'Template', npReal: 'Resolved path',
+      s4h: 'Turn the output path into variables',
+      s4sub: 'Build the save location from blocks like {srcPath} and see the resolved path right away.',
+      s5h: 'The AE extension installs alongside!',
+      s5sub: 'After the first install or an update, restart After Effects → open the panel from the top menu “Window → Extensions”.',
+      s5note: 'If it is missing from the menu, the extension is unsigned: enable PlayerDebugMode and restart AE.',
+      s6h: 'You are all set',
+      s6sub: 'Batch convert · auto shrink when over limit · before/after slider · theme and language, all adjustable in settings.',
+      chipBatch: 'Batch', chipDiff: 'Slider', chipTheme: 'Theme',
+      skipBtn: 'Skip', prev: 'Back', next: 'Next', start: 'Get started',
+      lblTheme: 'Theme', thDark: 'Dark', thLight: 'Light', lblLang: 'Language',
+      hudLang: 'EN',
+      note: 'This page is a prototype bench and is not packaged.\nThe real build lands in src/ui-next/onboarding/; once componentized, preview it with the existing dev chain:\n· Desktop Web :8081 (browser-mock)\n· CEP :8082 (HMR)\nAll graphics are inline SVG — no bitmaps, no remote assets.\nSwitch theme & language from the panel\u2019s top-right.\nProduction follows the OS by default (§5.9); this page does not.'
+    }
+  }
+
+  function T (key) {
+    var pack = I18N[lang] || I18N['zh-CN']
+    return pack[key] != null ? pack[key] : (I18N['zh-CN'][key] || key)
+  }
+
+  function applyI18n () {
+    document.title = T('docTitle')
+    root.lang = lang
+    Array.prototype.slice.call(document.querySelectorAll('[data-t]')).forEach(function (el) {
+      el.textContent = T(el.dataset.t)
+    })
+    updateTitle()
+    updateSetBtn()
+    renderEnv()
+    render()
+    gpI18nRefresh()
+  }
+
+  /* ------------------------------------ 系统环境探测（只读参考，预览不自动应用）---
+     映射镜像自 src/util/system-locale.js（本页零依赖，故此处复制一份；改那边记得同步）。 */
+  function normalizeTag (tag) {
+    if (typeof tag !== 'string') { return null }
+    var t = tag.trim().toLowerCase().replace(/_/g, '-')
+    if (!t) { return null }
+    var parts = t.split('-')
+    if (!/^[a-z]{2,3}$/.test(parts[0])) { return null }
+    if (parts[0] === 'zh') {
+      var rest = parts.slice(1).join('-')
+      if (/(^|-)hant(-|$)/.test(rest) || /(^|-)(tw|hk|mo)(-|$)/.test(rest)) { return 'zh-tw' }
+      return 'zh-cn'
+    }
+    return 'en-us'
+  }
+
+  function envTags () {
+    var out = []
+    try {
+      if (navigator.languages && navigator.languages.length) {
+        out = Array.prototype.slice.call(navigator.languages)
+      } else if (navigator.language) { out = [navigator.language] }
+    } catch (e) { /* ignore */ }
+    if (!out.length) {
+      try { out = [Intl.DateTimeFormat().resolvedOptions().locale] } catch (e) { /* ignore */ }
+    }
+    return out
+  }
+
+  function renderEnv () {
+    var box = document.getElementById('envBox')
+    if (!box) { return }
+    var tags = envTags()
+    var raw = tags[0] || ''
+    var resolved = normalizeTag(raw) || 'zh-cn'
+    var sysDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)
+
+    box.textContent = ''
+    function line (key, value, hit) {
+      var row = document.createElement('div')
+      var k = document.createElement('span'); k.className = 'k'; k.textContent = key + ' '
+      var v = document.createElement('span'); v.className = 'v' + (hit ? ' hit' : ''); v.textContent = value
+      row.appendChild(k); row.appendChild(v); box.appendChild(row)
+    }
+    line('lang', raw ? raw + ' → ' + resolved : '— → ' + resolved, true)
+    line('theme', (sysDark ? 'dark' : 'light') + ' · pref-color-scheme', false)
+
+    var hint = document.createElement('div')
+    hint.className = 'hint'
+    hint.textContent = T('envNoApply')
+    box.appendChild(hint)
+  }
+
+  /* --------------------------------------------------------------- 主题/语言 */
+  function setActive (box, value) {
+    Array.prototype.slice.call(box.children).forEach(function (b) {
+      b.classList.toggle('on', b.dataset.v === value)
+    })
+  }
+
+  function setTheme (v) {
+    theme = v
+    root.classList.toggle('theme-dark', v === 'dark')
+    root.classList.toggle('theme-light', v === 'light')
+    setActive(document.getElementById('pTheme'), v)
+    setActive(document.getElementById('dTheme'), v)
+    updateSetBtn()
+  }
+
+  function setLang (v) {
+    lang = v
+    setActive(document.getElementById('pLang'), v)
+    applyI18n()
+  }
+
+  function updateSetBtn () {
+    setThemeV.textContent = theme === 'dark' ? T('thDark') : T('thLight')
+    setLangV.textContent = T('hudLang')
+  }
+
+  function updateTitle () {
+    tbName.textContent = runtime === 'cep' ? T('winNameCep') : T('winName')
+  }
+
+  /* ------------------------------------------------------------------ 渲染 */
+  function render () {
+    steps.forEach(function (s, i) { s.classList.toggle('on', i === cur) })
+    stepBtns.forEach(function (b, i) { b.classList.toggle('on', i === cur) })
+    Array.prototype.slice.call(dots.children).forEach(function (d, i) {
+      d.classList.toggle('on', i === cur)
+    })
+    counter.textContent = (cur + 1) + ' / ' + steps.length
+    btnPrev.disabled = cur === 0
+    btnNext.textContent = cur === steps.length - 1 ? T('start') : T('next')
+  }
+
+  function go (i) { cur = Math.max(0, Math.min(steps.length - 1, i)); render() }
+
+  /* ------------------------------------------------------------------ 交互 */
+  function initSeg (id, fn) {
+    var box = document.getElementById(id)
+    if (!box) { return }
+    Array.prototype.slice.call(box.children).forEach(function (b) {
+      b.addEventListener('click', function () {
+        Array.prototype.slice.call(box.children).forEach(function (x) { x.classList.remove('on') })
+        b.classList.add('on')
+        fn(b.dataset.v)
+      })
+    })
+  }
+
+  initSeg('segView', function (v) {
+    var wizard = v === 'wizard'
+    frame.hidden = !wizard
+    gallery.hidden = wizard
+    devThemeGroup.hidden = wizard
+    if (wizard) { closePop() }
+  })
+  initSeg('segRuntime', function (v) {
+    runtime = v
+    frame.dataset.runtime = v
+    updateTitle()
+  })
+  initSeg('segMotion', function (v) {
+    document.getElementById('app').classList.toggle('no-motion', v === 'off')
+  })
+  initSeg('pTheme', function (v) { setTheme(v) })
+  initSeg('dTheme', function (v) { setTheme(v) })
+  initSeg('pLang', function (v) { setLang(v) })
+
+  btnPrev.addEventListener('click', function () { go(cur - 1) })
+  btnNext.addEventListener('click', function () { go(cur + 1) })
+  document.getElementById('btnSkip').addEventListener('click', function () { go(steps.length - 1) })
+  stepBtns.forEach(function (b) {
+    b.addEventListener('click', function () { go(Number(b.dataset.i)) })
+  })
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'ArrowRight') { go(cur + 1) }
+    if (e.key === 'ArrowLeft') { go(cur - 1) }
+    if (e.key === 'Escape') { closePop() }
+  })
+
+  /* ------------------------------------------------- 面板右上角设置弹层 */
+  function openPop () { pop.hidden = false; setBtn.setAttribute('aria-expanded', 'true') }
+  function closePop () { pop.hidden = true; setBtn.setAttribute('aria-expanded', 'false') }
+  setBtn.addEventListener('click', function (e) {
+    e.stopPropagation()
+    if (pop.hidden) { openPop() } else { closePop() }
+  })
+  pop.addEventListener('click', function (e) { e.stopPropagation() })
+  document.addEventListener('click', closePop)
+
+  /* ======================================================================
+     输出设置 · SIZE GATE（落地页 #play 的可交互复刻）
+     逻辑与 landing/main.js 的 sizeGate 同源；Vue 侧对应 demos/OutputGate.vue。
+     ====================================================================== */
+  var gpSlider = document.getElementById('gpSlider')
+  var gpQ = document.getElementById('gpQ')
+  var gpResult = document.getElementById('gpResult')
+  var gpFmtEl = document.getElementById('gpFmt')
+  var gpBadge = document.getElementById('gpBadge')
+  var gpSizeEl = document.getElementById('gpSize')
+  var gpVs = document.getElementById('gpVs')
+  var gpFill = document.getElementById('gpFill')
+  var gpLimit = document.getElementById('gpLimit')
+  var gpLog = document.getElementById('gpLog')
+  var gpEnabled = document.getElementById('gpEnabled')
+  var gpMax = document.getElementById('gpMax')
+  var gpAuto = document.getElementById('gpAuto')
+  var gpStep = document.getElementById('gpStep')
+  var gpTries = document.getElementById('gpTries')
+  var gpRun = document.getElementById('gpRun')
+  var gpFmtBtns = document.querySelectorAll('.gp-fmt-btn')
+  var gpUnitBtns = document.querySelectorAll('.gp-unit button')
+
+  var gpTimer = null
+  var gpRunning = false
+  var gpFmt = 'APNG'
+  var gpUnit = 'MB'
+  var gpPlayed = false
+  var GP_FACTOR = { APNG: 1, GIF: 0.72, WEBP: 0.55 }
+  var gpReduce = false
+  try {
+    gpReduce = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)
+  } catch (e) { /* 忽略 */ }
+
+  function gpLimitMB () {
+    var raw = Math.max(0, Number(gpMax && gpMax.value) || 0)
+    return gpUnit === 'KB' ? raw / 1024 : (raw || 1)
+  }
+  function gpLimitLabel () {
+    var raw = Number(gpMax && gpMax.value) || 0
+    if (!gpEnabled || !gpEnabled.checked) return ''
+    return gpUnit === 'KB' ? Math.round(raw) + ' KB' : String(Number(raw.toFixed(2))) + ' MB'
+  }
+  function gpCfg () {
+    return {
+      enabled: !gpEnabled || gpEnabled.checked,
+      maxMB: gpLimitMB(),
+      auto: !gpAuto || gpAuto.checked,
+      step: Math.max(1, Number(gpStep && gpStep.value) || 12),
+      tries: Math.min(8, Math.max(3, Number(gpTries && gpTries.value) || 5))
+    }
+  }
+  function gpSize (q) {
+    var t = (100 - q) / 90
+    var base = Math.max(0.18, 2.85 * Math.pow(1 - t * 0.88, 1.7) + 0.1)
+    return base * (GP_FACTOR[gpFmt] || 1)
+  }
+  /* 只保留最新一行：#gpLog 现在是普通段落元素，直接覆写文本与状态色 */
+  function gpLogAdd (text, cls) {
+    if (!gpLog) return
+    gpLog.textContent = text
+    gpLog.className = 'gp-log' + (cls ? ' ' + cls : '')
+  }
+  /* 体积数字闪一下：每档重压都能看出「刚掉了一格」，而不是静悄悄换了数 */
+  function gpTick () {
+    if (!gpSizeEl) return
+    gpSizeEl.classList.remove('is-tick')
+    void gpSizeEl.offsetWidth
+    gpSizeEl.classList.add('is-tick')
+  }
+  function gpStop () {
+    gpRunning = false
+    if (gpTimer) { clearTimeout(gpTimer); gpTimer = null }
+    if (gpRun) gpRun.disabled = false
+  }
+  function gpPaint (q, tick) {
+    var cfg = gpCfg()
+    var mb = gpSize(q)
+    var ok = !cfg.enabled || mb <= cfg.maxMB
+    if (gpSlider) gpSlider.value = String(q)
+    if (gpQ) gpQ.textContent = String(q)
+    if (gpFmtEl) gpFmtEl.textContent = gpFmt
+    if (gpSizeEl) gpSizeEl.textContent = mb.toFixed(2) + ' MB'
+    if (tick) gpTick()
+    if (gpVs) {
+      gpVs.textContent = cfg.enabled ? T('gpLimit') + ' ' + gpLimitLabel() : T('gpLimitOff')
+    }
+    if (gpBadge) {
+      gpBadge.classList.remove('is-pass', 'is-over')
+      gpBadge.textContent = !cfg.enabled ? T('gpNoLimit') : (ok ? T('gpPass') : T('gpOver'))
+      gpBadge.classList.add(ok ? 'is-pass' : 'is-over')
+    }
+    if (gpResult) {
+      gpResult.classList.remove('is-pass', 'is-over')
+      gpResult.classList.add(ok ? 'is-pass' : 'is-over')
+    }
+    if (gpFill) {
+      var scale = Math.max(cfg.maxMB * 2.2, mb + 0.2, 1)
+      gpFill.style.width = Math.min(100, (mb / scale) * 100) + '%'
+      gpFill.classList.remove('is-ok', 'is-over')
+      gpFill.classList.add(ok ? 'is-ok' : 'is-over')
+    }
+    if (gpLimit) {
+      var lscale = Math.max(cfg.maxMB * 2.2, 1)
+      gpLimit.style.left = Math.min(100, (cfg.maxMB / lscale) * 100) + '%'
+    }
+    return { mb: mb, ok: ok, cfg: cfg }
+  }
+  function gpRunDemo () {
+    gpStop()
+    if (gpLog) gpLog.innerHTML = ''
+    var q = 85
+    var n = 0
+    gpRunning = true
+    if (gpRun) gpRun.disabled = true
+    gpPaint(q)
+    /* 每档停 900ms：够看清「体积掉一档 + 计量条退一格」 */
+    var delay = gpReduce ? 0 : 900
+
+    function attempt () {
+      if (!gpRunning) return
+      gpPaint(q, true)
+      n += 1
+      var mb = gpSize(q)
+      var head = '#' + n + ' · q=' + q + ' · ' + mb.toFixed(2) + 'MB'
+      var cfg = gpCfg()
+      if (!cfg.enabled) { gpLogAdd(head + ' · ' + T('gpNoLimit'), 'is-pass'); finish(true); return }
+      if (mb <= cfg.maxMB) { gpLogAdd(head + ' · ' + T('gpPass'), 'is-pass'); finish(true); return }
+      gpLogAdd(head + ' · ' + T('gpOver'), 'is-over')
+      if (!cfg.auto) { finish(false); return }
+      if (n >= cfg.tries || q <= 10) { finish(false); return }
+      q = Math.max(10, q - cfg.step)
+      gpTimer = setTimeout(attempt, delay)
+    }
+    function finish (ok) {
+      gpRunning = false
+      if (gpRun) gpRun.disabled = false
+      if (!ok || !gpBadge) return
+      gpBadge.classList.remove('is-pop')
+      void gpBadge.getBoundingClientRect()
+      gpBadge.classList.add('is-pop')
+    }
+    gpTimer = setTimeout(attempt, gpReduce ? 0 : 480)
+  }
+
+  if (gpSlider) {
+    gpSlider.addEventListener('input', function () { gpStop(); gpPaint(Number(gpSlider.value) || 85) })
+  }
+  Array.prototype.slice.call(gpFmtBtns).forEach(function (b) {
+    b.addEventListener('click', function () {
+      gpStop()
+      gpFmt = b.dataset.fmt || 'APNG'
+      Array.prototype.slice.call(gpFmtBtns).forEach(function (x) { x.classList.toggle('is-on', x === b) })
+      gpPaint(Number(gpSlider && gpSlider.value) || 85)
+    })
+  })
+  Array.prototype.slice.call(gpUnitBtns).forEach(function (b) {
+    b.addEventListener('click', function () {
+      gpStop()
+      var u = b.dataset.unit === 'KB' ? 'KB' : 'MB'
+      if (u === gpUnit) return
+      var cur = Number(gpMax && gpMax.value) || 1
+      if (gpMax) {
+        gpMax.value = u === 'KB' ? String(Math.round(cur * 1024)) : String(Number((cur / 1024).toFixed(2)))
+        gpMax.step = u === 'KB' ? '32' : '0.1'
+        gpMax.min = u === 'KB' ? '1' : '0.1'
+      }
+      gpUnit = u
+      Array.prototype.slice.call(gpUnitBtns).forEach(function (x) { x.classList.toggle('is-on', x === b) })
+      gpPaint(Number(gpSlider && gpSlider.value) || 85)
+    })
+  })
+  ;[gpEnabled, gpMax, gpAuto, gpStep, gpTries].forEach(function (el) {
+    if (!el) return
+    el.addEventListener('change', function () { gpStop(); gpPaint(Number(gpSlider && gpSlider.value) || 85) })
+  })
+  if (gpRun) gpRun.addEventListener('click', gpRunDemo)
+
+  /* ======================================================================
+     自动切分文件名（落地页 #naming 的可交互复刻）
+     Vue 侧对应 demos/NamingPanel.vue。
+     ====================================================================== */
+  var NP_TOKEN_RE = /[\u4E00-\u9FFF]+|[A-Za-z]+|\d+|[^A-Za-z0-9\u4E00-\u9FFF]/g
+  var NP_SEP_RE = /^[^A-Za-z0-9\u4E00-\u9FFF]+$/
+  var NP_CTX = {
+    srcPath: 'D:/Assets/demo/sticker-pack/frames',
+    src: 'frames',
+    name: '示例贴纸行走循环高清v3',
+    type: 'PNGs',
+    parent: 'D:/Assets/demo/sticker-pack',
+    date: '20260915'
+  }
+  var NP_KEYS = ['srcPath', 'src', 'name', 'type', 'parent', 'date']
+  var NP_PRESET = { src: '{srcPath}', beside: '{parent}', custom: '{srcPath}/export/{date}' }
+
+  var npName = document.getElementById('npName')
+  var npTokens = document.getElementById('npTokens')
+  var npHint = document.getElementById('npHint')
+  var npFunnel = document.getElementById('npFunnel')
+  var npPresets = document.querySelectorAll('.np-preset')
+  var npTpl = document.getElementById('npTpl')
+  var npVars = document.getElementById('npVars')
+  var npPreview = document.getElementById('npPreview')
+  var npList = []
+
+  function npTokenize (name) {
+    var parts = String(name).match(NP_TOKEN_RE) || []
+    return parts.map(function (text) { return { text: text, sep: NP_SEP_RE.test(text), on: true } })
+  }
+  function npJoined () {
+    return npList.reduce(function (acc, t) { return t.on === false ? acc : acc + t.text }, '')
+  }
+  function npWordsOnly () {
+    if (!npList.length) return false
+    var total = 0
+    var off = 0
+    for (var i = 0; i < npList.length; i++) {
+      if (!npList[i].sep && !npList[i].on) return false
+      if (npList[i].sep) { total++; if (!npList[i].on) off++ }
+    }
+    return total > 0 && off === total
+  }
+  function npValue (key) {
+    if (key === 'name') return npJoined() || NP_CTX.name
+    return NP_CTX[key]
+  }
+  function npResolve (text) {
+    return String(text || '').replace(/\{([a-zA-Z]+)\}/g, function (m, key) {
+      return key in NP_CTX ? npValue(key) : m
+    })
+  }
+  /* opts.syncInput=false：手打时不要回写 input，否则光标会被顶到末尾 */
+  function npPaintTokens (opts) {
+    opts = opts || {}
+    if (!npTokens) return
+    npTokens.innerHTML = ''
+    var w = 0
+    npList.forEach(function (t, i) {
+      var b = document.createElement('button')
+      b.type = 'button'
+      var cls = 'np-tok'
+      if (t.sep) cls += ' is-sep'
+      else { cls += ' np-tok--c' + ((w % 6) + 1); w++ }
+      if (!t.on) cls += ' is-off'
+      b.className = cls
+      b.textContent = t.text
+      b.setAttribute('aria-pressed', t.on ? 'true' : 'false')
+      b.addEventListener('click', function () {
+        npList[i].on = !npList[i].on
+        npSync()
+      })
+      npTokens.appendChild(b)
+    })
+    var wordsOnly = npWordsOnly()
+    if (npFunnel) {
+      npFunnel.classList.toggle('is-on', wordsOnly)
+      npFunnel.setAttribute('aria-pressed', wordsOnly ? 'true' : 'false')
+    }
+    if (npHint) npHint.textContent = wordsOnly ? T('npHintWords') : T('npHint')
+    if (opts.syncInput !== false && npName) npName.value = npJoined()
+    npPaintPreview()
+  }
+  function npPaintPreview () {
+    if (!npPreview || !npTpl) return
+    npPreview.textContent = npResolve(npTpl.value) || '—'
+    var chip = npVars && npVars.querySelector('[data-key="name"] .np-var__val')
+    if (chip) chip.textContent = npJoined() || NP_CTX.name
+  }
+  function npSync () {
+    if (npName) npName.value = npJoined()
+    npPaintTokens()
+  }
+  if (npTokens) {
+    npList = npTokenize(npName ? npName.value : '')
+    npList.forEach(function (t) { if (t.sep) t.on = false })
+    npPaintTokens()
+  }
+  if (npName) {
+    npName.addEventListener('input', function () {
+      npList = npTokenize(npName.value || '').map(function (t) {
+        return { text: t.text, sep: t.sep, on: true }
+      })
+      npPaintTokens({ syncInput: false })
+    })
+  }
+  if (npFunnel) {
+    npFunnel.addEventListener('click', function () {
+      var restore = npWordsOnly()
+      npList = npList.map(function (t) {
+        return { text: t.text, sep: t.sep, on: t.sep ? restore : true }
+      })
+      npSync()
+    })
+  }
+  Array.prototype.slice.call(npPresets).forEach(function (b) {
+    b.addEventListener('click', function () {
+      var key = b.dataset.preset
+      if (!(key in NP_PRESET)) return
+      Array.prototype.slice.call(npPresets).forEach(function (x) { x.classList.toggle('is-on', x === b) })
+      if (npTpl) npTpl.value = NP_PRESET[key]
+      npPaintPreview()
+    })
+  })
+  if (npVars && npTpl) {
+    NP_KEYS.forEach(function (key) {
+      var b = document.createElement('button')
+      b.type = 'button'
+      b.className = 'np-var'
+      b.dataset.key = key
+      var k = document.createElement('span')
+      k.className = 'np-var__key'
+      k.textContent = '{' + key + '}'
+      var v = document.createElement('span')
+      v.className = 'np-var__val'
+      v.textContent = npValue(key)
+      b.appendChild(k)
+      b.appendChild(v)
+      b.addEventListener('click', function () {
+        var ins = '{' + key + '}'
+        var start = npTpl.selectionStart == null ? npTpl.value.length : npTpl.selectionStart
+        var end = npTpl.selectionEnd == null ? npTpl.value.length : npTpl.selectionEnd
+        npTpl.value = npTpl.value.slice(0, start) + ins + npTpl.value.slice(end)
+        npTpl.focus()
+        try { npTpl.setSelectionRange(start + ins.length, start + ins.length) } catch (e) { /* 忽略 */ }
+        npPaintPreview()
+      })
+      npVars.appendChild(b)
+    })
+    npTpl.addEventListener('input', npPaintPreview)
+    npPaintPreview()
+  }
+
+  /* 切语言时同步面板内动态文案（徽标 / 阈值行 / 分词提示 / 日志） */
+  function gpI18nRefresh () {
+    if (!gpResult) return
+    gpPaint(Number(gpSlider && gpSlider.value) || 85)
+    if (gpLog) {
+      gpLog.innerHTML = ''
+      gpLogAdd(T('gpReplay'), '')
+    }
+    if (npTokens) npPaintTokens()
+  }
+
+  /* 进页自动演示一次（与 Vue 侧 mounted 行为一致） */
+  function gpAutoPlay () {
+    if (gpPlayed) return
+    gpPlayed = true
+    if (gpLog) gpLog.innerHTML = ''
+    gpRunDemo()
+  }
+
+  /* -------------------------------------------------------------------- 启动 */
+  setTheme('dark')
+  setLang('zh-CN')
+
+  /* 深链（dev 便利）：#step=3 直达某步、#rt=cep 预置运行时、#lang=en / #theme=light
+     例：index.html#step=2&rt=cep —— 便于截图与逐页比对，不改任何默认行为。 */
+  (function applyHash () {
+    var h = String(location.hash || '').replace(/^#/, '')
+    if (!h) return
+    var q = {}
+    h.split('&').forEach(function (kv) {
+      var p = kv.split('=')
+      if (p[0]) { q[p[0]] = decodeURIComponent(p[1] || '') }
+    })
+    if (q.rt === 'cep' || q.rt === 'desktop') {
+      runtime = q.rt
+      frame.dataset.runtime = q.rt
+      var segRt = document.getElementById('segRuntime')
+      if (segRt) {
+        Array.prototype.slice.call(segRt.children).forEach(function (b) { b.classList.toggle('on', b.dataset.v === q.rt) })
+      }
+      updateTitle()
+    }
+    if (q.theme === 'light' || q.theme === 'dark') { setTheme(q.theme) }
+    if (q.lang && I18N[q.lang]) { setLang(q.lang) }
+    if (q.step != null && q.step !== '') { go(Number(q.step)) }
+  })()
+
+  gpI18nRefresh()
+  setTimeout(gpAutoPlay, gpReduce ? 0 : 500)
+})()
+</script>
+</body>
+</html>

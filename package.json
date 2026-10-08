@@ -14,6 +14,7 @@
     "dev": "vue-cli-service electron:serve",
     "serve": "vue-cli-service serve --port 8081",
     "landing:serve": "node scripts/serve-landing.js",
+    "preview:guide": "node scripts/dev/serve-guide-preview.js",
     "dev:all": "node scripts/dev-all.js",
     "dev:all:electron": "node scripts/dev-all.js --electron",
     "build": "vue-cli-service electron:build -mwl ",

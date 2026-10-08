@@ -8,22 +8,28 @@
 import Vue from 'vue'
 import VueI18n from 'vue-i18n'
 import { storage } from './util/node-env'
+import { FALLBACK, MODE_SYSTEM, resolveLocale } from './util/system-locale'
 
 Vue.use(VueI18n)
 
-const FALLBACK = 'zh-cn'
-
+/**
+ * 决定启动语言。
+ * 存储里的值可能是显式 locale（zh-cn / zh-tw / en-us），也可能是哨兵 'system'
+ * （未选择过 / 用户显式选了「跟随系统」）。一律经 resolveLocale 解析成真实 locale ——
+ * **绝不能把 'system' 赋给 i18n.locale**，vue-i18n 不认这个键，会渲染成空界面。
+ */
 function detectLocale () {
   try {
     const raw = storage.getItem('globalSetting')
     if (raw) {
       const parsed = JSON.parse(raw)
-      if (parsed && parsed.language) { return parsed.language }
+      if (parsed && parsed.language) { return resolveLocale(parsed.language) }
     }
   } catch (e) {
     console.error('storage init failed', e)
   }
-  return FALLBACK
+  // 全新安装：跟随系统语言与区域（§5.9.2）
+  return resolveLocale(MODE_SYSTEM)
 }
 
 const i18n = new VueI18n({

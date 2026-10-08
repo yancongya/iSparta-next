@@ -187,6 +187,7 @@ CEP 下弹窗要铺满时必须三件套同时做，缺一就会被内联样式 
 | `AGENTS.md` | 开发约定（本文） |
 | `docs/CEP-UPGRADE-SCOPE.md` | CEP 升级范围与双端边界（共有 vs 注入） |
 | `docs/PLAN-DUAL-TARGET.md` | 双端（桌面+CEP）计划与分工 |
+| `docs/PLAN-GUIDE-PAGES.md` | 引导页面升级计划（启动/安装/首启共 7 页） |
 | `docs/CHANGELOG.md` | 版本摘要（中文） |
 | `docs/BRIDGE.md` | 转换核桥接口冻结（ispartaAPI / node-env / processor） |
 | `docs/UPDATER.md` | 更新检查 / 自动更新现状 |

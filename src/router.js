@@ -1,6 +1,7 @@
 import Vue from 'vue'
 import Router from 'vue-router'
-import UiNextHome from './ui-next/views/Home.vue'
+// 根路由挂网关而非 Home：网关内部分流「工作台 / 首启引导」（见 docs/PLAN-GUIDE-PAGES.md §5.1）
+import RootGate from './ui-next/views/RootGate.vue'
 import { APP_NAME } from './brand'
 
 Vue.use(Router)
@@ -14,7 +15,7 @@ export default new Router({
     {
       path: '/',
       name: 'ui-next',
-      component: UiNextHome,
+      component: RootGate,
       meta: {
         title: APP_NAME
       }

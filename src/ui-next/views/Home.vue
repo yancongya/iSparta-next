@@ -37,7 +37,7 @@
           >
             <is-icon :name="compTreeOpen ? 'list' : 'layers'" />
           </button>
-          <button type="button" class="ib-iconbtn" :title="$t('helpTip') || '帮助'" @click="openLanding">
+          <button type="button" class="ib-iconbtn" :title="$t('obOpenGuide') || '使用引导'" @click="openOnboarding">
             <is-icon name="question" />
           </button>
           <button type="button" class="ib-iconbtn" :title="$t('defaultSetting')" @click="openGlobalSetting">
@@ -123,6 +123,16 @@
             </svg>
           </span>
           <span class="ib-rail__brand-text">{{ appName }}</span>
+        </button>
+
+        <!-- 使用引导：随时可重新调起（首启已自动弹过也能再打开） -->
+        <button
+          type="button"
+          class="ib-rail__btn ib-rail__btn--help"
+          :title="$t('obOpenGuide')"
+          @click="openOnboarding"
+        >
+          <is-icon name="question" size="sm" />
         </button>
 
         <!-- 视图切换：单按钮，图标跟当前模式走（任务列表 list ↔ 合成树 layers） -->
@@ -288,6 +298,8 @@ import updateService from '../../util/updateService'
 import hostAdapter, { getSourceAdapter } from '../../util/host-env'
 import CompTree from '../../components/compTree/compTree.vue'
 import { LANDING_URL } from '../../brand'
+// 顶栏「?」调起首启引导；落地页外链保留在引导末页（§5.1）
+import * as onboarding from '../onboarding/state'
 
 // 中间工具条列宽（px，与 tokens.css --is-rail-w 保持一致）
 const RAIL_W = 36
@@ -624,6 +636,10 @@ export default {
     },
     openLanding () {
       hostAdapter.openExternal(LANDING_URL)
+    },
+    /** 顶栏「?」：随时重新调起首启引导（完成过也照样能看） */
+    openOnboarding () {
+      onboarding.open()
     },
     onPickComps () {
       this.compTreeOpen = true
