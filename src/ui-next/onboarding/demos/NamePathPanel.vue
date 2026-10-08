@@ -1,7 +1,7 @@
 <template>
   <div class="pv">
-    <!-- 左：拼路径（预设 → 模板 → 变量积木） -->
-    <div class="pv__col">
+    <!-- 上：拼路径（预设 → 模板 → 变量积木） -->
+    <div class="pv__build">
       <p class="pv-label">{{ $t('obNamingPath') }}</p>
       <div class="pv-presets" role="group">
         <button
@@ -39,10 +39,10 @@
       </div>
     </div>
 
-    <!-- 右：真实路径即时预览（跟着左栏的模板与上一页的分词一起变） -->
-    <div class="pv__col pv__col--out">
-      <p class="pv-label">{{ $t('obNamingRealPath') }}</p>
-      <p class="pv-preview">{{ resolvedPath }}</p>
+    <!-- 下：真实路径 —— 整行横条，跟着上面的模板与上一页的分词一起变 -->
+    <div class="pv-out">
+      <span class="pv-out__label">{{ $t('obNamingRealPath') }}</span>
+      <p class="pv-out__path" :title="resolvedPath">{{ pathShown }}</p>
     </div>
   </div>
 </template>
@@ -50,7 +50,7 @@
 <script>
 /**
  * 第 5 页 · 输出路径变量化
- * 与落地页 #naming 右栏一致：预设模板 + 变量积木点选插入 + 真实路径即时预览。
+ * 预设模板 + 变量积木点选插入 + 真实路径即时预览（结果走底部整行横条）。
  * {name} 取上一页的切分结果（naming-store），其余取演示上下文；
  * 纯占位替换，**不读写任何真实路径**。
  */
@@ -87,7 +87,22 @@ export default {
         { key: 'custom', label: this.$t('obNamingPresetCustom') }
       ]
     },
-    resolvedPath () { return this.resolveVars(this.pathTpl) }
+    resolvedPath () { return this.resolveVars(this.pathTpl) },
+    /**
+     * 单行显示用：超长时从**左**截断 —— 路径尾部（目标目录 / 文件名）才是要看的，
+     * 全文另外挂在 title 上。预算按半角宽度算（CJK 记 2），保证 CEP 520 面板下
+     * 一次截到位，不会再被 CSS 二次裁掉尾巴。
+     */
+    pathShown () {
+      const full = this.resolvedPath || ''
+      const budget = 50
+      let w = 0
+      for (let i = full.length - 1; i >= 0; i--) {
+        w += full.charCodeAt(i) > 0x2e80 ? 2 : 1
+        if (w > budget) { return '…' + full.slice(i + 1) }
+      }
+      return full
+    }
   },
   methods: {
     /** {name} 走上一页的切分结果，其余走演示上下文 */
@@ -126,16 +141,19 @@ export default {
 </script>
 
 <style scoped>
-/* 横向双栏：左拼路径、右看结果。原来是竖着一路排下来，
-   在 CEP 那种矮窗口里必然要上下滚 —— 拆成两栏后单页高度直接砍半。 */
+/* 单列：上面拼路径，下面一行看结果。
+   左右分栏会把「真实路径」挤成窄条，稍长的路径就折成好几行；
+   改成占满宽度的整行横条，路径单行显示，页面也不高。 */
 .pv {
   display: grid;
-  grid-template-columns: minmax(0, 1.12fr) minmax(0, 0.88fr);
-  gap: var(--is-s-3);
-  align-items: stretch;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--is-s-2);
+  /* mockup 面板例外：这里模拟的是真实路径设置，模板与预览路径要能选中复制 */
+  user-select: text;
+  -webkit-user-select: text;
 }
 
-.pv__col {
+.pv__build {
   display: flex;
   flex-direction: column;
   min-width: 0;
@@ -144,8 +162,6 @@ export default {
   border: 1px solid var(--is-border);
   background: var(--is-card);
 }
-
-.pv__col--out { background: var(--is-inset); }
 
 .pv-presets {
   display: flex;
@@ -191,7 +207,10 @@ export default {
   color: var(--is-text);
   font-family: var(--is-mono);
   font-size: var(--is-fs-sm);
+  transition: border-color var(--is-dur-fast) var(--is-ease-std);
 }
+
+.pv-input:hover { border-color: var(--is-border-strong); }
 
 .pv-input:focus {
   outline: none;
@@ -241,19 +260,44 @@ export default {
   color: var(--is-text-3);
 }
 
-/* 预览块撑满右栏剩余高度 —— 不用再给 min-height 去「占位」 */
-.pv-preview {
-  flex: 1 1 auto;
-  margin: 0;
-  padding: 10px 11px;
+/* 真实路径横条：标签固定、路径吃满剩余宽度，单行显示。
+   超长由 pathShown 从左截断（尾部目录名可见），CSS 只兜底防溢出。 */
+.pv-out {
+  display: flex;
+  align-items: center;
+  gap: var(--is-s-2);
+  min-width: 0;
+  padding: 9px 11px;
   border-radius: var(--is-r-sm);
   border: 1px dashed var(--is-border);
-  background: var(--is-card);
+  background: var(--is-inset);
+  transition: border-color var(--is-dur-fast) var(--is-ease-std),
+    background-color var(--is-dur-fast) var(--is-ease-std);
+}
+
+.pv-out:hover {
+  border-color: var(--is-border-strong);
+  background: var(--is-elevated);
+}
+
+.pv-out__label {
+  flex: 0 0 auto;
+  font-family: var(--is-mono);
+  font-size: var(--is-fs-xs);
+  letter-spacing: 0.04em;
+  color: var(--is-text-3);
+}
+
+.pv-out__path {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
   color: var(--is-text);
   font-family: var(--is-mono);
   font-size: var(--is-fs-sm);
-  line-height: 1.6;
-  word-break: break-all;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -261,10 +305,5 @@ export default {
   .pv-var { transition: none; }
 
   .pv-var:hover { transform: none; }
-}
-
-/* CEP 极窄：回落到单列，靠 .ob-step 自己的滚动兜底 */
-@media (max-width: 560px) {
-  .pv { grid-template-columns: 1fr; }
 }
 </style>

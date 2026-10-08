@@ -64,6 +64,16 @@ export default {
   border-radius: var(--is-r-md);
   border: 1px solid var(--is-border);
   background: var(--is-card);
+  transition: border-color var(--is-dur-fast) var(--is-ease-std),
+    background-color var(--is-dur-fast) var(--is-ease-std),
+    transform var(--is-dur-base) var(--is-ease-out);
+}
+
+/* 整卡一起抬：图标+标题+说明作为一个整体动，不做局部动画 */
+.ob-mini__item:hover {
+  border-color: var(--is-border-hi);
+  background: var(--is-elevated);
+  transform: translateY(-2px);
 }
 
 .ob-mini__ico {
@@ -87,5 +97,14 @@ export default {
 
 @media (max-width: 480px) {
   .ob-mini { grid-template-columns: 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ob-mini__item {
+    transition: border-color var(--is-dur-fast) var(--is-ease-std),
+      background-color var(--is-dur-fast) var(--is-ease-std);
+  }
+
+  .ob-mini__item:hover { transform: none; }
 }
 </style>

@@ -52,7 +52,11 @@ export default {
   display: flex;
   flex-direction: column;
   align-items: center;
+  transition: transform var(--is-dur-base) var(--is-ease-out);
 }
+
+/* 整张卡（图形 + 标题 + 说明）一起抬，图形框同时提亮 —— 不做局部动画 */
+.ob-way:hover { transform: translateY(-2px); }
 
 .ob-way__art {
   width: 100%;
@@ -64,6 +68,13 @@ export default {
   border-radius: var(--is-r-md);
   border: 1px solid var(--is-border);
   background: var(--is-inset);
+  transition: border-color var(--is-dur-fast) var(--is-ease-std),
+    background-color var(--is-dur-fast) var(--is-ease-std);
+}
+
+.ob-way:hover .ob-way__art {
+  border-color: var(--is-border-hi);
+  background: var(--is-elevated);
 }
 
 .ob-way__t {
@@ -85,5 +96,11 @@ export default {
   .ob-ways { grid-template-columns: 1fr; }
 
   .ob-way__art { min-height: 88px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ob-way { transition: none; }
+
+  .ob-way:hover { transform: none; }
 }
 </style>

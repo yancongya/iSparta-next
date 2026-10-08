@@ -119,7 +119,13 @@ export default {
 </script>
 
 <style scoped>
-.cm { display: flex; flex-direction: column; }
+.cm {
+  display: flex;
+  flex-direction: column;
+  /* mockup 面板例外：这里模拟的是真实命名面板，名字要能选中复制 */
+  user-select: text;
+  -webkit-user-select: text;
+}
 
 .cm-row {
   display: flex;
@@ -137,7 +143,10 @@ export default {
   color: var(--is-text);
   font-family: var(--is-mono);
   font-size: var(--is-fs-md);
+  transition: border-color var(--is-dur-fast) var(--is-ease-std);
 }
+
+.cm-input:hover { border-color: var(--is-border-strong); }
 
 .cm-input:focus {
   outline: none;

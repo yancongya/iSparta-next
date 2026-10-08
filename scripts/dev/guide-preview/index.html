@@ -175,6 +175,10 @@ button{font-family:inherit;color:inherit}
   border-radius:var(--is-r-lg);box-shadow:var(--is-shadow-lg);
   display:flex;flex-direction:column;overflow:visible;
   transition:width var(--is-dur-slow) var(--is-ease-out),height var(--is-dur-slow) var(--is-ease-out);
+  /* 指导面板里的文案默认不可选 —— 选中高亮会让人以为这是可复制的文档。
+     两个 mockup 面板（.gp 输出设置 / .np 命名与路径）是「模拟产品界面」，
+     里面的名字与路径要能选中复制，由它们自己把 user-select 放回 text。 */
+  user-select:none;-webkit-user-select:none;
 }
 .frame[data-runtime="desktop"]{width:760px;height:500px}
 .frame[data-runtime="cep"]{width:520px;height:560px}
@@ -195,6 +199,7 @@ button{font-family:inherit;color:inherit}
   width:6px;height:6px;border-radius:var(--is-r-pill);background:var(--is-track);
   transition:width var(--is-dur-base) var(--is-ease-overshoot),background var(--is-dur-base) var(--is-ease-std);
 }
+.dots i:hover{background:var(--is-border-hi)}
 .dots i.on{width:20px;background:var(--is-accent)}
 
 /* --- 屏幕 --- */
@@ -218,13 +223,18 @@ button{font-family:inherit;color:inherit}
 .card{
   background:var(--is-card);border:1px solid var(--is-border);border-radius:var(--is-r-md);
   padding:var(--is-s-3) var(--is-s-2);text-align:center;
+  transition:border-color var(--is-dur-fast) var(--is-ease-std),background var(--is-dur-fast) var(--is-ease-std),transform var(--is-dur-base) var(--is-ease-out);
 }
+/* 卡片不可点，但整块一起抬一下：光标划过时才有「这是一张卡」的实感 */
+.card:hover{border-color:var(--is-border-hi);background:var(--is-elevated);transform:translateY(-2px)}
 .card .t{font-size:var(--is-fs-sm);font-weight:var(--is-fw-semi)}
 .card .d{font-size:var(--is-fs-xs);color:var(--is-text-3);margin-top:2px}
 .chip{
   font-family:var(--is-mono);font-size:var(--is-fs-xs);color:var(--is-text-3);
   border:1px solid var(--is-border);border-radius:var(--is-r-pill);padding:1px 8px;
+  transition:border-color var(--is-dur-fast) var(--is-ease-std),color var(--is-dur-fast) var(--is-ease-std);
 }
+.chip:hover{border-color:var(--is-border-hi);color:var(--is-text-2)}
 
 /* --- 页脚 --- */
 .foot{
@@ -406,12 +416,16 @@ button{font-family:inherit;color:inherit}
   list-style:none;margin:0;padding:0;width:100%;max-width:600px;
   display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--is-s-3);
 }
-.way{display:flex;flex-direction:column;align-items:center;min-width:0}
+.way{display:flex;flex-direction:column;align-items:center;min-width:0;transition:transform var(--is-dur-base) var(--is-ease-out)}
+/* 整张卡（图形 + 标题 + 说明）一起抬，图形框同时提亮 */
+.way:hover{transform:translateY(-2px)}
 .way__art{
   width:100%;min-height:112px;display:flex;align-items:center;justify-content:center;
   padding:var(--is-s-3);border:1px solid var(--is-border);
   border-radius:var(--is-r-md);background:var(--is-inset);
+  transition:border-color var(--is-dur-fast) var(--is-ease-std),background var(--is-dur-fast) var(--is-ease-std);
 }
+.way:hover .way__art{border-color:var(--is-border-hi);background:var(--is-elevated)}
 .way__art svg{width:120px;height:84px;display:block;overflow:visible}
 .way__t{margin:var(--is-s-3) 0 0;font-size:var(--is-fs-md);font-weight:var(--is-fw-semi);color:var(--is-text)}
 .way__d{margin:2px 0 0;font-size:var(--is-fs-sm);line-height:1.55;color:var(--is-text-2);text-align:center}
@@ -422,7 +436,9 @@ button{font-family:inherit;color:inherit}
 .step-note{margin:0;max-width:52ch;font-size:var(--is-fs-xs);line-height:1.6;color:var(--is-text-3);text-align:center;text-wrap:balance}
 
 /* --- 输出：SIZE GATE（与 Vue 侧 OutputGate.vue 同步：横向布局 · 单行日志 · 不竖滚） --- */
-.gp{display:grid;grid-template-columns:minmax(0,1.02fr) minmax(0,.98fr);gap:var(--is-s-3);width:100%;align-items:stretch}
+.gp{display:grid;grid-template-columns:minmax(0,1.02fr) minmax(0,.98fr);gap:var(--is-s-3);width:100%;align-items:stretch;
+  /* mockup 面板例外：这里模拟的是真实输出面板，数字/日志要能选中复制 */
+  user-select:text;-webkit-user-select:text;}
 .gp-stage,.gp-panel{
   display:flex;flex-direction:column;min-width:0;padding:var(--is-s-3);
   border:1px solid var(--is-border);border-radius:var(--is-r-lg);background:var(--is-card);
@@ -473,7 +489,10 @@ button{font-family:inherit;color:inherit}
   padding:4px 11px;border:1.5px solid var(--is-border);border-radius:var(--is-r-pill);
   background:var(--is-inset);cursor:pointer;
 }
+.gp-fmt-btn:hover{border-color:var(--is-border-hi)}
 .gp-fmt-btn.is-on{color:var(--is-accent);border-color:var(--is-accent);background:var(--is-accent-soft);font-weight:var(--is-fw-semi)}
+/* 结果卡与日志自带通过/超限状态色，hover 不碰描边（会盖掉状态语义），只加一层极轻的投影 */
+.gp-result:hover,.gp-log:hover{box-shadow:var(--is-shadow-xs)}
 /* 只留最新一行，永不出现滚动条 */
 .gp-log{
   margin:auto 0 0;padding:5px 10px;border:1px solid var(--is-border);border-radius:var(--is-r-sm);
@@ -490,29 +509,39 @@ button{font-family:inherit;color:inherit}
 .gp-field--wide{grid-column:1/-1}
 .gp-row{display:inline-flex;align-items:center;gap:var(--is-s-1);flex:0 0 auto}
 .gp-toggle{display:flex;align-items:center;gap:var(--is-s-2);min-width:0;font-size:var(--is-fs-sm);color:var(--is-text-2);cursor:pointer}
-.gp-toggle>span{min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.gp-toggle>span{min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;transition:color var(--is-dur-fast) var(--is-ease-std)}
+.gp-toggle:hover>span{color:var(--is-text)}
 .gp-toggle input,.gp-check{width:15px;height:15px;flex:0 0 auto;accent-color:var(--is-accent);cursor:pointer}
 .gp-field input[type="number"]{
   width:58px;padding:4px 6px;border:1.5px solid var(--is-border);border-radius:var(--is-r-sm);
   background:var(--is-inset);color:var(--is-text);font-family:var(--is-mono);font-size:var(--is-fs-sm);text-align:center;
+  transition:border-color var(--is-dur-fast) var(--is-ease-std);
 }
+.gp-field input[type="number"]:hover{border-color:var(--is-border-strong)}
 .gp-field input[type="number"]:focus{outline:none;border-color:var(--is-accent)}
 .gp-unit{display:inline-flex;overflow:hidden;border:1.5px solid var(--is-border);border-radius:var(--is-r-sm)}
-.gp-unit button{border:0;padding:6px 7px;background:var(--is-inset);color:var(--is-text-3);font-family:var(--is-mono);font-size:10px;font-weight:var(--is-fw-bold);cursor:pointer}
+.gp-unit button{border:0;padding:6px 7px;background:var(--is-inset);color:var(--is-text-3);font-family:var(--is-mono);font-size:10px;font-weight:var(--is-fw-bold);cursor:pointer;transition:background var(--is-dur-fast) var(--is-ease-std),color var(--is-dur-fast) var(--is-ease-std)}
+/* 未选中那半片才有 hover：选中态已是强调色，再变反而晃 */
+.gp-unit button:hover{background:var(--is-hover);color:var(--is-text)}
 .gp-unit button.is-on{background:var(--is-accent);color:var(--is-on-accent)}
 .gp-hint{margin:0 0 var(--is-s-3);font-size:var(--is-fs-xs);line-height:1.6;color:var(--is-text-3)}
 .gp-actions{display:flex;margin-top:auto;padding-top:var(--is-s-2)}
 .gp-actions .btn{padding:6px 12px;font-size:var(--is-fs-sm)}
 
-/* --- 命名：分词（第 4 页）单栏，路径变量（第 5 页）横向双栏 --- */
-.np{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--is-s-3);width:100%}
+/* --- 命名：分词（第 4 页）与路径变量（第 5 页）都是单栏 --- */
+.np{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--is-s-3);width:100%;
+  /* mockup 面板例外：这里模拟的是真实命名/路径面板，名字与路径要能选中复制 */
+  user-select:text;-webkit-user-select:text;}
 .np--single{grid-template-columns:minmax(0,1fr)}
 .np--single .np-tokens{min-height:104px}
-/* 路径页：左拼路径、右看结果 —— 竖着排必滚，拆两栏高度砍半 */
-.np--path{grid-template-columns:minmax(0,1.12fr) minmax(0,.88fr)}
+/* 路径页：上面拼路径，下面一行看结果 —— 左右分栏会把真实路径挤成窄条，稍长就折行 */
+.np--path{grid-template-columns:minmax(0,1fr);gap:var(--is-s-2)}
 .np-panel{display:flex;flex-direction:column;padding:var(--is-s-3);border:1px solid var(--is-border);border-radius:var(--is-r-md);background:var(--is-card)}
-.np-panel--out{background:var(--is-inset)}
-.np--path .np-preview{flex:1 1 auto;min-height:0}
+/* 真实路径横条：标签固定、路径吃满剩余宽度、单行显示 */
+.np-out{display:flex;align-items:center;gap:var(--is-s-2);min-width:0;padding:9px 11px;border:1px dashed var(--is-border);border-radius:var(--is-r-sm);background:var(--is-inset);
+  transition:border-color var(--is-dur-fast) var(--is-ease-std),background var(--is-dur-fast) var(--is-ease-std)}
+.np-out:hover{border-color:var(--is-border-strong);background:var(--is-elevated)}
+.np-out__label{flex:0 0 auto;font-family:var(--is-mono);font-size:var(--is-fs-xs);letter-spacing:.04em;color:var(--is-text-3)}
 .np-label{margin:0 0 var(--is-s-2);font-family:var(--is-mono);font-size:var(--is-fs-xs);letter-spacing:.04em;color:var(--is-text-3)}
 .np-sublabel{margin:0 0 var(--is-s-1);font-size:var(--is-fs-xs);color:var(--is-text-3)}
 .np-row{display:flex;gap:var(--is-s-2);margin-bottom:var(--is-s-3)}
@@ -520,7 +549,9 @@ button{font-family:inherit;color:inherit}
   flex:1 1 auto;min-width:0;width:100%;padding:7px 11px;border:1.5px solid var(--is-border);
   border-radius:var(--is-r-sm);background:var(--is-inset);color:var(--is-text);
   font-family:var(--is-mono);font-size:var(--is-fs-sm);
+  transition:border-color var(--is-dur-fast) var(--is-ease-std);
 }
+.np-input:hover{border-color:var(--is-border-strong)}
 .np-input:focus{outline:none;border-color:var(--is-accent)}
 .np-funnel{
   flex:0 0 auto;width:36px;height:36px;display:grid;place-items:center;
@@ -561,10 +592,11 @@ button{font-family:inherit;color:inherit}
 .np-var:hover{border-color:var(--is-accent)}
 .np-var__key{flex:0 0 auto;color:var(--is-accent);font-weight:var(--is-fw-bold)}
 .np-var__val{min-width:0;max-width:96px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:var(--is-text-3)}
+/* 单行显示。超长由 JS 从左截断（尾部目录名可见），这里只兜底防溢出 */
 .np-preview{
-  flex:1 1 auto;min-height:3.2em;margin:0;padding:10px 11px;border:1px dashed var(--is-border);
-  border-radius:var(--is-r-sm);background:var(--is-inset);color:var(--is-text);
-  font-family:var(--is-mono);font-size:var(--is-fs-sm);line-height:1.6;word-break:break-all;
+  flex:1 1 auto;min-width:0;margin:0;padding:0;border:0;background:none;color:var(--is-text);
+  font-family:var(--is-mono);font-size:var(--is-fs-sm);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
 
 /* --- CEP 极窄（520）：输出单列、命名单列、导入三列降档 --- */
@@ -576,10 +608,11 @@ button{font-family:inherit;color:inherit}
 .frame[data-runtime="cep"] .way__art svg{width:96px;height:67px}
 .frame[data-runtime="cep"] .way__d{font-size:var(--is-fs-xs)}
 
-.no-motion .gp-fill,.no-motion .gp-limit,.no-motion .gp-result,.no-motion .gp-size.is-tick,.no-motion .gp-log,.no-motion .np-tok,.no-motion .np-var,.no-motion .np-preset{transition:none!important;animation:none!important}
+.no-motion .card,.no-motion .way,.no-motion .dots i,.no-motion .gp-fill,.no-motion .gp-limit,.no-motion .gp-result,.no-motion .gp-size.is-tick,.no-motion .gp-log,.no-motion .np-tok,.no-motion .np-var,.no-motion .np-preset{transition:none!important;animation:none!important}
+.no-motion .card:hover,.no-motion .way:hover{transform:none!important}
 @media (prefers-reduced-motion:reduce){
-  .gp-fill,.gp-limit,.gp-result,.gp-size.is-tick,.gp-log,.np-tok,.np-var,.np-preset{transition:none!important;animation:none!important}
-  .np-tok:hover,.np-var:hover{transform:none!important}
+  .card,.way,.dots i,.gp-fill,.gp-limit,.gp-result,.gp-size.is-tick,.gp-log,.np-tok,.np-var,.np-preset{transition:none!important;animation:none!important}
+  .card:hover,.way:hover,.np-tok:hover,.np-var:hover{transform:none!important}
 }
 </style>
 </head>
@@ -863,8 +896,8 @@ button{font-family:inherit;color:inherit}
               <input id="npTpl" class="np-input" type="text" spellcheck="false" value="{srcPath}" aria-label="变量路径" />
               <div class="np-vars" id="npVars"></div>
             </div>
-            <div class="np-panel np-panel--out">
-              <p class="np-label" data-t="npReal">真实路径</p>
+            <div class="np-out">
+              <span class="np-out__label" data-t="npReal">真实路径</span>
               <p class="np-preview" id="npPreview"></p>
             </div>
           </div>
@@ -1722,9 +1755,21 @@ button{font-family:inherit;color:inherit}
     if (opts.syncInput !== false && npName) npName.value = npJoined()
     npPaintPreview()
   }
+  function npShort (full) {
+    // 单行显示：超长从左截断，尾部目录/文件名可见。预算按半角宽度算（CJK 记 2）
+    var budget = 50
+    var w = 0
+    for (var i = full.length - 1; i >= 0; i--) {
+      w += full.charCodeAt(i) > 0x2e80 ? 2 : 1
+      if (w > budget) return '…' + full.slice(i + 1)
+    }
+    return full
+  }
   function npPaintPreview () {
     if (!npPreview || !npTpl) return
-    npPreview.textContent = npResolve(npTpl.value) || '—'
+    var full = npResolve(npTpl.value) || '—'
+    npPreview.textContent = npShort(full)
+    npPreview.title = full
     var chip = npVars && npVars.querySelector('[data-key="name"] .np-var__val')
     if (chip) chip.textContent = npJoined() || NP_CTX.name
   }

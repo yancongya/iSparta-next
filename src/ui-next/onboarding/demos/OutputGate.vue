@@ -305,6 +305,9 @@ export default {
   gap: var(--is-s-3);
   /* 两张卡等高：舞台的日志用 margin-top:auto 钉在底部，右侧按钮同理 */
   align-items: stretch;
+  /* mockup 面板例外：这里模拟的是真实输出面板，数字/日志要能选中复制 */
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 .gate__stage,
@@ -358,7 +361,8 @@ export default {
   border: 1.5px solid var(--is-border);
   background: var(--is-inset);
   transition: border-color var(--is-dur-base) var(--is-ease-std),
-    background-color var(--is-dur-base) var(--is-ease-std);
+    background-color var(--is-dur-base) var(--is-ease-std),
+    box-shadow var(--is-dur-fast) var(--is-ease-std);
 }
 
 .gate-result.is-pass {
@@ -500,6 +504,11 @@ export default {
   font-weight: var(--is-fw-semi);
 }
 
+/* 结果卡与日志是只读展示，且自带通过/超限状态色 ——
+   hover 不去碰描边色（会盖掉状态语义），只加一层极轻的投影。 */
+.gate-result:hover,
+.gate-log:hover { box-shadow: var(--is-shadow-xs); }
+
 /* ---------- 试次日志：只留最新一行，永不产生滚动条 ---------- */
 .gate-log {
   margin: auto 0 0;
@@ -514,6 +523,7 @@ export default {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  transition: box-shadow var(--is-dur-fast) var(--is-ease-std);
   animation: gate-in var(--is-dur-base) var(--is-ease-out) both;
 }
 
@@ -587,7 +597,10 @@ export default {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+  transition: color var(--is-dur-fast) var(--is-ease-std);
 }
+
+.gate-toggle:hover > span { color: var(--is-text); }
 
 .gate-toggle input,
 .gate-check {
@@ -608,9 +621,12 @@ export default {
   font-family: var(--is-mono);
   font-size: var(--is-fs-sm);
   text-align: center;
+  transition: border-color var(--is-dur-fast) var(--is-ease-std);
 }
 
 .gate-num--limit { width: 64px; }
+
+.gate-num:hover { border-color: var(--is-border-strong); }
 
 .gate-num:focus {
   outline: none;
@@ -641,6 +657,12 @@ export default {
   cursor: pointer;
   transition: background-color var(--is-dur-fast) var(--is-ease-std),
     color var(--is-dur-fast) var(--is-ease-std);
+}
+
+/* 未选中那半片才有 hover：选中态已是强调色，再变反而晃 */
+.gate-unit__btn:hover {
+  color: var(--is-text);
+  background: var(--is-hover);
 }
 
 .gate-unit__btn.is-on {

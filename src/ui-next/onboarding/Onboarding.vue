@@ -254,6 +254,11 @@ export default {
   flex-direction: column;
   background: var(--is-bg);
   color: var(--is-text);
+  /* 指导面板里的文案默认不可选 —— 选中高亮会让人以为这是可复制的文档。
+     三个 mockup 面板（.gate / .cm / .pv）是「模拟产品界面」，
+     里面的名字与路径要能选中复制，由各自组件把 user-select 放回 text。 */
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 /* ---------- 顶栏 ---------- */
@@ -387,6 +392,10 @@ export default {
   width: 20px;
   background: var(--is-accent);
 }
+
+/* 光标扫过整排进度点也要有反馈，否则划过毫无变化 */
+.ob-dot:hover { background: var(--is-border-hi); }
+.ob-dot.is-past:hover { background: var(--is-text-3); }
 
 /* ---------- 内容区 ---------- */
 .ob-screen {
@@ -551,6 +560,16 @@ export default {
   border-radius: var(--is-r-md);
   border: 1px solid var(--is-border);
   background: var(--is-card);
+  transition: border-color var(--is-dur-fast) var(--is-ease-std),
+    background-color var(--is-dur-fast) var(--is-ease-std),
+    transform var(--is-dur-base) var(--is-ease-out);
+}
+
+/* 卡片不可点，但整块一起抬一下 —— 光标划过时才有「这是一张卡」的实感 */
+.ob-card:hover {
+  border-color: var(--is-border-hi);
+  background: var(--is-elevated);
+  transform: translateY(-2px);
 }
 
 .ob-card__ico {
@@ -585,6 +604,15 @@ export default {
   border-radius: var(--is-r-md);
   border: 1px solid var(--is-border);
   background: var(--is-card);
+  transition: border-color var(--is-dur-fast) var(--is-ease-std),
+    background-color var(--is-dur-fast) var(--is-ease-std),
+    transform var(--is-dur-base) var(--is-ease-out);
+}
+
+.ob-line:hover {
+  border-color: var(--is-border-hi);
+  background: var(--is-elevated);
+  transform: translateY(-2px);
 }
 
 .ob-line__idx {
@@ -618,6 +646,15 @@ export default {
   .ob-h1 { font-size: var(--is-fs-xl); }
   .ob-h2 { font-size: var(--is-fs-lg); }
   .ob-cards { grid-template-columns: 1fr; }
+}
+
+/* 降低动效：卡片只留描边/底色变化，不位移 */
+@media (prefers-reduced-motion: reduce) {
+  .ob-card,
+  .ob-line { transition: border-color var(--is-dur-fast) var(--is-ease-std), background-color var(--is-dur-fast) var(--is-ease-std); }
+
+  .ob-card:hover,
+  .ob-line:hover { transform: none; }
 }
 </style>
 
