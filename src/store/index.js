@@ -5,6 +5,7 @@ import modules from './modules'
 
 import * as types from './mutation-types'
 import { fs, storage, os, path, getProcessBridge, ipc } from '../util/node-env'
+import { MODE_SYSTEM } from '../util/system-locale'
 import { resolveOutputPath } from '../util/outputPath'
 import appLog from '../ui-next/log'
 import i18n from '../i18n'
@@ -44,7 +45,10 @@ window.storage = storage;
 Vue.use(Vuex)
 // 原始数据
 const defaultState = {
-  language: 'zh-cn',
+  // 语言出厂默认＝跟随系统（'system' 哨兵），实际 locale 由 util/system-locale 解析。
+  // 若这里写死 'zh-cn'，「还没选过」与「用户显式选了简中」将无法区分，
+  // 系统语言永远探测不出来（§5.9.2）。
+  language: MODE_SYSTEM,
   options: {
     'frameRate': 25,
     'loop': 0,
@@ -164,6 +168,15 @@ if (!globalSetting) {
         parsed.options.outputTo.template = gTpl
         changed = true
       }
+    }
+    // 一次性语言迁移：旧版把 'zh-cn' 写死为出厂值，与「用户显式选了简中」不可区分。
+    // 按 docs/PLAN-GUIDE-PAGES.md §5.9 的决定「全部用户启用环境自适应」，把出厂遗留的
+    // 'zh-cn' 归零为 'system'，让老用户也跟随系统语言（承认一次性语言变化）。
+    // 迁移后 language 不再是 'zh-cn'，或已置标记，都不会重复触发。
+    if (parsed && parsed.language === 'zh-cn' && !parsed.langModeMigrated) {
+      parsed.language = MODE_SYSTEM
+      parsed.langModeMigrated = true
+      changed = true
     }
     if (changed) {
       window.storage.setItem('globalSetting', JSON.stringify(parsed))
