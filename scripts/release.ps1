@@ -11,7 +11,11 @@ param(
   [switch]$DryRun
 )
 
-$ErrorActionPreference = 'Stop'
+# 注意：PS 5.1 会把原生命令写到 stderr 的内容（如 git 的进度行
+# `From https://...`）当成错误记录；在 Stop 偏好下会立刻终止脚本 —— 本脚本曾因此在
+# git pull 那一行静默死掉，一个字都没执行、也没触发发版。故改 Continue，失败一律由
+# 下面的显式 LASTEXITCODE 检查判定。
+$ErrorActionPreference = 'Continue'
 $repo = 'yancongya/iSparta-next'
 
 Write-Host "==> 检查 git / gh ..." -ForegroundColor Cyan
