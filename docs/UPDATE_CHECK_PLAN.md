@@ -122,7 +122,7 @@ GET https://api.github.com/repos/yancongya/iSparta-next/releases/latest
 ### 3.3 签名生态（2026 现状，含两处易踩的过期信息）
 
 - **Azure Trusted Signing 已于 2026-01 改名 Azure Artifact Signing，且无开源免费额度**（Basic $9.99/月含 5000 次签名）；资格上组织限美/加/欧/英、个人仅限美/加 → **中国大陆个人开发者不可用**。
-- 免费路只剩 **SignPath Foundation**（托管 OV 证书，要求 OSI 许可证 + 公开仓库 + 已发布过版本，人工审核）。本项目三条均满足，是 Windows 侧唯一现实的免费方案。
+- 免费路只剩 **SignPath Foundation**（托管 OV 证书，要求 OSI 许可证 + 公开仓库 + 已发布过版本，人工审核）。本项目三条均满足（许可证为 **MIT**），是 Windows 侧唯一现实的免费方案。
 - EV 证书的 SmartScreen 即时豁免**已于 2024 取消**；未签名包每个版本信誉归零。
 - macOS：$99/年，个人 Account Holder 可申 Developer ID（D-U-N-S 仅组织需要）；10.15 起分发**必须公证**；`stapler` 不支持 zip；**Sequoia 15 已取消 Control-click 绕过**，必须走「系统设置 › 隐私与安全性 › 仍要打开」。
 

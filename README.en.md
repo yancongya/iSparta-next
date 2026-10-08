@@ -7,6 +7,7 @@
 [![Build Multi-Platform](https://img.shields.io/github/actions/workflow/status/yancongya/iSparta-next/build.yml?branch=master&label=CI)](https://github.com/yancongya/iSparta-next/actions/workflows/build.yml)
 [![Electron](https://img.shields.io/badge/Electron-28.3.3-47848F?logo=electron&logoColor=white)](https://www.electronjs.org/)
 [![Vue](https://img.shields.io/badge/Vue-2.x-42b883?logo=vue.js&logoColor=white)](https://vuejs.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/yancongya/iSparta-next/blob/master/LICENSE)
 
 **iSparta-next** is a desktop animated-image converter rebuilt from the classic [iSparta](https://github.com/iSparta/iSparta). It converts and compresses **APNG / Animated WebP / GIF / PNG sequences**.
 
@@ -298,4 +299,6 @@ Thanks to everyone who contributed to iSparta and its community forks.
 
 ## License
 
-See the license file in this repository; historically the project follows the original iSparta open-source license.
+**License: MIT** — full text in [`LICENSE`](LICENSE).
+
+Copyright (c) 2026 [yancongya](https://github.com/yancongya)

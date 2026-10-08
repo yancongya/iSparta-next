@@ -14,7 +14,7 @@
 | 条件 | 本项目 |
 | --- | --- |
 | 公开 GitHub 仓库 | 是 |
-| OSI 许可证 | 见仓库 LICENSE |
+| OSI 许可证 | 是 —— **MIT**（仓库根 [`LICENSE`](../LICENSE)，`package.json` 亦标 `"license": "MIT"`） |
 | 已有公开 Release | 是（Releases 页） |
 
 ## 申请步骤（人工，约数日审核）

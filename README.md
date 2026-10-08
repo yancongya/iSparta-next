@@ -7,6 +7,7 @@
 [![Build Multi-Platform](https://img.shields.io/github/actions/workflow/status/yancongya/iSparta-next/build.yml?branch=master&label=CI)](https://github.com/yancongya/iSparta-next/actions/workflows/build.yml)
 [![Electron](https://img.shields.io/badge/Electron-28.3.3-47848F?logo=electron&logoColor=white)](https://www.electronjs.org/)
 [![Vue](https://img.shields.io/badge/Vue-2.x-42b883?logo=vue.js&logoColor=white)](https://vuejs.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/yancongya/iSparta-next/blob/master/LICENSE)
 
 **iSparta-next** 是在停更多年的经典 [iSparta](https://github.com/iSparta/iSparta) 基础上重构的桌面动图转换工具，支持 **APNG / Animated WebP / GIF / PNG 序列** 之间的互转与压缩。
 
@@ -360,4 +361,6 @@ iSparta-next/
 
 ## License
 
-请以仓库内实际许可文件为准；历史项目沿用 iSparta 开源许可。
+**许可证：MIT** —— 完整条款见仓库根目录 [`LICENSE`](LICENSE)。
+
+Copyright (c) 2026 [yancongya](https://github.com/yancongya)
