@@ -1,4 +1,4 @@
-# 本地 CLI 触发 GitHub CI/CD 发版（打包在云端，不在本机）
+﻿# 本地 CLI 触发 GitHub CI/CD 发版（打包在云端，不在本机）
 # 用法:
 #   .\scripts\release.ps1                 # patch
 #   .\scripts\release.ps1 -Bump minor

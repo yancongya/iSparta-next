@@ -117,6 +117,8 @@ CI 会额外写入**稳定别名**（无版本号），供落地页 `releases/la
 
 ## 4. 失败时
 
+> **先看这条**：`.\scripts\release.ps1` 报「参数列表中缺少参量」或输出乱码（如 `瑙﹀彂`）→ 脚本被 Windows PowerShell 5.1 按 ANSI(GBK) 读取导致解析失败，一个字都没执行（所以**不会**产生重复发版）。**`release.ps1` 必须保持 UTF-8 with BOM** —— 含中文的 `.ps1` 在 PS 5.1 下读不出正确编码，改文件时别把 BOM 抹掉；也可用 PowerShell 7 运行绕过。
+
 1. `gh run view <id> --repo yancongya/iSparta-next --log-failed`
 2. **Bump version** 失败 → 分支保护禁止 bot 直推，或版本/tag 冲突
 3. **Collect & rename assets** 失败 → 检查 `latest*.yml` / 安装包是否生成；收集脚本须用通配符，勿写死不存在的文件名

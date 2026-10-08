@@ -48,7 +48,7 @@ node scripts\dev\check.js all                # lint + pack + ports
 
 **行尾约定**（见根目录 `.gitattributes`）：会被脚本 / 编辑器重写的文本（`scripts/dev/guide-preview/index.html`、`docs/PLAN-GUIDE-PAGES.md`、`src/util/updateCheck.js`、`targets/cep/CSXS/manifest.xml`）声明为 `text eol=lf`，此后行尾差异不再产生 diff；vendor 进来的 `forge.js` 三份拷贝声明 `-text` 冻结字节。**改这些文件不要再手工还原行尾。**
 
-**写仓库脚本的两个坑**：① Windows 上 Node 不能直接 `spawn` `.cmd`/`.bat`（Node 18.20+ 起为 CVE-2024-27980 抛 `EINVAL`），须过一层 shell —— 用 `scripts/dev/*.js` 里的 `spawnTool()`；② 同步版 `spawnSync` / `execFileSync` 在受限环境会 `EBUSY`，必须显式传 `stdio: ['ignore','pipe','ignore']`（见 `scripts/dev/check.js` 的 `capture()`），且**不要把失败静默吞掉**，否则「查不到」会被误报成「一切正常」。
+**写仓库脚本的三个坑**：① Windows 上 Node 不能直接 `spawn` `.cmd`/`.bat`（Node 18.20+ 起为 CVE-2024-27980 抛 `EINVAL`），须过一层 shell —— 用 `scripts/dev/*.js` 里的 `spawnTool()`；② 同步版 `spawnSync` / `execFileSync` 在受限环境会 `EBUSY`，必须显式传 `stdio: ['ignore','pipe','ignore']`（见 `scripts/dev/check.js` 的 `capture()`），且**不要把失败静默吞掉**，否则「查不到」会被误报成「一切正常」；③ 含中文的 `.ps1` **必须存为 UTF-8 with BOM** —— Windows PowerShell 5.1 读无 BOM 的脚本会按 ANSI(GBK) 解码，中文变乱码后直接语法报错、整脚本不执行（`scripts/release.ps1` 就踩过：报「参数列表中缺少参量」，且因为一个字没跑，**不会**误触发发版）。
 
 **图标唯一源**：`public/icons/icon-brand.svg`（品牌色 `#c8f542` + 深色播放标，**无文字**，图形居中并占满画布约 92%）。改 SVG 后再生成 png/ico/icns；同步：
 
