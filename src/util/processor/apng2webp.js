@@ -48,10 +48,12 @@ export default function (item, store, locale) {
       return _flatten(frameArgs)
     })
   }).then((frameArgs) => {
+    // 中间产物固定 ASCII 名 out.webp（与 index.js 的 apng2other / sizeGate 的 tmpPathFor 对齐；
+    // 曾写 <outputName>.webp，中文名虽能落盘但下游按 out.webp 取，必然 ENOENT）
     return action.exec(action.bin('webpmux'), [
       ...frameArgs,
       '-loop', String(item.options.loop),
-      '-o', path.join(item.basic.tmpOutputDir, item.options.outputName + '.webp')
+      '-o', path.join(item.basic.tmpOutputDir, 'out.webp')
     ], item, store, locale, { cwd: tmpDir })
   })
 }

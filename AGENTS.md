@@ -108,6 +108,7 @@ CI：`release.yml` 负责 bump、打包、挂 Release（notes 模板见该 workf
 ## 4. 任务列表交互（产品约定）
 
 - 右键：运行中可 **终止任务**；**删除项目** 运行中也可用
+- **任务列表与合成树两个视图**的右键菜单共用同一判定真相源：该行在 store 里的任务下标 + `process.schedule ∈ (0,1)`。禁止在组件里写死 `isRunning`（合成树曾写死 `false` + `index:-1`，长转换在该视图下无法中止）
 - `Delete` / `Backspace`：删除所选（非输入框）
 - `Ctrl+A`：全选；空白 **单击** 取消选择，**双击** 全选
 - 空白 **拖拽**：框选任务（`user-select:none` + preventDefault，避免选中文字/缩略图）
@@ -181,6 +182,21 @@ CEP 下弹窗要铺满时必须三件套同时做，缺一就会被内联样式 
 3. `panel-class` + `body.is-cep` 门控，覆盖 `width/height/max-height`
 
 细节与反例见 [`docs/CEP-UPGRADE-SCOPE.md`](docs/CEP-UPGRADE-SCOPE.md) §8。参考：`IsLogPanel.vue`、`globalSetting.vue`。
+
+## 8.4 转换核中间产物命名（强制）
+
+`src/util/processor/*` 的中间产物一律用 ASCII 名 `out.*` 落在 `item.basic.tmpOutputDir`，**用户可见的最终文件才用 `options.outputName`**。生产者与消费者必须同一真相源，改一处就得改全：
+
+| 中间产物 | 谁写 | 谁读 |
+| --- | --- | --- |
+| `out.png` | `pngs2apng`（apngasm）/ `apngCompress`（拷入 fileList[0] + apngopt 回写；gif2apng、webp2apng 也汇到它） | `index.js apng2other`（APNG 分支）、`sizeGate.tmpPathFor`、`apng2gif` 的输入自拷 |
+| `out-quant.png` | `apngCompress`（apngquant） | `apngCompress` → apngopt |
+| `out-gif.png` | `apng2gif` 自拷（**刻意不复用 `out.png`**） | `apng2gif.exe` |
+| `out.gif` | `apng2gif` | `index.js apng2other`（GIF 分支）、`sizeGate.tmpPathFor` |
+| `out.webp` | `apng2webp` | `index.js apng2other`（WEBP 分支）、`sizeGate.tmpPathFor` |
+
+- 反例（真实回归，v3.5.0 起双端同源）：`apng2gif` / `apng2webp` 曾写 `<outputName>.gif/.webp`，而 `apng2other` 按「ASCII 中间名」去找 `out.gif` / `out.webp` → 导出 GIF / WebP **必失败**，日志为 `转换中断 — ENOENT: copyfile '…\out.webp' -> '…\名称.webp'`（不是 CEP 独有 bug）。
+- `apng2gif` 的输入为什么叫 `out-gif.png`：sizeGate 重压时 `fileList[0]` 是 `out-quant.png`，若拷进 `out.png` 会把最终 APNG 产物覆盖掉。
 
 ## 9. 文档索引
 

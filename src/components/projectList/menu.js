@@ -130,16 +130,20 @@ function showDomMenu (payload, x, y) {
 
   const el = document.createElement('div')
   el.className = 'is-ctx-menu'
-  el.style.cssText = 'position:fixed;z-index:99999;min-width:160px;padding:4px 0;' +
-    'background:#2a2a2a;border:1px solid #444;border-radius:6px;box-shadow:0 8px 24px rgba(0,0,0,.35);' +
-    'font:12px/1.6 sans-serif;color:#eee;'
+  // 配色走设计令牌：原先硬编码深色，浅色主题的 CEP 面板里是一块黑砖
+  el.style.cssText = 'position:fixed;z-index:var(--is-z-dropdown,99999);min-width:160px;padding:4px 0;' +
+    'background:var(--is-card,#2a2a2a);border:1px solid var(--is-border,#444);' +
+    'border-radius:var(--is-r-md,6px);box-shadow:var(--is-shadow-lg,0 8px 24px rgba(0,0,0,.35));' +
+    'font:var(--is-fs-sm,12px)/1.6 var(--is-font,sans-serif);color:var(--is-text,#eee);'
   items.forEach(function (it) {
     const b = document.createElement('button')
     b.type = 'button'
     b.textContent = it.label
+    // 终止任务用警示色，和「打开目录」这类无害项区分开
+    const ink = it.id === 'stopItem' ? 'var(--is-warn,#c2410c)' : 'inherit'
     b.style.cssText = 'display:block;width:100%;text-align:left;padding:6px 14px;border:0;' +
-      'background:transparent;color:inherit;cursor:pointer;font:inherit;'
-    b.onmouseenter = function () { b.style.background = '#3d5a80' }
+      'background:transparent;color:' + ink + ';cursor:pointer;font:inherit;'
+    b.onmouseenter = function () { b.style.background = 'var(--is-hover,rgba(232,240,230,.08))' }
     b.onmouseleave = function () { b.style.background = 'transparent' }
     b.onclick = function (ev) {
       ev.preventDefault()
@@ -218,9 +222,11 @@ function bindMenuClicked () {
           // 桌面：多选时对已选中项批量终止（保持原语义）
           // CEP：右键不改选中，该项未选中时先定位再停
           const items = storeRef && storeRef.getters && storeRef.getters.getterItems
-          const it = items && payload && items[payload.index]
+          // 渲染下标可能因排序/过滤 ≠ store 下标，优先用 storeIndex
+          const si = (payload && payload.storeIndex != null) ? payload.storeIndex : (payload && payload.index)
+          const it = items && si != null && items[si]
           if (it && !it.isSelected && storeRef.dispatch) {
-            storeRef.dispatch('singleSelect', payload.index)
+            storeRef.dispatch('singleSelect', si)
           }
           if (storeRef && storeRef.dispatch) {
             storeRef.dispatch('stopSelectedTasks')
@@ -253,6 +259,8 @@ class rightMenu {
       compIndex: p.compIndex,
       compName: p.compName,
       index: (p.index != null ? p.index : index),
+      // 列表可能被排序/过滤，渲染下标 ≠ store 数组下标；变更类动作必须用 store 下标
+      storeIndex: (p.storeIndex != null ? p.storeIndex : null),
       locale: {
         openCompLoc: locale && locale.openCompLoc,
         openOriginal: locale && locale.openOriginal,

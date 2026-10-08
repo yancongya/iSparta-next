@@ -795,9 +795,11 @@ export default {
       var procState = this.stateOf(project && project.process)
       var isRunning = procState === 'running'
       var basic = (project && project.basic) || {}
+      // projectList 会被排序/过滤，渲染下标 ≠ store 下标；终止任务按 store 下标定位
+      var storeIndex = this.$store.getters.getterItems.indexOf(project)
       rightMenu.init(
         this.$store,
-        Object.assign({}, basic, { isRunning: isRunning, index: index }),
+        Object.assign({}, basic, { isRunning: isRunning, index: index, storeIndex: storeIndex }),
         index,
         this.isMultiItems,
         locale

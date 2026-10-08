@@ -44,9 +44,13 @@ function outputPathFor (item, format) {
   return path.join(item.basic.outputPath, item.options.outputName + ext)
 }
 
+/**
+ * 中间产物一律 ASCII 名 out.<ext>（apngCompress / pngs2apng / apng2gif / apng2webp 的落盘名），
+ * 最终文件名才用 outputName —— 两侧必须同一真相源，否则重压后 copy 必 ENOENT。
+ */
 function tmpPathFor (item, format) {
   const ext = format === TYPE.GIF ? '.gif' : format === TYPE.WEBP ? '.webp' : '.png'
-  return path.join(item.basic.tmpOutputDir, item.options.outputName + ext)
+  return path.join(item.basic.tmpOutputDir, 'out' + ext)
 }
 
 function restoreMasterApng (item) {
@@ -62,7 +66,7 @@ function restoreMasterApng (item) {
 function reExportFormat (item, format, store, locale) {
   if (format === TYPE.APNG) {
     return fs.copy(
-      path.join(item.basic.tmpOutputDir, item.options.outputName + '.png'),
+      tmpPathFor(item, TYPE.APNG),
       outputPathFor(item, TYPE.APNG)
     )
   }

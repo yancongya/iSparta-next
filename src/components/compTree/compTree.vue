@@ -189,6 +189,42 @@ export default {
         return []
       }
     },
+    /**
+     * 合成节点 ↔ store 任务的匹配键。
+     * 只用 index 不行：AE 里多个合成的 index 可能同为 0，必须带名字（与勾选镜像同一约定）。
+     */
+    compTaskKey (node) {
+      return Number(node && node.index) + ':' + String((node && node.name) || '')
+    },
+    /** 该合成在 store 里的任务下标；尚未加入任务返回 -1（列表顺序即任务下标） */
+    taskIndexOf (node) {
+      if (!node) { return -1 }
+      const key = this.compTaskKey(node)
+      const items = this.storeItems()
+      for (let i = 0; i < items.length; i++) {
+        const b = items[i] && items[i].basic
+        if (!b || b.type !== 'Comp') { continue }
+        if (Number(b.compIndex) + ':' + String(b.compName || '') === key) { return i }
+      }
+      return -1
+    },
+    /**
+     * 该行是否可「终止任务」：与任务列表同判据（schedule ∈ (0,1) 即进行中）。
+     * 批处理锁定中且该任务已选中时也放行 —— 终止是整批 cancelAll，
+     * 与任务列表右键选中行的语义一致。
+     */
+    taskStoppable (node) {
+      const i = this.taskIndexOf(node)
+      if (i < 0) { return false }
+      const it = this.storeItems()[i]
+      const s = it && it.process && it.process.schedule
+      if (typeof s === 'number' && s > 0 && s < 1) { return true }
+      try {
+        return !!(this.$store.getters.getterLocked && it && it.isSelected)
+      } catch (e) {
+        return false
+      }
+    },
     /** store 已有 Comp 任务时，勾选以 isSelected 为准；空态树仍是「待添加」本地选择 */
     storeHasCompTasks () {
       const items = this.storeItems()
@@ -346,6 +382,9 @@ export default {
         window.__ispartaCtxY = ev && ev.clientY
       }
       var locale = this.$i18n && this.$i18n.messages && this.$i18n.messages[this.$i18n.locale]
+      // 该合成若已加入任务，就带上它的真实下标与运行态：
+      // 否则「终止任务」永远不出现（原先写死 false / -1），长转换在合成树视图下无法中止
+      var taskIndex = this.taskIndexOf(node)
       rightMenu.init(
         this.$store,
         {
@@ -354,10 +393,11 @@ export default {
           compName: node.name,
           projectPath: node.projectPath,
           inputPath: node.projectPath,
-          isRunning: false,
-          index: -1
+          isRunning: this.taskStoppable(node),
+          index: taskIndex,
+          storeIndex: taskIndex
         },
-        -1,
+        taskIndex,
         false,
         locale
       )
