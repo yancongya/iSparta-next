@@ -128,6 +128,7 @@ All three platforms are built by GitHub Actions. **macOS packages are unsigned**
 
 ### Workflow
 
+- **First-run onboarding** — a 7-step tour (import → output → naming → paths → AE) on first launch, skippable and only shown once  
 - **Batch** — many tasks, per-task options, batch start, shared output dir  
 - **Drag & paste** — files/folders or pasted screenshots  
 - **Path templates** — source / beside / custom with variables  
@@ -259,8 +260,9 @@ Roadmap: [`docs/compose/ROADMAP-isparta-next.md`](docs/compose/ROADMAP-isparta-n
 
 ## Languages
 
-UI language in settings:
+UI language in settings (follows the system by default):
 
+- Follow system  
 - 简体中文  
 - 繁體中文  
 - English  
