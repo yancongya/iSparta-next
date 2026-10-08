@@ -151,6 +151,8 @@ CI：`release.yml` 负责 bump、打包、挂 Release（notes 模板见该 workf
 - **Web 框架双端共用 Vue 2**；**压缩/合成只用 `src/util/processor/*`**，禁止在 CEP 另写编码链。AE 侧 jsx 负责选合成与渲序列，编码仍进 processor。
 - **禁止简化版 UI**：扩展完整复用桌面工作台（列表/设置/命名/路径）；AE 特殊化仅通过 **注入/适配层**（jsx 宿主、合成输入源、host adapter），不得维护平行精简面板。
 - **双端一起更**：同一 NSIS/Release 更新桌面与 AE 扩展；扩展不单独热更。桌面 electron-updater 完成后由应用自检并刷新 CEP 目录；CEP 内不跑 electron-updater。
+- **CEP 的更新路径（Windows）**：AE 面板不再只做「前往下载」——面板后台下**同一个官方安装包**（`src/util/cepUpdater.js` + 桥的 `updater:*` 通道），下载完成后主按钮是「**运行安装包**」（起 NSIS 向导，`detached + unref` 不阻塞面板），桌面与 AE 扩展由向导的组件页一次更完。**AE 不会被安装包重启**，装完必须引导用户重启 After Effects（文案 `updateCepDownloaded` / `updateCepInstallerBody`）。mac 无 NSIS，CEP 侧仍只能「前往下载」。
+- **更新偏好双端分键**：桌面与 AE 面板共用 `%TEMP%/iSparta/localstorage.json`（`os.tmpdir()`），更新节流相关键按宿主分开（`updateCheck.app` / `updateCheck.cep`，见 `src/util/updatePrefs.js`）——否则一端点过「稍后」会吃掉另一端的更新提示。主题、语言等其余偏好仍双端共享。
 - 不用 Bolt/Nx；一体安装走现有 NSIS 组件页；发版仍须用户点名（§2.2）。
 - **安装范围与 AE 探测**：系统级 Common Files（推荐，需管理员）与用户级 APPDATA **互斥禁双写**；AE 版本用注册表+多盘枚举探测，仅用于校验/展示/PlayerDebugMode，不装多份。详见 [`docs/PLAN-DUAL-TARGET.md`](docs/PLAN-DUAL-TARGET.md) §9。
 - 实现阶段同步更新本节与 `docs/PLAN-DUAL-TARGET.md` 勾选状态。

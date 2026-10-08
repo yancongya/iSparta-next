@@ -57,7 +57,7 @@
           size="sm"
           type="primary"
           @click="$emit('restart')"
-        >{{ $t('updateRestartNow') }}</is-button>
+        >{{ isCepInstaller ? $t('updateRunInstaller') : $t('updateRestartNow') }}</is-button>
         <is-button
           v-else-if="phase === 'available' || phase === 'error'"
           size="sm"
@@ -91,6 +91,13 @@ export default {
     },
     autoSupported () {
       return !!(this.auto && this.auto.supported)
+    },
+    /**
+     * CEP 安装包形态（auto.mode === 'installer'）：面板内下的是同一个官方安装包，
+     * 终态按钮是「运行安装包」而不是「重启以更新」——AE 不能被安装包重启。
+     */
+    isCepInstaller () {
+      return !!(this.auto && this.auto.mode === 'installer')
     },
     autoDownloading () {
       return !!(this.auto && this.auto.downloading)
@@ -127,7 +134,9 @@ export default {
     },
     headSub () {
       var pair = 'v' + this.latest + ' ← v' + this.current
-      if (this.phase === 'downloaded') return this.$t('updateDownloaded')
+      if (this.phase === 'downloaded') {
+        return this.isCepInstaller ? this.$t('updateCepDownloaded') : this.$t('updateDownloaded')
+      }
       if (this.phase === 'error') return this.$t('updateAutoUnsupported')
       if (this.phase === 'downloading') return this.$t('updateDockContinue') + ' · ' + pair
       return this.$t('updateAvailable', {

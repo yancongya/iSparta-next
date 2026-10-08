@@ -334,9 +334,11 @@ function installMockBridge () {
   //   window.__updateAutoStub — electron-updater 状态快照
   //   window.__updateSimulate('available'|'download'|'done'|'error'|'clear')
   window.__updateSimulate = function (mode) {
-    // 预览前清掉节流/已通知，保证 dock 会弹
+    // 预览前清掉节流/已通知，保证 dock 会弹。
+    // 键名与 src/util/updatePrefs.js 的分键规则保持一致（浏览器预览视作桌面 ⇒ updateCheck.app），
+    // 否则清的是旧键、真正被读的键仍带着节流，dock 死活不弹。
     try {
-      storage.setItem('updateCheck', JSON.stringify({
+      storage.setItem('updateCheck.app', JSON.stringify({
         enabled: true,
         autoDownload: true,
         autoInstallOnAppQuit: false,

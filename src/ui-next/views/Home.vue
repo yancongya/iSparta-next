@@ -503,10 +503,14 @@ export default {
     onUpdateSkip () {
       updateService.markSkipVersion(this.updateResult && this.updateResult.latest)
     },
-    onUpdateDownload () {
+    async onUpdateDownload () {
       // 不支持应用内更新时才走浏览器；支持时主按钮是「立即更新」
-      updateService.openDownload(this.updateResult)
-      updateService.markLater(this.updateResult && this.updateResult.latest)
+      // 仅当外链真的打开了才收起卡片：CEP 下 openExternal 失败时若照样 markLater，
+      // 用户看到的是「浏览器没开、卡片还消失了」，只能重启 AE 面板才再见到提示
+      var r = await updateService.openDownload(this.updateResult)
+      if (r && r.opened) {
+        updateService.markLater(this.updateResult && this.updateResult.latest)
+      }
     },
     onUpdateDockLater () {
       updateService.markLater(this.updateResult && this.updateResult.latest)

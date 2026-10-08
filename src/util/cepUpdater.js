@@ -13,11 +13,12 @@
 
 /* global window */
 
-import { ipc } from './node-env'
+// 带扩展名：与 updateCheck.js 的 '../brand.js' 同例，便于纯 Node 下直接 import 做 L1 测试
+import { ipc } from './node-env.js'
 import {
   checkUpdate,
   resolveUpdateConfig
-} from './updateCheck'
+} from './updateCheck.js'
 
 const DEFAULT_TIMEOUT_MS = 12000
 /** 面板轮询桥下载态的间隔（桥无推送通道） */

@@ -67,7 +67,7 @@
             v-if="autoSupported && autoDownloaded"
             type="primary"
             @click="onRestart"
-          >{{ $t('updateRestartNow') }}</is-button>
+          >{{ isCepInstaller ? $t('updateRunInstaller') : $t('updateRestartNow') }}</is-button>
           <is-button
             v-else-if="autoSupported && autoDownloading"
             type="primary"
@@ -119,6 +119,10 @@ export default {
     autoSupported () {
       return !!(this.auto && this.auto.supported)
     },
+    /** CEP 安装包形态（auto.mode === 'installer'）：终态是「运行安装包」，装完需重启 AE */
+    isCepInstaller () {
+      return !!(this.auto && this.auto.mode === 'installer')
+    },
     autoReason () {
       return (this.auto && this.auto.reason) || ''
     },
@@ -145,9 +149,12 @@ export default {
       }).filter(Boolean)
     },
     installFootnote () {
-      if (this.autoSupported && this.autoDownloaded) { return this.$t('updateInstallingBody') }
+      if (this.autoSupported && this.autoDownloaded) {
+        return this.isCepInstaller ? this.$t('updateCepDownloaded') : this.$t('updateInstallingBody')
+      }
       if (this.autoReason === 'dev') { return this.$t('updateAutoDev') }
       if (!this.autoSupported) { return this.$t('updateAutoUnsupported') }
+      if (this.isCepInstaller) { return this.$t('updateCepInstallerBody') }
       return this.$t('updateDockContinue')
     }
   },

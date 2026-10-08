@@ -1,9 +1,34 @@
 // 更新检查偏好：独立 storage 键，不塞进 globalSetting（避免被转换默认值整包写回冲掉）
 // storage 无 removeItem：清空用空串哨兵
+//
+// 双端分键：桌面与 AE 面板（CEP）共用同一份 %TEMP%/iSparta/localstorage.json
+// （桌面 store/index.js 与桥的 storage 都落在 os.tmpdir()）。若共用一个键，
+// 一端点过「稍后」写了 lastNotifiedVersion / lastAt，另一端 24h 内被节流、
+// shouldAutoPrompt 也不成立 —— AE 里干脆不弹更新卡片，反之同理。
+// 故按宿主分键：updateCheck.app / updateCheck.cep。
+// （主题、语言等其余偏好仍是双端共享，这是有意的：同机双端保持一致。）
+//
+// 迁移：桌面读不到新键时，回退旧键 'updateCheck' 做一次性搬迁；
+// CEP **不回退** —— 旧键里的节流与「稍后」是桌面写的，继承过来等于白改。
 
 import { storage } from './node-env'
 
-export const UPDATE_PREFS_KEY = 'updateCheck'
+const LEGACY_KEY = 'updateCheck'
+
+/**
+ * 宿主判定必须惰性求值：CEP 的桥（window.ispartaCepBridge）注入时机可能晚于
+ * 本模块被 import 的时刻，模块级求值会把 CEP 误判成桌面。
+ * window.__adobe_cep__ 由 CEP 宿主本身注入，是最早可用的信号。
+ */
+function isCepHost () {
+  if (typeof window === 'undefined') { return false }
+  return !!(window.__adobe_cep__ || window.ispartaCepBridge || (window.cep && window.cep.fs))
+}
+
+/** 当前宿主的偏好键（每次读写时求值，不做模块级缓存） */
+export function updatePrefsKey () {
+  return LEGACY_KEY + (isCepHost() ? '.cep' : '.app')
+}
 
 const DEFAULT_PREFS = {
   enabled: true,
@@ -26,11 +51,29 @@ function parseRaw (raw) {
   }
 }
 
+function readRawPrefs () {
+  var raw = null
+  try {
+    raw = storage.getItem(updatePrefsKey())
+  } catch (e) {
+    raw = null
+  }
+  if (!raw && !isCepHost()) {
+    // 桌面老用户：新键还没有内容，把旧键偏好一次性搬过来（下次起走新键）
+    try {
+      raw = storage.getItem(LEGACY_KEY)
+    } catch (e2) {
+      raw = null
+    }
+  }
+  return raw
+}
+
 /** 读取并补齐缺字段；storage 不可用时返回默认值副本 */
 export function loadUpdatePrefs () {
   var parsed = null
   try {
-    parsed = parseRaw(storage.getItem(UPDATE_PREFS_KEY))
+    parsed = parseRaw(readRawPrefs())
   } catch (e) {
     parsed = null
   }
@@ -50,7 +93,7 @@ export function loadUpdatePrefs () {
 export function saveUpdatePrefs (prefs) {
   var next = Object.assign({}, DEFAULT_PREFS, prefs || {})
   try {
-    storage.setItem(UPDATE_PREFS_KEY, JSON.stringify(next))
+    storage.setItem(updatePrefsKey(), JSON.stringify(next))
   } catch (e) { /* 存储不可用时本次会话仍生效 */ }
   return next
 }
