@@ -290,10 +290,16 @@ iSparta-next/
 
 | 命令 | 说明 |
 | --- | --- |
-| `npm run dev` | 开发运行 |
+| `npm run dev` | 开发运行（Electron 调试窗口 + 开发服务器） |
 | `npm run build` | 构建 mac + win + linux |
 | `npm run build:windows` | 仅构建 Windows |
 | `npm run lint` | ESLint / Vue 检查 |
+| `node scripts/dev/preview.js <guide\|landing\|web\|desktop\|cep>` | 起预览服务并自动打开浏览器 |
+| `node scripts/dev/build.js win` | 本机打 Windows 安装包（自动豁免删除守卫；构建后给出 exe 路径 / 体积 / sha256） |
+| `node scripts/dev/build.js cep` | 只重建 AE / CEP 面板产物 `targets/cep/ui` |
+| `node scripts/dev/check.js lint\|pack\|ports\|all` | 体检：lint / 出包自检 / 端口占用与归属识别 |
+
+`scripts/dev/` 下另有等价的双击友好包装：`run-preview` / `run-build-win` / `run-build-cep` / `run-check`。开发约定、行尾策略与完整脚本索引见 [`AGENTS.md`](AGENTS.md)。
 
 ## 技术栈
 

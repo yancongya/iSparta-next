@@ -8,20 +8,41 @@
 |------|----------------------------------------------------------|
 | Electron 开发 | `npm run dev`，或 `scripts\dev\run-dev.cmd`（日志：`dev.log` / `dev.err` / `dev.status`） |
 | 一键开发预览 | `npm run dev:all`（落地页 8080 + Web 8081 + CEP 8082）；`dev:all:electron` 再加 Electron；或 `scripts\dev\run-all-dev.cmd` |
-| 落地页静态 | `npm run landing:serve`（默认 8080） |
-| 浏览器 UI 预览 | `npm run serve`（默认 8081） |
 | 依赖安装 | `scripts\dev\run-npm-install.cmd` / `run-clean-install.cmd` / `run-electron-install.cmd` |
-| Lint | `npm run lint`，或 `node scripts\dev\check.js lint` |
-| 出包前自检 | `npm run doctor:pack`（图标 / 向导图 / builder 引用；CI 构建前会跑），或 `node scripts\dev\check.js pack` |
-| 本地打包 Windows | `node scripts\dev\build.js win`，或 `scripts\dev\run-build-win.cmd`（**自动注入删除守卫豁免**、构建前报告 `targets/cep/ui` 暴露面、构建后直接给出 exe 绝对路径/体积/sha256） |
-| 端口占用排查 | `node scripts\dev\check.js ports`（8080–8099 监听 + 所属进程 + 归属识别，并打印可复制的清理命令） |
-| 统一体检 | `node scripts\dev\check.js all`，或 `scripts\dev\run-check.cmd all`（lint + pack + ports） |
-| 预览（起服务 + 开浏览器） | `node scripts\dev\preview.js guide\|landing\|web\|desktop\|cep`，或 `scripts\dev\run-preview.cmd guide` |
 | AE CEP 开发（**默认 HMR**） | `npm run dev:cep`（MainPath=`./dev-hmr.html`→8082）；刷新=**关面板再开（无 Ctrl+R）**。收工 `dev:cep:off`。出包才 `build:cep` |
 | CEP 铁律 | MainPath **禁 http://**；**禁 mock**；桥 `/lib/`|`../lib/`；外链 `cep.util.openURLInDefaultBrowser` |
 | CEP 载荷/扩展 zip | `npm run prepare:cep`（`build/cep-payload/`）；`npm run pack:cep`（`dist/*-cep-*.zip`） |
 | 更新逻辑测试 | `node scripts\updateCheck.l1.js`；fixture：`scripts\fixture-github.js` |
 | 图标再生 | 见 `scripts\build-app-icons.js`、`scripts\make-icons-from-png.py`、`scripts\make-installer-images.py`（勿手改位图当源） |
+
+### 1.1 统一入口脚本（`scripts/dev/`）——**先查这里，不要现敲命令**
+
+预览 / 构建 / 体检三类高频流程都收敛成三个 JS 入口，各配一个双击友好的 `.cmd` 包装。
+它们固化的是**踩过的坑**（删除守卫豁免、CEP 产物漂移、端口顺延抢答），绕过它们直接手敲原命令会重新踩一遍。
+
+| 入口 | 子命令 / 目标 | 用途 |
+|------|---------------|------|
+| `scripts\dev\preview.js`<br>`scripts\dev\run-preview.cmd` | `guide` :8090 · `landing` :8080 · `web` :8081 · `desktop` :8081 · `cep` :8082 | 起服务 → **按页面独有标记确认「应答方确实是我们」** → 打开默认浏览器。`--port N` 指定端口，`--no-open` 只起服务 |
+| `scripts\dev\build.js`<br>`scripts\dev\run-build-win.cmd`<br>`scripts\dev\run-build-cep.cmd` | `win` · `cep`；`--backup` · `--dry`(`-n`) | 构建入口。见下方「两种模式的差异」 |
+| `scripts\dev\check.js`<br>`scripts\dev\run-check.cmd` | `lint` · `pack` · `ports` · `all` | 体检：lint / `doctor:pack` 出包自检 / 8080–8099 端口占用与**归属识别**（附可复制 `taskkill`） |
+
+```powershell
+node scripts\dev\preview.js guide            # 引导页原型台
+node scripts\dev\build.js win                # 本机打 Windows 安装包
+node scripts\dev\build.js cep                # 改了 src/ 就重建 targets/cep/ui
+node scripts\dev\check.js all                # lint + pack + ports
+```
+
+预览入口内部调用的就是仓库原有的服务脚本（`landing` → `npm run landing:serve`、`web` → `npm run serve`、`cep` → `npm run serve:cep`、`guide` → `npm run preview:guide`（:8090 原型台）、`desktop` → `npm run dev`）—— 单独调试服务本身时仍可直接跑它们，日常预览走 `preview.js` 以便拿到标记校验与真实端口提示。
+
+**`build.js` 两种模式的差异**
+
+- `win` → `npm run build:windows`（完整向导含 NSIS）。三件事自动化：① **注入 `CODEBUDDY_SAFE_DELETE_ENABLED=0`** —— `vue.config.js` 把 CEP 的 `outputDir` 指到 `targets/cep/ui`，构建会清空重建该目录，不豁免必撞安全删除守卫；② 构建前报告该目录的受控 / 未跟踪文件数（受控的可 git 恢复，未跟踪的一清就没，有未跟踪却没加 `--backup` 会提示）；③ 构建后直接给出最新 exe 的**绝对路径 / 体积 / 时间 / sha256**，失败则回显末尾日志。`--backup` 备份到 `.bak/`（已 gitignore），`--dry` 只打印将要执行的命令。
+- `cep` → `npm run build:cep`，只重建 `targets/cep/ui`（没有安装包，秒级）。**改了 `src/` 或 `shared/` 就要跑**，否则提交进去的产物会与源码悄悄脱节；脚本会打印与 HEAD 的漂移项。
+
+**两条刻意的设计**（改脚本时别退回旧写法）：① `preview.js` 的就绪判定以**子进程自己打印的地址**为准 —— vue-cli 端口被占会自动顺延，盲目扫端口会把邻近残留实例当成本次成果；② 只有能证明是自己的实例（页面标记命中）才复用，否则一律自己起。
+
+**`scripts/dev/` 里的 `.cmd` 包装**（双击友好，等价于对应 node/npm 命令）：`run-dev` · `run-dev-cep` · `run-all-dev` · `run-landing` · `run-preview` · `run-build-win` · `run-build-cep` · `run-check` · `run-npm-install` / `run-clean-install` / `run-electron-install`。新脚本沿用同样风格，并写 `*.status` / `*.log` / `*.err` 三件套（均已在 `.gitignore` 内）。
 
 环境：Node 经 `MIMO_NODE` / `MIMO_NPM` 时用 `& $env:MIMO_NODE $env:MIMO_NPM run <script>`。Windows 上不要用 Unix 登录 shell。
 

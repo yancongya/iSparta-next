@@ -344,7 +344,7 @@ CEP 侧**没有 vue-router**（`src/cep/main.js` 直接 `render: h => h(Home)`�
 
 ### W0 · 原型台（先做，零风险）
 
-- [x] 建 `scripts/dev/guide-preview/` 原型台 + `npm run preview:guide`
+- [x] 建 `scripts/dev/guide-preview/` 原型台 + `npm run preview:guide`（统一入口：`node scripts/dev/preview.js guide`）
 - [x] 内置「落地页复用」对照视图（10 张卡；暗/亮双主题、动效开关实测通过）
 - [x] 面板右上角设置（主题 · 语言）原型 + 三语文案；修复暗色「黑字黑底」
 - [x] 只读「系统环境 · 生产参考」探测块（§5.9 映射可视化）
@@ -460,7 +460,7 @@ CEP 侧**没有 vue-router**（`src/cep/main.js` 直接 `render: h => h(Home)`�
 | openhanako 安装器稳健性 | `.worktrees/openhanako/build/installer.nsh`、`tests/windows-installer-contract.test.ts` |
 | iSparta 待改安装器 | `build/installer.nsh`（`ispartaComponentsPre`）、`electron-builder.yml` 的 `nsis:` |
 | iSparta 设计系统 | `src/ui-next/styles/tokens.css`、`ui.scss`、`components/ui/` |
-| **引导页原型台（本次新增）** | `scripts/dev/guide-preview/index.html` + `scripts/dev/serve-guide-preview.js`（`npm run preview:guide`） |
+| **引导页原型台（本次新增）** | `scripts/dev/guide-preview/index.html` + `scripts/dev/serve-guide-preview.js`（`npm run preview:guide`，或统一入口 `node scripts/dev/preview.js guide` → :8090） |
 | **预览台通用资产（已沉淀）** | `electron-development` skill：`assets/preview-bench/`（`index.html` / `serve.mjs` / `USAGE.md`）、`references/ui-preview-bench.md` |
 | **落地页动效组件（复用源）** | `landing/index.html` 的 8 处 `class="ill-svg ill-*"` + `#pet`；样式见 `landing/styles.css` 的 `.ill-*` 与 `@keyframes illFlip/illDash/illPulse/illBreathe/illNeedle/illDraw/illFloat/petIdle/petRun/petCheer` |
 | **系统语言探测（本次新增）** | `src/util/system-locale.js`（纯函数；36 条标签映射用例实测通过） |
@@ -469,5 +469,5 @@ CEP 侧**没有 vue-router**（`src/cep/main.js` 直接 `render: h => h(Home)`�
 | **引导模块（W1 新增 / W2 扩到 7 步）** | `src/ui-next/views/RootGate.vue`；`src/ui-next/onboarding/`：`state.js`、`Onboarding.vue`、`steps/*.vue`（7 页：Welcome / Import / Output / Naming / PathVars / Ae / Finish）、`demos/*.vue`（6 枚组件 + `naming-store.js`） |
 | 落地页暗色映射 | `landing/styles.css` 的 `html[data-theme="dark"]`（已对齐 `src/ui-next/styles/tokens.css`） |
 | 浏览器调试 mock 桥 | `src/util/mock-bridge.js`（`serve` 下注入，`kind === 'browser-mock'`） |
-| dev 预览编排 | `scripts/dev-all.js`（landing 8080 / web 8081 / cep 8082） |
+| dev 预览编排 | `scripts/dev-all.js`（landing 8080 / web 8081 / cep 8082）；单目标起服务走统一入口 `scripts/dev/preview.js <guide\|landing\|web\|desktop\|cep>`（见 `AGENTS.md` §1.1） |
 | 双端边界 | `docs/CEP-UPGRADE-SCOPE.md`、`docs/PLAN-DUAL-TARGET.md` |

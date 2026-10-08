@@ -16,6 +16,8 @@
 | A6 | manifest | MainPath=`./ui/index.html`，Id=`io.github.isparta-next` | ☐ |
 | A7 | 编码唯一 | 无 cli 自研编码；调用 `src/util/processor/*` | ☐ |
 
+> 本机执行统一走 `scripts/dev/` 入口（见 `AGENTS.md` §1.1）：A1 / A5 可一次跑完 —— `node scripts/dev/check.js all`（lint + `doctor:pack` + 端口占用）；A2 产物用 `node scripts/dev/build.js cep` 重建。
+
 ## B. 桌面回归
 
 | # | 项 | 步骤 | 结果 |
@@ -40,7 +42,7 @@
 
 | # | 项 | 步骤 | 结果 |
 |---|----|------|------|
-| D1 | 出包 | `npm run build:windows` 成功 | ☐ |
+| D1 | 出包 | `node scripts/dev/build.js win`（= `npm run build:windows` + 删除守卫豁免）成功 | ☐ |
 | D2 | 只装桌面 | 取消 AE 扩展 → 无 CEP 目录、有桌面 | ☐ |
 | D3 | 双装 | 勾选 AE 扩展 → `%APPDATA%\Adobe\CEP\extensions\io.github.isparta-next` | ☐ |
 | D4 | version.json | 扩展目录内有版本清单 | ☐ |

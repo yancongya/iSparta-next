@@ -230,10 +230,16 @@ iSparta-next/
 
 | Command | Purpose |
 | --- | --- |
-| `npm run dev` | Dev app |
+| `npm run dev` | Dev app (Electron window + dev server) |
 | `npm run build` | Build mac + win + linux |
 | `npm run build:windows` | Windows only |
 | `npm run lint` | ESLint / Vue |
+| `node scripts/dev/preview.js <guide\|landing\|web\|desktop\|cep>` | Start a preview server and open the browser |
+| `node scripts/dev/build.js win` | Local Windows installer (delete-guard exemption injected; prints exe path / size / sha256) |
+| `node scripts/dev/build.js cep` | Rebuild the AE / CEP panel bundle `targets/cep/ui` only |
+| `node scripts/dev/check.js lint\|pack\|ports\|all` | Health check: lint / packaging gate / port occupancy & owner |
+
+The matching `.cmd` wrappers under `scripts/dev/` (`run-preview` / `run-build-win` / `run-build-cep` / `run-check`) are double-click friendly. See [`AGENTS.md`](AGENTS.md) for dev conventions and the full script index (Chinese).
 
 ## Tech stack
 

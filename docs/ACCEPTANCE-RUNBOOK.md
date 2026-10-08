@@ -2,7 +2,9 @@
 
 > 目标：在本机验证「完整工作台共用 + AE 合成注入 + 同一转换核 + 双端一起更」。  
 > 勾选可对照 [ACCEPTANCE-DUAL-TARGET.md](ACCEPTANCE-DUAL-TARGET.md)。  
-> 环境假设：Windows 10/11、已装 After Effects、仓库在 `F:\iSparta`。
+> 环境假设：Windows 10/11、已装 After Effects、仓库在 `F:\iSparta`。  
+> **本机命令优先走统一入口**（`scripts/dev/preview.js` / `build.js` / `check.js`，见 `AGENTS.md` §1.1）——
+> 它们内置了删除守卫豁免与产物定位，比裸跑 `npm run build:*` 少踩坑。
 
 ---
 
@@ -11,7 +13,7 @@
 | # | 步骤 | 期望 |
 |---|------|------|
 | 0.1 | `npm ci`（或已装依赖） | 无报错 |
-| 0.2 | `npm run lint` | DONE |
+| 0.2 | `npm run lint`（或 `node scripts/dev/check.js lint`） | DONE |
 | 0.3 | **开发默认 HMR**：`npm run dev:cep` | MainPath=`./dev-hmr.html`→8082 |
 | 0.4 | 拷编码器到 `targets/cep/bin/win64` | 见 `bin/README.md` |
 | 0.5 | 出包才：`dev:cep:off` + `build:cep` + `prepare:cep` | `build/cep-payload/…` |
@@ -26,7 +28,7 @@
 ### A1. 挂载扩展
 
 ```powershell
-npm run build:cep
+node scripts/dev/build.js cep     # 等价 npm run build:cep，重建 targets/cep/ui
 $src = "F:\iSparta\targets\cep"
 $dst = Join-Path $env:APPDATA "Adobe\CEP\extensions\io.github.isparta-next"
 if (Test-Path $dst) { Remove-Item $dst -Recurse -Force }
@@ -99,7 +101,7 @@ foreach ($v in 6..14) {
 
 | # | 步骤 | 期望 |
 |---|------|------|
-| C1 | `npm run build:windows` | 出 NSIS 安装包 |
+| C1 | `node scripts/dev/build.js win`（内部即 `npm run build:windows`，已自动豁免删除守卫） | 出 NSIS 安装包；脚本直接打印 exe 绝对路径 / 体积 / sha256 |
 | C2 | 安装 → 组件页 | ☑ 桌面 ☑ AE 扩展 |
 | C3 | **只装桌面** | 无 `…\CEP\extensions\io.github.isparta-next` |
 | C4 | 重装 **双勾** | 出现扩展目录 + `version.json`；含 `bin\win64\…` |
