@@ -826,6 +826,31 @@ html[data-theme="dark"] .hero-actions .btn-primary {
   background: var(--card);
 }
 
+/* 字符解密层：覆盖在截图上。默认透明（= 特效未生效，img 原样显示）；
+   setupHeroDecrypt 成功初始化后才给 .hero-shot 加 .is-fx 接管。
+   圆角必须跟 img 一致，否则接管后顶部两角会被 canvas 填成方的。 */
+.hero-shot__fx {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  pointer-events: none;
+  border-radius: 12px 12px 0 0;
+  transition: opacity 0.45s ease;
+}
+
+.hero-shot.is-fx img {
+  visibility: hidden;
+}
+
+.hero-shot.is-fx .hero-shot__fx {
+  opacity: 1;
+}
+
 /* 底部渐隐遮罩：从透明过渡到当前主题纸色，让截图底部「沉」进页面。
    z-index 压在图上；pointer-events:none 不挡点击。 */
 .hero-shot__fade {
