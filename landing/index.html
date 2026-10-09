@@ -28,7 +28,7 @@
 
   <link rel="icon" href="assets/icon.png" />
   <link rel="apple-touch-icon" href="assets/icon.png" />
-  <link rel="stylesheet" href="styles.css?v=20261004-copy2" />
+  <link rel="stylesheet" href="styles.css?v=20261008-copy1" />
 
   <!-- Structured data -->
   <script type="application/ld+json">
@@ -341,102 +341,6 @@
           <a href="https://github.com/yancongya/iSparta-next/releases" target="_blank" rel="noopener">GitHub Releases</a>
           获取最新版；亦可从本页下载区选择对应平台。</p>
       </article>
-    </div>
-  </section>
-
-  <div class="film-holes" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
-
-
-  <section class="section section-ae" id="ae">
-    <div class="section-head">
-      <p class="eyebrow mono" data-i18n="ae.eb">02 · AFTER EFFECTS</p>
-      <h2 data-i18n="ae.h2">不出 AE，直接出片</h2>
-      <p class="section-sub" data-i18n="ae.sub">
-        打开面板就自动读出工程里的全部合成，勾选直接出 APNG / WebP / GIF，文件就存在工程旁边，不用来回切软件。
-      </p>
-    </div>
-    <div class="ae-stage" id="ae-stage" role="group" aria-label="AE 合成导出演示">
-      <svg class="ae-svg" id="ae-svg" viewBox="0 0 720 300" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <pattern id="ae-checker" width="10" height="10" patternUnits="userSpaceOnUse">
-            <rect width="10" height="10" fill="#f7f1e8"/>
-            <rect width="5" height="5" fill="#e8dfd0"/>
-            <rect x="5" y="5" width="5" height="5" fill="#e8dfd0"/>
-          </pattern>
-          <filter id="ae-soft" x="-20%" y="-20%" width="140%" height="140%">
-            <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#c2410c" flood-opacity="0.12"/>
-          </filter>
-        </defs>
-
-        <!-- AE 面板 -->
-        <g filter="url(#ae-soft)">
-          <rect x="24" y="36" width="220" height="228" rx="12" fill="#fffdf8" stroke="#e4d0bf" stroke-width="1.5"/>
-          <rect x="24" y="36" width="220" height="30" rx="12" fill="#2d2d30"/>
-          <rect x="24" y="54" width="220" height="12" fill="#2d2d30"/>
-          <circle cx="42" cy="51" r="4" fill="#e07a6a"/>
-          <circle cx="56" cy="51" r="4" fill="#e0c56a"/>
-          <circle cx="70" cy="51" r="4" fill="#7acb8a"/>
-          <text x="86" y="55" class="svg-label" fill="#c9c9c9">After Effects</text>
-
-          <!-- 图层行 -->
-          <g class="ae-row" data-row="0">
-            <rect x="38" y="80" width="192" height="26" rx="6" fill="#fff" stroke="#e8dfd0"/>
-            <rect x="46" y="88" width="10" height="10" rx="2" fill="#c2410c"/>
-            <text x="64" y="97" class="svg-label">comp · walk_cycle</text>
-          </g>
-          <g class="ae-row" data-row="1">
-            <rect x="38" y="112" width="192" height="26" rx="6" fill="#fff" stroke="#e8dfd0"/>
-            <rect x="46" y="120" width="10" height="10" rx="2" fill="#ea580c"/>
-            <text x="64" y="129" class="svg-label">comp · fx_spark</text>
-          </g>
-          <g class="ae-row" data-row="2">
-            <rect x="38" y="144" width="192" height="26" rx="6" fill="#fff" stroke="#e8dfd0"/>
-            <rect x="46" y="152" width="10" height="10" rx="2" fill="#f0a06a"/>
-            <text x="64" y="161" class="svg-label">comp · intro_title</text>
-          </g>
-
-          <!-- 渲染进度条 -->
-          <rect x="38" y="192" width="192" height="8" rx="4" fill="#f0e8dc"/>
-          <rect id="ae-bar" x="38" y="192" width="40" height="8" rx="4" fill="#c2410c"/>
-          <text x="38" y="218" class="svg-label">导出图片序列 → 存到工程旁边</text>
-          <text x="38" y="238" class="svg-label" id="ae-count">0 / 24</text>
-        </g>
-
-        <!-- 流水线轨道 -->
-        <path id="ae-rail" d="M250 150 C320 150, 340 110, 400 110 S480 150, 540 150" fill="none" stroke="#e4d0bf" stroke-width="8" stroke-linecap="round"/>
-        <path d="M250 150 C320 150, 340 110, 400 110 S480 150, 540 150" fill="none" stroke="#c2410c" stroke-width="2" stroke-dasharray="5 7" opacity=".5"/>
-
-        <!-- 流动的帧包 -->
-        <g id="ae-packet">
-          <rect x="-14" y="-14" width="28" height="28" rx="6" fill="url(#ae-checker)" stroke="#c2410c" stroke-width="1.5"/>
-          <rect x="-8" y="-5" width="16" height="10" rx="2" fill="#c2410c" opacity=".8"/>
-        </g>
-
-        <!-- 输出格式芯片 -->
-        <g class="ae-out" data-out="0">
-          <rect x="556" y="82" width="128" height="40" rx="10" fill="#fff" stroke="#e4d0bf" stroke-width="1.5"/>
-          <text x="620" y="107" text-anchor="middle" class="svg-chip">APNG</text>
-        </g>
-        <g class="ae-out" data-out="1">
-          <rect x="556" y="132" width="128" height="40" rx="10" fill="#fff" stroke="#e4d0bf" stroke-width="1.5"/>
-          <text x="620" y="157" text-anchor="middle" class="svg-chip">WebP</text>
-        </g>
-        <g class="ae-out" data-out="2">
-          <rect x="556" y="182" width="128" height="40" rx="10" fill="#fff" stroke="#e4d0bf" stroke-width="1.5"/>
-          <text x="620" y="207" text-anchor="middle" class="svg-chip">GIF</text>
-        </g>
-
-        <!-- 小星标：AE 特色拟物，待机漂浮 -->
-        <g id="ae-star" transform="translate(620 250)">
-          <g id="ae-star-inner">
-            <path d="M0 -18 L5 -5 L18 -5 L8 3 L12 16 L0 8 L-12 16 L-8 3 L-18 -5 L-5 -5 Z" fill="#c2410c" opacity=".9"/>
-          </g>
-        </g>
-      </svg>
-      <p class="ae-stage-note mono" id="ae-note">AE 合成 → PNG 序列 → APNG / WebP / GIF</p>
-    </div>
-
-    <div class="about-grid">
       <article class="about-card about-card--ill">
         <div class="ill" aria-hidden="true">
           <svg class="ill-svg ill-ae-install" viewBox="0 0 160 88" xmlns="http://www.w3.org/2000/svg">
@@ -447,37 +351,8 @@
             <text class="ill-cap" x="58" y="78" text-anchor="middle">NSIS</text>
           </svg>
         </div>
-        <h3 data-i18n="ae.1t">一体安装</h3>
-        <p data-i18n="ae.1d">一个安装包，组件页勾选「桌面版 / AE 扩展」，可只装其一；安装范围支持所有用户或仅当前用户。</p>
-      </article>
-      <article class="about-card about-card--ill">
-        <div class="ill" aria-hidden="true">
-          <svg class="ill-svg ill-ae-render" viewBox="0 0 160 88" xmlns="http://www.w3.org/2000/svg">
-            <rect class="ill-tank" x="18" y="16" width="70" height="56" rx="8"/>
-            <rect class="ill-fill" x="28" y="28" width="50" height="8" rx="2"/>
-            <rect class="ill-fill" x="28" y="42" width="38" height="8" rx="2" opacity=".65"/>
-            <rect class="ill-fill" x="28" y="56" width="44" height="8" rx="2" opacity=".4"/>
-            <path class="ill-flow" d="M96 44 H120"/>
-            <rect class="ill-out" x="120" y="30" width="28" height="28" rx="6"/>
-            <text class="ill-cap" x="134" y="48" text-anchor="middle">.png</text>
-          </svg>
-        </div>
-        <h3 data-i18n="ae.2t">在 AE 里，它懂你的工程</h3>
-        <p data-i18n="ae.2d">合成列表自动刷新，藏在里面的子合成也找得全；任务列表、合成树两种视图随便切；双击一下就跳到那个合成。</p>
-      </article>
-      <article class="about-card about-card--ill">
-        <div class="ill" aria-hidden="true">
-          <svg class="ill-svg ill-ae-ui" viewBox="0 0 160 88" xmlns="http://www.w3.org/2000/svg">
-            <rect class="ill-tank" x="16" y="14" width="128" height="60" rx="8"/>
-            <rect class="ill-fill" x="16" y="14" width="128" height="12" rx="8" opacity=".25"/>
-            <rect class="ill-out" x="28" y="36" width="44" height="26" rx="5"/>
-            <rect class="ill-out" x="80" y="36" width="52" height="26" rx="5" opacity=".55"/>
-            <text class="ill-cap" x="50" y="53" text-anchor="middle">Desk</text>
-            <text class="ill-cap" x="106" y="53" text-anchor="middle">AE</text>
-          </svg>
-        </div>
-        <h3 data-i18n="ae.3t">在 AE 里也是完整界面，不缺功能</h3>
-        <p data-i18n="ae.3d">不是砍出来的精简版：任务列表、设置、命名、日志，桌面有的 AE 里都有，还专门为小窗口重新排了版。</p>
+        <h3>一个安装包，按需勾选</h3>
+        <p>同一个安装包里，桌面版与 AE 扩展可单独勾选、也可一并安装；安装范围支持所有用户或仅当前用户。</p>
       </article>
       <article class="about-card about-card--ill">
         <div class="ill" aria-hidden="true">
@@ -491,11 +366,12 @@
             <text class="ill-cap" x="124" y="68" text-anchor="middle">Desk</text>
           </svg>
         </div>
-        <h3 data-i18n="ae.4t">两边同一颗引擎，结果一致</h3>
-        <p data-i18n="ae.4d">压缩、合成、降质的算法完全相同：桌面出的文件和 AE 出的文件，大小规则、命名习惯一模一样。</p>
+        <h3>两端同一颗引擎</h3>
+        <p>桌面端与 AE 扩展共用同一套压缩 / 合成 / 降质算法，输出的大小规则与命名习惯完全一致。</p>
       </article>
     </div>
   </section>
+
 
   <section class="section" id="convert">
     <div class="section-head">
@@ -812,10 +688,355 @@
       </aside>
     </div>
   </section>
+  <div class="film-holes" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+
+
+  <section class="section section-ae" id="ae">
+    <div class="section-head">
+      <p class="eyebrow mono" data-i18n="ae.eb">06 · AFTER EFFECTS</p>
+      <h2 data-i18n="ae.h2">同步支持 CEP 端一步安装！</h2>
+      <p class="section-sub" data-i18n="ae.sub">
+        iSparta-next 深度嵌入 AE，基于 CEP 重新定制前后端，打开面板就自动识别全部合成，直接导出成动图，全程不用离开 AE。
+      </p>
+    </div>
+    <div class="ae-stage" id="ae-stage" role="group" aria-label="AE 合成导出演示">
+      <div class="ae-stage-grid">
+        <!-- 左：CEP 面板模拟（窄屏，体现小屏自适应） -->
+        <figure class="ae-panel">
+          <figcaption class="ae-panel-cap mono">
+            <span class="ae-dot" aria-hidden="true"></span>
+            <span data-i18n="ae.pCap">CEP 面板 · 窄屏自适应</span>
+          </figcaption>
+          <!-- 结构对齐真实 CEP：ib-rail 顶栏（横排）/ 列表区 mod-list / 底栏 mod-bar -->
+          <div class="cep" id="ae-panel">
+            <!-- 顶栏 ib-rail：logo+名称靠左，功能键靠右（CEP 下 rail 变横排顶栏） -->
+            <div class="cep-rail">
+              <span class="cep-rail__brand">
+                <svg viewBox="0 0 1024 1024" class="cep-logo" aria-hidden="true"><g transform="translate(512 512) scale(2.05) translate(-512 -395.6)"><path d="M512 395.6m-232.7 0a232.7 232.7 0 1 0 465.4 0 232.7 232.7 0 1 0-465.4 0Z"/><path d="M453.8 289.8a7.2 7.2 0 0 1 8.2-6.1l77.5 11.2c1.9.3 3.6 1.3 4.7 2.8l70.9 93.8a7.2 7.2 0 0 1 .1 8.6l-66.4 88.6a7.2 7.2 0 0 1-4.9 2.9l-77 13.7a7.2 7.2 0 0 1-7-11.1l67.3-101.6a7.2 7.2 0 0 0-.1-8.1l-45.3-80.4a7.2 7.2 0 0 1-1.2-5.1z"/></g></svg>
+                <b data-i18n="ae.pName">iSPARTA</b>
+              </span>
+              <div class="cep-rail__acts">
+                <button class="cep-rail__btn" type="button" title="使用引导" data-i18n-title="ae.pHelp"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg></button>
+                <button class="cep-rail__btn is-on" type="button" id="ae-views" title="合成树" data-i18n-title="ae.pTree"><svg viewBox="0 0 24 24"><path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></svg></button>
+                <button class="cep-rail__btn" type="button" id="ae-theme" title="主题" data-i18n-title="ae.pTheme"><svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg></button>
+                <button class="cep-rail__btn" type="button" id="ae-lang" title="语言" data-i18n-title="ae.pLang"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10Z"/></svg></button>
+                <button class="cep-rail__btn has-dot" type="button" id="ae-log" title="运行日志" data-i18n-title="ae.pLog"><svg viewBox="0 0 24 24"><path d="m4 17 6-6-6-6"/><path d="M12 19h8"/></svg></button>
+                <button class="cep-rail__btn is-end" type="button" id="ae-out" title="输出设置" data-i18n-title="ae.pOut"><svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></button>
+              </div>
+            </div>
+
+            <!-- 主体：列表 mod-list（过滤条 + 合成条目） -->
+            <div class="cep-body">
+              <!-- 过滤条 mod-list__filter：全选 + 搜索 + 排序 chips -->
+              <div class="cep-filter">
+                <label class="cep-cb" title="全选" data-i18n-title="ae.pAll"><input type="checkbox" id="ae-all" /><i></i></label>
+                <input class="cep-search" id="ae-search" type="search" placeholder="搜索" data-i18n-title="ae.pSearch" aria-label="搜索" />
+                <button class="cep-chip is-on" type="button" data-sort="fps">fps<i></i></button>
+                <button class="cep-chip" type="button" data-sort="frames"><span data-i18n="ae.pFrames">帧数</span><i></i></button>
+              </div>
+
+              <!-- 合成列表：CEP 无缩略图，条目 = 勾选 + 名称/路径 + 参数摘要 + 状态/设置 -->
+              <ul class="cep-items" id="ae-items" role="listbox" aria-label="合成列表" data-i18n-aria="ae.pList" multiple>
+                <li class="cep-item is-sel" data-name="Main Comp" data-fps="25" data-frames="120" data-size="1920×1080" data-fmt="APNG" data-loop="循环" data-path="ae-comp/Main Comp">
+                  <label class="cep-cb"><input type="checkbox" checked /><i></i></label>
+                  <div class="cep-item__main">
+                    <span class="cep-item__name">Main Comp</span>
+                    <span class="cep-item__path"><svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2Z"/></svg>ae-comp/Main Comp</span>
+                  </div>
+                  <div class="cep-item__sums">
+                    <span class="cep-sum cep-sum--fps"><svg viewBox="0 0 24 24"><path d="M13 2 3 14h9l-1 8 10-12h-9Z"/></svg>25 f/s</span>
+                    <span class="cep-sum cep-sum--loop"><svg viewBox="0 0 24 24"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.5 9a9 9 0 0 1 14.9-3.4L23 10M1 14l4.6 4.4A9 9 0 0 0 20.5 15"/></svg><span data-i18n="ae.pLoop">循环</span></span>
+                    <span class="cep-sum cep-sum--fmt"><svg viewBox="0 0 24 24"><path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="m2 17 10 5 10-5"/></svg>APNG</span><span class="cep-sum cep-sum--limit"><svg viewBox="0 0 24 24"><path d="M21 8v8a2 2 0 0 1-1 1.73l-7 4a2 2 0 0 1-2 0l-7-4A2 2 0 0 1 3 16V8a2 2 0 0 1 1-1.73l7-4a2 2 0 0 1 2 0l7 4A2 2 0 0 1 21 8Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg><span>≤ 1920×1080</span></span>
+                  </div>
+                  <div class="cep-item__side">
+                    <span class="cep-dot is-done" title="已完成"><svg viewBox="0 0 24 24"><path d="M22 11.1V12a10 10 0 1 1-5.9-9.1"/><path d="m22 4-10 10-3-3"/></svg></span>
+                    <button class="cep-mini" type="button" title="输出设置" data-i18n-title="ae.pOut"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 0 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5v.2a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 0 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 0 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 0 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1h.2a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg></button>
+                  </div>
+                  <span class="cep-item__bar is-done"><i class="cep-item__fill" style="width:100%"></i></span>
+                </li>
+                <li class="cep-item is-sel is-run" data-name="Logo_Loop" data-fps="30" data-frames="60" data-size="1080×1080" data-fmt="WebP" data-loop="循环" data-path="ae-comp/Logo_Loop">
+                  <label class="cep-cb"><input type="checkbox" checked /><i></i></label>
+                  <div class="cep-item__main">
+                    <span class="cep-item__name">Logo_Loop</span>
+                    <span class="cep-item__path"><svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2Z"/></svg>ae-comp/Logo_Loop</span>
+                  </div>
+                  <div class="cep-item__sums">
+                    <span class="cep-sum cep-sum--fps"><svg viewBox="0 0 24 24"><path d="M13 2 3 14h9l-1 8 10-12h-9Z"/></svg>30 f/s</span>
+                    <span class="cep-sum cep-sum--loop"><svg viewBox="0 0 24 24"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.5 9a9 9 0 0 1 14.9-3.4L23 10M1 14l4.6 4.4A9 9 0 0 0 20.5 15"/></svg><span data-i18n="ae.pLoop">循环</span></span>
+                    <span class="cep-sum cep-sum--fmt"><svg viewBox="0 0 24 24"><path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="m2 17 10 5 10-5"/></svg>WebP</span><span class="cep-sum cep-sum--limit"><svg viewBox="0 0 24 24"><path d="M21 8v8a2 2 0 0 1-1 1.73l-7 4a2 2 0 0 1-2 0l-7-4A2 2 0 0 1 3 16V8a2 2 0 0 1 1-1.73l7-4a2 2 0 0 1 2 0l7 4A2 2 0 0 1 21 8Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg><span>≤ 1080×1080</span></span>
+                  </div>
+                  <div class="cep-item__side">
+                    <span class="cep-dot is-run" title="转换中"><i></i></span>
+                    <button class="cep-mini" type="button" title="输出设置" data-i18n-title="ae.pOut"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 0 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5v.2a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 0 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 0 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 0 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1h.2a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg></button>
+                  </div>
+                  <span class="cep-item__bar is-run" id="ae-rowbar"><i class="cep-item__fill" style="width:38%"></i></span>
+                </li>
+                <li class="cep-item" data-name="Confetti_Burst" data-fps="60" data-frames="90" data-size="1080×1080" data-fmt="GIF" data-loop="循环" data-path="ae-comp/Confetti_Burst">
+                  <label class="cep-cb"><input type="checkbox" /><i></i></label>
+                  <div class="cep-item__main">
+                    <span class="cep-item__name">Confetti_Burst</span>
+                    <span class="cep-item__path"><svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2Z"/></svg>ae-comp/Confetti_Burst</span>
+                  </div>
+                  <div class="cep-item__sums">
+                    <span class="cep-sum cep-sum--fps"><svg viewBox="0 0 24 24"><path d="M13 2 3 14h9l-1 8 10-12h-9Z"/></svg>60 f/s</span>
+                    <span class="cep-sum cep-sum--loop"><svg viewBox="0 0 24 24"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.5 9a9 9 0 0 1 14.9-3.4L23 10M1 14l4.6 4.4A9 9 0 0 0 20.5 15"/></svg><span data-i18n="ae.pLoop">循环</span></span>
+                    <span class="cep-sum cep-sum--fmt"><svg viewBox="0 0 24 24"><path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="m2 17 10 5 10-5"/></svg>GIF</span><span class="cep-sum cep-sum--limit"><svg viewBox="0 0 24 24"><path d="M21 8v8a2 2 0 0 1-1 1.73l-7 4a2 2 0 0 1-2 0l-7-4A2 2 0 0 1 3 16V8a2 2 0 0 1 1-1.73l7-4a2 2 0 0 1 2 0l7 4A2 2 0 0 1 21 8Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg><span>≤ 1080×1080</span></span>
+                  </div>
+                  <div class="cep-item__side">
+                    <span class="cep-dot is-idle"></span>
+                    <button class="cep-mini" type="button" title="输出设置" data-i18n-title="ae.pOut"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 0 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5v.2a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 0 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 0 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 0 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1h.2a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg></button>
+                  </div>
+                  <span class="cep-item__bar is-idle"><i class="cep-item__fill" style="width:0"></i></span>
+                </li>
+                <li class="cep-item" data-name="Lower Third" data-fps="30" data-frames="45" data-size="1920×1080" data-fmt="APNG" data-loop="一次" data-path="ae-comp/Lower Third">
+                  <label class="cep-cb"><input type="checkbox" /><i></i></label>
+                  <div class="cep-item__main">
+                    <span class="cep-item__name">Lower Third</span>
+                    <span class="cep-item__path"><svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2Z"/></svg>ae-comp/Lower Third</span>
+                  </div>
+                  <div class="cep-item__sums">
+                    <span class="cep-sum cep-sum--fps"><svg viewBox="0 0 24 24"><path d="M13 2 3 14h9l-1 8 10-12h-9Z"/></svg>30 f/s</span>
+                    <span class="cep-sum cep-sum--loop"><svg viewBox="0 0 24 24"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.5 9a9 9 0 0 1 14.9-3.4L23 10M1 14l4.6 4.4A9 9 0 0 0 20.5 15"/></svg><span data-i18n="ae.pOnce">一次</span></span>
+                    <span class="cep-sum cep-sum--fmt"><svg viewBox="0 0 24 24"><path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="m2 17 10 5 10-5"/></svg>APNG</span><span class="cep-sum cep-sum--limit"><svg viewBox="0 0 24 24"><path d="M21 8v8a2 2 0 0 1-1 1.73l-7 4a2 2 0 0 1-2 0l-7-4A2 2 0 0 1 3 16V8a2 2 0 0 1 1-1.73l7-4a2 2 0 0 1 2 0l7 4A2 2 0 0 1 21 8Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg><span>≤ 1920×1080</span></span>
+                  </div>
+                  <div class="cep-item__side">
+                    <span class="cep-dot is-idle"></span>
+                    <button class="cep-mini" type="button" title="输出设置" data-i18n-title="ae.pOut"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 0 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5v.2a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 0 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 0 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l-.1-.1a2 2 0 0 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1h.2a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg></button>
+                  </div>
+                  <span class="cep-item__bar is-idle"><i class="cep-item__fill" style="width:0"></i></span>
+                </li>
+                <li class="cep-item" data-name="Spin Icon" data-fps="24" data-frames="36" data-size="512×512" data-fmt="WebP" data-loop="循环" data-path="ae-comp/Spin Icon">
+                  <label class="cep-cb"><input type="checkbox" /><i></i></label>
+                  <div class="cep-item__main">
+                    <span class="cep-item__name">Spin Icon</span>
+                    <span class="cep-item__path"><svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2Z"/></svg>ae-comp/Spin Icon</span>
+                  </div>
+                  <div class="cep-item__sums">
+                    <span class="cep-sum cep-sum--fps"><svg viewBox="0 0 24 24"><path d="M13 2 3 14h9l-1 8 10-12h-9Z"/></svg>24 f/s</span>
+                    <span class="cep-sum cep-sum--loop"><svg viewBox="0 0 24 24"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.5 9a9 9 0 0 1 14.9-3.4L23 10M1 14l4.6 4.4A9 9 0 0 0 20.5 15"/></svg><span data-i18n="ae.pLoop">循环</span></span>
+                    <span class="cep-sum cep-sum--fmt"><svg viewBox="0 0 24 24"><path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="m2 17 10 5 10-5"/></svg>WebP</span><span class="cep-sum cep-sum--limit"><svg viewBox="0 0 24 24"><path d="M21 8v8a2 2 0 0 1-1 1.73l-7 4a2 2 0 0 1-2 0l-7-4A2 2 0 0 1 3 16V8a2 2 0 0 1 1-1.73l7-4a2 2 0 0 1 2 0l7 4A2 2 0 0 1 21 8Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg><span>≤ 512×512</span></span>
+                  </div>
+                  <div class="cep-item__side">
+                    <span class="cep-dot is-fail" title="失败"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6M9 9l6 6"/></svg></span>
+                    <button class="cep-mini" type="button" title="输出设置" data-i18n-title="ae.pOut"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 0 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5v.2a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 0 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 0 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 0 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1h.2a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg></button>
+                  </div>
+                  <span class="cep-item__bar is-fail"><i class="cep-item__fill" style="width:100%"></i></span>
+                </li>
+              </ul>
+              <!-- 合成树视图 mod-ct：表格列= 全选 / 名称(AE合成图标) / 尺寸 / 帧率 / 帧数 / 操作 -->
+              <div class="cep-tree">
+                <div class="cep-ct__head">
+                  <span class="cep-ct__c cep-ct__c--cb"><span class="cep-ct__cb" title="全选" data-i18n-title="ae.pAll"><label class="cep-cb"><input type="checkbox" id="ae-all3" /><i></i></label></span></span>
+                  <span class="cep-ct__c cep-ct__c--name"><input type="search" class="cep-ct__search" id="ae-tree-search" placeholder="合成树 / 搜索" data-i18n-placeholder="ae.pTreeSearch" spellcheck="false" /></span>
+                  <button type="button" class="cep-ct__c cep-ct__c--num" data-sort="size"><span data-i18n="ae.pColSize">尺寸</span></button>
+                  <button type="button" class="cep-ct__c cep-ct__c--num is-on" data-sort="fps"><span data-i18n="ae.pColFps">帧率</span> </button>
+                  <button type="button" class="cep-ct__c cep-ct__c--num" data-sort="frames"><span data-i18n="ae.pColFrames">帧数</span></button>
+                  <span class="cep-ct__c cep-ct__c--act"></span>
+                </div>
+                <ul class="cep-ct__list" id="ae-tree-list" role="listbox" multiple>
+                  <li class="cep-ct__row is-on" role="option" aria-selected="true" data-name="主标题 合成 01" data-size="3090×49…" data-fps="24" data-frames="96">
+                    <span class="cep-ct__c cep-ct__c--cb"><span class="cep-ct__cb"><label class="cep-cb"><input type="checkbox" checked /><i></i></label></span></span>
+                    <span class="cep-ct__c cep-ct__c--name" title="主标题 合成 01"><svg class="cep-ct__ico" viewBox="0 0 32 32" aria-hidden="true"><rect x="1" y="4" width="30" height="24" rx="1.5" fill="#1b1b1b" stroke="#8a8a8a" stroke-width="1.6"/><rect x="4" y="6" width="24" height="20" fill="#e8e6e0"/><rect x="4" y="6" width="24" height="4" fill="#9a9a9a"/><circle cx="12.5" cy="15" r="4.2" fill="#2f6fd0"/><rect x="17" y="11.5" width="8" height="7" fill="#d8402c"/><path d="M11.5 24.5 17.5 16.5 23.5 24.5Z" fill="#3f9e3f"/></svg><span class="cep-ct__txt">主标题 合成 01</span></span>
+                    <span class="cep-ct__c cep-ct__c--num">3090×49…</span>
+                    <span class="cep-ct__c cep-ct__c--num">24</span>
+                    <span class="cep-ct__c cep-ct__c--num">96</span>
+                    <span class="cep-ct__c cep-ct__c--act"><button class="cep-mini" type="button" title="输出设置" data-i18n-title="ae.pOut"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 0 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5v.2a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 0 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 0 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 0 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1h.2a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg></button></span>
+                  </li>
+                  <li class="cep-ct__row is-on" role="option" aria-selected="true" data-name="向日葵 合成" data-size="3090×49…" data-fps="24" data-frames="96">
+                    <span class="cep-ct__c cep-ct__c--cb"><span class="cep-ct__cb"><label class="cep-cb"><input type="checkbox" checked /><i></i></label></span></span>
+                    <span class="cep-ct__c cep-ct__c--name" title="向日葵 合成"><svg class="cep-ct__ico" viewBox="0 0 32 32" aria-hidden="true"><rect x="1" y="4" width="30" height="24" rx="1.5" fill="#1b1b1b" stroke="#8a8a8a" stroke-width="1.6"/><rect x="4" y="6" width="24" height="20" fill="#e8e6e0"/><rect x="4" y="6" width="24" height="4" fill="#9a9a9a"/><circle cx="12.5" cy="15" r="4.2" fill="#2f6fd0"/><rect x="17" y="11.5" width="8" height="7" fill="#d8402c"/><path d="M11.5 24.5 17.5 16.5 23.5 24.5Z" fill="#3f9e3f"/></svg><span class="cep-ct__txt">向日葵 合成</span></span>
+                    <span class="cep-ct__c cep-ct__c--num">3090×49…</span>
+                    <span class="cep-ct__c cep-ct__c--num">24</span>
+                    <span class="cep-ct__c cep-ct__c--num">96</span>
+                    <span class="cep-ct__c cep-ct__c--act"><button class="cep-mini" type="button" title="输出设置" data-i18n-title="ae.pOut"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 0 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5v.2a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 0 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 0 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 0 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1h.2a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg></button></span>
+                  </li>
+                  <li class="cep-ct__row" role="option" aria-selected="false" data-name="开幕 合成" data-size="3090×49…" data-fps="24" data-frames="96">
+                    <span class="cep-ct__c cep-ct__c--cb"><span class="cep-ct__cb"><label class="cep-cb"><input type="checkbox" /><i></i></label></span></span>
+                    <span class="cep-ct__c cep-ct__c--name" title="开幕 合成"><svg class="cep-ct__ico" viewBox="0 0 32 32" aria-hidden="true"><rect x="1" y="4" width="30" height="24" rx="1.5" fill="#1b1b1b" stroke="#8a8a8a" stroke-width="1.6"/><rect x="4" y="6" width="24" height="20" fill="#e8e6e0"/><rect x="4" y="6" width="24" height="4" fill="#9a9a9a"/><circle cx="12.5" cy="15" r="4.2" fill="#2f6fd0"/><rect x="17" y="11.5" width="8" height="7" fill="#d8402c"/><path d="M11.5 24.5 17.5 16.5 23.5 24.5Z" fill="#3f9e3f"/></svg><span class="cep-ct__txt">开幕 合成</span></span>
+                    <span class="cep-ct__c cep-ct__c--num">3090×49…</span>
+                    <span class="cep-ct__c cep-ct__c--num">24</span>
+                    <span class="cep-ct__c cep-ct__c--num">96</span>
+                    <span class="cep-ct__c cep-ct__c--act"><button class="cep-mini" type="button" title="输出设置" data-i18n-title="ae.pOut"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 0 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5v.2a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 0 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 0 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 0 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1h.2a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg></button></span>
+                  </li>
+                  <li class="cep-ct__row" role="option" aria-selected="false" data-name="泡泡 合成" data-size="3090×49…" data-fps="24" data-frames="96">
+                    <span class="cep-ct__c cep-ct__c--cb"><span class="cep-ct__cb"><label class="cep-cb"><input type="checkbox" /><i></i></label></span></span>
+                    <span class="cep-ct__c cep-ct__c--name" title="泡泡 合成"><svg class="cep-ct__ico" viewBox="0 0 32 32" aria-hidden="true"><rect x="1" y="4" width="30" height="24" rx="1.5" fill="#1b1b1b" stroke="#8a8a8a" stroke-width="1.6"/><rect x="4" y="6" width="24" height="20" fill="#e8e6e0"/><rect x="4" y="6" width="24" height="4" fill="#9a9a9a"/><circle cx="12.5" cy="15" r="4.2" fill="#2f6fd0"/><rect x="17" y="11.5" width="8" height="7" fill="#d8402c"/><path d="M11.5 24.5 17.5 16.5 23.5 24.5Z" fill="#3f9e3f"/></svg><span class="cep-ct__txt">泡泡 合成</span></span>
+                    <span class="cep-ct__c cep-ct__c--num">3090×49…</span>
+                    <span class="cep-ct__c cep-ct__c--num">24</span>
+                    <span class="cep-ct__c cep-ct__c--num">96</span>
+                    <span class="cep-ct__c cep-ct__c--act"><button class="cep-mini" type="button" title="输出设置" data-i18n-title="ae.pOut"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 0 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5v.2a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 0 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 0 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 0 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1h.2a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg></button></span>
+                  </li>
+                  <li class="cep-ct__row" role="option" aria-selected="false" data-name="熊 合成" data-size="3090×49…" data-fps="24" data-frames="96">
+                    <span class="cep-ct__c cep-ct__c--cb"><span class="cep-ct__cb"><label class="cep-cb"><input type="checkbox" /><i></i></label></span></span>
+                    <span class="cep-ct__c cep-ct__c--name" title="熊 合成"><svg class="cep-ct__ico" viewBox="0 0 32 32" aria-hidden="true"><rect x="1" y="4" width="30" height="24" rx="1.5" fill="#1b1b1b" stroke="#8a8a8a" stroke-width="1.6"/><rect x="4" y="6" width="24" height="20" fill="#e8e6e0"/><rect x="4" y="6" width="24" height="4" fill="#9a9a9a"/><circle cx="12.5" cy="15" r="4.2" fill="#2f6fd0"/><rect x="17" y="11.5" width="8" height="7" fill="#d8402c"/><path d="M11.5 24.5 17.5 16.5 23.5 24.5Z" fill="#3f9e3f"/></svg><span class="cep-ct__txt">熊 合成</span></span>
+                    <span class="cep-ct__c cep-ct__c--num">3090×49…</span>
+                    <span class="cep-ct__c cep-ct__c--num">24</span>
+                    <span class="cep-ct__c cep-ct__c--num">96</span>
+                    <span class="cep-ct__c cep-ct__c--act"><button class="cep-mini" type="button" title="输出设置" data-i18n-title="ae.pOut"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 0 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5v.2a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 0 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 0 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 0 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1h.2a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg></button></span>
+                  </li>
+                  <li class="cep-ct__row" role="option" aria-selected="false" data-name="角色 合成" data-size="3090×49…" data-fps="24" data-frames="96">
+                    <span class="cep-ct__c cep-ct__c--cb"><span class="cep-ct__cb"><label class="cep-cb"><input type="checkbox" /><i></i></label></span></span>
+                    <span class="cep-ct__c cep-ct__c--name" title="角色 合成"><svg class="cep-ct__ico" viewBox="0 0 32 32" aria-hidden="true"><rect x="1" y="4" width="30" height="24" rx="1.5" fill="#1b1b1b" stroke="#8a8a8a" stroke-width="1.6"/><rect x="4" y="6" width="24" height="20" fill="#e8e6e0"/><rect x="4" y="6" width="24" height="4" fill="#9a9a9a"/><circle cx="12.5" cy="15" r="4.2" fill="#2f6fd0"/><rect x="17" y="11.5" width="8" height="7" fill="#d8402c"/><path d="M11.5 24.5 17.5 16.5 23.5 24.5Z" fill="#3f9e3f"/></svg><span class="cep-ct__txt">角色 合成</span></span>
+                    <span class="cep-ct__c cep-ct__c--num">3090×49…</span>
+                    <span class="cep-ct__c cep-ct__c--num">24</span>
+                    <span class="cep-ct__c cep-ct__c--num">96</span>
+                    <span class="cep-ct__c cep-ct__c--act"><button class="cep-mini" type="button" title="输出设置" data-i18n-title="ae.pOut"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 0 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5v.2a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 0 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 0 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 0 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1h.2a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg></button></span>
+                  </li>
+                  <li class="cep-ct__row" role="option" aria-selected="false" data-name="图层 26 合成 1" data-size="3668×46…" data-fps="24" data-frames="96">
+                    <span class="cep-ct__c cep-ct__c--cb"><span class="cep-ct__cb"><label class="cep-cb"><input type="checkbox" /><i></i></label></span></span>
+                    <span class="cep-ct__c cep-ct__c--name" title="图层 26 合成 1"><svg class="cep-ct__ico" viewBox="0 0 32 32" aria-hidden="true"><rect x="1" y="4" width="30" height="24" rx="1.5" fill="#1b1b1b" stroke="#8a8a8a" stroke-width="1.6"/><rect x="4" y="6" width="24" height="20" fill="#e8e6e0"/><rect x="4" y="6" width="24" height="4" fill="#9a9a9a"/><circle cx="12.5" cy="15" r="4.2" fill="#2f6fd0"/><rect x="17" y="11.5" width="8" height="7" fill="#d8402c"/><path d="M11.5 24.5 17.5 16.5 23.5 24.5Z" fill="#3f9e3f"/></svg><span class="cep-ct__txt">图层 26 合成 1</span></span>
+                    <span class="cep-ct__c cep-ct__c--num">3668×46…</span>
+                    <span class="cep-ct__c cep-ct__c--num">24</span>
+                    <span class="cep-ct__c cep-ct__c--num">96</span>
+                    <span class="cep-ct__c cep-ct__c--act"><button class="cep-mini" type="button" title="输出设置" data-i18n-title="ae.pOut"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 0 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5v.2a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 0 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 0 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 0 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1h.2a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg></button></span>
+                  </li>
+                  <li class="cep-ct__row" role="option" aria-selected="false" data-name="棒棒糖 合成" data-size="3090×49…" data-fps="24" data-frames="96">
+                    <span class="cep-ct__c cep-ct__c--cb"><span class="cep-ct__cb"><label class="cep-cb"><input type="checkbox" /><i></i></label></span></span>
+                    <span class="cep-ct__c cep-ct__c--name" title="棒棒糖 合成"><svg class="cep-ct__ico" viewBox="0 0 32 32" aria-hidden="true"><rect x="1" y="4" width="30" height="24" rx="1.5" fill="#1b1b1b" stroke="#8a8a8a" stroke-width="1.6"/><rect x="4" y="6" width="24" height="20" fill="#e8e6e0"/><rect x="4" y="6" width="24" height="4" fill="#9a9a9a"/><circle cx="12.5" cy="15" r="4.2" fill="#2f6fd0"/><rect x="17" y="11.5" width="8" height="7" fill="#d8402c"/><path d="M11.5 24.5 17.5 16.5 23.5 24.5Z" fill="#3f9e3f"/></svg><span class="cep-ct__txt">棒棒糖 合成</span></span>
+                    <span class="cep-ct__c cep-ct__c--num">3090×49…</span>
+                    <span class="cep-ct__c cep-ct__c--num">24</span>
+                    <span class="cep-ct__c cep-ct__c--num">96</span>
+                    <span class="cep-ct__c cep-ct__c--act"><button class="cep-mini" type="button" title="输出设置" data-i18n-title="ae.pOut"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 0 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5v.2a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 0 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 0 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 0 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1h.2a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg></button></span>
+                  </li>
+                  <li class="cep-ct__row" role="option" aria-selected="false" data-name="frame_realesrgan" data-size="2880×38…" data-fps="24" data-frames="167">
+                    <span class="cep-ct__c cep-ct__c--cb"><span class="cep-ct__cb"><label class="cep-cb"><input type="checkbox" /><i></i></label></span></span>
+                    <span class="cep-ct__c cep-ct__c--name" title="frame_realesrgan"><svg class="cep-ct__ico" viewBox="0 0 32 32" aria-hidden="true"><rect x="1" y="4" width="30" height="24" rx="1.5" fill="#1b1b1b" stroke="#8a8a8a" stroke-width="1.6"/><rect x="4" y="6" width="24" height="20" fill="#e8e6e0"/><rect x="4" y="6" width="24" height="4" fill="#9a9a9a"/><circle cx="12.5" cy="15" r="4.2" fill="#2f6fd0"/><rect x="17" y="11.5" width="8" height="7" fill="#d8402c"/><path d="M11.5 24.5 17.5 16.5 23.5 24.5Z" fill="#3f9e3f"/></svg><span class="cep-ct__txt">frame_realesrgan</span></span>
+                    <span class="cep-ct__c cep-ct__c--num">2880×38…</span>
+                    <span class="cep-ct__c cep-ct__c--num">24</span>
+                    <span class="cep-ct__c cep-ct__c--num">167</span>
+                    <span class="cep-ct__c cep-ct__c--act"><button class="cep-mini" type="button" title="输出设置" data-i18n-title="ae.pOut"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 0 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5v.2a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 0 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 0 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 0 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1h.2a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg></button></span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <!-- 底栏 mod-bar：全选 + 输入项目 n/N + 统计 + 总进度 + 开始/快捷键 -->
+            <div class="cep-bar">
+              <label class="cep-cb cep-cb--all" title="全选" data-i18n-title="ae.pAll"><input type="checkbox" id="ae-all2" /><i></i><span data-i18n="ae.pSelectAll">全选</span></label>
+              <span class="cep-bar__label"><span data-i18n="ae.pItems">输入项目</span><b id="ae-count">2 / 5</b></span>
+              <span class="cep-bar__stats">
+                <span class="cep-stat is-done" title="完成"><svg viewBox="0 0 24 24"><path d="M22 11.1V12a10 10 0 1 1-5.9-9.1"/><path d="m22 4-10 10-3-3"/></svg>1</span>
+                <span class="cep-stat is-fail" title="失败"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6M9 9l6 6"/></svg>1</span>
+                <span class="cep-stat is-run" title="转换中"><i></i>1</span>
+              </span>
+              <span class="cep-bar__prog"><i id="ae-bar" style="width:38%"></i></span>
+              <span class="cep-bar__acts">
+                <button class="cep-mini" type="button" id="ae-start" title="开始" data-i18n-title="ae.pStart"><svg viewBox="0 0 24 24"><path d="m6 3 14 9-14 9V3Z"/></svg></button>
+                <button class="cep-mini" type="button" id="ae-kbd" title="快捷键" data-i18n-title="ae.pKbd"><svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M6 14h.01M18 14h.01M10 14h4"/></svg></button>
+              </span>
+            </div>
+
+            <!-- 输出设置覆盖层ib-set-overlay（CEP 点顶栏最右按钮全屏铺开） -->
+            <div class="cep-overlay" id="ae-overlay" hidden>
+              <div class="cep-overlay__bar">
+                <span data-i18n="ae.pOutCfg">输出配置</span>
+                <button class="cep-mini" type="button" id="ae-overlay-close" title="关闭" data-i18n-title="ae.pClose"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+              </div>
+              <div class="cep-overlay__body">
+                <p class="cep-cap" data-i18n="ae.pNameLbl">输出名</p>
+                <div class="cep-input">Logo_Loop</div>
+                <p class="cep-cap" data-i18n="ae.pQuality">压缩质量</p>
+                <div class="cep-input is-num">82</div>
+                <p class="cep-cap" data-i18n="ae.pFmtLbl">输出格式</p>
+                <div class="cep-fmt">
+                  <label class="cep-chk"><input type="checkbox" checked /><i></i>APNG</label>
+                  <label class="cep-chk"><input type="checkbox" checked /><i></i>WebP</label>
+                  <label class="cep-chk"><input type="checkbox" /><i></i>GIF</label>
+                </div>
+                <p class="cep-cap" data-i18n="ae.pToLbl">输出到</p>
+                <div class="cep-input is-ro">…/ae-comp/Logo_Loop</div>
+                <p class="cep-vars">
+                  <button type="button">{comp}</button><button type="button">{fmt}</button><button type="button">{proj}</button><button type="button">{n}</button>
+                </p>
+                <button class="cep-go" id="ae-go" type="button"><span data-i18n="ae.pStart">开始</span></button>
+              </div>
+            </div>
+          </div>
+        </figure>
+
+        <!-- 右：AE 四大特色 -->
+        <div class="ae-grid" role="list">
+          <article class="ae-card">
+            <div class="ae-card-head">
+              <span class="ae-card-ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path class="ae-f-d" d="M20 12a8 8 0 1 1-2.3-5.6"/><path class="ae-f-d" d="M17.7 3.5v3.2h-3.2"/><circle cx="12" cy="12" r="2.4" class="ae-f-dot"/></svg>
+            </span>
+              <h3 data-i18n="ae.f1t">刷新即识别，直接出片</h3>
+            </div>
+            <p data-i18n="ae.f1d">面板开着就自动同步工程里的合成，嵌套的子合成也一并列出；勾选即可导出 APNG / WebP / GIF，不必回到桌面端。</p>
+          </article>
+          <article class="ae-card">
+            <div class="ae-card-head">
+              <span class="ae-card-ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><rect class="ae-f-r" x="3" y="4" width="7.5" height="16" rx="2"/><rect class="ae-f-r" x="13.5" y="4" width="7.5" height="16" rx="2"/><path class="ae-f-d" d="M3 9h7.5M13.5 9H21"/></svg>
+            </span>
+              <h3 data-i18n="ae.f2t">两种视图，随意切换</h3>
+            </div>
+            <p data-i18n="ae.f2d">任务列表与合成树视图一键切换，双击合成即可在 AE 里直接定位它，管理一整个工程也不费劲。</p>
+          </article>
+          <article class="ae-card">
+            <div class="ae-card-head">
+              <span class="ae-card-ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path class="ae-f-d" d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path class="ae-f-d" d="M9.5 13.5c1.6-2 3.4 2 5 0"/></svg>
+            </span>
+              <h3 data-i18n="ae.f3t">变量输出路径，归档不乱</h3>
+            </div>
+            <p data-i18n="ae.f3d">输出目录支持 <code>{comp}</code>、<code>{fmt}</code> 等变量模板，按合成名与格式自动分文件夹，批量导出后依然条理清晰。</p>
+          </article>
+          <article class="ae-card">
+            <div class="ae-card-head">
+              <span class="ae-card-ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><rect class="ae-f-r" x="6" y="2.5" width="12" height="19" rx="2.5"/><path class="ae-f-d" d="M10 5h4"/><path class="ae-f-d" d="M9 9.5h6M9 13h6M9 16.5h3.5"/></svg>
+            </span>
+              <h3 data-i18n="ae.f4t">为 CEP 小屏重新排版</h3>
+            </div>
+            <p data-i18n="ae.f4d">不是把桌面界面硬塞进窄面板：控件、字号与间距都按 CEP 面板宽度重新适配，窄窗口一样完整可用。</p>
+          </article>
+          <article class="ae-card">
+            <div class="ae-card-head">
+              <span class="ae-card-ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path class="ae-f-d" d="M13 2 4.5 13H11l-1 9 8.5-11H12z"/><path class="ae-f-d" d="M3 7h4M3 12h3M3 17h4"/></svg>
+            </span>
+              <h3 data-i18n="ae.f5t">开发热更新，改完即生效</h3>
+            </div>
+            <p data-i18n="ae.f5d">面板与主程序都接上开发服务器：改代码自动热替换，CEP 面板不用重装、不用重启 AE，迭代调试快得多。</p>
+          </article>
+          <article class="ae-card">
+            <div class="ae-card-head">
+              <span class="ae-card-ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><rect class="ae-f-r" x="2.5" y="4" width="19" height="13" rx="2"/><path class="ae-f-d" d="M8 21h8M12 17v4"/><path class="ae-f-d" d="M6.5 11.5 9 9l2.5 3 3-4.5 3 4"/></svg>
+            </span>
+              <h3 data-i18n="ae.f6t">CEP 端能力对齐桌面版</h3>
+            </div>
+            <p data-i18n="ae.f6d">扩展面板不是附庸品：任务列表、设置、命名、日志一应俱全，桌面端有的能力这里都能用到。</p>
+          </article>
+          <article class="ae-card">
+            <div class="ae-card-head">
+              <span class="ae-card-ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path class="ae-f-d" d="M12 3v3M12 18v3M3 12h3M18 12h3"/><circle class="ae-f-dot" cx="12" cy="12" r="4.2"/><path class="ae-f-d" d="M5.6 5.6 7.8 7.8M16.2 16.2l2.2 2.2M18.4 5.6 16.2 7.8M7.8 16.2l-2.2 2.2"/></svg>
+            </span>
+              <h3 data-i18n="ae.f7t">贴合 AE 工作流</h3>
+            </div>
+            <p data-i18n="ae.f7d">从工程面板到导出都在 AE 里完成，省去在文件夹与软件之间来回切换，节奏不被打断。</p>
+          </article>
+          <article class="ae-card">
+            <div class="ae-card-head">
+              <span class="ae-card-ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><rect class="ae-f-r" x="2.5" y="5" width="14" height="11" rx="2"/><path class="ae-f-d" d="M6.5 20h12a3 3 0 0 0 3-3v-6a3 3 0 0 0-3-3h-1.5"/><circle class="ae-f-dot" cx="7" cy="10.5" r="1.6"/></svg>
+            </span>
+              <h3 data-i18n="ae.f8t">两端同源，产出一致</h3>
+            </div>
+            <p data-i18n="ae.f8d">与桌面端共用同一套压缩 / 合成 / 降质算法，输出的大小规则与命名习惯完全一致，跨端协作不返工。</p>
+          </article>
+        </div>
+      </div>
+      <p class="ae-stage-note mono" id="ae-note">选中合成 → 变量路径落盘 → APNG / WebP / GIF</p>
+    </div>
+  </section>
 
   <section class="section" id="shots">
     <div class="section-head">
-      <p class="eyebrow mono" data-i18n="shots.eb">06 · REAL UI</p>
+      <p class="eyebrow mono" data-i18n="shots.eb">07 · REAL UI</p>
       <h2 data-i18n="shots.h2">真实软件界面，不是概念稿</h2>
       <p class="section-sub" data-i18n="shots.sub">应用真实界面：空状态导入、任务卡片列表、参数设置、默认设置（命名 / 路径 / 大小上限）。</p>
     </div>
@@ -845,7 +1066,7 @@
   <section class="section section-dl" id="download">
     <div class="dl-panel">
       <div>
-        <p class="eyebrow mono" data-i18n="dl.eb">07 · GET IT</p>
+        <p class="eyebrow mono" data-i18n="dl.eb">08 · GET IT</p>
         <h2 data-i18n="dl.h2">选一个系统，直接开箱</h2>
         <p class="section-sub" data-i18n="dl.sub">安装包由 GitHub Actions 构建。Windows 包可同时安装桌面与 AE 扩展。Windows / Linux 安装版支持应用内自动更新；macOS 未签名，首次打开见 Release 说明。</p>
       </div>
@@ -882,7 +1103,7 @@
   <!-- lineage + why + authors at the end -->
   <section class="section section-why" id="why">
     <div class="section-head">
-      <p class="eyebrow mono" data-i18n="why.eb">08 · WHY NEXT</p>
+      <p class="eyebrow mono" data-i18n="why.eb">09 · WHY NEXT</p>
       <h2 data-i18n="why.h2">不是旧版补丁，是重做过的工作台</h2>
       <p class="section-sub" data-i18n="why.sub">原版长期停更；本仓库在社区 fork 基建上重写前后端，而不是只修几个按钮。</p>
     </div>
@@ -935,12 +1156,28 @@
         <h3 data-i18n="why.6t">三端 CI</h3>
         <p data-i18n="why.6d">GitHub Actions 构建 Win / macOS / Linux，自动版本与 Release Notes。</p>
       </article>
+      <article class="why-card">
+        <div class="why-ill" aria-hidden="true">
+          <svg viewBox="0 0 64 40" class="why-svg"><rect x="6" y="10" width="22" height="24" rx="4" class="wy-box"/><rect x="36" y="10" width="22" height="24" rx="4" class="wy-fill"/><path d="M28 20h8" class="wy-stroke"/><path d="M33 17l3 3-3 3" class="wy-stroke"/></svg>
+        </div>
+        <p class="why-card__tag mono" data-i18n="why.tag7">扩展</p>
+        <h3 data-i18n="why.7t">CEP 面板同步重做</h3>
+        <p data-i18n="why.7d">After Effects 面板复用同一套组件与设计令牌，不是另做一套缩水界面。</p>
+      </article>
+      <article class="why-card">
+        <div class="why-ill" aria-hidden="true">
+          <svg viewBox="0 0 64 40" class="why-svg"><path d="M26 6l-10 18h10l-4 10 16-20H28z" class="wy-fill"/><path d="M10 30h10M44 30h10" class="wy-stroke"/></svg>
+        </div>
+        <p class="why-card__tag mono" data-i18n="why.tag8">开发</p>
+        <h3 data-i18n="why.8t">热更新开发链路</h3>
+        <p data-i18n="why.8d">桌面与 CEP 面板都接开发服务器，改代码即时生效，免去反复重装重启。</p>
+      </article>
     </div>
   </section>
 
   <section class="section section-lineage" id="lineage">
     <div class="section-head">
-      <p class="eyebrow mono" data-i18n="lineage.eb">09 · LINEAGE</p>
+      <p class="eyebrow mono" data-i18n="lineage.eb">10 · LINEAGE</p>
       <h2 data-i18n="lineage.h2">从原版到 iSparta-next</h2>
       <p class="section-sub" data-i18n="lineage.sub">感谢原作者与每一位社区维护者。本仓库站在他们肩膀上继续改。</p>
     </div>
@@ -1086,7 +1323,7 @@
        本地副本 72KB + 43KB，GreenSock 标准许可允许自托管部署，许可头保留在文件内 -->
   <script src="assets/vendor/gsap.min.js"></script>
   <script src="assets/vendor/ScrollTrigger.min.js"></script>
-  <script src="i18n.js?v=20261004-copy2"></script>
-  <script src="main.js?v=20261004-copy2"></script>
+  <script src="i18n.js?v=20261008-copy1"></script>
+  <script src="main.js?v=20261008-copy1"></script>
 </body>
 </html>

@@ -12,6 +12,11 @@ scripts/dev/guide-preview/index.html  text eol=lf
 docs/PLAN-GUIDE-PAGES.md              text eol=lf
 src/util/updateCheck.js               text eol=lf
 targets/cep/CSXS/manifest.xml         text eol=lf
+# 落地页四个文件常被 Edit / Python / sed 改写，行尾随之在LF / CRLF 间反复横跳，
+# 每次都把整份 diff 刷成「全文件已改」。归一化后 git 比较前先转换，工作区怎么写都不出噪声。
+landing/*.html                       text eol=lf
+landing/*.css                        text eol=lf
+landing/*.js                         text eol=lf
 
 # ② vendor 进来的第三方库 —— 冻结字节，git 不做任何转换（含行尾）。
 #    这三份 node-forge 是随包分发的上游拷贝，改动它们只会污染历史。

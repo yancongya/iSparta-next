@@ -2165,7 +2165,7 @@ html[data-theme="dark"] .log-row.is-error {
 /* why-next cards */
 .why-cards {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 12px;
 }
 
@@ -2207,6 +2207,12 @@ html[data-theme="dark"] .log-row.is-error {
 .why-card .mono {
   font-size: 0.95em;
   color: var(--accent);
+}
+
+@media (max-width: 1040px) {
+  .why-cards {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 
 @media (max-width: 900px) {
@@ -2343,6 +2349,21 @@ html[data-theme="dark"] .log-row.is-error {
 .about-card a {
   color: var(--accent);
   font-weight: 600;
+}
+
+/* about 区块：3×2 自适应网格（作用域隔离，不影响其他区块的 4 列栅格） */
+.section-about .about-grid {
+  grid-template-columns: repeat(3, 1fr);
+}
+@media (max-width: 980px) {
+  .section-about .about-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 620px) {
+  .section-about .about-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 900px) {
@@ -3154,105 +3175,999 @@ html[data-theme="dark"] .cmp-tab.is-on { color: #0c0f0e; }
 /* ==========================================================================
    AE 双端区块：动态插画（对齐 hero-stage / pet 拟物语言）
    ========================================================================== */
+/* AE 面板区块：左窄屏面板 + 右 2×4 卡片（与面板等高，卡内文字按容器高度缩放） */
 .ae-stage {
-  margin: 0 0 28px;
-  padding: 18px 14px 12px;
+  margin: 0 0 8px;
+  padding: 22px 22px 14px;
   border: 1px solid var(--line);
   border-radius: var(--radius, 14px);
   background: var(--card);
 }
-
-.ae-svg {
-  width: 100%;
-  height: auto;
-  display: block;
+/* JS 未就绪时也必须可见：只有 GSAP 接管后才由脚本设置初始透明态 */
+.ae-stage:not(.gsap-ready) {
+  opacity: 1;
+  transform: none;
 }
 
-.ae-stage-note {
-  margin: 10px 0 0;
-  text-align: center;
+/* 面板与卡片区左右平分；面板作为高度锚点，卡片区跟随等高 */
+.ae-stage-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 22px;
+  align-items: stretch;
+}
+/* 面板作为高度锚点：卡片区跟随它等高 */
+.ae-stage-grid > .ae-panel {
+  width: auto;
+  margin: 0;
+  min-height: 520px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 右：2 列 × 4 行 = 8 张；行高均分，卡内文字按容器高度缩放 */
+.ae-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: minmax(0, 1fr);
+  gap: 14px;
+  margin: 0;
+  container-type: size;
+}
+.ae-card {
+  container-type: size;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow: hidden;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius, 14px);
+  /* 内边距 / 字号按卡片自身高度（cqh）等比缩放：
+     面板拉高 → 卡片变高 → 文字同步放大，始终填满不溢出 */
+  padding: clamp(8px, 9cqh, 16px) clamp(11px, 12cqh, 20px);
+  transition: transform 0.2s cubic-bezier(0.34, 1.4, 0.64, 1),
+    border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.ae-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--accent);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.08);
+}
+/* 标题行：图标与标题同行（窄卡片里竖排会挤掉正文行数） */
+.ae-card-head {
+  display: flex;
+  align-items: center;
+  gap: clamp(5px, 6cqh, 10px);
+  margin-bottom: clamp(3px, 4cqh, 7px);
+}
+.ae-card-ico {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: clamp(20px, 22cqh, 36px);
+  height: clamp(20px, 22cqh, 36px);
+  border-radius: 9px;
+  background: var(--accent-soft);
+  border: 1px solid var(--line);
+}
+.ae-card-ico svg {
+  width: 55%;
+  height: 55%;
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+/* 描边型 path（ae-f-d）/ 圆角矩形（ae-f-r）/ 高亮圆点（ae-f-dot） */
+.ae-card-ico .ae-f-r { fill: none; }
+.ae-card-ico .ae-f-dot { fill: var(--accent); stroke: none; }
+.ae-card h3 {
+  margin: 0;
+  font-size: clamp(12px, 13cqh, 16px);
+  line-height: 1.3;
+  min-width: 0;
+}
+.ae-card p {
+  margin: 0;
+  font-size: clamp(10px, 10cqh, 12.5px);
+  line-height: 1.45;
   color: var(--muted);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 6;
+  overflow: hidden;
+}
+.ae-card code {
+  font-family: var(--mono);
+  font-size: 0.78em;
+  background: var(--accent-soft);
+  color: var(--accent);
+  padding: 1px 4px;
+  border-radius: 4px;
+}
+
+@media (max-width: 1080px) {
+  .ae-stage-grid { gap: 18px; }
+}
+@media (max-width: 900px) {
+  .ae-stage-grid { grid-template-columns: minmax(0, 1fr); gap: 22px; }
+  .ae-stage-grid > .ae-panel { width: 360px; min-height: 0; margin: 0 auto; }
+  .ae-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: auto; }
+  .ae-card { padding: 15px 14px; }
+  .ae-card-ico { width: 34px; height: 34px; margin-bottom: 9px; }
+  .ae-card h3 { font-size: 0.92rem; }
+  .ae-card p { font-size: 0.8rem; }
+}
+@media (max-width: 620px) {
+  .ae-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* 左：CEP 面板 mockup —— 结构与配色都对齐真实应用
+   结构：src/ui-next/views/Home.vue（ib-rail / mod-list / mod-bar / ib-set-overlay）
+   配色：src/ui-next/styles/tokens.css 的 --is-* 令牌，两套主题各自完整定义。
+   mockup 不复用落地页的 --card/--ink/--line —— 真实面板是独立的四层表面
+   （bg → panel → card → card-hi）+ 半透明选中态，与落地页视觉语言不同，
+   照搬真实令牌才能还原 AE 里看到的那个面板。 */
+
+/* ---- 面板令牌：亮色（对齐 tokens.css 的 is-theme-light） ---- */
+.cep {
+  --cep-accent: #c2410c;
+  --cep-accent-rgb: 194, 65, 12;
+  --cep-on-accent: #fffaf5;
+  --cep-accent-soft: rgba(194, 65, 12, 0.07);
+  --cep-selected: rgba(194, 65, 12, 0.09);
+  --cep-active: rgba(194, 65, 12, 0.12);
+  --cep-bg: #f3efe6;
+  --cep-panel: #ebe6db;
+  --cep-surface: #fffdf8;
+  --cep-surface-hi: #f7f3ea;
+  --cep-inset: #f5f1e8;
+  --cep-border: rgba(28, 25, 23, 0.1);
+  --cep-border-strong: rgba(28, 25, 23, 0.2);
+  --cep-input-border: rgba(28, 25, 23, 0.16);
+  --cep-text: #1c1917;
+  --cep-text-2: rgba(28, 25, 23, 0.62);
+  --cep-text-3: rgba(28, 25, 23, 0.38);
+  --cep-hover: rgba(28, 25, 23, 0.05);
+  --cep-track: rgba(28, 25, 23, 0.09);
+  --cep-hot: #ea580c;
+  --cep-r-md: 12px;
+  --cep-r-pill: 999px;
+  /* 摘要芯片六色（对齐 tokens.css 的 --is-var-1..6，亮色取深调保证浅底可读） */
+  --cep-var-1: 37, 99, 235;
+  --cep-var-2: 21, 128, 61;
+  --cep-var-3: 194, 65, 12;
+  --cep-var-4: 109, 40, 217;
+  --cep-var-5: 14, 116, 144;
+  --cep-var-6: 219, 39, 119;
+  --cep-bad-bg: rgba(185, 28, 28, 0.09);
+  --cep-ok: #15803d;
+  --cep-bad: #b91c1c;
+  --cep-shadow: 0 10px 30px rgba(28, 25, 23, 0.08);
+  --cep-shadow-sm: 0 1px 2px rgba(28, 25, 23, 0.06);
+  --cep-shadow-md: 0 6px 18px rgba(28, 25, 23, 0.1);
+}
+
+/* ---- 面板令牌：暗色（对齐 tokens.css 的 is-theme-dark 默认） ---- */
+html[data-theme="dark"] .cep {
+  --cep-accent: #c8f542;
+  --cep-accent-rgb: 200, 245, 66;
+  --cep-on-accent: #0c0f0e;
+  --cep-accent-soft: rgba(200, 245, 66, 0.08);
+  --cep-selected: rgba(200, 245, 66, 0.11);
+  --cep-active: rgba(200, 245, 66, 0.16);
+  --cep-bg: #0c0f0e;
+  --cep-panel: #141816;
+  --cep-surface: #1a201c;
+  --cep-surface-hi: #222a24;
+  --cep-inset: #101412;
+  --cep-border: rgba(232, 240, 230, 0.08);
+  --cep-border-strong: rgba(232, 240, 230, 0.16);
+  --cep-input-border: rgba(232, 240, 230, 0.14);
+  --cep-text: #eef3ec;
+  --cep-text-2: rgba(238, 243, 236, 0.62);
+  --cep-text-3: rgba(238, 243, 236, 0.36);
+  --cep-hover: rgba(232, 240, 230, 0.05);
+  --cep-track: rgba(232, 240, 230, 0.1);
+  --cep-hot: #ff6b35;
+  --cep-r-md: 12px;
+  --cep-r-pill: 999px;
+  /* 摘要芯片六色（对齐 tokens.css 的 --is-var-1..6） */
+  --cep-var-1: 122, 162, 255;
+  --cep-var-2: 94, 222, 160;
+  --cep-var-3: 251, 191, 119;
+  --cep-var-4: 183, 155, 255;
+  --cep-var-5: 125, 211, 252;
+  --cep-var-6: 249, 168, 212;
+  --cep-bad-bg: rgba(255, 92, 92, 0.14);
+  --cep-ok: #3ddc97;
+  --cep-bad: #ff5c5c;
+  --cep-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+  --cep-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --cep-shadow-md: 0 6px 20px rgba(0, 0, 0, 0.42);
+}
+
+.ae-panel {
+  margin: 0;
+}
+.ae-panel-cap {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 0 10px 2px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.ae-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex: none;
+}
+
+/* 面板外壳 =--is-bg，外层描边用--is-border-strong（真实面板嵌在 AE 深色底上） */
+.cep {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  border: 1px solid var(--cep-border-strong);
+  border-radius: var(--is-r-md, 12px);
+  background: var(--cep-bg);
+  overflow: hidden;
+  font-size: 12px;
+  color: var(--cep-text);
+  font-family: var(--font);
+  transition: background-color 200ms cubic-bezier(0.4, 0, 0.2, 1),
+    color 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.cep svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+/* AE 合成图标是彩色填充图形（矢量重绘自 icons/pag-comp.png），不参与线性图标规则 */
+.cep svg.cep-ct__ico {
+  stroke: none;
+}
+.cep svg.cep-ct__ico rect,
+.cep svg.cep-ct__ico circle,
+.cep svg.cep-ct__ico path {
+  stroke: none;
+}
+
+/* ---- 顶栏 ib-rail（CEP：横排，logo 左 / 功能键右） ---- */
+.cep-rail {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  padding: 5px 8px;
+  border-bottom: 1px solid var(--cep-border);
+  background: var(--cep-panel);
+}
+.cep-rail__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: auto;
+  color: var(--cep-text);
+}
+.cep-logo { width: 16px; height: 16px; display: block; flex: none; }
+.cep-logo path:first-child { fill: var(--cep-accent); stroke: none; }
+.cep-logo path:last-child { fill: var(--cep-on-accent); stroke: none; }
+.cep-rail__brand b {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.cep-rail__acts { display: flex; align-items: center; gap: 2px; }
+.cep-rail__btn {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid var(--cep-border);
+  border-radius: var(--is-r-sm, 8px);
+  background: var(--cep-surface);
+  color: var(--cep-text-2);
+  cursor: pointer;
+  transition: color 120ms ease, border-color 120ms ease,
+    background-color 120ms ease, transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.cep-rail__btn svg { width: 13px; height: 13px; }
+.cep-rail__btn:hover {
+  border-color: var(--cep-accent);
+  background: var(--cep-accent-soft);
+  color: var(--cep-accent);
+  transform: translateY(-1px);
+}
+.cep-rail__btn.is-on { color: var(--cep-accent); border-color: rgba(var(--cep-accent-rgb), 0.35); }
+/* 未读小点：设置 / 日志（真实 ib-rail__badge） */
+.cep-rail__btn.has-dot::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--cep-accent);
+}
+.cep-rail__btn.is-end { margin-left: 4px; }
+
+/* ---- 主体：列表区---- */
+.cep-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--cep-bg);
+}
+
+/* 过滤条 mod-list__filter：钉在列表区顶部 */
+.cep-filter {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  padding: 6px 9px;
+  border-bottom: 1px solid var(--cep-border);
+  background: var(--cep-panel);
+}
+.cep-cb { display: inline-flex; align-items: center; gap: 5px; cursor: pointer; flex: none; }
+.cep-cb input { position: absolute; opacity: 0; pointer-events: none; }
+.cep-cb > i {
+  position: relative;
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid var(--cep-input-border);
+  border-radius: var(--is-r-xs, 4px);
+  display: block;
+  flex: none;
+  background: var(--cep-inset);
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+.cep-cb:hover > i { border-color: var(--cep-accent); }
+.cep-cb > input:checked + i,
+.cep-cb > input:indeterminate + i {
+  background: var(--cep-accent);
+  border-color: var(--cep-accent);
+}
+.cep-cb > input:checked + i::after {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 1px;
+  width: 3.4px;
+  height: 7.4px;
+  border: solid var(--cep-on-accent);
+  border-width: 0 2px 2px 0;
+  transform: rotate(42deg);
+}
+.cep-cb > input:indeterminate + i::after {
+  content: "";
+  position: absolute;
+  left: 2.6px;
+  top: 5.2px;
+  width: 6.6px;
+  height: 2px;
+  background: var(--cep-on-accent);
+  border-radius: 1px;
+}
+.cep-search {
+  flex: 1;
+  min-width: 0;
+  height: 24px;
+  padding: 0 8px;
+  border: 1px solid var(--cep-input-border);
+  border-radius: var(--is-r-sm, 8px);
+  background: var(--cep-inset);
+  color: var(--cep-text);
+  font-family: inherit;
+  font-size: 11px;
+}
+.cep-search::placeholder { color: var(--cep-text-3); }
+.cep-search:focus {
+  border-color: var(--cep-accent);
+  box-shadow: 0 0 0 3px rgba(var(--cep-accent-rgb), 0.3);
+}
+.cep-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  height: 24px;
+  padding: 0 8px;
+  border: 1px solid transparent;
+  border-radius: var(--is-r-sm, 8px);
+  background: transparent;
+  color: var(--cep-text-2);
+  font-family: var(--mono);
+  font-size: 10px;
+  cursor: pointer;
+  flex: none;
+  transition: color 120ms ease, background-color 120ms ease;
+}
+.cep-chip i { font-style: normal; font-size: 8px; opacity: 0; }
+.cep-chip:hover { background: var(--cep-hover); color: var(--cep-text); }
+.cep-chip.is-on {
+  color: var(--cep-accent);
+  background: var(--cep-active);
+}
+
+/* 合成列表 mod-list__inner：条目均分撑满（真实面板列表区不留大片空白） */
+.cep-items {
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+.cep-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-height: 44px;
+  padding: 6px 8px 7px;
+  border: 1px solid var(--cep-border);
+  border-radius: var(--cep-r-md);
+  background: var(--cep-surface);
+  box-shadow: var(--cep-shadow-sm);
+  cursor: pointer;
+  overflow: hidden;
+  transition: background-color 200ms cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 200ms cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 200ms cubic-bezier(0.4, 0, 0.2, 1),
+    transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.cep-item:hover {
+  border-color: var(--cep-border-strong);
+  background: var(--cep-surface-hi);
+  box-shadow: var(--cep-shadow-md);
+  transform: translateY(-1px);
+}
+/* 选中态：半透明底 + 左侧 3px 竖条（真实 .item.active 的 inset box-shadow） */
+.cep-item.is-sel {
+  border-color: var(--cep-accent);
+  background: var(--cep-selected);
+  box-shadow: inset 3px 0 0 var(--cep-accent), var(--cep-shadow-sm);
+}
+/* 四态底色（真实 .item 的 is-running / is-fail，projectList.scss L166-176） */
+.cep-item.is-run {
+  border-color: rgba(var(--cep-accent-rgb), 0.45);
+  background: var(--cep-accent-soft);
+}
+.cep-item.is-fail {
+  border-color: rgba(255, 92, 92, 0.5);
+  background: var(--cep-bad-bg);
+}
+.cep-item.is-fail:hover { background: var(--cep-bad-bg); }
+.cep-item__main { display: flex; flex-direction: column; min-width: 0; flex: 1; gap: 2px; }
+.cep-item__name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--cep-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* 输出路径 outpath：链接态 = accent 色 + 常显下划线（真实 projectList.scss L295-315）
+   注意不是灰色等宽字体；CEP 下是 .outpath--static（只读） */
+.cep-item__path {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--cep-accent);
+  font-family: inherit;
+  font-size: 11.5px;
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-decoration: underline;
+  text-decoration-color: rgba(var(--cep-accent-rgb), 0.35);
+  text-underline-offset: 3px;
+  cursor: default;
+}
+.cep-item__path span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cep-item__path svg { width: 11px; height: 11px; flex: none; }
+/* 摘要行 summary：横向 flex，每个摘要件独立配色 + hover 底色浮出
+   （真实 projectList.scss L401-454，六色来自 --is-var-1..6） */
+.cep-item__sums {
+  display: flex;
+  align-items: center;
+  gap: var(--cep-s-1, 2px);
+  flex: none;
+}
+.cep-sum {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+  padding: 1px 4px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: none;
+  color: var(--sum-fg, var(--cep-text-3));
+  font-family: var(--mono);
+  font-size: 9.5px;
+  line-height: 1.35;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  transition: background-color 120ms cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 120ms cubic-bezier(0.4, 0, 0.2, 1),
+    color 120ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.cep-sum svg { width: 9px; height: 9px; flex: none; opacity: 0.8; }
+.cep-sum:hover {
+  background: var(--sum-bg, var(--cep-hover));
+  border-color: var(--sum-line, var(--cep-border));
+  color: var(--sum-fg, var(--cep-text-2));
+}
+.cep-sum:hover svg { opacity: 1; }
+.cep-sum--fps { --sum-fg: rgb(var(--cep-var-1)); --sum-bg: rgba(var(--cep-var-1), 0.12); --sum-line: rgba(var(--cep-var-1), 0.32); }
+.cep-sum--loop { --sum-fg: rgb(var(--cep-var-5)); --sum-bg: rgba(var(--cep-var-5), 0.12); --sum-line: rgba(var(--cep-var-5), 0.32); }
+.cep-sum--fmt { --sum-fg: rgb(var(--cep-var-2)); --sum-bg: rgba(var(--cep-var-2), 0.12); --sum-line: rgba(var(--cep-var-2), 0.32); font-weight: 600; }
+.cep-sum--limit { --sum-fg: rgb(var(--cep-var-3)); --sum-bg: rgba(var(--cep-var-3), 0.12); --sum-line: rgba(var(--cep-var-3), 0.32); }
+.cep-item__side {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: none;
+}
+.cep-dot {
+  display: grid;
+  place-items: center;
+  width: 15px;
+  height: 15px;
+  flex: none;
+}
+.cep-dot svg { width: 13px; height: 13px; }
+/* 完成=--is-ok / 失败=--is-bad / 进行中=accent 转圈 / 待处理=track 灰点 */
+.cep-dot.is-done { color: var(--cep-ok); }
+.cep-dot.is-fail { color: var(--cep-bad); }
+.cep-dot.is-idle {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--cep-track);
+  margin: 0 4.5px;
+}
+.cep-dot.is-run { color: var(--cep-accent); }
+.cep-dot.is-run > i {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1.6px solid currentColor;
+  border-right-color: transparent;
+  animation: cep-spin 0.9s linear infinite;
+}
+@keyframes cep-spin { to { transform: rotate(360deg); } }
+
+.cep-mini {
+  display: grid;
+  place-items: center;
+  width: 23px;
+  height: 23px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--is-r-sm, 8px);
+  background: transparent;
+  color: var(--cep-text-2);
+  cursor: pointer;
+  transition: color 120ms ease, background-color 120ms ease,
+    border-color 120ms ease, transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.cep-mini svg { width: 12px; height: 12px; }
+.cep-mini:hover {
+  border-color: var(--cep-border-strong);
+  background: var(--cep-accent-soft);
+  color: var(--cep-accent);
+  transform: translateY(-1px);
+}
+
+/* 条目底部进度条 item-bar（真实 projectList.scss L483-506）：
+   轨道 absolute 铺满条目底边（left/right 0，3px），内填 .cep-item__fill 按百分比撑开。
+   待处理 display:none；运行中 accent→白 渐变；完成 / 失败都强制满宽。 */
+.cep-item__bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  overflow: hidden;
+  pointer-events: none;
+  border-radius: 0 0 var(--cep-r-md) var(--cep-r-md);
+  z-index: 2;
+}
+.cep-item__fill {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: var(--cep-accent);
+  transition: width 250ms ease;
+}
+.cep-item__bar.is-idle { display: none; }
+.cep-item__bar.is-run .cep-item__fill {
+  background: linear-gradient(
+    90deg,
+    var(--cep-accent),
+    color-mix(in srgb, var(--cep-accent) 55%, #fff)
+  );
+}
+.cep-item__bar.is-done .cep-item__fill { background: var(--cep-ok); width: 100% !important; }
+.cep-item__bar.is-fail .cep-item__fill { background: var(--cep-bad); width: 100% !important; }
+
+/* ===================================================================
+   合成树视图 mod-ct（CEP 特化表格）
+   真实来源：src/components/compTree/compTree.vue 内联 scss L416-543
+   列为：全选 28px / 名称 1fr（前置 AE 合成图标 16px）/ 尺寸 / 帧率 / 帧数 各 64px / 操作 32px
+   =================================================================== */
+.cep-tree {
+  display: none;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+  font-size: 12px;
+}
+.cep.is-tree .cep-tree { display: flex; }
+.cep.is-tree .cep-items,
+.cep.is-tree .cep-filter { display: none; }
+
+/* 表头 sticky 钉顶，与过滤条同语言 */
+.cep-ct__head,
+.cep-ct__row {
+  display: flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 2px 0 4px;
+  gap: 0;
+  overflow: hidden;
+}
+.cep-ct__head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  border-bottom: 1px solid var(--cep-border);
+  background: var(--cep-bg);
+  font-weight: 600;
+  opacity: 0.85;
+}
+.cep-ct__row {
+  cursor: pointer;
+  transition: background-color 120ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.cep-ct__row:hover { background: var(--cep-hover); }
+.cep-ct__row.is-on { background: var(--cep-accent-soft); }
+
+.cep-ct__c {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.cep-ct__c--cb {
+  width: 28px;
+  flex: 0 0 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.cep-ct__c--name {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-right: 8px;
+}
+.cep-ct__c--num {
+  width: 64px;
+  flex: 0 1 64px;
+  min-width: 40px;
+  text-align: right;
+  padding-right: 8px;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.cep-ct__c--num:hover { opacity: 0.8; text-decoration: underline; }
+/* 操作列固定不压缩，overflow:visible 防止齿轮被行裁掉 */
+.cep-ct__c--act {
+  width: 32px;
+  flex: 0 0 32px;
+  overflow: visible;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+.cep-ct__txt {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+/* AE 合成图标：胶片帧 + 蓝圆 / 红方 / 绿三角（矢量重绘自 icons/pag-comp.png） */
+.cep-ct__ico {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+  display: block;
+}
+.cep-ct__search {
+  width: 100%;
+  min-width: 0;
+  height: 22px;
+  padding: 0 8px;
+  border: 1px solid var(--cep-border);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.15);
+  color: inherit;
+  font: inherit;
+  outline: none;
+}
+.cep-ct__search:focus { border-color: var(--cep-accent); }
+.cep-ct__cb { display: inline-flex; cursor: pointer; }
+.cep-ct__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  min-height: 0;
+}
+.cep-ct__empty {
+  padding: 24px 12px;
+  text-align: center;
+  color: var(--cep-text-3);
   font-size: 12px;
 }
 
-.ae-row {
-  transform-box: fill-box;
-  transform-origin: center;
-  transition: transform 0.18s ease;
+/* ---- 底栏 mod-bar ---- */
+.cep-bar {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex: none;
+  padding: 7px 9px;
+  border-top: 1px solid var(--cep-border);
+  background: var(--cep-panel);
 }
-.ae-row:hover {
-  transform: translateX(4px);
+.cep-cb--all { font-size: 11px; color: var(--cep-text-2); }
+.cep-bar__label {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--cep-text-2);
+  white-space: nowrap;
 }
+.cep-bar__label b { font-family: var(--mono); color: var(--cep-text); font-size: 11px; }
+.cep-bar__stats { display: inline-flex; align-items: center; gap: 7px; }
+.cep-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-family: var(--mono);
+  font-size: 10px;
+}
+.cep-stat svg { width: 11px; height: 11px; }
+.cep-stat.is-done { color: var(--cep-ok); }
+.cep-stat.is-fail { color: var(--cep-bad); }
+.cep-stat.is-run { color: var(--cep-accent); }
+.cep-stat.is-run > i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1.5px solid currentColor;
+  border-right-color: transparent;
+  animation: cep-spin 0.9s linear infinite;
+}
+/* 总进度行 bar-progress → bar-total：真实是 4px 胶囊（--is-r-pill），flex 1 1 120px、min-width 60px */
+.cep-bar__prog {
+  position: relative;
+  flex: 1 1 120px;
+  min-width: 60px;
+  height: 4px;
+  border-radius: var(--cep-r-pill);
+  background: var(--cep-track);
+  overflow: hidden;
+}
+.cep-bar__prog > i {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 0;
+  border-radius: inherit;
+  background: var(--cep-accent);
+  transition: width 340ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+/* 有任务在跑：accent → hot 渐变 + 一道白色扫光（真实 bar-total__fill.is-shimmer） */
+.cep-bar__prog > i.is-run {
+  background: linear-gradient(90deg, var(--cep-accent), var(--cep-hot));
+}
+.cep-bar__prog > i.is-run::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.5), transparent);
+  animation: cep-shimmer 1.4s linear infinite;
+}
+@keyframes cep-shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(320%); }
+}
+.cep-bar__acts { display: inline-flex; align-items: center; gap: 2px; flex: none; }
 
-.ae-out {
-  transform-box: fill-box;
-  transform-origin: center;
-  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1),
-    opacity 0.18s ease;
-  cursor: default;
+/* ---- 输出设置覆盖层 ib-set-overlay（CEP：面板内全屏铺开） ---- */
+.cep-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  background: var(--cep-bg);
+  animation: cep-fade 160ms cubic-bezier(0.16, 1, 0.3, 1);
 }
-.ae-out:hover {
-  transform: scale(1.06);
+.cep-overlay[hidden] { display: none; }
+@keyframes cep-fade { from { opacity: 0; transform: translateY(6px); } }
+.cep-overlay__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: none;
+  padding: 8px 8px 8px 12px;
+  border-bottom: 1px solid var(--cep-border);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--cep-text);
 }
-.ae-out.is-lit {
-  transform: scale(1.1);
+.cep-overlay__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 10px 12px 14px;
 }
-.ae-out.is-lit rect {
-  fill: var(--accent-soft, #fbe8de);
-  stroke: var(--accent, #c2410c);
+.cep-cap {
+  margin: 0 0 4px;
+  font-size: 10.5px;
+  color: var(--cep-text-3);
 }
+.cep-cap:not(:first-child) { margin-top: 11px; }
+.cep-input {
+  height: 26px;
+  display: flex;
+  align-items: center;
+  padding: 0 9px;
+  border: 1px solid var(--cep-input-border);
+  border-radius: var(--is-r-sm, 8px);
+  background: var(--cep-inset);
+  color: var(--cep-text);
+  font-family: var(--mono);
+  font-size: 10.5px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.cep-input.is-num { justify-content: flex-end; color: var(--cep-accent); font-weight: 600; }
+.cep-input.is-ro { color: var(--cep-text-2); }
+.cep-fmt { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.cep-chk {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 26px;
+  padding: 0 8px;
+  border: 1px solid var(--cep-border);
+  border-radius: var(--is-r-sm, 8px);
+  background: var(--cep-surface);
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--cep-text-2);
+  cursor: pointer;
+  transition: color 120ms ease, border-color 120ms ease, background-color 120ms ease;
+}
+.cep-chk input { position: absolute; opacity: 0; pointer-events: none; }
+.cep-chk i {
+  position: relative;
+  width: 12px;
+  height: 12px;
+  border: 1.5px solid var(--cep-input-border);
+  border-radius: var(--is-r-xs, 4px);
+  flex: none;
+}
+.cep-chk:hover { border-color: var(--cep-accent); }
+.cep-chk input:checked + i { background: var(--cep-accent); border-color: var(--cep-accent); }
+.cep-chk input:checked + i::after {
+  content: "";
+  position: absolute;
+  left: 3.4px;
+  top: 1px;
+  width: 3px;
+  height: 6.6px;
+  border: solid var(--cep-on-accent);
+  border-width: 0 1.8px 1.8px 0;
+  transform: rotate(42deg);
+}
+.cep-chk:has(input:checked) {
+  color: var(--cep-accent);
+  border-color: rgba(var(--cep-accent-rgb), 0.4);
+  background: var(--cep-accent-soft);
+}
+.cep-vars { display: flex; flex-wrap: wrap; gap: 5px; margin: 7px 0 0; }
+.cep-vars button {
+  padding: 2px 7px;
+  border: 1px solid var(--cep-border);
+  border-radius: var(--is-r-pill, 999px);
+  background: var(--cep-surface);
+  color: var(--cep-text-2);
+  font-family: var(--mono);
+  font-size: 9.5px;
+  cursor: pointer;
+  transition: color 120ms ease, border-color 120ms ease;
+}
+.cep-vars button:hover { color: var(--cep-accent); border-color: var(--cep-accent); }
+.cep-go {
+  width: 100%;
+  height: 29px;
+  margin-top: 13px;
+  border: 0;
+  border-radius: var(--is-r-sm, 8px);
+  background: var(--cep-accent);
+  color: var(--cep-on-accent);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: filter 120ms ease, transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.cep-go:hover { filter: brightness(1.06); transform: translateY(-1px); }
 
-#ae-packet {
-  transform-box: fill-box;
-  transform-origin: center;
-}
-#ae-packet.is-bump {
-  animation: packetBump 0.42s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-#ae-star-inner {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: aeStarFloat 2.8s ease-in-out infinite alternate;
-}
-#ae-star.is-spark #ae-star-inner {
-  animation: aeStarSpark 0.55s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-@keyframes aeStarFloat {
-  from { transform: translateY(-3px) rotate(-6deg); }
-  to   { transform: translateY(3px) rotate(6deg); }
-}
-@keyframes aeStarSpark {
-  0%   { transform: scale(1) rotate(0deg); }
-  40%  { transform: scale(1.35) rotate(18deg); }
-  100% { transform: scale(1) rotate(0deg); }
-}
-
-/* about-card 在 AE 区块内：hover 抬升，对齐 .card 手感 */
-.section-ae .about-card {
-  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
-    border-color 0.2s ease, box-shadow 0.2s ease;
-}
-.section-ae .about-card:hover {
-  transform: translateY(-3px);
-  border-color: var(--accent, #c2410c);
-  box-shadow: 0 10px 28px rgba(194, 65, 12, 0.1);
+@media (max-width: 760px) {
+  .ae-stage-grid { gap: 22px; }
+  .ae-panel { max-width: 360px; margin: 0 auto; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ae-row:hover,
-  .ae-out:hover,
-  .ae-out.is-lit,
-  .section-ae .about-card:hover {
-    transform: none;
-  }
-  #ae-star-inner,
-  #ae-packet.is-bump,
-  #ae-star.is-spark #ae-star-inner {
+  .cep-dot.is-run > i,
+  .cep-stat.is-run > i,
+  .cep-item__bar.is-run,
+  .cep-overlay {
     animation: none;
   }
+  .cep-rail__btn:hover,
+  .cep-mini:hover,
+  .cep-go:hover {
+    transform: none;
+  }
 }
+
 
 /* ==========================================================================
    动态插画（about / why 卡片）— 与 hero 棋盘格 / 赤陶色语言对齐
@@ -3638,15 +4553,6 @@ html[data-theme="dark"] .cmp-tab.is-on { color: #0c0f0e; }
   .hero-stage {
     transform: none !important;
   }
-}
-
-/* AE 合成行选中态 */
-.ae-row.is-picked rect:first-of-type {
-  stroke: var(--accent);
-  stroke-width: 2;
-}
-.ae-row.is-picked {
-  filter: drop-shadow(0 2px 6px color-mix(in srgb, var(--accent) 35%, transparent));
 }
 
 /* 区块之间的胶片孔装饰条 */
