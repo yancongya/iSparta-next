@@ -871,6 +871,30 @@ html[data-theme="dark"] .hero-actions .btn-primary {
   color: var(--muted);
 }
 
+/* 标题块左右交替。
+   之前 12 个区块的标题块全在 x=193 w=640，滚动时每段都是同一个构图，
+   眼睛没有东西可抓。这里让奇偶段交替靠边 —— 代价只有一条 CSS，
+   而且 :nth-of-type 数的是 tag 顺序，hero 占第 1 个，about 起算第 2 个。
+   只推块、不改文字对齐：中文标题右对齐会难读，块内的字仍按左对齐走。 */
+.section-head {
+  margin-left: 0;
+  margin-right: auto;
+}
+
+.section:nth-of-type(even) > .section-head {
+  margin-left: auto;
+  margin-right: 0;
+}
+
+/* 窄屏放不下右推（正文会窄到没法读），窄屏一律回左 */
+@media (max-width: 860px) {
+  .section-head,
+  .section:nth-of-type(even) > .section-head {
+    margin-left: 0;
+    margin-right: auto;
+  }
+}
+
 /* convert lab */
 .convert-lab {
   display: grid;
