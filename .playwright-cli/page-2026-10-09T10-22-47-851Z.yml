@@ -1,0 +1,846 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - link "ISPARTA-next" [ref=e3] [cursor=pointer]:
+      - /url: https://yancongya.github.io/iSparta-next/
+      - img [ref=e5]
+      - generic [ref=e9]: ISPARTA-next
+    - navigation [ref=e10]:
+      - generic [ref=e11]:
+        - button "切换语言" [ref=e12] [cursor=pointer]: EN
+        - link "下载" [ref=e14] [cursor=pointer]:
+          - /url: "#download"
+  - main [ref=e15]:
+    - generic [ref=e16]:
+      - generic [ref=e17]:
+        - heading "8 片 u 动 r" [level=1] [ref=e18]:
+          - generic [ref=e19]: "8"
+          - generic [ref=e20]: 片
+          - generic [ref=e21]: u
+          - generic [ref=e22]: 动
+          - generic [ref=e23]: r
+        - paragraph [ref=e24]: iSparta-next 是一款开源的动图转换工作台。PNG 序列、APNG、WebP、GIF 互转与压缩，桌面拖文件批量处理，AE 里直接导出合成。
+        - list [ref=e25]:
+          - listitem [ref=e26]: iSparta-next 工作台 · 任务列表与输出设置
+          - listitem [ref=e27]:
+            - generic [ref=e28]: Win / macOS / Linux
+            - generic [ref=e29]: ·Electron 28
+            - generic "最新 Release 版本" [ref=e30]: ·v3.6.0 · 2026-10-08
+        - generic [ref=e31]:
+          - link "立即下载 iSparta 立即下载 iSparta-next" [ref=e32] [cursor=pointer]:
+            - /url: https://github.com/yancongya/iSparta-next/releases/download/v3.6.0/isparta-next-3.6.0-win-x64.exe
+            - generic [ref=e33]:
+              - generic [ref=e34]: 立即下载 iSparta
+              - generic [ref=e35]: 立即下载 iSparta-next
+            - img [ref=e36]
+          - link "更多下载" [ref=e38] [cursor=pointer]:
+            - /url: "#download"
+      - figure "iSparta-next 工作台界面" [ref=e39]:
+        - img "iSparta-next 工作台：任务列表与输出设置" [ref=e41]
+    - generic [ref=e42]:
+      - generic [ref=e43]:
+        - paragraph [ref=e44]: 00 · ABOUT
+        - heading "iSparta-next 是什么？iSparta 停更后的现代替代" [level=2] [ref=e45]
+        - paragraph [ref=e46]:
+          - text: iSparta-next（官网本页）是一款
+          - strong [ref=e47]: 开源、跨平台的桌面动图转换工具
+          - text: ，在长期停止维护的经典
+          - link "iSparta" [ref=e48] [cursor=pointer]:
+            - /url: https://github.com/iSparta/iSparta
+          - text: 基础上重构，面向需要处理
+          - strong [ref=e49]: PNG 序列、APNG、Animated WebP、GIF
+          - text: 的设计师与前端开发者。 与旧版相比，iSparta-next 升级到 Electron 28，重做了工作台 UI，并加入输出大小阈值、路径变量模板、批量导入与前后对比等能力。
+      - generic [ref=e50]:
+        - article [ref=e51]:
+          - img [ref=e53]:
+            - generic [ref=e59]: APNG
+            - generic [ref=e62]: WebP
+            - generic [ref=e65]: GIF
+          - heading "格式互转" [level=3] [ref=e66]
+          - paragraph [ref=e67]: 支持 PNG 序列合成 APNG / GIF / Animated WebP，以及 APNG、GIF、WebP 之间的互转与再压缩，适合表情包、贴纸与帧动画导出。
+        - article [ref=e68]:
+          - img [ref=e70]:
+            - generic [ref=e73]: 1MB
+          - heading "体积可控" [level=3] [ref=e77]
+          - paragraph [ref=e78]: 输出大小阈值可在超出上限时自动按步长降质量重压，适配平台 1MB 等体积限制，减少手动反复试压缩。
+        - article [ref=e79]:
+          - img [ref=e81]:
+            - generic [ref=e87]: "{src}"
+          - heading "批量与路径" [level=3] [ref=e88]
+          - paragraph [ref=e89]: 拖拽 / 粘贴导入多组帧目录；路径变量模板与源目录输出策略，便于按项目批量导出与归档。
+        - article [ref=e90]:
+          - img [ref=e92]
+          - heading "系统与下载" [level=3] [ref=e98]
+          - paragraph [ref=e99]:
+            - text: Windows / macOS / Linux 免费使用。安装包由 GitHub Actions 构建，可在
+            - link "GitHub Releases" [ref=e100] [cursor=pointer]:
+              - /url: https://github.com/yancongya/iSparta-next/releases
+            - text: 获取最新版；亦可从本页下载区选择对应平台。
+        - article [ref=e101]:
+          - img [ref=e103]:
+            - generic [ref=e108]: NSIS
+          - heading "一个安装包，按需勾选" [level=3] [ref=e109]
+          - paragraph [ref=e110]: 同一个安装包里，桌面版与 AE 扩展可单独勾选、也可一并安装；安装范围支持所有用户或仅当前用户。
+        - article [ref=e111]:
+          - img [ref=e113]:
+            - generic [ref=e119]: CEP
+            - generic [ref=e120]: Desk
+          - heading "两端同一颗引擎" [level=3] [ref=e121]
+          - paragraph [ref=e122]: 桌面端与 AE 扩展共用同一套压缩 / 合成 / 降质算法，输出的大小规则与命名习惯完全一致。
+    - generic [ref=e123]:
+      - generic [ref=e124]:
+        - paragraph [ref=e125]: 01 · WORKBENCH
+        - heading "一个页面，从导入到出片" [level=2] [ref=e126]
+        - paragraph [ref=e127]: 选哪个文件夹、出什么格式、每秒几帧、循环几次、最大多大、文件叫什么、存到哪儿——全在一张卡片上配好，点开始就完事。
+      - generic [ref=e128]:
+        - article "任务条示例" [ref=e130] [cursor=pointer]:
+          - button "选中任务" [pressed] [ref=e132]
+          - generic [ref=e133]:
+            - generic [ref=e138]: 24F
+            - generic "转换完成后可对比" [ref=e139]:
+              - img [ref=e140]
+          - generic [ref=e143]:
+            - generic [ref=e144]:
+              - generic [ref=e145]: PNGs
+              - generic [ref=e146]: D:/Assets/demo/sticker-pack/frames
+            - generic [ref=e148]:
+              - generic [ref=e151]: 25 f/s
+              - generic [ref=e154]: ∞
+              - generic [ref=e157]: APNG + GIF + WebP
+              - generic [ref=e160]: ≤ 1MB
+            - generic [ref=e161]:
+              - generic [ref=e164]: 示例贴纸行走循环高清v3
+              - generic [ref=e167]: "{srcPath}/export/{date}"
+          - button "生成成功" [ref=e170]:
+            - img [ref=e171]
+            - generic [ref=e173]: 生成成功
+        - generic [ref=e176]:
+          - button "排队中" [ref=e177] [cursor=pointer]
+          - button "正在转" [ref=e178] [cursor=pointer]
+          - button "搞定" [ref=e179] [cursor=pointer]
+          - button "翻车" [ref=e180] [cursor=pointer]
+        - generic [ref=e181]:
+          - generic [ref=e182]:
+            - generic [ref=e183]:
+              - paragraph [ref=e184]: 源格式
+              - group "输入格式" [ref=e185]:
+                - button "PNG 序列" [ref=e186] [cursor=pointer]
+                - button "APNG" [ref=e187] [cursor=pointer]
+                - button "GIF" [ref=e188] [cursor=pointer]
+                - button "WebP" [ref=e189] [cursor=pointer]
+            - generic [ref=e190]:
+              - paragraph [ref=e191]: 要输出成
+              - group "输出格式" [ref=e192]:
+                - button "APNG" [pressed] [ref=e193] [cursor=pointer]
+                - button "GIF" [pressed] [ref=e194] [cursor=pointer]
+                - button "WebP" [pressed] [ref=e195] [cursor=pointer]
+          - generic [ref=e196]:
+            - generic [ref=e197]: 认帧
+            - generic [ref=e199]: 编码
+            - generic [ref=e201]: 压大小
+            - generic [ref=e203]: 落盘
+          - paragraph [ref=e204]: 当前路径：PNG 序列 → APNG + GIF + WebP · 多帧合并为 APNG，可调帧频、循环、逐帧延时
+    - generic [ref=e217]:
+      - generic [ref=e218]:
+        - paragraph [ref=e219]: 02 · SIZE GATE
+        - heading "文件太大？自动压小，压到合适为止" [level=2] [ref=e220]
+        - paragraph [ref=e221]: 导出 APNG / GIF / WebP 时先称一称：超过你设定的大小上限，就从更好的画质开始一档档降质量重压，直到达标。想自己定重试次数也可以。
+      - generic [ref=e222]:
+        - generic [ref=e223]:
+          - generic [ref=e224]:
+            - generic [ref=e225]:
+              - generic [ref=e226]: 压缩质量
+              - generic [ref=e227]: "85"
+            - slider [ref=e228]: "85"
+          - generic [ref=e229]:
+            - generic [ref=e230]:
+              - generic [ref=e231]: APNG
+              - generic [ref=e232]: 超限
+            - generic [ref=e233]: 2.28 MB
+            - generic [ref=e234]: 阈值 1 MB
+            - generic [ref=e238]: 1 MB
+          - generic "各格式体积预览" [ref=e239]:
+            - button "APNG" [ref=e240] [cursor=pointer]
+            - button "GIF" [ref=e241] [cursor=pointer]
+            - button "WebP" [ref=e242] [cursor=pointer]
+          - list "重压试次" [ref=e243]:
+            - listitem [ref=e244]:
+              - generic [ref=e245]: 拖动质量或运行自动重压
+        - complementary [ref=e246]:
+          - heading "输出大小阈值" [level=3] [ref=e247]
+          - generic [ref=e248]:
+            - checkbox "启用大小阈值" [checked] [ref=e249]
+            - generic [ref=e250]: 启用大小阈值
+          - generic [ref=e251]:
+            - generic [ref=e252]: 阈值
+            - generic [ref=e253]:
+              - spinbutton "阈值 阈值单位" [ref=e254]: "1"
+              - group "阈值单位" [ref=e255]:
+                - button "MB" [ref=e256] [cursor=pointer]
+                - button "KB" [ref=e257] [cursor=pointer]
+          - generic [ref=e258]:
+            - generic [ref=e259]: 超了自动降质量
+            - checkbox "超了自动降质量" [checked] [ref=e260]
+          - generic [ref=e261]:
+            - generic [ref=e262]: 每次降
+            - generic [ref=e263]:
+              - spinbutton "每次降 q" [ref=e264]: "12"
+              - generic [ref=e265]: q
+          - generic [ref=e266]:
+            - generic [ref=e267]: 最多试
+            - generic [ref=e268]:
+              - spinbutton "最多试 次" [ref=e269]: "5"
+              - generic [ref=e270]: 次
+          - paragraph [ref=e271]: 跟应用里的 options.sizeLimit 一套逻辑。左边拖滑块，右边马上告诉你这质量过不过线。
+          - button "再演一遍自动重压" [ref=e273] [cursor=pointer]
+    - generic [ref=e274]:
+      - generic [ref=e275]:
+        - paragraph [ref=e276]: 03 · NAMING
+        - heading "文件名能拆开挑，存放位置你说了算" [level=2] [ref=e277]
+        - paragraph [ref=e278]: "长文件名自动拆成词，点一下留一个，漏掉的字只留文字也行；存放位置用 {工程名} 这类积木拼，实际路径马上预览给你看。"
+      - generic [ref=e279]:
+        - generic [ref=e280]:
+          - paragraph [ref=e281]: 输出名字
+          - generic [ref=e282]:
+            - textbox [ref=e283]: 示例贴纸行走循环高清v3
+            - button "只留文字 / 恢复全部" [pressed] [ref=e284] [cursor=pointer]:
+              - img [ref=e285]
+          - generic "输出名分词" [ref=e287]:
+            - button "示例贴纸" [pressed] [ref=e288] [cursor=pointer]
+            - button "-" [ref=e289] [cursor=pointer]
+            - button "行走循环" [pressed] [ref=e290] [cursor=pointer]
+            - button [ref=e291] [cursor=pointer]
+            - button "高清" [pressed] [ref=e292] [cursor=pointer]
+            - button "_" [ref=e293] [cursor=pointer]
+            - button "v" [pressed] [ref=e294] [cursor=pointer]
+            - button "3" [pressed] [ref=e295] [cursor=pointer]
+          - generic [ref=e296]: 点字词可取消；漏斗 = 只留文字
+        - generic [ref=e297]:
+          - paragraph [ref=e298]: 输出路径
+          - group "输出路径预设" [ref=e299]:
+            - button "源目录" [ref=e300] [cursor=pointer]
+            - button "旁边扔" [ref=e301] [cursor=pointer]
+            - button "自定义" [ref=e302] [cursor=pointer]
+          - paragraph [ref=e303]: 变量路径
+          - textbox [ref=e304]: "{srcPath}"
+          - group "路径变量" [ref=e305]:
+            - 'button "{srcPath} D:/Assets/demo/sticker-pack/frames" [ref=e306] [cursor=pointer]':
+              - generic [ref=e307]: "{srcPath}"
+              - generic [ref=e308]: D:/Assets/demo/sticker-pack/frames
+            - 'button "{src} frames" [ref=e309] [cursor=pointer]':
+              - generic [ref=e310]: "{src}"
+              - generic [ref=e311]: frames
+            - 'button "{name} 示例贴纸行走循环高清v3" [ref=e312] [cursor=pointer]':
+              - generic [ref=e313]: "{name}"
+              - generic [ref=e314]: 示例贴纸行走循环高清v3
+            - 'button "{type} PNGs" [ref=e315] [cursor=pointer]':
+              - generic [ref=e316]: "{type}"
+              - generic [ref=e317]: PNGs
+            - 'button "{parent} D:/Assets/demo/sticker-pack" [ref=e318] [cursor=pointer]':
+              - generic [ref=e319]: "{parent}"
+              - generic [ref=e320]: D:/Assets/demo/sticker-pack
+            - 'button "{date} 20260915" [ref=e321] [cursor=pointer]':
+              - generic [ref=e322]: "{date}"
+              - generic [ref=e323]: "20260915"
+          - paragraph [ref=e324]: 真实路径
+          - paragraph [ref=e325]: D:/Assets/demo/sticker-pack/frames
+    - generic [ref=e326]:
+      - generic [ref=e327]:
+        - paragraph [ref=e328]: 04 · RUN LOG
+        - heading "转换过程，一条条摊开给你看" [level=2] [ref=e329]
+        - paragraph [ref=e330]: 工具条一键打开运行日志：按级别筛（信息 / 成功 / 警告 / 错误），自动跟读最新输出。路径不对、编码失败、阈值重压——不用猜，直接翻这一屏。
+      - group "运行日志演示" [ref=e332]:
+        - generic [ref=e333]:
+          - generic [ref=e338]: 运行日志
+          - generic [ref=e339]: 0 / 0
+        - group "日志级别筛选" [ref=e340]:
+          - button "全部" [ref=e341] [cursor=pointer]
+          - button "信息" [ref=e342] [cursor=pointer]
+          - button "成功" [ref=e343] [cursor=pointer]
+          - button "警告" [ref=e344] [cursor=pointer]
+          - button "错误" [ref=e345] [cursor=pointer]
+          - generic [ref=e346] [cursor=pointer]:
+            - checkbox "自动跟随" [checked] [ref=e347]
+            - generic [ref=e348]: 自动跟随
+        - paragraph [ref=e350]: （暂无日志）
+        - generic [ref=e351]:
+          - button "再播一遍" [ref=e352] [cursor=pointer]
+          - button "清空" [ref=e353] [cursor=pointer]
+    - generic [ref=e354]:
+      - generic [ref=e355]:
+        - paragraph [ref=e356]: 05 · COMPARE
+        - heading "拖一下，看 GIF 把边缘吃掉了" [level=2] [ref=e357]
+        - paragraph [ref=e358]: 同一帧素材，左边是 PNG 序列原帧，右边是实际导出结果。切换格式后拖动分隔线：GIF 只有 2 级透明，边缘全是锯齿；APNG / WebP 保留了完整的半透明过渡。
+      - generic [ref=e359]:
+        - slider "前后对比滑块" [ref=e360]:
+          - generic [ref=e361]:
+            - img "PNG 序列原帧"
+            - img "APNG 导出首帧"
+            - generic: 原帧
+            - generic: APNG
+          - generic:
+            - generic:
+              - img
+        - complementary [ref=e362]:
+          - tablist "导出格式" [ref=e363]:
+            - tab "APNG" [selected] [ref=e364] [cursor=pointer]
+            - tab "GIF" [ref=e365] [cursor=pointer]
+            - tab "WebP" [ref=e366] [cursor=pointer]
+          - generic [ref=e367]:
+            - term [ref=e368]: 整段体积
+            - definition [ref=e369]: 244.6 KB
+            - term [ref=e370]: 相对源序列
+            - definition [ref=e371]: "-76.2%"
+            - term [ref=e372]: Alpha 级数
+            - definition [ref=e373]: "27"
+            - term [ref=e374]: 半透明像素
+            - definition [ref=e375]: 25.7%
+            - term [ref=e376]: 颜色数
+            - definition [ref=e377]: "244"
+          - paragraph [ref=e378]: 数据取自本仓库 test/ 下的同一素材（300×300 · 13 帧）实测，非示意值。
+          - paragraph [ref=e379]: 拖动分隔线 · 或聚焦后按 ← →
+    - generic [ref=e386]:
+      - generic [ref=e387]:
+        - paragraph [ref=e388]: 06 · AFTER EFFECTS
+        - heading "同步支持 CEP 端一步安装！" [level=2] [ref=e389]
+        - paragraph [ref=e390]: iSparta-next 深度嵌入 AE，基于 CEP 重新定制前后端，打开面板就自动识别全部合成，直接导出成动图，全程不用离开 AE。
+      - group "AE 合成导出演示" [ref=e391]:
+        - generic [ref=e392]:
+          - figure "CEP 面板 · 窄屏自适应" [ref=e393]:
+            - generic [ref=e396]: CEP 面板 · 窄屏自适应
+            - generic [ref=e397]:
+              - generic [ref=e398]:
+                - generic [ref=e399]:
+                  - img [ref=e400]
+                  - generic [ref=e404]: iSPARTA
+                - generic [ref=e405]:
+                  - button "使用引导" [ref=e406] [cursor=pointer]:
+                    - img [ref=e407]
+                  - button "合成树" [ref=e410] [cursor=pointer]:
+                    - img [ref=e411]
+                  - button "主题" [ref=e415] [cursor=pointer]:
+                    - img [ref=e416]
+                  - button "语言" [ref=e418] [cursor=pointer]:
+                    - img [ref=e419]
+                  - button "运行日志" [ref=e422] [cursor=pointer]:
+                    - img [ref=e423]
+                  - button "输出设置" [ref=e425] [cursor=pointer]:
+                    - img [ref=e426]
+              - generic [ref=e428]:
+                - generic [ref=e429]:
+                  - generic "全选" [ref=e430] [cursor=pointer]:
+                    - checkbox [checked=mixed]
+                  - searchbox "搜索" [ref=e432]
+                  - button "fps" [ref=e433] [cursor=pointer]: fps
+                  - button "帧数" [ref=e434] [cursor=pointer]:
+                    - generic [ref=e435]: 帧数
+                - listbox "合成列表" [ref=e436]:
+                  - listitem [ref=e437] [cursor=pointer]:
+                    - generic [ref=e438]:
+                      - checkbox [checked]
+                    - generic [ref=e440]:
+                      - generic [ref=e441]: Main Comp
+                      - generic [ref=e442]:
+                        - img [ref=e443]
+                        - text: ae-comp/Main Comp
+                    - generic [ref=e445]:
+                      - generic [ref=e446]:
+                        - img [ref=e447]
+                        - text: 25 f/s
+                      - generic [ref=e449]:
+                        - img [ref=e450]
+                        - generic [ref=e454]: 循环
+                      - generic [ref=e455]:
+                        - img [ref=e456]
+                        - text: APNG
+                      - generic [ref=e459]:
+                        - img [ref=e460]
+                        - generic [ref=e463]: ≤ 1920×1080
+                    - generic [ref=e464]:
+                      - generic "已完成" [ref=e465]:
+                        - img [ref=e466]
+                      - button "输出设置" [ref=e469]:
+                        - img [ref=e470]
+                  - listitem [ref=e473] [cursor=pointer]:
+                    - generic [ref=e474]:
+                      - checkbox [checked]
+                    - generic [ref=e476]:
+                      - generic [ref=e477]: Logo_Loop
+                      - generic [ref=e478]:
+                        - img [ref=e479]
+                        - text: ae-comp/Logo_Loop
+                    - generic [ref=e481]:
+                      - generic [ref=e482]:
+                        - img [ref=e483]
+                        - text: 30 f/s
+                      - generic [ref=e485]:
+                        - img [ref=e486]
+                        - generic [ref=e490]: 循环
+                      - generic [ref=e491]:
+                        - img [ref=e492]
+                        - text: WebP
+                      - generic [ref=e495]:
+                        - img [ref=e496]
+                        - generic [ref=e499]: ≤ 1080×1080
+                    - generic [ref=e500]:
+                      - generic "转换中" [ref=e501]
+                      - button "输出设置" [ref=e503]:
+                        - img [ref=e504]
+                  - listitem [ref=e507] [cursor=pointer]:
+                    - generic [ref=e508]:
+                      - checkbox
+                    - generic [ref=e510]:
+                      - generic [ref=e511]: Confetti_Burst
+                      - generic [ref=e512]:
+                        - img [ref=e513]
+                        - text: ae-comp/Confetti_Burst
+                    - generic [ref=e515]:
+                      - generic [ref=e516]:
+                        - img [ref=e517]
+                        - text: 60 f/s
+                      - generic [ref=e519]:
+                        - img [ref=e520]
+                        - generic [ref=e524]: 循环
+                      - generic [ref=e525]:
+                        - img [ref=e526]
+                        - text: GIF
+                      - generic [ref=e529]:
+                        - img [ref=e530]
+                        - generic [ref=e533]: ≤ 1080×1080
+                    - button "输出设置" [ref=e536]:
+                      - img [ref=e537]
+                  - listitem [ref=e540] [cursor=pointer]:
+                    - generic [ref=e541]:
+                      - checkbox
+                    - generic [ref=e543]:
+                      - generic [ref=e544]: Lower Third
+                      - generic [ref=e545]:
+                        - img [ref=e546]
+                        - text: ae-comp/Lower Third
+                    - generic [ref=e548]:
+                      - generic [ref=e549]:
+                        - img [ref=e550]
+                        - text: 30 f/s
+                      - generic [ref=e552]:
+                        - img [ref=e553]
+                        - generic [ref=e557]: 一次
+                      - generic [ref=e558]:
+                        - img [ref=e559]
+                        - text: APNG
+                      - generic [ref=e562]:
+                        - img [ref=e563]
+                        - generic [ref=e566]: ≤ 1920×1080
+                    - button "输出设置" [ref=e569]:
+                      - img [ref=e570]
+                  - listitem [ref=e573] [cursor=pointer]:
+                    - generic [ref=e574]:
+                      - checkbox
+                    - generic [ref=e576]:
+                      - generic [ref=e577]: Spin Icon
+                      - generic [ref=e578]:
+                        - img [ref=e579]
+                        - text: ae-comp/Spin Icon
+                    - generic [ref=e581]:
+                      - generic [ref=e582]:
+                        - img [ref=e583]
+                        - text: 24 f/s
+                      - generic [ref=e585]:
+                        - img [ref=e586]
+                        - generic [ref=e590]: 循环
+                      - generic [ref=e591]:
+                        - img [ref=e592]
+                        - text: WebP
+                      - generic [ref=e595]:
+                        - img [ref=e596]
+                        - generic [ref=e599]: ≤ 512×512
+                    - generic [ref=e600]:
+                      - generic "失败" [ref=e601]:
+                        - img [ref=e602]
+                      - button "输出设置" [ref=e605]:
+                        - img [ref=e606]
+              - generic [ref=e609]:
+                - generic "全选" [ref=e610] [cursor=pointer]:
+                  - checkbox "全选" [checked=mixed]
+                  - generic [ref=e612]: 全选
+                - generic [ref=e613]:
+                  - generic [ref=e614]: 输入项目
+                  - generic [ref=e615]: 2 / 5
+                - generic [ref=e616]:
+                  - generic "完成" [ref=e617]:
+                    - img [ref=e618]
+                    - text: "1"
+                  - generic "失败" [ref=e621]:
+                    - img [ref=e622]
+                    - text: "1"
+                  - generic "转换中" [ref=e625]: "1"
+                - generic [ref=e629]:
+                  - button "开始" [ref=e630] [cursor=pointer]:
+                    - img [ref=e631]
+                  - button "快捷键" [ref=e633] [cursor=pointer]:
+                    - img [ref=e634]
+          - list:
+            - article [ref=e637]:
+              - generic [ref=e638]:
+                - img [ref=e640]
+                - heading "刷新即识别，直接出片" [level=3] [ref=e644]
+              - paragraph: 面板开着就自动同步工程里的合成，嵌套的子合成也一并列出；勾选即可导出 APNG / WebP / GIF，不必回到桌面端。
+            - article [ref=e645]:
+              - generic [ref=e646]:
+                - img [ref=e648]
+                - heading "两种视图，随意切换" [level=3] [ref=e651]
+              - paragraph: 任务列表与合成树视图一键切换，双击合成即可在 AE 里直接定位它，管理一整个工程也不费劲。
+            - article [ref=e652]:
+              - generic [ref=e653]:
+                - img [ref=e655]
+                - heading "变量输出路径，归档不乱" [level=3] [ref=e658]
+              - paragraph: "输出目录支持 {comp}、{fmt} 等变量模板，按合成名与格式自动分文件夹，批量导出后依然条理清晰。"
+            - article [ref=e659]:
+              - generic [ref=e660]:
+                - img [ref=e662]
+                - heading "为 CEP 小屏重新排版" [level=3] [ref=e665]
+              - paragraph: 不是把桌面界面硬塞进窄面板：控件、字号与间距都按 CEP 面板宽度重新适配，窄窗口一样完整可用。
+            - article [ref=e666]:
+              - generic [ref=e667]:
+                - img [ref=e669]
+                - heading "开发热更新，改完即生效" [level=3] [ref=e672]
+              - paragraph: 面板与主程序都接上开发服务器：改代码自动热替换，CEP 面板不用重装、不用重启 AE，迭代调试快得多。
+            - article [ref=e673]:
+              - generic [ref=e674]:
+                - img [ref=e676]
+                - heading "CEP 端能力对齐桌面版" [level=3] [ref=e680]
+              - paragraph: 扩展面板不是附庸品：任务列表、设置、命名、日志一应俱全，桌面端有的能力这里都能用到。
+            - article [ref=e681]:
+              - generic [ref=e682]:
+                - img [ref=e684]
+                - heading "贴合 AE 工作流" [level=3] [ref=e688]
+              - paragraph: 从工程面板到导出都在 AE 里完成，省去在文件夹与软件之间来回切换，节奏不被打断。
+            - article [ref=e689]:
+              - generic [ref=e690]:
+                - img [ref=e692]
+                - heading "两端同源，产出一致" [level=3] [ref=e696]
+              - paragraph: 与桌面端共用同一套压缩 / 合成 / 降质算法，输出的大小规则与命名习惯完全一致，跨端协作不返工。
+        - paragraph [ref=e697]: 读到 5 个合成 · 已完成 1 · 转换中 1
+    - generic [ref=e698]:
+      - generic [ref=e699]:
+        - paragraph [ref=e700]: 07 · REAL UI
+        - heading "桌面版和 CEP 端界面预览" [level=2] [ref=e701]
+        - paragraph [ref=e702]: 应用真实界面：空状态导入、任务卡片列表、参数设置、默认设置（命名 / 路径 / 大小上限）。
+      - tablist "界面预览端" [ref=e703]:
+        - tab "iSparta-next 工作台" [selected] [ref=e704] [cursor=pointer]
+        - tab "iSparta-next · AE 扩展" [ref=e705] [cursor=pointer]
+      - tabpanel "iSparta-next 工作台" [ref=e707]:
+        - paragraph [ref=e708]: 和仓库 docs/screenshots/ 同源 · Electron 实拍
+        - generic [ref=e709]:
+          - figure "桌面工作台 · 任务列表 + 输出设置（路径变量 / 大小阈值）" [ref=e710]:
+            - img "iSparta-next 桌面工作台：任务列表与输出设置" [ref=e712]
+            - generic [ref=e713]: 桌面工作台 · 任务列表 + 输出设置（路径变量 / 大小阈值）
+          - figure "空状态 · 拖入 / 粘贴 / 点开" [ref=e714]:
+            - img "空状态：拖放、粘贴或点击打开目录" [ref=e716]
+            - generic [ref=e717]: 空状态 · 拖入 / 粘贴 / 点开
+          - 'figure "默认设置 · 命名 / {srcPath} / 大小上限" [ref=e718]':
+            - img "默认设置：语言、主题、输出路径变量与大小阈值" [ref=e720]
+            - generic [ref=e721]: "默认设置 · 命名 / {srcPath} / 大小上限"
+    - generic [ref=e722]:
+      - generic [ref=e723]:
+        - paragraph [ref=e724]: 09 · WHY NEXT
+        - heading "不是缝缝补补，是整台重做" [level=2] [ref=e725]
+        - paragraph [ref=e726]: 原版停更好久了。这边在社区 fork 的地基上，前后端都重写过。
+      - generic [ref=e727]:
+        - article [ref=e728]:
+          - img [ref=e730]
+          - paragraph [ref=e734]: 底层
+          - heading "Electron 28 · 关好门窗" [level=3] [ref=e735]
+          - paragraph [ref=e736]: contextIsolation、sandbox，该走 IPC 的都走 IPC，不再让渲染层裸碰 Node。
+        - article [ref=e737]:
+          - img [ref=e739]
+          - paragraph [ref=e743]: 界面
+          - heading "自己画的界面" [level=3] [ref=e744]
+          - paragraph [ref=e745]: 两栏任务列表、亮暗主题、前后对比、运行日志面板。不绑 Element UI，想改就改。
+        - article [ref=e746]:
+          - img [ref=e748]
+          - paragraph [ref=e751]: 导出
+          - heading "自动压小 · 存放随心 · 命名可控" [level=3] [ref=e752]
+          - paragraph [ref=e753]: 大小超限自动降质量重压；保存位置和文件名都由你拼。
+        - article [ref=e754]:
+          - img [ref=e756]
+          - paragraph [ref=e760]: 批量
+          - heading "批量流水线" [level=3] [ref=e761]
+          - paragraph [ref=e762]: 多选、粘贴导入、全局默认、四态进度——贴纸一锅端。
+        - article [ref=e763]:
+          - img [ref=e765]
+          - paragraph [ref=e768]: 依赖
+          - heading "安全底子" [level=3] [ref=e769]
+          - paragraph [ref=e770]: libwebp 1.5（修了 CVE-2023-4863）；execFile 受控执行，少踩注入坑。
+        - article [ref=e771]:
+          - img [ref=e773]
+          - paragraph [ref=e778]: 发版
+          - heading "三端 CI" [level=3] [ref=e779]
+          - paragraph [ref=e780]: Win / macOS / Linux 自动构建，版本号和 Release 说明也自动出。
+        - article [ref=e781]:
+          - img [ref=e783]
+          - paragraph [ref=e787]: 扩展
+          - heading "CEP 面板同步重做" [level=3] [ref=e788]
+          - paragraph [ref=e789]: After Effects 面板复用同一套组件与设计令牌，不是另做一套缩水界面。
+        - article [ref=e790]:
+          - img [ref=e792]
+          - paragraph [ref=e794]: 开发
+          - heading "热更新开发链路" [level=3] [ref=e795]
+          - paragraph [ref=e796]: 桌面与 CEP 面板都接开发服务器，改代码即时生效，免去反复重装重启。
+    - generic [ref=e797]:
+      - generic [ref=e798]:
+        - paragraph [ref=e799]: 10 · LINEAGE
+        - heading "从原版一路走到 iSparta-next" [level=2] [ref=e800]
+        - paragraph [ref=e801]: 谢谢原作者和每一位社区维护者。后面的故事，是接着他们的脚印往前走。
+      - list [ref=e802]:
+        - listitem [ref=e803]:
+          - generic [ref=e805]:
+            - paragraph [ref=e806]: 原版 · 长期停更
+            - heading "iSparta / iSparta" [level=3] [ref=e807]:
+              - link "iSparta / iSparta" [ref=e808] [cursor=pointer]:
+                - /url: https://github.com/iSparta/iSparta
+            - paragraph [ref=e809]: 老牌 APNG / WebP 桌面工具。Electron 停在旧线，Issue 攒一堆没人修——于是大家开始各自 fork。
+        - listitem [ref=e810]:
+          - generic [ref=e812]:
+            - paragraph [ref=e813]: 社区 fork
+            - heading "Xheldon / iSparta" [level=3] [ref=e814]:
+              - link "Xheldon / iSparta" [ref=e815] [cursor=pointer]:
+                - /url: https://github.com/Xheldon/iSparta
+            - paragraph [ref=e816]: 修了帧乱序之类的问题，界面也补了补，证明这项目还能继续养。
+        - listitem [ref=e817]:
+          - generic [ref=e819]:
+            - paragraph [ref=e820]: 基建 fork · 本仓库直接上游
+            - heading "bigxixi / iSparta" [level=3] [ref=e821]:
+              - link "bigxixi / iSparta" [ref=e822] [cursor=pointer]:
+                - /url: https://github.com/bigxixi/iSparta
+            - paragraph [ref=e823]: libwebp 1.5（CVE-2023-4863）、Electron 6→13、Vue CLI 4、execFile 防注入、存储/转换锁修复、迁到 GitHub Actions。
+        - listitem [ref=e824]:
+          - generic [ref=e826]:
+            - paragraph [ref=e827]: 现在 · iSparta-next
+            - heading "yancongya / iSparta-next" [level=3] [ref=e828]:
+              - link "yancongya / iSparta-next" [ref=e829] [cursor=pointer]:
+                - /url: https://github.com/yancongya/iSparta-next
+            - paragraph [ref=e830]: 从 bigixixi 原版再次 fork：Electron 28 + sandbox / IPC，重做 Element UI 外壳的工作台，新增大小上限自动重压、路径变量自定义、批量与前后对比，并有 CI 打包。
+      - group "更新日志" [ref=e832]:
+        - generic [ref=e833]:
+          - generic [ref=e838]: 更新日志
+          - generic [ref=e839]: "8"
+          - link "查看全部发布" [ref=e840] [cursor=pointer]:
+            - /url: https://github.com/yancongya/iSparta-next/releases
+        - generic [ref=e841]:
+          - navigation "版本列表" [ref=e842]:
+            - tab "v3.6.0 2026-10-08" [selected] [ref=e843] [cursor=pointer]:
+              - generic [ref=e844]: v3.6.0
+              - generic [ref=e846]: 2026-10-08
+            - tab "v3.5.0 2026-10-04" [ref=e848] [cursor=pointer]:
+              - generic [ref=e849]: v3.5.0
+              - generic [ref=e851]: 2026-10-04
+            - tab "v3.4.0 2026-09-22" [ref=e853] [cursor=pointer]:
+              - generic [ref=e854]: v3.4.0
+              - generic [ref=e856]: 2026-09-22
+            - tab "v3.3.17 2026-09-22" [ref=e858] [cursor=pointer]:
+              - generic [ref=e859]: v3.3.17
+              - generic [ref=e861]: 2026-09-22
+            - tab "v3.3.16 2026-09-21" [ref=e863] [cursor=pointer]:
+              - generic [ref=e864]: v3.3.16
+              - generic [ref=e866]: 2026-09-21
+            - tab "v3.3.15 2026-09-21" [ref=e868] [cursor=pointer]:
+              - generic [ref=e869]: v3.3.15
+              - generic [ref=e871]: 2026-09-21
+            - tab "v3.3.14 2026-09-21" [ref=e873] [cursor=pointer]:
+              - generic [ref=e874]: v3.3.14
+              - generic [ref=e876]: 2026-09-21
+            - tab "v3.3.13 2026-09-21" [ref=e878] [cursor=pointer]:
+              - generic [ref=e879]: v3.3.13
+              - generic [ref=e881]: 2026-09-21
+          - generic [ref=e884]:
+            - generic [ref=e885]:
+              - heading "v3.6.0" [level=4] [ref=e886]
+              - generic [ref=e887]: 当前版本
+              - generic [ref=e888]: 发布于 2026-10-08
+              - link "GitHub →" [ref=e889] [cursor=pointer]:
+                - /url: https://github.com/yancongya/iSparta-next/releases/tag/v3.6.0
+            - generic [ref=e890]:
+              - generic [ref=e891]:
+                - paragraph [ref=e892]: 新功能
+                - paragraph [ref=e894]: "4"
+              - generic [ref=e895]:
+                - paragraph [ref=e896]: 修复
+                - paragraph [ref=e898]: "4"
+              - generic [ref=e899]:
+                - paragraph [ref=e900]: 文档
+                - paragraph [ref=e902]: "2"
+            - list [ref=e903]:
+              - 'listitem "feat(win): 精简安装向导 —— 安装范围只问一次，组件页改两张等宽卡片" [ref=e904]'
+              - 'listitem "feat(onboarding): 引导页文案统一不可选 + 全页 hover 反馈，输出路径页改单列" [ref=e905]'
+              - 'listitem "fix(release): 发版脚本不再因 git pull 的 stderr 输出而中断" [ref=e906]'
+              - 'listitem "fix(release): release.ps1 补 UTF-8 BOM，修复中文 Windows 下解析失败" [ref=e907]'
+            - generic [ref=e908]:
+              - link "Windows isparta-next-3.6.0-win-x64.exe" [ref=e909] [cursor=pointer]:
+                - /url: https://github.com/yancongya/iSparta-next/releases/download/v3.6.0/isparta-next-3.6.0-win-x64.exe
+                - generic [ref=e910]: Windows
+                - generic [ref=e911]: isparta-next-3.6.0-win-x64.exe
+              - link "macOS · Apple Silicon isparta-next-3.6.0-mac-arm64.zip" [ref=e912] [cursor=pointer]:
+                - /url: https://github.com/yancongya/iSparta-next/releases/download/v3.6.0/isparta-next-3.6.0-mac-arm64.zip
+                - generic [ref=e913]: macOS · Apple Silicon
+                - generic [ref=e914]: isparta-next-3.6.0-mac-arm64.zip
+              - link "macOS · Intel isparta-next-3.6.0-mac-x64.zip" [ref=e915] [cursor=pointer]:
+                - /url: https://github.com/yancongya/iSparta-next/releases/download/v3.6.0/isparta-next-3.6.0-mac-x64.zip
+                - generic [ref=e916]: macOS · Intel
+                - generic [ref=e917]: isparta-next-3.6.0-mac-x64.zip
+              - link "Linux isparta-next-3.6.0-linux-x64.AppImage" [ref=e918] [cursor=pointer]:
+                - /url: https://github.com/yancongya/iSparta-next/releases/download/v3.6.0/isparta-next-3.6.0-linux-x64.AppImage
+                - generic [ref=e919]: Linux
+                - generic [ref=e920]: isparta-next-3.6.0-linux-x64.AppImage
+        - generic [ref=e922]: 与 GitHub Releases 同源 · 左轨切换版本
+      - generic [ref=e923]:
+        - heading "作者墙 · Credits" [level=3] [ref=e924]
+        - generic [ref=e925]:
+          - generic [ref=e926]:
+            - heading "原版作者" [level=4] [ref=e927]
+            - list [ref=e928]:
+              - listitem [ref=e929]:
+                - link "jeakey" [ref=e930] [cursor=pointer]:
+                  - /url: https://github.com/jeakey
+              - listitem [ref=e931]:
+                - link "ccJUN" [ref=e932] [cursor=pointer]:
+                  - /url: https://github.com/ccJUN
+              - listitem [ref=e933]:
+                - link "yikfun" [ref=e934] [cursor=pointer]:
+                  - /url: https://github.com/yikfun
+          - generic [ref=e935]:
+            - heading "历史贡献 / 上游" [level=4] [ref=e936]
+            - list [ref=e937]:
+              - listitem [ref=e938]:
+                - link "DreamPiggy" [ref=e939] [cursor=pointer]:
+                  - /url: https://github.com/dreampiggy
+              - listitem [ref=e940]:
+                - link "Xheldon" [ref=e941] [cursor=pointer]:
+                  - /url: https://github.com/Xheldon
+              - listitem [ref=e942]:
+                - link "bigxixi" [ref=e943] [cursor=pointer]:
+                  - /url: https://github.com/bigxixi
+          - generic [ref=e944]:
+            - heading "iSparta-next 维护" [level=4] [ref=e945]
+            - list [ref=e946]:
+              - listitem [ref=e947]:
+                - link "yancongya" [ref=e948] [cursor=pointer]:
+                  - /url: https://github.com/yancongya
+          - generic [ref=e949]:
+            - heading "开源组件" [level=4] [ref=e950]
+            - list [ref=e951]:
+              - listitem [ref=e952]:
+                - link "apngasm" [ref=e953] [cursor=pointer]:
+                  - /url: https://github.com/apngasm/apngasm
+                - text: ·
+                - link "apngopt" [ref=e954] [cursor=pointer]:
+                  - /url: https://sourceforge.net/projects/apng/files/APNG_Optimizer/
+                - text: ·
+                - link "apngquant / pngquant" [ref=e955] [cursor=pointer]:
+                  - /url: https://pngquant.org/
+              - listitem [ref=e956]:
+                - link "libwebp" [ref=e957] [cursor=pointer]:
+                  - /url: https://developers.google.com/speed/webp
+                - text: ·
+                - link "cwebp" [ref=e958] [cursor=pointer]:
+                  - /url: https://developers.google.com/speed/webp/docs/cwebp
+                - text: ·
+                - link "dwebp" [ref=e959] [cursor=pointer]:
+                  - /url: https://developers.google.com/speed/webp/docs/dwebp
+                - text: ·
+                - link "webpmux" [ref=e960] [cursor=pointer]:
+                  - /url: https://developers.google.com/speed/webp/docs/webpmux
+              - listitem [ref=e961]:
+                - link "gif2apng" [ref=e962] [cursor=pointer]:
+                  - /url: https://sourceforge.net/projects/gif2apng/
+                - text: ·
+                - link "apng2gif" [ref=e963] [cursor=pointer]:
+                  - /url: https://sourceforge.net/projects/apng/files/APNG%20Tools/
+              - listitem [ref=e964]:
+                - link "Electron" [ref=e965] [cursor=pointer]:
+                  - /url: https://www.electronjs.org/
+                - text: ·
+                - link "Vue" [ref=e966] [cursor=pointer]:
+                  - /url: https://vuejs.org/
+        - paragraph [ref=e967]: 漏了哪位历史贡献者？欢迎 PR 补上。
+    - generic [ref=e968]:
+      - generic [ref=e969]:
+        - paragraph [ref=e970]: 10 · 免费开始 · 开源可商用
+        - heading "立即下载，专注出片" [level=2] [ref=e971]
+        - paragraph [ref=e972]: 所有链接永远指向最新版。macOS 未签名，第一次打开被拦请看 Release 说明。
+      - generic [ref=e973]:
+        - generic [ref=e974]:
+          - paragraph [ref=e975]: 桌面端
+          - paragraph [ref=e976]: 一次装全：桌面应用 + AE 扩展（安装向导的组件页可只装桌面）。
+          - generic [ref=e977]:
+            - link "macOS Apple Silicon" [ref=e978] [cursor=pointer]:
+              - /url: https://github.com/yancongya/iSparta-next/releases/download/v3.6.0/isparta-next-3.6.0-mac-arm64.zip
+              - img [ref=e980]
+              - generic [ref=e982]: macOS
+              - generic [ref=e983]: Apple Silicon
+            - link "当前设备 Windows x64 · 含 AE 扩展" [ref=e984] [cursor=pointer]:
+              - /url: https://github.com/yancongya/iSparta-next/releases/download/v3.6.0/isparta-next-3.6.0-win-x64.exe
+              - generic [ref=e985]: 当前设备
+              - img [ref=e987]
+              - generic [ref=e989]: Windows
+              - generic [ref=e990]: x64 · 含 AE 扩展
+            - link "macOS Intel x64" [ref=e991] [cursor=pointer]:
+              - /url: https://github.com/yancongya/iSparta-next/releases/download/v3.6.0/isparta-next-3.6.0-mac-x64.zip
+              - img [ref=e993]
+              - generic [ref=e995]: macOS
+              - generic [ref=e996]: Intel x64
+            - link "Linux AppImage · x64" [ref=e997] [cursor=pointer]:
+              - /url: https://github.com/yancongya/iSparta-next/releases/download/v3.6.0/isparta-next-3.6.0-linux-x64.AppImage
+              - img [ref=e999]
+              - generic [ref=e1001]: Linux
+              - generic [ref=e1002]: AppImage · x64
+        - generic [ref=e1003]:
+          - paragraph [ref=e1004]: AE 扩展
+          - paragraph [ref=e1005]: 仅扩展主体，不含桌面应用。
+          - generic [ref=e1006]:
+            - link "Windows cep-win.zip" [ref=e1007] [cursor=pointer]:
+              - /url: https://github.com/yancongya/iSparta-next/releases/latest/download/isparta-next-cep-win.zip
+              - img [ref=e1009]
+              - generic [ref=e1011]: Windows
+              - generic [ref=e1012]: cep-win.zip
+            - link "macOS cep-mac.zip" [ref=e1013] [cursor=pointer]:
+              - /url: https://github.com/yancongya/iSparta-next/releases/latest/download/isparta-next-cep-mac.zip
+              - img [ref=e1015]
+              - generic [ref=e1017]: macOS
+              - generic [ref=e1018]: cep-mac.zip
+      - paragraph [ref=e1019]: Windows / Linux 安装版支持应用内自动更新；AE 扩展由同一个安装包的组件页一次装完，装完重启 After Effects 生效。
+  - contentinfo [ref=e1020]:
+    - generic [ref=e1021]:
+      - generic [ref=e1022]:
+        - paragraph [ref=e1023]: ISPARTA-next
+        - paragraph [ref=e1024]: 开源动图转换工作台。桌面拖文件批量转，AE 里直接导出合成。
+      - navigation "footer" [ref=e1025]:
+        - generic [ref=e1026]:
+          - paragraph [ref=e1027]: 项目
+          - link "GitHub" [ref=e1028] [cursor=pointer]:
+            - /url: https://github.com/yancongya/iSparta-next
+          - link "许可证：MIT" [ref=e1029] [cursor=pointer]:
+            - /url: https://github.com/yancongya/iSparta-next/blob/master/LICENSE
+          - link "README" [ref=e1030] [cursor=pointer]:
+            - /url: ../README.md
+        - generic [ref=e1031]:
+          - paragraph [ref=e1032]: 下载
+          - link "Releases" [ref=e1033] [cursor=pointer]:
+            - /url: https://github.com/yancongya/iSparta-next/releases
+          - link "Windows" [ref=e1034] [cursor=pointer]:
+            - /url: https://github.com/yancongya/iSparta-next/releases/latest/download/isparta-next-win-x64.exe
+          - link "macOS" [ref=e1035] [cursor=pointer]:
+            - /url: https://github.com/yancongya/iSparta-next/releases/latest/download/isparta-next-mac-arm64.zip
+        - generic [ref=e1036]:
+          - paragraph [ref=e1037]: 文档
+          - link "关于" [ref=e1038] [cursor=pointer]:
+            - /url: "#about"
+          - link "界面" [ref=e1039] [cursor=pointer]:
+            - /url: "#shots"
+          - link "AE 扩展" [ref=e1040] [cursor=pointer]:
+            - /url: "#ae"
+        - generic [ref=e1041]:
+          - paragraph [ref=e1042]: 联系
+          - link "admin@itycon.cn" [ref=e1043] [cursor=pointer]:
+            - /url: mailto:admin@itycon.cn
+          - link "问题反馈" [ref=e1044] [cursor=pointer]:
+            - /url: https://github.com/yancongya/iSparta-next/issues
+    - paragraph [ref=e1046]: Copyright © 2026 iSparta-next · MIT License

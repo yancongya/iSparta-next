@@ -52,8 +52,7 @@ html[data-theme="dark"] .thumb.is-checker {
     linear-gradient(-45deg, transparent 75%, #232b26 75%);
 }
 
-html[data-theme="dark"] .shot,
-html[data-theme="dark"] .shot-main {
+html[data-theme="dark"] .shot {
   background: #1a201c;
 }
 
@@ -2811,102 +2810,257 @@ html[data-theme="dark"] .log-row.is-error {
 }
 
 /* real software screenshots */
-.shots-intro {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 8px 16px;
+/* 07 界面预览：桌面 / AE 扩展双端 tab。
+   两个 tab 各 3 张同尺寸小卡片，hover / 聚焦时放大。
+   tab 控件复用 05 对比段的 .cmp-tabs / .cmp-tab，这里只管面板、卡片与那行说明。 */
+.shots-tabs {
+  display: inline-flex;
+  gap: 4px;
+  padding: 3px;
+  margin: 0 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--card);
+}
+
+/* 原来的 .shots-intro 是「粗体组名 + 说明」一行；组名已经升成 tab 了，
+   这里只留说明文字。 */
+.shots-hint {
   margin: 0 0 18px;
   color: var(--muted);
   font-size: 14px;
 }
 
-.shots-intro strong {
-  color: var(--ink);
-}
-
-.shot-main {
-  margin: 0 0 16px;
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  overflow: hidden;
-  box-shadow: 0 18px 48px color-mix(in srgb, var(--ink) 8%, transparent);
-}
-
-.shot-main img {
-  width: 100%;
-  display: block;
-  background: var(--paper);
-}
-
-.shot-bar {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 8px 16px;
-  padding: 12px 16px;
-  border-top: 1px solid var(--line);
-  font-size: 12px;
-  color: var(--muted);
-  background: color-mix(in srgb, var(--paper) 65%, var(--card));
-}
-
-.shot-bar .mono {
-  color: var(--accent);
-}
-
-.shots-side {
+/* 两个 pane 叠在同一个 grid 单元里：容器高度恒等于较高者，切 tab 不跳。
+   两边卡片数与尺寸一致，高度本就相等，这层只是为了杜绝亚像素差与
+   图片懒加载完成后的抖动。 */
+.shots-panes {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+}
+
+.shots-pane {
+  grid-area: 1 / 1;
+  min-width: 0;
+}
+
+/* 用 visibility 而不是 display:none —— 后者会让未激活那组不参与布局，
+   容器高度塌回另一组，切 tab 就跳；visibility:hidden 同时把它移出 tab 序。 */
+.shots-pane[aria-hidden="true"] {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.shots-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   gap: 16px;
 }
 
-.shots-side .shot {
+/* 卡片：hover / 聚焦时放大细看。
+   放大本身交给 GSAP（见 main.js setupShotsTabs）—— 入场动画 gsap.from 已经把
+   transform 写在行内上了，CSS 的 :hover scale 会被它压掉（同页脚瓦片的坑）。
+   这里只留不与 transform 冲突的部分：描边、投影、层级。
+   源图是 1440×1080 的 webp，放大后仍按原始像素采样，不会糊。 */
+.shots-grid .shot {
+  position: relative;
   margin: 0;
   background: var(--card);
   border: 1px solid var(--line);
   border-radius: var(--radius);
   overflow: hidden;
+  cursor: zoom-in;
+  transition: box-shadow 0.28s ease, border-color 0.28s ease;
 }
 
-.shots-side .shot img {
+.shots-grid .shot__frame {
+  overflow: hidden;
+}
+
+.shots-grid .shot img {
   width: 100%;
-  aspect-ratio: 980 / 749;
+  aspect-ratio: 4 / 3;
   object-fit: cover;
+  /* 从顶部裁：界面截图的标题栏与顶部信息在顶部，裁底部更不容易丢关键内容 */
   object-position: top center;
   display: block;
+  background: var(--paper);
 }
 
-.shots-side .shot figcaption {
+.shots-grid .shot figcaption {
   padding: 10px 14px;
   font-size: 12px;
+  line-height: 1.5;
   color: var(--muted);
   border-top: 1px solid var(--line);
 }
 
-/* AE 扩展三连：图是 4:3（1440×1080），与桌面 980×749 不同，
-   且三张并排需要更窄的裁切 —— 单独一套网格与宽高比，别硬套桌面那套。 */
-.shots-intro--sub {
-  margin-top: 40px;
+.shots-grid .shot:hover,
+.shots-grid .shot:focus-visible {
+  z-index: 3;
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
+  box-shadow: 0 26px 60px color-mix(in srgb, var(--ink) 22%, transparent);
+  /* 全屏放大是点击触发的（见 main.js setupShotLightbox），hover 只做可点提示。
+     刻意不在这里做 transform:scale —— 入场动画 gsap.from 已经把 transform
+     写在行内上了，CSS 的 hover scale 会被整个压掉（同页脚瓦片的坑）。 */
 }
 
-.shots-side--triple {
-  grid-template-columns: repeat(3, 1fr);
-}
-
-.shots-side--triple .shot img {
-  aspect-ratio: 4 / 3;
+.shots-grid .shot:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
 }
 
 @media (max-width: 900px) {
   .name-grid,
-  .shots-side,
-  .shots-side--triple {
+  .shots-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .shots-grid {
     grid-template-columns: 1fr;
   }
 }
 
+/* 截图全屏查看层。
+   不用 backdrop-filter —— 它会让元素成为绝对定位后代的包含块，
+   左右翻页按钮就是绝对定位，容易在不同引擎下出怪问题。纯色底更稳。 */
+.lb {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  background: #0b0d0a;
+  color: #e7ede4;
+}
+
+.lb[hidden] {
+  display: none;
+}
+
+.lb__bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 16px 12px 20px;
+}
+
+.lb__cap {
+  flex: 1 1 auto;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #aab5a6;
+}
+
+.lb__count {
+  flex: 0 0 auto;
+  font-size: 12px;
+  color: #6f7a6c;
+}
+
+.lb__x,
+.lb__nav {
+  display: grid;
+  place-items: center;
+  border: 1px solid #2a3128;
+  border-radius: 999px;
+  background: #151a14;
+  color: #cfd6cb;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.lb__x {
+  flex: 0 0 auto;
+  width: 38px;
+  height: 38px;
+}
+
+.lb__x svg,
+.lb__nav svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.lb__x:hover,
+.lb__nav:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #0b0d0a;
+}
+
+.lb__x:focus-visible,
+.lb__nav:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.lb__stage {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 0;
+  padding: 0 clamp(56px, 8vw, 104px) 28px;
+}
+
+.lb__img {
+  max-width: 100%;
+  max-height: 100%;
+  display: block;
+  object-fit: contain;
+  border-radius: 6px;
+  background: #12140f;
+}
+
+.lb__nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+}
+
+.lb__nav--prev { left: clamp(8px, 2vw, 24px); }
+.lb__nav--next { right: clamp(8px, 2vw, 24px); }
+
+.lb__nav:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+@media (max-width: 560px) {
+  .lb__stage {
+    padding: 0 12px 20px;
+  }
+
+  /* 窄屏放不下两侧悬浮按钮，压成一条底栏 */
+  .lb__nav {
+    position: static;
+    transform: none;
+    width: 40px;
+    height: 40px;
+    margin-top: 12px;
+  }
+
+  .lb__stage {
+    padding-bottom: 12px;
+  }
+
+  .lb__nav--prev { order: -1; }
+}
+
+@media (hover: none) {
+  /* 触摸端没有 hover 可依赖，卡片改成整块可点 */
+  .shots-grid .shot {
+    cursor: pointer;
+  }
+}
 /* why-next cards */
 .why-cards {
   display: grid;

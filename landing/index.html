@@ -28,7 +28,7 @@
 
   <link rel="icon" href="assets/icon.png" />
   <link rel="apple-touch-icon" href="assets/icon.png" />
-  <link rel="stylesheet" href="styles.css?v=20261008-hero1" />
+  <link rel="stylesheet" href="styles.css?v=20261009-shots-lb" />
 
   <!-- Structured data -->
   <script type="application/ld+json">
@@ -983,49 +983,101 @@
       <h2 data-i18n="shots.h2">桌面版和 CEP 端界面预览</h2>
       <p class="section-sub" data-i18n="shots.sub">应用真实界面：空状态导入、任务卡片列表、参数设置、默认设置（命名 / 路径 / 大小上限）。</p>
     </div>
-    <p class="shots-intro">
-      <strong data-i18n="shots.brand">iSparta-next 工作台</strong>
-      <span data-i18n="shots.intro">与仓库 docs/screenshots/ 同源 · 桌面 Electron 实拍</span>
-    </p>
+<!-- 07 界面预览：桌面 / AE 扩展双端 tab。
+         两个 tab 结构完全一致 —— 各 3 张同尺寸小卡片，hover / 聚焦时放大细看。
 
-    <!-- 图源唯一真相源 = docs/screenshots/，由 scripts/sync-screenshots.js 同步到
-         assets/shots/。改图后必须重跑该脚本，否则 --check 会失败。 -->
-    <figure class="shot-main">
-      <img src="assets/shots/desktop-workspace-hd.webp" alt="iSparta-next 桌面工作台" width="1440" height="1080" loading="lazy" />
-      <div class="shot-bar">
-        <span data-i18n="shots.capMain">桌面工作台 · 任务列表 + 输出设置（路径变量 / 大小阈值）</span>
-        <span class="mono">desktop-workspace-hd.webp</span>
-      </div>
-    </figure>
-    <div class="shots-side">
-      <figure class="shot">
-        <img src="assets/shots/desktop-empty.webp" alt="空状态：拖放、粘贴或点击打开目录" width="984" height="742" loading="lazy" />
-        <figcaption class="mono" data-i18n="shots.capEmpty">空状态 · Drop / Paste / Click</figcaption>
-      </figure>
-      <figure class="shot">
-        <img src="assets/shots/desktop-settings-general.webp" alt="默认设置：语言、主题、输出路径变量与大小阈值" width="984" height="742" loading="lazy" />
-        <figcaption class="mono" data-i18n="shots.capSet">默认设置 · 主题 / {srcPath} / 阈值</figcaption>
-      </figure>
+         为什么统一成小卡片：先前桌面组是「1 大 + 2 小」、AE 组是「3 横排」，
+         两边高度差一千多像素，切 tab 会空出一大块，或靠拉伸凑高度时把图裁坏。
+         卡片同尺寸后这个问题从根上消失，两个 tab 天然等高。
+
+         为什么 hover 放大而不是常驻大图：六张界面图的信息密度都高，
+         缩到一格后细节看不清，hover 放大保留「一眼扫完」又不牺牲可读性；
+         源图是 1440×1080 的 webp，放大后仍然清晰，不会糊。
+
+         图源唯一真相源 = docs/screenshots/，由 scripts/sync-screenshots.js
+         同步到 assets/shots/。改图后必须重跑该脚本，否则 --check 会失败。 -->
+    <div class="shots-tabs" role="tablist" aria-label="界面预览端" data-i18n-aria="shots.tabsAria">
+      <button
+        type="button"
+        role="tab"
+        id="shots-tab-desktop"
+        class="cmp-tab is-on"
+        data-shots="desktop"
+        aria-selected="true"
+        aria-controls="shots-pane-desktop"
+        data-i18n="shots.brand"
+      >iSparta-next 工作台</button>
+      <button
+        type="button"
+        role="tab"
+        id="shots-tab-cep"
+        class="cmp-tab"
+        data-shots="cep"
+        aria-selected="false"
+        aria-controls="shots-pane-cep"
+        data-i18n="shots.brandAe"
+      >iSparta-next · AE 扩展</button>
     </div>
 
-    <!-- AE 扩展端：同一套工作台，宿主换成 After Effects -->
-    <p class="shots-intro shots-intro--sub">
-      <strong data-i18n="shots.brandAe">iSparta-next · AE 扩展</strong>
-      <span data-i18n="shots.introAe">装在 After Effects 面板里 · 与桌面端共用同一套转换核</span>
-    </p>
-    <div class="shots-side shots-side--triple">
-      <figure class="shot">
-        <img src="assets/shots/cep-task-list.webp" alt="AE 扩展：合成任务列表" width="1440" height="1080" loading="lazy" />
-        <figcaption class="mono" data-i18n="shots.capCepList">合成列表 · 勾选 / 帧率 / 帧数</figcaption>
-      </figure>
-      <figure class="shot">
-        <img src="assets/shots/cep-comp-tree.webp" alt="AE 扩展：合成树与尺寸信息" width="1440" height="1080" loading="lazy" />
-        <figcaption class="mono" data-i18n="shots.capCepTree">合成树 · 尺寸 / 帧率 / 帧数</figcaption>
-      </figure>
-      <figure class="shot">
-        <img src="assets/shots/cep-output-settings.webp" alt="AE 扩展：输出路径变量与大小阈值" width="1440" height="1080" loading="lazy" />
-        <figcaption class="mono" data-i18n="shots.capCepSet">输出设置 · 变量路径 / 大小阈值</figcaption>
-      </figure>
+    <div class="shots-panes">
+      <div
+        class="shots-pane"
+        id="shots-pane-desktop"
+        role="tabpanel"
+        aria-labelledby="shots-tab-desktop"
+      >
+        <p class="shots-hint" data-i18n="shots.intro">与仓库 docs/screenshots/ 同源 · 桌面 Electron 实拍</p>
+        <div class="shots-grid">
+          <figure class="shot" tabindex="0">
+            <div class="shot__frame">
+              <img src="assets/shots/desktop-workspace-hd.webp" alt="iSparta-next 桌面工作台：任务列表与输出设置" width="1440" height="1080" loading="lazy" />
+            </div>
+            <figcaption class="mono" data-i18n="shots.capMain">桌面工作台 · 任务列表 + 输出设置（路径变量 / 大小阈值）</figcaption>
+          </figure>
+          <figure class="shot" tabindex="0">
+            <div class="shot__frame">
+              <img src="assets/shots/desktop-empty.webp" alt="空状态：拖放、粘贴或点击打开目录" width="984" height="742" loading="lazy" />
+            </div>
+            <figcaption class="mono" data-i18n="shots.capEmpty">空状态 · Drop / Paste / Click</figcaption>
+          </figure>
+          <figure class="shot" tabindex="0">
+            <div class="shot__frame">
+              <img src="assets/shots/desktop-settings-general.webp" alt="默认设置：语言、主题、输出路径变量与大小阈值" width="984" height="742" loading="lazy" />
+            </div>
+            <figcaption class="mono" data-i18n="shots.capSet">默认设置 · 主题 / {srcPath} / 阈值</figcaption>
+          </figure>
+        </div>
+      </div>
+
+      <div
+        class="shots-pane"
+        id="shots-pane-cep"
+        role="tabpanel"
+        aria-labelledby="shots-tab-cep"
+        aria-hidden="true"
+      >
+        <p class="shots-hint" data-i18n="shots.introAe">装在 After Effects 面板里 · 与桌面端共用同一套转换核</p>
+        <div class="shots-grid">
+          <figure class="shot" tabindex="0">
+            <div class="shot__frame">
+              <img src="assets/shots/cep-comp-tree.webp" alt="AE 扩展：合成树与尺寸信息" width="1440" height="1080" loading="lazy" />
+            </div>
+            <figcaption class="mono" data-i18n="shots.capCepTree">合成树 · 尺寸 / 帧率 / 帧数</figcaption>
+          </figure>
+          <figure class="shot" tabindex="0">
+            <div class="shot__frame">
+              <img src="assets/shots/cep-task-list.webp" alt="AE 扩展：合成任务列表" width="1440" height="1080" loading="lazy" />
+            </div>
+            <figcaption class="mono" data-i18n="shots.capCepList">合成列表 · 勾选 / 帧率 / 帧数</figcaption>
+          </figure>
+          <figure class="shot" tabindex="0">
+            <div class="shot__frame">
+              <img src="assets/shots/cep-output-settings.webp" alt="AE 扩展：输出路径变量与大小阈值" width="1440" height="1080" loading="lazy" />
+            </div>
+            <figcaption class="mono" data-i18n="shots.capCepSet">输出设置 · 变量路径 / 大小阈值</figcaption>
+          </figure>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -1355,11 +1407,33 @@
     </div>
   </footer>
 
+  <!-- 截图全屏查看层：点 07 段的卡片打开，Esc / 点背景关闭，← → 翻图。
+       收集的是两个 tab 的全部卡片，所以层内可以跨桌面/AE 两端直接翻。
+       z-index 100 必须高于顶栏（20）与下载二级菜单（40/45）。 -->
+  <div class="lb" id="shot-lb" role="dialog" aria-modal="true" aria-label="界面预览大图" data-i18n-aria="shots.lbAria" hidden>
+    <div class="lb__bar">
+      <span class="lb__cap mono" id="shot-lb-cap"></span>
+      <span class="lb__count mono" id="shot-lb-count"></span>
+      <button class="lb__x" id="shot-lb-close" type="button" aria-label="关闭" data-i18n-aria="shots.lbClose">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+      </button>
+    </div>
+    <div class="lb__stage">
+      <img class="lb__img" id="shot-lb-img" alt="" />
+      <button class="lb__nav lb__nav--prev" id="shot-lb-prev" type="button" aria-label="上一张" data-i18n-aria="shots.lbPrev">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" /></svg>
+      </button>
+      <button class="lb__nav lb__nav--next" id="shot-lb-next" type="button" aria-label="下一张" data-i18n-aria="shots.lbNext">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7" /></svg>
+      </button>
+    </div>
+  </div>
+
   <!-- GSAP 自托管：CDN（jsdelivr）在国内不可达时，整层滚动与轨道动效会静默消失。
        本地副本 72KB + 43KB，GreenSock 标准许可允许自托管部署，许可头保留在文件内 -->
   <script src="assets/vendor/gsap.min.js"></script>
   <script src="assets/vendor/ScrollTrigger.min.js"></script>
-  <script src="i18n.js?v=20261008-hero1"></script>
-  <script src="main.js?v=20261009-footfx"></script>
+  <script src="i18n.js?v=20261009-shots-lb"></script>
+  <script src="main.js?v=20261009-shots-lb"></script>
 </body>
 </html>

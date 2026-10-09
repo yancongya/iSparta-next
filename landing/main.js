@@ -563,7 +563,7 @@
       y: 32,
       duration: 0.7,
     });
-    gsap.utils.toArray(".shot, .shot-main").forEach(function (shot, idx) {
+    gsap.utils.toArray(".shot").forEach(function (shot, idx) {
       gsap.from(shot, {
         scrollTrigger: { trigger: shot, start: "top 90%" },
         opacity: 0,
@@ -2098,6 +2098,148 @@
     });
   }
 
+  /**
+   * 07 界面预览：桌面 / AE 扩展双端 tab。
+   *
+   * 为什么改：两组各 3 张图竖排着占掉 2380px（移动端），整页被拉到 19 屏。
+   * 切成 tab 后只剩一组的高度。
+   *
+   * 两个坑：
+   *  · 隐藏用 aria-hidden + CSS 的 visibility:hidden，而不是 hidden 属性。
+   *    display:none 会让未激活那组不参与布局，容器高度塌回另一组，切 tab 就跳。
+   *    visibility:hidden 既保留布局（高度取两者较大），又把它移出 tab 序与无障碍树。
+   *  · 那行说明文字要放进 pane 内部。它若在 pane 外面，就不参与堆叠高度，
+   *    两个 tab 切过去时说明行的位置会差一截。
+   *
+   * tab 控件复用 05 对比段那套 .cmp-tabs / .cmp-tab，不另立一套样式。
+   */
+  function setupShotsTabs() {
+    var tabs = Array.prototype.slice.call(document.querySelectorAll(".shots-tabs .cmp-tab"));
+    if (!tabs.length) return;
+
+    var panes = {};
+    tabs.forEach(function (t) {
+      var pane = document.getElementById(t.getAttribute("aria-controls"));
+      if (pane) panes[t.getAttribute("data-shots")] = pane;
+    });
+
+    function select(key) {
+      tabs.forEach(function (t) {
+        var on = t.getAttribute("data-shots") === key;
+        t.classList.toggle("is-on", on);
+        t.setAttribute("aria-selected", on ? "true" : "false");
+        // tabIndex 跟随选中项，键盘 Tab 键只在选中项上停留
+        t.tabIndex = on ? 0 : -1;
+        var pane = panes[t.getAttribute("data-shots")];
+        if (pane) pane.setAttribute("aria-hidden", on ? "false" : "true");
+      });
+    }
+
+    tabs.forEach(function (tab, i) {
+      tab.tabIndex = i === 0 ? 0 : -1;
+      tab.addEventListener("click", function () {
+        select(tab.getAttribute("data-shots"));
+      });
+      // ← → 在 tab 间移动，符合 tablist 的键盘约定
+      tab.addEventListener("keydown", function (e) {
+        var d = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
+        if (!d) return;
+        e.preventDefault();
+        var next = tabs[(i + d + tabs.length) % tabs.length];
+        next.focus();
+        select(next.getAttribute("data-shots"));
+      });
+    });
+
+    setupShotLightbox();
+  }
+
+  /**
+   * 截图卡片的全屏查看层。
+   *
+   * 为什么用「点开」而不是 hover 触发：全屏层一旦在 hover 时弹出，鼠标就没法离开、
+   * 也够不到关闭按钮与左右翻页 —— 页面直接失去响应。全屏只能由点击（或键盘 Enter）
+   * 进入；hover 只留描边与投影作为可点提示。
+   *
+   * 顺带说明为什么卡片 hover 不做 CSS scale：入场动画 gsap.from 已经把 transform
+   * 写在行内上了，CSS 的 :hover scale 会被整个压掉（页脚瓦片磁吸 hover 就是这么消失的）。
+   * 去掉 scale 后两边也不再抢同一个属性。
+   */
+  function setupShotLightbox() {
+    var box = document.getElementById("shot-lb");
+    if (!box) return;
+    var img = document.getElementById("shot-lb-img");
+    var cap = document.getElementById("shot-lb-cap");
+    var cnt = document.getElementById("shot-lb-count");
+    var btnClose = document.getElementById("shot-lb-close");
+    var btnPrev = document.getElementById("shot-lb-prev");
+    var btnNext = document.getElementById("shot-lb-next");
+    if (!img || !cap || !cnt) return;
+
+    // 两个 tab 的卡片都收进来 —— 全屏里可以直接跨端翻，不用切 tab
+    var cards = Array.prototype.slice.call(document.querySelectorAll(".shots-grid .shot"));
+    if (!cards.length) return;
+
+    var idx = 0;
+    var lastFocus = null;
+
+    function render() {
+      var card = cards[idx];
+      var im = card.querySelector("img");
+      var fig = card.querySelector("figcaption");
+      img.src = im.currentSrc || im.src;
+      img.alt = im.alt || "";
+      cap.textContent = fig ? fig.textContent.trim() : "";
+      cnt.textContent = idx + 1 + " / " + cards.length;
+      btnPrev.disabled = cards.length < 2;
+      btnNext.disabled = cards.length < 2;
+    }
+
+    function open(i) {
+      lastFocus = document.activeElement;
+      idx = (i + cards.length) % cards.length;
+      render();
+      box.hidden = false;
+      // 打开时锁住背景滚动，否则在图片上滚一下整页就跟着动
+      document.documentElement.style.overflow = "hidden";
+      btnClose.focus();
+    }
+
+    function close() {
+      box.hidden = true;
+      document.documentElement.style.overflow = "";
+      if (lastFocus && lastFocus.focus) lastFocus.focus();
+    }
+
+    function step(d) {
+      idx = (idx + d + cards.length) % cards.length;
+      render();
+    }
+
+    cards.forEach(function (card, i) {
+      card.addEventListener("click", function () { open(i); });
+      // figure 本身不可聚焦，补一层键盘可达
+      card.addEventListener("keydown", function (e) {
+        if (e.key !== "Enter" && e.key !== " ") return;
+        e.preventDefault();
+        open(i);
+      });
+    });
+
+    if (btnClose) btnClose.addEventListener("click", close);
+    if (btnPrev) btnPrev.addEventListener("click", function () { step(-1); });
+    if (btnNext) btnNext.addEventListener("click", function () { step(1); });
+    // 点背景空白处关闭；点在图上不关
+    box.addEventListener("click", function (e) { if (e.target === box) close(); });
+
+    document.addEventListener("keydown", function (e) {
+      if (box.hidden) return;
+      if (e.key === "Escape") { e.preventDefault(); close(); }
+      else if (e.key === "ArrowRight") { e.preventDefault(); step(1); }
+      else if (e.key === "ArrowLeft") { e.preventDefault(); step(-1); }
+    });
+  }
+
   function setupMicro() {
     if (reduceMotion) return;
 
@@ -2591,5 +2733,6 @@
   setupHeroScramble();
   setupHeroCta();
   setupMicro();
+  setupShotsTabs();
   setupFootGiant();
 })();
