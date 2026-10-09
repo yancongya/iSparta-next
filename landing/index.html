@@ -28,7 +28,7 @@
 
   <link rel="icon" href="assets/icon.png" />
   <link rel="apple-touch-icon" href="assets/icon.png" />
-  <link rel="stylesheet" href="styles.css?v=20261009-herofx" />
+  <link rel="stylesheet" href="styles.css?v=20261008-hero1" />
 
   <!-- Structured data -->
   <script type="application/ld+json">
@@ -202,12 +202,7 @@
     <!-- 产品舞台：无边框大图，底部用渐隐遮罩融进页面（参考站观感） -->
     <figure class="hero-stage" id="hero-stage" aria-label="iSparta-next 工作台界面">
       <div class="hero-shot">
-        <img id="hero-shot-img" src="assets/shots/desktop-workspace-hd.webp" alt="iSparta-next 工作台：任务列表与输出设置" width="1440" height="1080" fetchpriority="high" />
-        <!-- 字符解密层：setupHeroDecrypt 用 WebGL 把截图叠成 gif/webp/apng 字符，
-             鼠标附近透出真实界面。必须排在 fade 之前 —— 渐隐遮罩要压在最上层，
-             否则遮罩会盖掉解密边缘的高光。
-             无 WebGL / 减少动效 / 初始化失败时 canvas 保持透明，img 原样显示。 -->
-        <canvas class="hero-shot__fx" id="hero-shot-fx" aria-hidden="true"></canvas>
+        <img src="assets/shots/desktop-workspace-hd.webp" alt="iSparta-next 工作台：任务列表与输出设置" width="1440" height="1080" fetchpriority="high" />
         <!-- 渐隐遮罩：只盖住底部一段，让截图「沉」进背景而不是硬边收口。
              两端色都取自当前主题的 paper，暗色下改用深色，亮色下用纸色。 -->
         <span class="hero-shot__fade" aria-hidden="true"></span>
@@ -1365,6 +1360,6 @@
   <script src="assets/vendor/gsap.min.js"></script>
   <script src="assets/vendor/ScrollTrigger.min.js"></script>
   <script src="i18n.js?v=20261008-hero1"></script>
-  <script src="main.js?v=20261009-herofx"></script>
+  <script src="main.js?v=20261009-footfx"></script>
 </body>
 </html>
