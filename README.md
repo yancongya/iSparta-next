@@ -123,13 +123,27 @@
 
 ## 截图
 
-| 空状态（拖放 / 粘贴导入） | 主界面（任务 + 输出设置） |
-| :---: | :---: |
-| <img src="public/screenshot/empty.png" alt="空状态：拖放、粘贴、点击打开目录" width="480"> | <img src="public/screenshot/main.png" alt="主界面：任务列表与输出设置" width="480"> |
+> 图源唯一真相源在 [`docs/screenshots/`](docs/screenshots)。改图后跑 `node scripts\sync-screenshots.js` 同步落地页副本；`--check` 校验是否漂移（CI 会跑）。
 
-| 默认设置 |
+**桌面端**
+
+| 工作台（任务列表 + 输出设置） | 空状态（拖放 / 粘贴导入） |
+| :---: | :---: |
+| <img src="docs/screenshots/desktop-workspace-hd.webp" alt="桌面工作台：任务列表与输出设置" width="480"> | <img src="docs/screenshots/desktop-empty.webp" alt="空状态：拖放、粘贴、点击打开目录" width="480"> |
+
+| 默认设置（语言 / 主题 / 路径变量 / 大小阈值） | 默认设置（版本与更新） |
+| :---: | :---: |
+| <img src="docs/screenshots/desktop-settings-general.webp" alt="默认设置：语言、主题、输出路径变量与大小阈值" width="480"> | <img src="docs/screenshots/desktop-settings-update.webp" alt="默认设置：当前版本、检查更新与关于" width="480"> |
+
+**AE 扩展端**（同一套工作台，装在 After Effects 面板里）
+
+| 合成列表 | 合成树 |
+| :---: | :---: |
+| <img src="docs/screenshots/cep-task-list.webp" alt="AE 扩展：合成任务列表，可勾选并显示帧率帧数" width="480"> | <img src="docs/screenshots/cep-comp-tree.webp" alt="AE 扩展：合成树，显示尺寸、帧率与帧数" width="480"> |
+
+| 输出设置（变量路径 + 大小阈值） |
 | :---: |
-| <img src="public/screenshot/settings.png" alt="默认设置：语言、主题、帧频、输出路径与大小阈值" width="480"> |
+| <img src="docs/screenshots/cep-output-settings.webp" alt="AE 扩展：输出路径变量与大小阈值设置" width="480"> |
 
 ## 下载
 

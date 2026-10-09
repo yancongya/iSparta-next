@@ -240,6 +240,20 @@
         <is-form-item v-else-if="updateHasNewVersion" :label="$t('updateRestartNow')">
           <em class="hint">{{ $t('updateAutoUnsupported') }}</em>
         </is-form-item>
+
+        <div class="gs-split"></div>
+
+        <!-- 关于：产品官网入口。外链一律走 hostAdapter.openExternal ——
+             CEP 下必须是 cep.util.openURLInDefaultBrowser，直接 window.open /
+             location.href 在 AE 面板里会被 CSP 拦掉（点了没反应）。 -->
+        <div class="gs-about">
+          <div class="gs-about__text">
+            <span class="gs-about__name">{{ APP_NAME }}</span>
+            <span class="gs-about__ver">v{{ appVersion || '—' }}</span>
+            <span class="gs-about__desc">{{ $t('aboutDesc') }}</span>
+          </div>
+          <is-button size="sm" icon="globe" @click="openSite">{{ $t('aboutSite') }}</is-button>
+        </div>
       </is-form>
 
       <template #footer>
@@ -270,6 +284,7 @@ import IsProgress from '../../ui-next/components/ui/IsProgress.vue'
 import notice from '../../ui-next/notice'
 import hostAdapter from '../../util/host-env'
 import { MODE_SYSTEM, resolveLocale } from '../../util/system-locale'
+import { APP_NAME, LANDING_URL } from '../../brand'
 
 const DEFAULT_SIZE_LIMIT = {
   enabled: false,
@@ -301,7 +316,9 @@ export default {
       bookmarkOpen: false,
       bookmarkLabel: '',
       appVersion: '',
-      updateEnabled: true
+      updateEnabled: true,
+      // 关于区的产品名走 brand 单一来源，不在模板里再写一份字面量
+      APP_NAME
     }
   },
   computed: {
@@ -449,6 +466,10 @@ export default {
     if (this._unsubTheme) this._unsubTheme()
   },
   methods: {
+    /** 打开产品官网。走 hostAdapter 是硬要求：CEP 下必须用系统浏览器打开 */
+    openSite () {
+      hostAdapter.openExternal(LANDING_URL)
+    },
     onCheckUpdate () {
       var self = this
       updateService.runUpdateCheck({ force: true }).then(function (result) {

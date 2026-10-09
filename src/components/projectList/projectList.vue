@@ -453,9 +453,11 @@ export default {
       return /^[a-zA-Z]:[\\/]/.test(s) || s.charAt(0) === '/' || s.charAt(0) === '\\'
     },
     pathLabelOf (project) {
-      var out = this.outPathOf(project)
-      var input = (project && project.basic && project.basic.inputPath) || ''
-      var p = out || input
+      // CEP 只认输出目录：inputPath 是 AE 合成来源（工程目录/合成名），
+      // 不是用户关心的落盘位置，回退到它会把「源」误显示成「输出」。
+      var p = this.showOutPath
+        ? (this.outPathOf(project) || (project.basic && project.basic.inputPath) || '')
+        : this.outPathOf(project)
       if (!this.isRealFsPath(p)) return ''
       return this.shortPathOf(p)
     },
@@ -463,7 +465,9 @@ export default {
       var b = (project && project.basic) || {}
       var lines = []
       if (b.compName) lines.push(b.compName)
-      if (b.inputPath && this.isRealFsPath(b.inputPath)) {
+      // 输入目录仅桌面显示：CEP 的输入是 AE 合成，展示它只会让人误以为
+      // 「读取源目录」，而用户真正要确认的是输出落在哪、叫什么名字。
+      if (this.showOutPath && b.inputPath && this.isRealFsPath(b.inputPath)) {
         lines.push(this.$t('tipInputDir') + '：' + b.inputPath)
       }
       var out = this.outPathOf(project)

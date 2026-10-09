@@ -77,7 +77,9 @@
   }
 
   let currentIn = "PNGs";
-  let currentOut = "APNG";
+  /** 输出格式可多选：一次导出多种（与真实产品一致 —— 任务卡支持多格式）。
+      Set 而不是单个字符串，否则「三个格式」的勾选状态无处安放。 */
+  let currentOuts = new Set(["APNG", "GIF", "WEBP"]);
 
   const inChips = document.getElementById("in-chips");
   const outChips = document.getElementById("out-chips");
@@ -87,21 +89,43 @@
   function renderOutChips() {
     if (!outChips) return;
     const outs = MAP[currentIn] || [];
-    if (!outs.includes(currentOut)) currentOut = outs[0];
+    // 切输入格式后可能一个都没匹配上 —— 至少留一个，默认全选
+    if (!outs.some(function (o) { return currentOuts.has(o); })) {
+      currentOuts = new Set(outs);
+    }
+    // 丢掉已不存在的格式
+    Array.from(currentOuts).forEach(function (o) {
+      if (outs.indexOf(o) === -1) currentOuts.delete(o);
+    });
     outChips.innerHTML = "";
     outs.forEach(function (out) {
       const b = document.createElement("button");
       b.type = "button";
-      b.className = "chip chip--sm" + (out === currentOut ? " is-on" : "");
+      const on = currentOuts.has(out);
+      b.className = "chip chip--sm" + (on ? " is-on" : "");
       b.dataset.out = out;
+      b.setAttribute("aria-pressed", on ? "true" : "false");
       b.textContent = labelOf(out);
       b.addEventListener("click", function () {
-        currentOut = out;
+        // 多选：点一下切换；至少保留一个，全取消无意义
+        if (currentOuts.has(out)) {
+          if (currentOuts.size > 1) currentOuts.delete(out);
+        } else {
+          currentOuts.add(out);
+        }
         renderOutChips();
         runPipeline();
       });
       outChips.appendChild(b);
     });
+  }
+
+  /** 选中的输出标签（多选时按 MAP 顺序，保证文案稳定不跳） */
+  function outLabels() {
+    const outs = MAP[currentIn] || [];
+    return outs
+      .filter(function (o) { return currentOuts.has(o); })
+      .map(labelOf);
   }
 
   function runPipeline() {
@@ -111,28 +135,16 @@
       s.classList.remove("is-live");
     });
 
-    const key = currentIn + ">" + currentOut;
+    const labels = outLabels();
+    const primary = currentOuts.values().next().value; // 说明文案用「首个选中」的转换路径
+    const key = currentIn + ">" + primary;
     const n = NOTE[key] || {};
     const tip = (isEn() ? n.en : n.zh) || (isEn() ? "Batch tasks, your own output paths" : "支持批量任务，输出位置随你定");
-    noteEl.innerHTML =
-      (isEn() ? "Path: " : "当前路径：<strong>") +
-      labelOf(currentIn) +
-      " → " +
-      labelOf(currentOut) +
-      (isEn() ? " · " : "</strong> · ") +
-      tip;
-    if (isEn()) {
-      noteEl.innerHTML =
-        "Path: <strong>" +
-        labelOf(currentIn) +
-        " → " +
-        labelOf(currentOut) +
-        "</strong> · " +
-        tip;
-    }
+    const pathText = labels.join(" + ");
+    noteEl.textContent = (isEn() ? "Path: " : "当前路径：") + labelOf(currentIn) + " → " + pathText + (isEn() ? " · " : " · ") + tip;
 
     const taskFmt = document.getElementById("task-fmt");
-    if (taskFmt) taskFmt.textContent = labelOf(currentOut);
+    if (taskFmt) taskFmt.textContent = labels.join(" + ");
     const taskType = document.getElementById("task-type");
     if (taskType) taskType.textContent = currentIn === "PNGs" ? "PNGs" : labelOf(currentIn);
 
@@ -240,7 +252,6 @@
 
   function stopGate() {
     gateRunning = false;
-    setPetRunning(false);
     if (gateTimer) {
       clearTimeout(gateTimer);
       gateTimer = null;
@@ -256,8 +267,6 @@
 
     if (qSlider) qSlider.value = String(q);
     if (qVal) qVal.textContent = String(q);
-    // 拟物联动：演示进行中时，小机器狗按当前质量调速奔跑
-    setPetRunning(gateRunning, q);
     if (resultFmt) resultFmt.textContent = labelOf(activeFmt);
     if (resultSize) resultSize.textContent = mb.toFixed(2) + " MB";
 
@@ -356,7 +365,6 @@
 
     function finish(ok) {
       gateRunning = false;
-      setPetRunning(false);
       if (btnAuto) btnAuto.disabled = false;
       if (ok && hasGsap && !reduceMotion && resultCard) {
         window.gsap.fromTo(resultCard, { scale: 1 }, { scale: 1.02, duration: 0.2, yoyo: true, repeat: 1 });
@@ -444,117 +452,61 @@
     if (board) io.observe(board);
   }
 
-  /* ---------- hero motion ---------- */
-  /* ---------- 小机器狗：与阈值演示 / 帧投喂联动的拟物 ---------- */
-  // 质量越低（压得越狠）跑得越快：动画周期越短。q=10 → 0.5s，q=100 → 2.2s
-  function petRunDuration(q) {
-    const v = Math.max(10, Math.min(100, Number(q) || 85))
-    return (0.5 + ((v - 10) / 90) * 1.7).toFixed(2) + "s"
-  }
+  /* ---------- scroll ---------- */
+  /**
+   * 「当前设备」标记：按 UA 判定，把徽标挂到真正匹配的那一项上。
+   *
+   * 为什么必须 JS 判定而不是写死 Windows：写死会让 Mac / Linux 访客看到
+   * 「当前设备」标在别人的包上，是明显的事实错误。UA 判定够用 —— 只用于
+   * 一个提示标签，不涉及任何下载逻辑。
+   *
+   * mac 合并成了一个父项（data-dl="mac"）带二级子菜单，故 Mac 命中时
+   * 标在**父项**上，与参考站一致（「Mac › 当前设备」）。
+   *
+   * 无匹配（如某些平板 UA）时清掉所有徽标，不谎报。
+   */
+  function setupCurrentDevice() {
+    var ua = navigator.userAgent || "";
+    var isWin = /Windows/i.test(ua);
+    var isMac = /Mac OS X|Macintosh/i.test(ua) && !isWin;
 
-  function setPetRunning(running, q) {
-    const pet = document.getElementById("pet")
-    if (!pet) return
-    pet.classList.toggle("is-running", !!running)
-    if (running) {
-      pet.style.setProperty("--pet-speed", petRunDuration(q))
-    }
-  }
+    // 导航下拉里 mac 合并成了一个父项（data-dl="mac"），下载瓦片仍是两个独立
+    // 包（macArm / macX64），所以这里要两个 key，不能共用一个。
+    // Apple Silicon 无法从 UA 可靠区分（Chrome 一律报 Macintosh），
+    // 故 mac 一律推荐 arm64 包（Rosetta 能跑 x64，反之不行）。
+    var navKey = isWin ? "win" : isMac ? "mac" : /Linux|X11/i.test(ua) ? "linux" : "";
+    var tileKey = isWin ? "win" : isMac ? "macArm" : /Linux|X11/i.test(ua) ? "linux" : "";
 
-  function cheerPet() {
-    const pet = document.getElementById("pet")
-    if (!pet || reduceMotion) return
-    pet.classList.remove("is-cheer")
-    void pet.getBoundingClientRect()
-    pet.classList.add("is-cheer")
-    window.setTimeout(function () { pet.classList.remove("is-cheer") }, 600)
-  }
+    var label = tRel("dl.thisDevice", "当前设备");
 
-  function setupPacket() {
-    if (!hasGsap || reduceMotion) return;
-    const packet = document.getElementById("packet");
-    const path = document.getElementById("rail");
-    if (!packet || !path || !path.getTotalLength) return;
-
-    const len = path.getTotalLength();
-    const state = { t: 0 };
-    const railTl = window.gsap.to(state, {
-      t: 1,
-      duration: 5.5,
-      repeat: -1,
-      ease: "none",
-      onUpdate: function () {
-        const p = path.getPointAtLength(state.t * len);
-        packet.setAttribute("transform", "translate(" + p.x + " " + p.y + ")");
-      },
+    // 先清掉旧徽标（语言切换会重跑本函数，避免叠加）
+    document.querySelectorAll(".dl-badge").forEach(function (b) { b.remove(); });
+    document.querySelectorAll(".dl-tile--now").forEach(function (t) {
+      t.classList.remove("dl-tile--now");
     });
+    document.querySelectorAll(".nav-dl__now").forEach(function (n) { n.remove(); });
 
-    const bobTl = window.gsap.to("#film .frame", {
-      y: -8,
-      duration: 1.4,
-      stagger: 0.18,
-      yoyo: true,
-      repeat: -1,
-      ease: "sine.inOut",
-    });
-
-    // 标题词轮换：原来是裸 setInterval，切到后台标签页仍在跑；
-    // 现在统一交给下面的可见性/离屏闸门控制
-    const el = document.getElementById("hero-accent-word");
-    let rotTimer = null;
-    function rotTick() {
-      if (rotTimer !== null || !el) return;
-      rotTimer = window.setInterval(function () {
-        const list = isEn()
-          ? ["works in desktop & AE", "too big? auto-shrinks", "export dozens at once", "compare before & after"]
-          : ["桌面和 AE 里都好使", "太大？自动压小", "一次导几十个", "转前转后一眼看"];
-        const i = (Number(el.dataset.i || 0) + 1) % list.length;
-        el.dataset.i = String(i);
-        window.gsap.to(el, {
-          opacity: 0,
-          y: 8,
-          duration: 0.25,
-          onComplete: function () {
-            el.textContent = list[i];
-            window.gsap.fromTo(el, { opacity: 0, y: -8 }, { opacity: 1, y: 0, duration: 0.3 });
-          },
-        });
-      }, 2800);
-    }
-    function rotStop() {
-      if (rotTimer !== null) {
-        window.clearInterval(rotTimer);
-        rotTimer = null;
+    function mark (selector, host) {
+      var el = document.querySelector(selector);
+      if (!el) return;
+      var tag = document.createElement("span");
+      tag.className = host === "tile" ? "dl-badge" : "nav-dl__now";
+      tag.textContent = label;
+      if (host === "tile") {
+        el.insertBefore(tag, el.firstChild);
+        el.classList.add("dl-tile--now");
+      } else {
+        // 徽标与 › 互斥：命中当前设备时用徽标，不再显示箭头
+        var chev = el.querySelector(".nav-dl__chev");
+        if (chev) { chev.remove(); }
+        el.appendChild(tag);
       }
     }
 
-    // 离屏或后台标签页时全部停掉：省电，也避免回到页面时动画与状态错位
-    const hero = document.querySelector(".hero");
-    let inView = true;
-    let visible = !document.hidden;
-    function syncMotion() {
-      const run = inView && visible;
-      railTl.paused(!run);
-      bobTl.paused(!run);
-      if (run) rotTick(); else rotStop();
-    }
-    if ("IntersectionObserver" in window && hero) {
-      new IntersectionObserver(
-        function (entries) {
-          inView = entries[0].isIntersecting;
-          syncMotion();
-        },
-        { threshold: 0 }
-      ).observe(hero);
-    }
-    document.addEventListener("visibilitychange", function () {
-      visible = !document.hidden;
-      syncMotion();
-    });
-    syncMotion();
+    if (tileKey) { mark('.dl-tile[data-dl="' + tileKey + '"]', "tile"); }
+    if (navKey) { mark('.nav-dl__item[data-dl="' + navKey + '"]', "nav"); }
   }
 
-  /* ---------- scroll ---------- */
   function setupScroll() {
     if (!hasGsap || reduceMotion) return;
     if (window.ScrollTrigger) window.gsap.registerPlugin(window.ScrollTrigger);
@@ -569,10 +521,11 @@
     });
     window.gsap.from(".hero-stage", {
       opacity: 0,
-      scale: 0.96,
+      y: 40,
+      scale: 0.97,
       duration: 0.9,
       ease: "power2.out",
-      delay: 0.2,
+      delay: 0.25,
     });
     gsap.utils.toArray(".why-card").forEach(function (card, idx) {
       gsap.from(card, {
@@ -619,12 +572,24 @@
         delay: idx * 0.06,
       });
     });
-    gsap.from(".dl-card", {
-      scrollTrigger: { trigger: ".dl-grid", start: "top 90%" },
+    /* 下载瓦片：只做透明度渐显，**不要动 transform**。
+       原因有二，都实测踩过：
+       ① y 位移 + stagger 会让各瓦片停在不同的 Y 上（矩阵里能看到
+          translateY(20) / 18.6 残留），整排看上去就是「没对齐」；
+       ② 磁吸效果靠 CSS `transform: translate(var(--mx), var(--my))`，
+          GSAP 的行内 transform 会整个覆盖它，动画结束后磁吸就失效了。
+       位移改放到 .dl-groups 整组上做，组内瓦片始终严丝合缝。 */
+    gsap.from(".dl-groups", {
+      scrollTrigger: { trigger: ".dl-groups", start: "top 90%" },
       opacity: 0,
-      y: 20,
-      stagger: 0.1,
+      y: 24,
       duration: 0.5,
+    });
+    gsap.from(".dl-tile", {
+      scrollTrigger: { trigger: ".dl-groups", start: "top 90%" },
+      opacity: 0,
+      stagger: 0.06,
+      duration: 0.4,
     });
     gsap.utils.toArray(".tl-item").forEach(function (item, idx) {
       gsap.from(item, {
@@ -651,26 +616,6 @@
       });
     }
   }
-
-  document.querySelectorAll("#outputs .out-chip").forEach(function (chip) {
-    chip.style.cursor = "pointer";
-    chip.addEventListener("click", function () {
-      const out = chip.getAttribute("data-out");
-      const mapped = { APNG: "APNG", WebP: "WEBP", GIF: "GIF" }[out];
-      if (!mapped) return;
-      currentIn = "APNG";
-      currentOut = mapped;
-      if (inChips) {
-        inChips.querySelectorAll(".chip").forEach(function (c) {
-          c.classList.toggle("is-on", c.dataset.in === "APNG");
-        });
-      }
-      renderOutChips();
-      runPipeline();
-      const sec = document.getElementById("convert");
-      if (sec) sec.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth" });
-    });
-  });
 
   /* ---------- task card ---------- */
   const taskItem = document.getElementById("task-item");
@@ -1509,104 +1454,6 @@
   }
 
 
-  /* ---------- HERO 投喂台：演示帧投入收集器 ---------- */
-  const FEED_TOTAL = 3
-
-  function setupHeroFeeder() {
-    const stage = document.getElementById("hero-stage")
-    const packet = document.getElementById("packet")
-    const countEl = document.getElementById("packet-count")
-    if (!stage || !packet) return
-
-    let fed = 0
-    let resetTimer = null
-
-    function setCount() {
-      if (countEl) countEl.textContent = String(fed)
-      stage.classList.toggle("is-ready", fed >= FEED_TOTAL)
-    }
-
-    function bump(el, cls) {
-      if (reduceMotion || !el) return
-      el.classList.remove(cls)
-      void el.getBoundingClientRect()
-      el.classList.add(cls)
-    }
-
-    function feed(frameEl) {
-      if (!frameEl || frameEl.classList.contains("is-fed") || fed >= FEED_TOTAL) return
-      frameEl.classList.add("is-fed")
-      fed += 1
-      setCount()
-      bump(packet, "is-bump")
-      window.clearTimeout(resetTimer)
-      if (fed >= FEED_TOTAL) {
-        cheerPet()
-        resetTimer = window.setTimeout(resetFeed, 3600)
-      }
-    }
-
-    function resetFeed() {
-      fed = 0
-      setCount()
-      stage.querySelectorAll(".frame--grab").forEach(function (f) {
-        f.classList.remove("is-fed", "is-ghost")
-      })
-    }
-
-    let dragging = null
-    function overPacket(x, y) {
-      const r = packet.getBoundingClientRect()
-      const pad = 14
-      return x >= r.left - pad && x <= r.right + pad && y >= r.top - pad && y <= r.bottom + pad
-    }
-
-    stage.querySelectorAll(".frame--grab").forEach(function (frame) {
-      frame.addEventListener("pointerdown", function (e) {
-        if (frame.classList.contains("is-fed")) return
-        dragging = frame
-        frame.classList.add("is-ghost")
-        if (frame.setPointerCapture) {
-          try { frame.setPointerCapture(e.pointerId) } catch (err) { /* ignore */ }
-        }
-        e.preventDefault()
-      })
-      frame.addEventListener("pointermove", function (e) {
-        if (dragging !== frame) return
-        packet.classList.toggle("is-hot", overPacket(e.clientX, e.clientY))
-      })
-      function release(e) {
-        if (dragging !== frame) return
-        dragging = null
-        frame.classList.remove("is-ghost")
-        packet.classList.remove("is-hot")
-        if (e && overPacket(e.clientX, e.clientY)) feed(frame)
-      }
-      frame.addEventListener("pointerup", release)
-      frame.addEventListener("pointercancel", function () {
-        dragging = null
-        frame.classList.remove("is-ghost")
-        packet.classList.remove("is-hot")
-      })
-      frame.addEventListener("click", function (e) {
-        if (overPacket(e.clientX, e.clientY)) return
-        feed(frame)
-      })
-      frame.addEventListener("keydown", function (e) {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault()
-          feed(frame)
-        }
-      })
-    })
-
-    packet.addEventListener("click", function () {
-      if (fed > 0) resetFeed()
-    })
-
-    setCount()
-  }
-
   /* ---------- 04 · RUN LOG：与 IsLogPanel 同构的演示板 ---------- */
   const LOG_SCRIPT = [
     { level: "info", msg: "导入目录 frames · 识别 24 帧 PNG", detail: "" },
@@ -2133,12 +1980,108 @@
 
   setupCompare();
   setupLogBoard();
-  setupHeroFeeder();
-  setupPacket();
   setupAeStage();
   setupScroll();
+  setupCurrentDevice();
 
-  /* ---------- 微交互：滚动进度 / 磁吸 / 倾斜 / 火花 / 视差 ---------- */
+  // 语言切换后重挂「当前设备」徽标（它是 JS 生成的，不走 data-i18n）
+  document.addEventListener("is:lang-applied", function () {
+    setupCurrentDevice();
+  });
+
+  /* ---------- 微交互：滚动进度 / 磁吸 / 倾斜 / 火花 ---------- */
+  /**
+   * Hero 大标题：进场时字符乱序闪一下，随即归位（不绑 hover 重播）。
+   *
+   * 实现要点（都是踩过的坑）：
+   *  · 必须把标题按「字符」拆成 <span class="sc">，单个字符才能独立位移；
+   *    拆完要把原文本记下来，语言切换时按新文本重新拆。
+   *  · 乱序时**不能整段替换 textContent** —— 那样每次都要重排 span，
+   *    动画会被打断。改成只改 span 的 textContent。
+   *  · 中文没有空格，按字拆即可；含空格的文案（英文）保留空格不参与乱序。
+   *  · 无 GSAP / 用户偏好减少动效时，直接不做任何事（标题保持静态可读）。
+   */
+  const SCRAMBLE_CHARS = "abcdefghijklmnopqrstuvwxyz0123456789/*+-<>[]{}#@%&";
+
+  function setupHeroScramble() {
+    var title = document.getElementById("hero-title");
+    if (!title || reduceMotion || !hasGsap) return;
+
+    var spans = [];
+    var original = "";
+
+    function splitChars() {
+      original = title.textContent.trim();
+      title.textContent = "";
+      spans = [];
+      Array.prototype.forEach.call(original, function (ch) {
+        var s = document.createElement("span");
+        s.className = "sc";
+        s.textContent = ch;
+        title.appendChild(s);
+        spans.push({ el: s, ch: ch, isSpace: /\s/.test(ch) });
+      });
+    }
+
+    var tl = null;
+    // 每个字符一个独立的「被打乱」时间窗（而不是每帧掷骰子）——
+    // 逐帧随机的写法在 0.1s 里每帧命中概率都不高，看起来像没反应；
+    // 改成时间窗后中段会有大半字符同时乱，才闪得出来。
+    function rollWindows() {
+      spans.forEach(function (s) {
+        if (s.isSpace) return;
+        s.a = Math.random() * 0.45;
+        s.b = s.a + 0.3 + Math.random() * 0.25;
+      });
+    }
+
+    function play() {
+      if (tl) tl.kill();
+      rollWindows();
+      // 0.1s：只在进场时闪一下就归位。曾用 0.34s 且挂 mouseenter 重播，
+      // 结果鼠标扫过标题就持续乱序，反而看不清字 —— 一次短闪才像「解码完成」。
+      tl = window.gsap.timeline();
+      tl.to({}, {
+        duration: 0.1,
+        ease: "none",
+        onUpdate: function () {
+          var p = this.progress();
+          spans.forEach(function (s) {
+            if (s.isSpace) return;
+            if (p >= s.a && p <= s.b) {
+              s.el.textContent =
+                SCRAMBLE_CHARS.charAt(Math.floor(Math.random() * SCRAMBLE_CHARS.length));
+            } else {
+              s.el.textContent = s.ch;
+            }
+          });
+        },
+        onComplete: function () {
+          spans.forEach(function (s) { s.el.textContent = s.ch; });
+        }
+      });
+    }
+
+    /**
+     * 必须等 i18n 写完文案再闪，否则乱序发生在 HTML 里的兜底文案上，
+     * 紧接着 applyLang() 一改 textContent 就被冲掉 —— 表现就是「完全没反应」。
+     * 连等两帧是为了确认首帧已经画出来。
+     */
+    function schedulePlay() {
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () { play(); });
+      });
+    }
+
+    splitChars();
+    schedulePlay();
+    // 语言切换会重写文案 → 重新拆并重闪一次
+    document.addEventListener("is:lang-applied", function () {
+      splitChars();
+      schedulePlay();
+    });
+  }
+
   function setupMicro() {
     if (reduceMotion) return;
 
@@ -2155,7 +2098,7 @@
     }
 
     // 磁吸：主按钮 / 下载卡 / 导航 CTA
-    const magnets = document.querySelectorAll(".btn-primary, .nav-cta, .dl-card");
+    const magnets = document.querySelectorAll(".btn-primary, .nav-cta, .dl-tile");
     magnets.forEach(function (el) {
       el.addEventListener("pointermove", function (e) {
         const r = el.getBoundingClientRect();
@@ -2185,23 +2128,6 @@
         el.style.setProperty("--ry", "0deg");
       });
     });
-
-    // hero 舞台鼠标视差
-    const heroStage = document.getElementById("hero-stage");
-    const hero = document.querySelector(".hero");
-    if (heroStage && hero) {
-      hero.addEventListener("pointermove", function (e) {
-        const r = hero.getBoundingClientRect();
-        const dx = (e.clientX - r.left - r.width / 2) / r.width;
-        const dy = (e.clientY - r.top - r.height / 2) / r.height;
-        heroStage.style.setProperty("--hx", (dx * 10).toFixed(1) + "px");
-        heroStage.style.setProperty("--hy", (dy * 8).toFixed(1) + "px");
-      });
-      hero.addEventListener("pointerleave", function () {
-        heroStage.style.setProperty("--hx", "0px");
-        heroStage.style.setProperty("--hy", "0px");
-      });
-    }
   }
 
   function burstSparks(x, y, n) {
@@ -2224,74 +2150,430 @@
     }
   }
 
-  // 把火花绑定到 hero 投喂
-  (function bindFeedSparks() {
-    const stage = document.getElementById("hero-stage");
-    if (!stage) return;
-    stage.addEventListener("click", function (e) {
-      const frame = e.target.closest && e.target.closest(".frame--grab");
-      if (frame && !frame.classList.contains("is-fed")) {
-        burstSparks(e.clientX, e.clientY, 10);
-      }
-    });
-  })();
-
-  // 下载卡点击火花
-  document.querySelectorAll(".dl-card").forEach(function (card) {
-    card.addEventListener("click", function (e) {
+  // 下载瓦片点击火花
+  document.querySelectorAll(".dl-tile").forEach(function (tile) {
+    tile.addEventListener("click", function (e) {
       burstSparks(e.clientX, e.clientY, 12);
     });
   });
-  setupMicro();
-})();
+  /**
+   * Hero 主 CTA：默认显示短名，hover 换成全名，**按钮宽度跟着文案变化**。
+   *
+   * 为什么必须用 JS 改宽度：全名那段是绝对定位的（叠在短名上做交叉淡入），
+   * 绝对定位不参与布局，无法反过来撑开按钮；纯 CSS 做不到「宽度随文案」。
+   * 无 GSAP 时退化为只交叉淡入、宽度不变（此时默认宽度仍是短名那档）。
+   */
+  function setupHeroCta() {
+    var cta = document.querySelector(".hero-cta");
+    if (!cta) return;
+    var slot = cta.querySelector(".hero-cta__slot");
+    var shortEl = cta.querySelector(".hero-cta__t--short");
+    var fullEl = cta.querySelector(".hero-cta__t--full");
+    if (!slot || !shortEl || !fullEl) return;
 
+    var wShort = 0;
+    var wFull = 0;
 
-/* ---------- hero 双引擎自主出品流 v2：转换核 → 桌面 / AE 双路流光 ---------- */
-(function () {
-  function boot() {
-    var brA = document.getElementById('branch-a');
-    var brB = document.getElementById('branch-b');
-    var dotA = document.getElementById('flow-dot-a');
-    var dotB = document.getElementById('flow-dot-b');
-    var hero = document.querySelector('.hero');
-    if (!brA || !brB || !dotA || !dotB || !hero) return;
-    var rm = window.matchMedia('(prefers-reduced-motion: reduce)');
-    var cardA = document.getElementById('engine-desktop');
-    var cardB = document.getElementById('engine-ae');
-    var chips = Array.prototype.slice.call(document.querySelectorAll('#outputs .out-chip'));
-    var raf = null, t0 = 0, visible = false;
-    var LOOP = 4400;
+    function measure() {
+      // 两段都是绝对定位，但仍在布局树里，offsetWidth 有效
+      wShort = shortEl.offsetWidth;
+      wFull = fullEl.offsetWidth;
+      if (!wShort || !wFull) return false;
+      slot.style.width = wShort + "px";
+      return true;
+    }
 
-    function place(dot, path, u) {
-      var pt = path.getPointAtLength(u * path.getTotalLength());
-      dot.setAttribute('transform', 'translate(' + pt.x + ' ' + pt.y + ')');
-      dot.style.opacity = u > 0.94 ? String(Math.max(0, 1 - (u - 0.94) / 0.06)) : '1';
+    function setWidth(target, animate) {
+      if (!target) return;
+      if (animate && hasGsap && !reduceMotion) {
+        window.gsap.to(slot, { width: target, duration: 0.28, ease: "power3.out", overwrite: "auto" });
+      } else {
+        slot.style.width = target + "px";
+      }
     }
-    function hit(card) {
-      if (!card || rm.matches) return;
-      card.classList.remove('is-hit'); void card.getBoundingClientRect(); card.classList.add('is-hit');
-      var chip = chips[Math.floor(Math.random() * chips.length)];
-      if (chip) { chip.classList.remove('is-hit'); void chip.getBoundingClientRect(); chip.classList.add('is-hit'); }
-    }
-    function frame(ts) {
-      if (!t0) t0 = ts;
-      var e = (ts - t0) % LOOP;
-      var uA = e / LOOP, uB = ((e + LOOP / 2) % LOOP) / LOOP;
-      place(dotA, brA, uA); place(dotB, brB, uB);
-      if (uA > 0.985 && !dotA._h) { dotA._h = 1; hit(cardA); }
-      if (uA < 0.5) dotA._h = 0;
-      if (uB > 0.985 && !dotB._h) { dotB._h = 1; hit(cardB); }
-      if (uB < 0.5) dotB._h = 0;
-      raf = window.requestAnimationFrame(frame);
-    }
-    function start() { if (raf === null && visible && !rm.matches) { document.getElementById('dual-flow').classList.add('is-live'); raf = window.requestAnimationFrame(frame); } }
-    function stop() { if (raf !== null) { window.cancelAnimationFrame(raf); raf = null; } }
-    if ('IntersectionObserver' in window) {
-      new IntersectionObserver(function (es) { visible = es[0].isIntersecting; visible ? start() : stop(); }, { threshold: 0.15 }).observe(hero);
-    } else { visible = true; start(); }
-    document.addEventListener('visibilitychange', function () { visible = !document.hidden; visible ? start() : stop(); });
-    if (rm.addEventListener) rm.addEventListener('change', function () { rm.matches ? (stop(), document.getElementById('dual-flow').classList.remove('is-live')) : start(); });
-    if (rm.matches) { place(dotA, brA, 0.5); place(dotB, brB, 0.5); }
+
+    if (!measure()) return;
+
+    function wide() { return wFull; }
+    function narrow() { return wShort; }
+
+    cta.addEventListener("mouseenter", function () { setWidth(wide(), true); });
+    cta.addEventListener("mouseleave", function () { setWidth(narrow(), true); });
+    cta.addEventListener("focus", function () { setWidth(wide(), true); });
+    cta.addEventListener("blur", function () { setWidth(narrow(), true); });
+
+    // 语言切换会改写两段文案 → 重新测量并回到短名宽度
+    document.addEventListener("is:lang-applied", function () {
+      if (hasGsap && !reduceMotion) window.gsap.killTweensOf(slot);
+      measure();
+    });
   }
-  document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', boot) : boot();
+
+  /* ---------- 页脚超大描边字标：尘埃化 + 鼠标靠近归位 ---------- */
+  /**
+   * 效果参考 canvasui 的 particle-reveal（同样的「远处理成灰尘、近处显出清晰 UI」思路），
+   * 但**没有直接用它的组件**，原因三条，都踩过：
+   *  1. 它依赖实验性 html-in-canvas（`drawElementImage` + `requestPaint` + `layoutsubtree`），
+   *     只有极新的 Chromium 有；缺了这个 API 时它会静默不生效 —— 落地页主体用户是 Safari / Firefox。
+   *  2. 它是 React + TSX 组件；本页是零构建的静态 HTML + GSAP，引入 React 代价过大。
+   *  3. 那是外部组件库源码；这里自己写一份 WebGL 版本，着色器与栅格化都按本页需求精简过。
+   *
+   * 实现要点：
+   *  · 文字本身不能直接进 WebGL（WebGL 画不了 DOM），所以先把字标按 computed style
+   *    手工描到一张离屏 2D 画布上（`fillStyle` 透明 + `strokeText`，等价于 `-webkit-text-stroke`），
+   *    再当作纹理喂给着色器。字号/行高/字距/对齐全部读 computed，保证和 DOM 版式一致。
+   *  · canvas 只覆盖 .foot-giant 的盒子，字形溢出（line-height 0.82 故意压扁）由
+   *    .foot 的 overflow:hidden 兜住；栅格化时四周留 pad，避免压扁导致的上下截断被切掉。
+   *  · 无 WebGL / 减少动效 / 上下文丢失：wrap 不加 .is-fx，DOM 字标照常显示（安全降级）。
+   */
+  function setupFootGiant() {
+    var wrap = document.querySelector(".foot-giant-wrap");
+    var text = document.getElementById("foot-giant");
+    var canvas = document.getElementById("foot-giant-fx");
+    if (!wrap || !text || !canvas || reduceMotion) return;
+
+    /**
+     * 视觉参数。默认值与参考实现 particle-reveal 的默认档位对齐
+     * （radius 500 / softness .75 / scatter 25 / aberration 40 / bend 50 /
+     *   fade .85 / drift 1 / smoothing .25），
+     * 只有 grain 与 softness 按本页实际字标调过 —— 见下面两处注释。
+     */
+    var FX = {
+      radius: 500,     // 归位半径（CSS px）
+      softness: 0.75,  // 过渡带宽度占比，内核半径 = radius * (1 - softness)
+      // 散射比参考实现的 25 略低。参考实现的底图是整块界面截图，油墨密度高；
+      // 本页是一行细描边字，25 会把字直接散没（默认态认不出是 ISPARTA）。
+      scatter: 18,
+      grain: 3,        // 尘粒格子边长；参考实现是 1（全分辨率细砂），本页描边字太细会糊成噪点
+      aberr: 40,       // 色差强度
+      bend: 50,        // 过渡带拖影强度
+      fade: 0.85,      // 尘粒去色程度
+      drift: 1,        // 尘粒翻滚速度
+      smoothing: 0.25, // 指针跟随阻尼（秒），越大越「黏」
+    };
+
+    var gl = canvas.getContext("webgl", {
+      alpha: true,
+      depth: false,
+      stencil: false,
+      antialias: false,
+      // 描边字是「22% 白 + 透明底」，2D 画布存的是预乘结果。
+      // 上下文与纹理都走预乘，着色器里的 mix 才等价于直接混颜色；
+      // 否则 texImage2D 拿到的非预乘色会再乘一次 alpha，亮部凭空暗一大截。
+      premultipliedAlpha: true,
+    });
+    if (!gl) return;
+
+    /* ---- 着色器 ---- */
+    var VERT =
+      "attribute vec2 aPos;" +
+      "varying vec2 vUv;" +
+      "void main(){ vUv = aPos * 0.5 + 0.5; gl_Position = vec4(aPos, 0.0, 1.0); }";
+
+    var FRAG = [
+      "precision mediump float;",
+      "varying vec2 vUv;",
+      "uniform sampler2D uContent;",
+      "uniform vec2 uRes;",
+      "uniform vec2 uPointer;",
+      "uniform float uActive;",
+      "uniform float uRadius;",
+      "uniform float uSoftness;",
+      "uniform float uTime;",
+      "uniform float uScatter;",
+      "uniform float uGrain;",
+      "uniform float uAberr;",
+      "uniform float uBend;",
+      "uniform float uFade;",
+      "uniform float uDrift;",
+      "float hash(vec2 p){",
+      "  vec3 p3 = fract(vec3(p.xyx) * 0.1031);",
+      "  p3 += dot(p3, p3.yzx + 33.33);",
+      "  return fract((p3.x + p3.y) * p3.z);",
+      "}",
+      // 单通道取色：色差靠 R/G/B 各偏移不同距离再拼
+      "float ch(vec2 uv, float k){",
+      "  vec4 t = texture2D(uContent, clamp(uv, 0.0, 1.0));",
+      "  return dot(t.rgb, vec3(k));",
+      "}",
+      "void main(){",
+      // 纹理 v 轴朝上、屏幕 v 轴朝下，翻一下才是正的
+      "  vec2 uv = vec2(vUv.x, 1.0 - vUv.y);",
+      "  vec2 pc = uv * uRes;",
+      "  vec4 base = texture2D(uContent, uv);",
+      "  float r = max(uRadius, 1.0);",
+      "  float d = length(pc - uPointer);",
+      // 内核半径 = r * (1 - softness)。核不能收太紧 —— 描边字本身很细，
+      // 核一小就整字都落在过渡带里，看起来是「彩边糊字」而不是「归位」。
+      "  float inner = r * (1.0 - clamp(uSoftness, 0.02, 1.0));",
+      "  float core = (1.0 - smoothstep(inner, r, d)) * uActive;",
+      // 环：核外那一圈「变形带」，色差与拖影只发生在这里
+      "  float ring = smoothstep(inner, r, d)",
+      "              * (1.0 - smoothstep(r, r + r * 0.9, d)) * uActive;",
+      "  vec2 dir = (pc - uPointer) / max(d, 1e-3);",
+      "  vec2 tan_ = vec2(-dir.y, dir.x);",
+      // 拖影：沿径向往回拉 + 切向拧一下，像被抹开
+      "  vec2 warp = (dir * -1.0 + tan_ * 0.7) * uBend * ring;",
+      // 色差：环上 R 往外、G 不动、B 往里
+      "  float ca = uAberr * ring;",
+      "  vec2 bw = uv + warp / uRes;",
+      "  float vr = ch(bw + dir * ca / uRes, 1.0);",
+      "  float vg = ch(bw, 1.0);",
+      "  float vb = ch(bw - dir * ca / uRes, 1.0);",
+      "  vec3 sharp = vec3(vr, vg, vb);",
+      // 尘：按 uGrain 像素的格子各自决定抖动方向/半径，随时间缓慢翻滚
+      "  vec2 cell = floor(gl_FragCoord.xy / max(uGrain, 1.0));",
+      "  float n1 = hash(cell);",
+      "  float n2 = hash(cell + vec2(37.1, 11.7));",
+      "  float n3 = hash(cell + vec2(5.3, 91.7));",
+      "  float ang = n2 * 6.28318 + uTime * uDrift * (0.3 + n1 * 0.9);",
+      // pow 压低大部分格子 → 少数飞得远，多数只在原地抖
+      "  float rad = uScatter * pow(n1, 1.6) * (1.0 - core);",
+      "  vec2 duv = clamp(uv + vec2(cos(ang), sin(ang)) * rad / uRes, 0.0, 1.0);",
+      "  vec4 dust = texture2D(uContent, duv);",
+      // 尘压成灰度、只轻微压暗：压太狠就看不出这是字了
+      "  float lum = dot(dust.rgb, vec3(0.299, 0.587, 0.114));",
+      "  vec3 speck = mix(dust.rgb, vec3(lum), uFade) * 0.92;",
+      "  vec3 col = mix(speck, sharp, core);",
+      // alpha 也跟着走，否则环上会拖出一条实心矩形
+      "  float a = mix(dust.a, base.a, core);",
+      "  gl_FragColor = vec4(col, a);",
+      "}",
+    ].join("\n");
+
+    function compile(type, src) {
+      var sh = gl.createShader(type);
+      gl.shaderSource(sh, src);
+      gl.compileShader(sh);
+      if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) {
+        gl.deleteShader(sh);
+        return null;
+      }
+      return sh;
+    }
+
+    var vs = compile(gl.VERTEX_SHADER, VERT);
+    var fs = compile(gl.FRAGMENT_SHADER, FRAG);
+    if (!vs || !fs) return;
+    var prog = gl.createProgram();
+    gl.attachShader(prog, vs);
+    gl.attachShader(prog, fs);
+    gl.linkProgram(prog);
+    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return;
+    gl.useProgram(prog);
+
+    var buf = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+    var aPos = gl.getAttribLocation(prog, "aPos");
+    gl.enableVertexAttribArray(aPos);
+    gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+
+    var tex = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+    var u = {};
+    ["uContent", "uRes", "uPointer", "uActive", "uRadius", "uSoftness", "uTime",
+     "uScatter", "uGrain", "uAberr", "uBend", "uFade", "uDrift"].forEach(function (n) {
+      u[n] = gl.getUniformLocation(prog, n);
+    });
+    gl.uniform1i(u.uContent, 0);
+
+    // 装饰性特效，纹理按 1.5x 上限取：全宽字标在 2x 下每帧要跑 150 万片元，没必要
+    var DPR_CAP = 1.5;
+    var pad = 0;
+
+    /* ---- 把字标按 computed style 描到离屏画布 ---- */
+    function rasterize() {
+      var cs = window.getComputedStyle(text);
+      var content = (text.textContent || "").trim();
+      if (!content) return null;
+
+      var fs = parseFloat(cs.fontSize) || 100;
+      var boxW = text.clientWidth;
+      var boxH = text.clientHeight;
+      if (!boxW || !boxH) return null;
+
+      var dpr = Math.min(window.devicePixelRatio || 1, DPR_CAP);
+      var off = document.createElement("canvas");
+      off.width = Math.round((boxW + pad * 2) * dpr);
+      off.height = Math.round((boxH + pad * 2) * dpr);
+      var c = off.getContext("2d");
+      if (!c) return null;
+      c.scale(dpr, dpr);
+
+      c.font = cs.fontStyle + " " + cs.fontWeight + " " + fs + "px " + cs.fontFamily;
+      c.textAlign = "left";
+      c.textBaseline = "alphabetic";
+
+      // -webkit-text-stroke 没有 Canvas2D 对应属性；透明填充 + strokeText 就是同一条描边
+      var lw = parseFloat(cs.webkitTextStrokeWidth);
+      c.strokeStyle = cs.webkitTextStrokeColor || "#fff";
+      c.lineWidth = lw > 0 ? lw : 1;
+      c.fillStyle = "transparent";
+
+      // 基线：块盒高由 line-height 决定，半行距把 (ascent+descent) 居中
+      var m = c.measureText("Hg");
+      var asc = m.fontBoundingBoxAscent || fs * 0.8;
+      var desc = m.fontBoundingBoxDescent || fs * 0.2;
+      var lh = parseFloat(cs.lineHeight) || fs * 1.2;
+      var baseline = pad + (lh - (asc + desc)) / 2 + asc;
+
+      // 逐字累加，字距手动加（不依赖 ctx.letterSpacing，各引擎支持不齐）
+      var ls = parseFloat(cs.letterSpacing) || 0;
+      var chars = content.split("");
+      var widths = chars.map(function (ch) { return c.measureText(ch).width; });
+      var total = widths.reduce(function (a, b) { return a + b; }, 0) + ls * chars.length;
+      var cx = pad;
+      if (cs.textAlign === "center") cx += (boxW - total) / 2;
+      else if (cs.textAlign === "right" || cs.textAlign === "end") cx += boxW - total;
+
+      var prevAlign = c.textAlign;
+      c.textAlign = "left";
+      for (var i = 0; i < chars.length; i++) {
+        if (chars[i] !== " ") c.strokeText(chars[i], cx, baseline);
+        cx += widths[i] + ls;
+      }
+      c.textAlign = prevAlign;
+
+      return { canvas: off, dpr: dpr, boxW: boxW, boxH: boxH };
+    }
+
+    /* ---- 尺寸同步 + 纹理上传 ---- */
+    var size = { w: 1, h: 1 };
+
+    function sync() {
+      var fs = parseFloat(window.getComputedStyle(text).fontSize) || 100;
+      pad = Math.round(fs * 0.3);
+      // 让覆盖层连 pad 一起罩住，否则压扁行高溢出的字形会被 canvas 边界切掉
+      canvas.style.top = -pad + "px";
+      canvas.style.bottom = -pad + "px";
+      canvas.style.left = -pad + "px";
+      canvas.style.right = -pad + "px";
+
+      var r = rasterize();
+      if (!r) return false;
+
+      var w = r.canvas.width;
+      var h = r.canvas.height;
+      if (canvas.width !== w || canvas.height !== h) {
+        canvas.width = w;
+        canvas.height = h;
+      }
+      size.w = r.boxW + pad * 2;
+      size.h = r.boxH + pad * 2;
+
+      gl.bindTexture(gl.TEXTURE_2D, tex);
+      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+      gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, r.canvas);
+      return true;
+    }
+
+    /* ---- 指针跟随 + 渲染循环 ---- */
+    var ptr = { x: -1e4, y: -1e4, tx: -1e4, ty: -1e4, a: 0, ta: 0 };
+    var raf = 0;
+    var t0 = 0;
+    var visible = false;
+
+    function onMove(e) {
+      var b = canvas.getBoundingClientRect();
+      ptr.tx = e.clientX - b.left;
+      ptr.ty = e.clientY - b.top;
+      ptr.ta = 1;
+      start();
+    }
+
+    function onLeave() {
+      ptr.ta = 0;
+      start();
+    }
+
+    function frame(now) {
+      raf = 0;
+      if (!t0) t0 = now;
+      var dt = Math.min((now - t0) / 1000, 1 / 30);
+      t0 = now;
+
+      var k = 1 - Math.exp(-dt / FX.smoothing); // 指数逼近，鼠标停住时也不会僵在原地
+      ptr.x += (ptr.tx - ptr.x) * k;
+      ptr.y += (ptr.ty - ptr.y) * k;
+      ptr.a += (ptr.ta - ptr.a) * k;
+
+      gl.viewport(0, 0, canvas.width, canvas.height);
+      gl.uniform2f(u.uRes, size.w, size.h);
+      gl.uniform2f(u.uPointer, ptr.x, ptr.y);
+      gl.uniform1f(u.uActive, ptr.a);
+      gl.uniform1f(u.uRadius, FX.radius);
+      gl.uniform1f(u.uSoftness, FX.softness);
+      gl.uniform1f(u.uTime, now / 1000);
+      gl.uniform1f(u.uScatter, FX.scatter);
+      gl.uniform1f(u.uGrain, FX.grain);
+      gl.uniform1f(u.uAberr, FX.aberr);
+      gl.uniform1f(u.uBend, FX.bend);
+      gl.uniform1f(u.uFade, FX.fade);
+      gl.uniform1f(u.uDrift, FX.drift);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+
+      // 完全静止（鼠标不在 + 停止翻滚）就不必再占 rAF
+      if (!visible) return;
+      var settled =
+        Math.abs(ptr.tx - ptr.x) < 0.1 &&
+        Math.abs(ptr.ty - ptr.y) < 0.1 &&
+        ptr.ta === 0 &&
+        ptr.a < 0.002;
+      if (settled) return;
+      raf = requestAnimationFrame(frame);
+    }
+
+    function start() {
+      if (!raf && visible) raf = requestAnimationFrame(frame);
+    }
+
+    if (!sync()) return;
+    wrap.classList.add("is-fx");
+
+    wrap.addEventListener("pointermove", onMove, { passive: true });
+    wrap.addEventListener("pointerleave", onLeave, { passive: true });
+
+    // 页脚在整页最底端：滚过去之前不必跑，也别在离屏时空烧
+    if ("IntersectionObserver" in window) {
+      new IntersectionObserver(function (entries) {
+        visible = entries[entries.length - 1].isIntersecting;
+        if (visible) {
+          t0 = 0;
+          start();
+        } else if (raf) {
+          cancelAnimationFrame(raf);
+          raf = 0;
+        }
+      }).observe(wrap);
+    } else {
+      visible = true;
+    }
+
+    // 视口变化会改 clamp(4rem,17vw,15rem) 的字号 → 必须重新栅格化
+    var rt = 0;
+    window.addEventListener("resize", function () {
+      clearTimeout(rt);
+      rt = setTimeout(function () {
+        if (sync()) start();
+      }, 160);
+    });
+
+    canvas.addEventListener("webglcontextlost", function (e) {
+      // 上下文丢了就把 DOM 字标放回来，别留一块空白
+      e.preventDefault();
+      wrap.classList.remove("is-fx");
+    });
+  }
+
+  setupHeroScramble();
+  setupHeroCta();
+  setupMicro();
+  setupFootGiant();
 })();

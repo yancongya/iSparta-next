@@ -1,0 +1,24 @@
+#!/bin/bash
+# iSparta-next · AE 扩展 —— 一键开启 CEP 调试模式（macOS）
+#
+# CEP 扩展要能被 After Effects 加载，必须给 Adobe CSXS 写 PlayerDebugMode=1。
+# 这里一次性覆盖 CSXS.5 ～ CSXS.25（AE CC 2015 ～ 最新），免得逐条敲命令。
+#
+# 用法：
+#   chmod +x install-as-admin && ./install-as-admin
+#
+# 注意：脚本不修改任何系统文件，只写 ~/Library/Preferences 下的用户偏好，
+# 卸载扩展时无需处理（保留也不影响 AE）。
+
+for v in $(seq 5 25); do
+  defaults write "com.adobe.CSXS.$v" PlayerDebugMode 1
+done
+
+# 让 cfprefsd 立刻落盘，否则 AE 可能在本次启动里读到旧值
+killall -u "$(whoami)" cfprefsd 2>/dev/null || true
+
+echo "已为 CSXS.5 - CSXS.25 写入 PlayerDebugMode=1"
+echo "现在打开 After Effects -> 首选项 -> 脚本和表达式，勾选"
+echo "「允许脚本写入文件和访问网络」，然后重启 AE。"
+
+exit 0

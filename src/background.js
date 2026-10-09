@@ -24,6 +24,86 @@ if (app.getName() !== APP_NAME) {
 
 let win
 
+// ---------------------------------------------------------------- 首启引导
+// 桌面端引导走**独立无边框小窗**，不是主窗口上的浮层：
+//   · frame:false 去掉原生标题栏 —— 软件名与最小化/最大化/关闭三个系统按钮
+//     一并消失，窗口按钮改由 Onboarding.vue 在面板内自绘（沉浸式）。
+//   · 尺寸 1120×780 ≈ 1.44:1，比 4:3 稍宽一档：末页 2×2 卡片能横排，
+//     且纵向空间够放完「动图 + 标题 + 说明 + 卡片」，不必滚动。
+//   · 主窗口在引导期间隐藏，屏幕上只剩引导一扇窗（否则背后会露出主窗口的原生标题栏）。
+// CEP 端没有自己的窗口，引导仍是 AE 面板内的浮层 —— 见 RootGate.vue 的分流。
+const OB_WIDTH = 1120
+const OB_HEIGHT = 780
+
+let onboardingWin = null
+
+/** 引导小窗的 webPreferences 与主窗一致（sandbox + contextIsolation，preload 桥） */
+function onboardingWebPreferences () {
+  return {
+    nodeIntegration: false,
+    contextIsolation: true,
+    sandbox: true,
+    enableRemoteModule: false,
+    webSecurity: false,
+    preload: path.join(__dirname, 'preload.js')
+  }
+}
+
+/**
+ * 打开（或聚焦）引导小窗。渲染层只发 `onboarding:open`，窗口生命周期全在主进程：
+ * 重复调用只做聚焦，避免叠开多扇窗。
+ */
+function openOnboardingWindow () {
+  if (onboardingWin && !onboardingWin.isDestroyed()) {
+    if (onboardingWin.isMinimized()) { onboardingWin.restore() }
+    onboardingWin.focus()
+    return onboardingWin
+  }
+
+  onboardingWin = new BrowserWindow({
+    width: OB_WIDTH,
+    height: OB_HEIGHT,
+    // 允许用户缩到「两列卡片还能横排」的极限，再窄由面板内的 480px 断点兜单列
+    minWidth: 760,
+    minHeight: 560,
+    // frame:false —— 没有原生标题栏，软件名与系统按钮都不会出现；
+    // 窗口按钮由 Onboarding.vue 在面板内自绘（沉浸式），拖拽靠顶栏的 app-region: drag
+    frame: false,
+    show: false,
+    resizable: true,
+    maximizable: true,
+    fullscreen: false,
+    autoHideMenuBar: true,
+    backgroundColor: '#0c0f0e',
+    icon: path.join(__static, 'icons/icon.' + (process.platform === 'win32' ? 'ico'
+      : process.platform === 'darwin' ? 'icns' : 'png')),
+    webPreferences: onboardingWebPreferences()
+  })
+
+  onboardingWin.on('closed', () => { onboardingWin = null })
+  bindMaximizeState(onboardingWin)
+
+  if (process.env.WEBPACK_DEV_SERVER_URL) {
+    onboardingWin.loadURL(process.env.WEBPACK_DEV_SERVER_URL)
+    if (!process.env.IS_TEST) onboardingWin.webContents.openDevTools()
+  } else {
+    createProtocol('app')
+    onboardingWin.loadURL('app://./index.html')
+  }
+
+  // 引导期间把主窗收起来：背后露出主窗的原生标题栏会立刻破掉沉浸感
+  if (win && !win.isDestroyed()) { win.hide() }
+
+  onboardingWin.once('ready-to-show', () => {
+    if (!onboardingWin || onboardingWin.isDestroyed()) { return }
+    onboardingWin.show()
+    if (process.env.IS_TEST) { return }
+    onboardingWin.webContents.send('onboarding:ready')
+  })
+
+  return onboardingWin
+}
+
 // Scheme must be registered before the app is ready
 protocol.registerSchemesAsPrivileged([
   { scheme: 'app', privileges: { secure: true, standard: true } },
@@ -180,6 +260,66 @@ if (isDevelopment) {
       app.quit()
     })
   }
+}
+
+// ---- 首启引导（桌面独立无边框小窗）----
+// 渲染层不直接 new BrowserWindow，只发意图；窗口显示/隐藏/销毁都在这里收口，
+// 保证「引导在前、工作台在后」的层级关系不会被渲染层搞乱。
+ipcMain.on('onboarding:open', function () {
+  try {
+    openOnboardingWindow()
+  } catch (e) {
+    console.error('[onboarding] open failed:', e && e.message)
+    if (win && !win.isDestroyed()) { win.show() }
+  }
+})
+
+// 引导关闭（走完 / 跳过 / Alt+F4）：销毁小窗并把工作台还回来
+ipcMain.on('onboarding:close', function () {
+  if (onboardingWin && !onboardingWin.isDestroyed()) {
+    // 走正常 close 才会触发 'closed' → 置空引用；这里同步兜底，双保险
+    onboardingWin.destroy()
+    onboardingWin = null
+  }
+  if (win && !win.isDestroyed()) {
+    if (win.isMinimized()) { win.restore() }
+    win.show()
+    win.focus()
+  }
+})
+
+// 无边框窗口的按钮由渲染层自绘，主进程只提供「最小化/最大化/关闭」三个动作。
+// 一律以 event.sender 反查窗口，不信任渲染层传 id。
+ipcMain.on('win:minimize', function (event) {
+  const w = BrowserWindow.fromWebContents(event.sender)
+  if (w) { w.minimize() }
+})
+
+ipcMain.on('win:toggle-maximize', function (event) {
+  const w = BrowserWindow.fromWebContents(event.sender)
+  if (!w) { return }
+  if (w.isMaximized()) {
+    w.unmaximize()
+  } else {
+    w.maximize()
+  }
+})
+
+ipcMain.on('win:close', function (event) {
+  const w = BrowserWindow.fromWebContents(event.sender)
+  if (w) { w.close() }
+})
+
+// 最大化状态会因双击标题栏 / Win+↑ / 拖到屏幕边缘变化，回推给渲染层切图标
+function bindMaximizeState (target) {
+  const push = () => {
+    if (target.isDestroyed()) { return }
+    target.webContents.send('win:maximized', target.isMaximized())
+  }
+  target.on('maximize', push)
+  target.on('unmaximize', push)
+  target.on('enter-full-screen', push)
+  target.on('leave-full-screen', push)
 }
 
 ipcMain.on('change-item-fold', function (event, path, order) {

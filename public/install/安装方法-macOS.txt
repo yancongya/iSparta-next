@@ -1,0 +1,106 @@
+════════════════════════════════════════════════════════════════════
+  iSparta-next · AE 扩展（macOS）安装说明
+════════════════════════════════════════════════════════════════════
+
+本包内容
+  io.github.isparta-next/        ← 扩展主体（把它整个文件夹放进 extensions/）
+  安装方法-macOS.txt              ← 本文件
+  install-as-admin.zip          ← 解压后得到 install-as-admin 脚本，
+                                  一键开启 CEP 调试模式（无需逐条敲命令）
+  version.json                  ← 版本清单（桌面版用它判断是否需要刷新扩展）
+
+  ⚠ 本包**只是 AE 扩展**，不含桌面应用。
+     需要桌面应用请下载安装包（一次装全：桌面 + 扩展）：
+     https://github.com/yancongya/iSparta-next/releases
+
+  ⚠ macOS 版桌面应用**未签名**，首次打开被 Gatekeeper 拦截时：
+     系统设置 → 隐私与安全性 → 点「仍要打开」，
+     或对 .app 执行：xattr -dr com.apple.quarantine /Applications/iSparta-next.app
+
+
+────────────────────────────────────────────────────────────────────
+  方式一：桌面版安装包（推荐）
+────────────────────────────────────────────────────────────────────
+
+  macOS 安装包是**一体安装**：组件页里同时勾选「桌面应用」和
+  「After Effects 扩展」，一次装完、版本一致。
+
+  ⚠ 安装程序**不会重启 AE**。装完请手动重启一次 After Effects。
+
+
+────────────────────────────────────────────────────────────────────
+  方式二：手动安装（本包）
+────────────────────────────────────────────────────────────────────
+
+  1. 解压，得到 io.github.isparta-next 文件夹
+
+  2. 解压 install-as-admin.zip，得到 install-as-admin
+
+  3. 打开「终端」，进入该文件所在目录后执行：
+
+       cd ~/Downloads
+       chmod +x install-as-admin
+       ./install-as-admin
+
+     该脚本会给 Adobe CSXS 5～25 全部写入 PlayerDebugMode=1，
+     这是 CEP 扩展能被 AE 加载的前提。
+
+     不想跑脚本的话，也可以手动执行（版本号按你的 AE 调整）：
+       defaults write com.adobe.CSXS.11 PlayerDebugMode 1
+       killall -u `whoami` cfprefsd
+
+  4. 把 io.github.isparta-next 文件夹复制到：
+
+       ~/Library/Application Support/Adobe/CEP/extensions/
+
+     路径里带空格，注意整体选中。
+     extensions 目录不存在就手动建一个：
+       mkdir -p ~/Library/"Application Support"/Adobe/CEP/extensions
+
+     查看完整路径：Finder → 前往 → 前往文件夹 → 输入上面的路径。
+
+  5. 打开 AE → After Effects → 首选项 → 脚本和表达式
+     勾选「允许脚本写入文件和访问网络」
+
+  6. 重启 After Effects
+
+  7. 菜单栏 → 窗口 → 扩展 → 选择 iSparta-next <版本号>
+
+
+────────────────────────────────────────────────────────────────────
+  卸载
+────────────────────────────────────────────────────────────────────
+
+  rm -rf ~/Library/"Application Support"/Adobe/CEP/extensions/io.github.isparta-next
+
+  调试模式可以保留，不影响 AE；如需还原，删除对应值即可：
+    defaults delete com.adobe.CSXS.11 PlayerDebugMode
+
+
+────────────────────────────────────────────────────────────────────
+  常见问题
+────────────────────────────────────────────────────────────────────
+
+  Q：窗口 → 扩展 菜单里找不到 iSparta-next？
+  A：按顺序排查
+     ① 「允许脚本写入文件和访问网络」是否已勾选
+        （After Effects → 首选项 → 脚本和表达式）
+     ② 调试模式是否已开启（执行过 install-as-admin，或手动 defaults write）
+     ③ 扩展文件夹是否**直接**位于 extensions/ 下（不要多套一层目录）
+     ④ 是否**重启过** AE（改完配置和文件都必须重启才生效）
+
+  Q：提示「已损坏，无法打开」/ 扩展无法加载？
+  A：AE 版本需 ≥ 15.0（CC 2015）；面板依赖 AE 自带的 Node 运行时，
+     过老的 AE 不带 Node，面板会白屏。
+
+  Q：面板能打开但找不到合成 / 转换失败？
+  A：确认工程的合成时长、帧率正常（面板直接从合成读取渲染参数）；
+     另外面板需要写入临时目录，检查磁盘权限与剩余空间。
+
+  Q：更新扩展后没变化？
+  A：AE 可能未完全退出，用活动监视器强制退出 AfterFX 再启动。
+
+────────────────────────────────────────────────────────────────────
+  支持版本：After Effects 15.0（CC 2015）～ 最新
+  支持系统：macOS 11 Big Sur 及以上（Apple Silicon / Intel 通用）
+════════════════════════════════════════════════════════════════════

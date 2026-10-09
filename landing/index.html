@@ -16,7 +16,7 @@
   <meta property="og:title" content="iSparta-next 官网 · APNG / GIF / WebP 动图转换工具" />
   <meta property="og:description" content="开源动图工具：图片序列转 APNG / WebP / GIF，超限自动压小，命名与保存位置自定义；桌面版 + AE 扩展双端一体，Win / macOS / Linux 免费下载。" />
   <meta property="og:url" content="https://yancongya.github.io/iSparta-next/" />
-  <meta property="og:image" content="https://yancongya.github.io/iSparta-next/assets/main.png" />
+  <meta property="og:image" content="https://yancongya.github.io/iSparta-next/assets/shots/desktop-workspace-hd.webp" />
   <meta property="og:locale" content="zh_CN" />
   <meta property="og:locale:alternate" content="en_US" />
 
@@ -24,11 +24,11 @@
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="iSparta-next 官网 · APNG / GIF / WebP 动图转换工具" />
   <meta name="twitter:description" content="开源桌面动图工作台：格式互转、体积压缩、批量导出。iSparta 的现代维护版。" />
-  <meta name="twitter:image" content="https://yancongya.github.io/iSparta-next/assets/main.png" />
+  <meta name="twitter:image" content="https://yancongya.github.io/iSparta-next/assets/shots/desktop-workspace-hd.webp" />
 
   <link rel="icon" href="assets/icon.png" />
   <link rel="apple-touch-icon" href="assets/icon.png" />
-  <link rel="stylesheet" href="styles.css?v=20261008-copy1" />
+  <link rel="stylesheet" href="styles.css?v=20261008-hero1" />
 
   <!-- Structured data -->
   <script type="application/ld+json">
@@ -87,184 +87,127 @@
       </span>
       <span class="brand-text">ISPARTA<span class="brand-next">-next</span></span>
     </a>
+    <!-- 导航（对齐 workbuddy.cn）：左品牌 / 中锚点（真居中）/ 右下载+GitHub。
+         · .top 是 flex，.nav 必须 flex:1 撑满剩余宽度，内部 grid 1fr auto 1fr
+           才能让锚点落在真正的水平中心；否则 .nav 按内容收缩，锚点整体偏右。
+         · 锚点收窄为 4 条（原 8 条会挤成两行）。
+         · 「下载」是 hover / focus 展开的下拉（桌面端 + AE 扩展两组），不是普通链接。 -->
     <nav class="nav">
-      <a href="#convert" data-i18n="nav.convert">能力</a>
-      <a href="#play" data-i18n="nav.play">压体积</a>
-      <a href="#naming" data-i18n="nav.naming">命名</a>
-      <a href="#log" data-i18n="nav.log">日志</a>
-      <a href="#compare" data-i18n="nav.compare">对比</a>
-      <a href="#ae" data-i18n="nav.ae">AE</a>
-      <a href="#shots" data-i18n="nav.shots">界面</a>
-      <a href="#lineage" data-i18n="nav.lineage">脉络</a>
-      <a class="nav-gh" href="https://github.com/yancongya/iSparta-next" target="_blank" rel="noopener" data-i18n-aria="nav.github" title="GitHub">
-        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
-        <span class="nav-gh__t" data-i18n="nav.github">GitHub</span>
-      </a>
-      <a class="nav-cta" href="https://github.com/yancongya/iSparta-next/releases/latest" target="_blank" rel="noopener" data-i18n="nav.download">下载</a>
-      <button type="button" class="nav-icon" id="lang-toggle" data-i18n-aria="lang.toggle" title="Language">EN</button>
-      <button type="button" class="nav-icon" id="theme-toggle" data-i18n-aria="theme.toggle" title="Theme">
-        <svg class="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.6"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-        <svg class="icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 019.5 4 7 7 0 1019 15.5 8.5 8.5 0 0020 14.5z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
-      </button>
+      <div class="nav-links" id="nav-links">
+        <a href="#about" data-i18n="nav.about">关于</a>
+        <a href="#play" data-i18n="nav.play">能力</a>
+        <a href="#ae" data-i18n="nav.ae">AE 扩展</a>
+        <a href="#shots" data-i18n="nav.shots">界面</a>
+      </div>
+
+      <div class="nav-side">
+        <button type="button" class="nav-icon" id="lang-toggle" data-i18n-aria="lang.toggle" title="Language">EN</button>
+        <button type="button" class="nav-icon" id="theme-toggle" data-i18n-aria="theme.toggle" title="Theme">
+          <svg class="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.6"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <svg class="icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 019.5 4 7 7 0 1019 15.5 8.5 8.5 0 0020 14.5z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+        </button>
+
+        <a class="nav-gh" href="https://github.com/yancongya/iSparta-next" target="_blank" rel="noopener" data-i18n-aria="nav.github" title="GitHub">
+          <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+          <span class="nav-gh__t" data-i18n="nav.github">GitHub</span>
+        </a>
+
+        <!-- 下载下拉：hover / focus-within 展开（无 JS 也能用），再点整组进下载区 -->
+        <div class="nav-dl" id="nav-dl">
+          <a class="nav-cta" href="#download" aria-haspopup="true" aria-expanded="false" data-i18n="nav.download">
+            <span data-i18n="nav.download">下载</span>
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 2v9M4.5 8.5 8 12l3.5-3.5M3 14h10" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </a>
+          <div class="nav-dl__menu" role="menu">
+            <p class="nav-dl__group" data-i18n="dl.gDesktop">桌面端</p>
+            <!-- macOS 合并为一个父项 + 二级子菜单（参考站做法）：
+                 两条独立条目会让菜单变长且「哪个是我的包」不直观。
+                 data-dl="mac" 用于当前设备判定（见 main.js setupCurrentDevice）。 -->
+            <div class="nav-dl__row">
+              <a class="nav-dl__item nav-dl__item--parent" role="menuitem" data-dl="mac" href="https://github.com/yancongya/iSparta-next/releases/latest/download/isparta-next-mac-arm64.zip" target="_blank" rel="noopener">
+                <span class="nav-dl__ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.7 12.7c0-2.3 1.9-3.4 2-3.5-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.1-2.8.9-3.5.9-.7 0-1.8-.9-3-.8-1.5 0-2.9.9-3.7 2.3-1.6 2.7-.4 6.8 1.1 9 .8 1.1 1.7 2.3 2.9 2.3 1.2 0 1.6-.7 3-.7s1.8.7 3 .7c1.2 0 2-1.1 2.8-2.2.9-1.2 1.2-2.5 1.2-2.5s-2.4-.9-2.4-3.7zM14.4 5.6c.6-.8 1-1.8.9-2.9-.9 0-2 .6-2.6 1.4-.6.7-1.1 1.7-1 2.8 1 .1 2-.5 2.7-1.3z"/></svg></span>
+                <span class="nav-dl__t">macOS</span>
+                <span class="nav-dl__chev" aria-hidden="true">›</span>
+              </a>
+              <div class="nav-dl__sub" role="menu">
+                <a class="nav-dl__item" role="menuitem" data-dl="macArm" href="https://github.com/yancongya/iSparta-next/releases/latest/download/isparta-next-mac-arm64.zip" target="_blank" rel="noopener">
+                  <span class="nav-dl__t">Apple Silicon (arm64)</span>
+                </a>
+                <a class="nav-dl__item" role="menuitem" data-dl="macX64" href="https://github.com/yancongya/iSparta-next/releases/latest/download/isparta-next-mac-x64.zip" target="_blank" rel="noopener">
+                  <span class="nav-dl__t">Intel (x64)</span>
+                </a>
+              </div>
+            </div>
+            <a class="nav-dl__item" role="menuitem" data-dl="win" href="https://github.com/yancongya/iSparta-next/releases/latest/download/isparta-next-win-x64.exe" target="_blank" rel="noopener">
+              <span class="nav-dl__ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 5.5 10.5 4.4v7.1H3V5.5zm8.5-1.2L21 3v8.5h-9.5V4.3zM3 12.5h7.5v7.1L3 18.5v-6zm8.5 0H21V21l-9.5-1.3v-7.2z"/></svg></span>
+              <span class="nav-dl__t">Windows x64</span>
+              <span class="nav-dl__chev" aria-hidden="true">›</span>
+            </a>
+            <a class="nav-dl__item" role="menuitem" data-dl="linux" href="https://github.com/yancongya/iSparta-next/releases/latest/download/isparta-next-linux-x64.AppImage" target="_blank" rel="noopener">
+              <span class="nav-dl__ico" aria-hidden="true"><svg viewBox="0 0 1024 1024" fill="currentColor"><path d="M433.700571 234.861714c-11.446857 1.133714-7.424 11.446857-13.714285 11.446857-5.705143 0.585143-4.571429-12.580571 13.714285-11.446857z m49.737143 8.009143c-5.705143 1.718857-6.290286-9.142857-16.566857-6.290286 16.566857-7.424 22.272 3.986286 16.566857 6.290286z m-200.594285 243.968c-5.156571-1.718857-3.986286 8.557714-9.142858 16.566857-3.986286 7.424-14.299429 13.129143-6.290285 14.299429 2.852571 0.585143 10.861714-6.290286 14.299428-14.299429 2.852571-9.728 5.705143-14.848 1.133715-16.566857z m488.594285 205.165714c0-10.276571-22.272-20.004571-31.414857-23.990857 15.433143-51.419429 8.557714-72.009143-1.718857-120.576-8.009143-36.571429-41.728-86.272-67.986286-101.705143 6.838857 5.705143 19.419429 22.272 32.585143 47.433143 22.857143 42.861714 45.714286 106.276571 30.866286 158.866286-5.705143 20.553143-19.419429 23.442286-28.562286 23.990857-40.009143 4.571429-16.566857-48.018286-33.133714-119.442286-18.870857-80.018286-38.290286-85.723429-42.861714-92.013714-23.442286-104.009143-49.152-93.696-56.576-132.571428-6.290286-34.852571 30.281143-63.414857-19.419429-73.142858-15.433143-2.852571-37.156571-18.285714-45.714286-19.419428s-13.129143-57.709714 18.870857-59.428572c31.414857-2.304 37.156571 35.437714 31.414858 50.285715-9.142857 14.848 0.585143 20.553143 16.018285 15.433143 12.580571-3.986286 4.571429-37.156571 7.424-41.728-8.009143-48.018286-28.013714-54.857143-48.566857-58.843429-78.848 6.290286-43.446857 93.147429-51.419428 85.138286-11.446857-11.995429-44.580571-1.133714-44.580572-8.557715 0.585143-44.580571-14.299429-70.290286-34.852571-70.838857-22.857143-0.585143-32 31.414857-33.133715 49.700572-1.718857 17.152 9.728 53.138286 18.285715 50.285714 5.705143-1.718857 15.433143-13.129143 5.156571-12.580571-5.156571 0-13.129143-12.580571-14.299428-27.428572-0.585143-14.848 5.156571-29.696 24.576-29.147428 22.272 0.585143 22.272 45.129143 20.004571 46.848a104.850286 104.850286 0 0 0-17.700571 16.566857c-7.424 11.995429-21.723429 15.433143-27.428572 20.553143-9.728 10.276571-11.995429 21.723429-4.571428 25.709714 26.294857 14.848 17.700571 32 54.272 33.133714 23.990857 1.133714 41.728-3.437714 58.294857-8.557714 12.580571-3.986286 53.138286-12.580571 61.696-27.428572 3.986286-6.290286 8.557714-6.290286 11.446857-4.571428 5.705143 2.852571 6.838857 13.714286-7.424 17.152-20.004571 5.705143-40.009143 16.566857-58.294857 23.442286-17.700571 7.424-23.442286 10.276571-40.009143 13.129142-37.705143 6.838857-65.718857-13.714286-40.557714 10.861715 8.557714 8.009143 16.566857 13.129143 38.290285 12.580571 48.018286-1.718857 101.156571-59.428571 106.276572-33.718857 1.133714 5.705143-14.848 12.580571-27.428572 18.870857-44.580571 21.723429-75.995429 65.133714-104.557714 50.285714-25.709714-13.714286-51.419429-77.129143-50.870857-48.566857 0.585143 43.995429-57.709714 82.870857-30.866286 133.156572-17.700571 4.571429-57.161143 88.576-62.866286 131.986285-3.437714 25.161143 2.304 55.990857-3.986285 73.142858-8.557714 25.161143-47.433143-23.990857-34.852572-84.004572 2.304-10.276571 0-12.580571-2.852571-7.424-15.433143 28.013714-6.838857 67.437714 5.705143 94.866286 5.156571 11.995429 18.285714 17.152 28.013714 27.428571 20.004571 22.857143 98.852571 81.152 112.566857 95.414857 17.700571 16.566857 12.580571 55.442286-23.990857 59.428572 18.870857 35.437714 37.156571 38.838857 36.571429 96.585143 21.723429-11.446857 13.129143-36.571429 3.986285-52.553143-6.290286-11.446857-14.299429-16.566857-12.580571-19.419429 1.133714-1.718857 12.580571-11.446857 18.870857-3.986285 19.419429 21.723429 55.990857 25.709714 94.866286 20.553142 39.424-4.571429 81.700571-18.285714 101.156571-49.700571 9.142857-14.848 15.433143-20.004571 19.419429-17.152 4.571429 2.304 6.290286 12.580571 5.705143 29.696-0.585143 18.285714-8.009143 37.156571-13.129143 52.553143-5.156571 17.700571-6.838857 29.696 10.276571 30.281143 4.571429-32 13.714286-63.414857 16.018286-95.414857 2.852571-36.571429-23.442286-104.009143 5.156571-137.728 7.424-9.142857 16.566857-10.276571 29.147429-10.276572 1.718857-45.714286 72.009143-42.276571 95.414857-23.442286zM412.562286 219.428571c2.304-14.299429-4.571429-24.576-8.009143-25.709714-6.838857-1.718857-5.705143 8.557714-2.304 7.424 2.304 0 5.156571 3.437714 3.986286 8.557714-1.133714 6.838857-0.585143 11.446857 4.571428 11.446858 0.585143 0 1.718857 0 1.718857-1.718858z m239.433143 112.566858c-2.304-10.861714-10.276571-6.838857-19.419429-12.580572-10.861714-6.838857-13.129143-18.285714-17.152-14.299428-11.995429 13.129143 14.848 40.557714 26.294857 42.861714 6.838857 1.133714 11.995429-8.009143 10.276572-16.018286zM550.290286 210.285714c0.585143-13.714286-11.446857-20.553143-14.299429-20.004571-7.424 0.585143-5.156571 3.986286-1.718857 5.156571 4.571429 1.133714 9.142857 9.142857 10.276571 17.700572 0 1.133714 5.705143-1.133714 5.705143-2.852572z m30.866285-133.156571c0.585143-2.852571-6.838857-6.290286-11.995428-10.276572-4.571429-4.571429-9.142857-8.557714-13.714286-8.557714-11.446857 1.133714-5.705143 13.129143-7.424 18.870857-2.304 6.290286-10.861714 11.446857-5.156571 16.018286 5.156571 3.986286 8.557714-6.290286 19.419428-10.276571 2.852571-1.133714 16.018286 0.585143 18.870857-5.705143z m322.852572 766.317714c70.290286 43.446857-26.294857 79.433143-67.986286 100.571429-32.585143 16.566857-75.995429 53.138286-92.013714 68.571428-11.995429 11.446857-61.696 17.152-89.709714 2.852572-32.585143-16.566857-15.433143-42.861714-65.718858-44.580572-25.161143-0.585143-49.700571-0.585143-74.276571-0.585143-21.723429 0.585143-43.446857 1.718857-65.718857 2.304-75.446857 1.718857-82.870857 50.285714-131.437714 48.566858-33.133714-1.133714-74.861714-27.428571-146.870858-42.276572-50.285714-10.276571-98.852571-13.129143-109.129142-35.437714s12.580571-47.433143 14.299428-69.156572c1.718857-29.147429-21.723429-68.571429-4.571428-83.419428 14.848-13.129143 46.299429-3.437714 66.852571-14.848 21.723429-12.580571 30.866286-22.272 30.866286-49.152 8.009143 27.428571-0.585143 49.700571-18.285715 60.562286-10.861714 6.838857-30.866286 10.276571-47.433142 8.557714-13.129143-1.133714-21.138286 0.585143-24.576 5.705143-5.156571 6.290286-3.437714 17.700571 2.852571 32.585143s13.714286 24.576 12.580571 42.861714c-0.585143 18.285714-21.138286 40.009143-17.700571 55.442286 1.133714 5.705143 6.838857 10.861714 21.138286 14.848 22.857143 6.290286 64.585143 12.580571 105.142857 22.272 45.129143 11.446857 92.013714 32 121.161143 28.013714 86.857143-11.995429 37.156571-105.142857 23.442285-127.414857-73.728-115.419429-122.294857-190.866286-161.133714-161.133715-9.728 8.009143-10.276571-19.419429-9.728-30.281142 1.718857-37.705143 20.553143-51.419429 32-80.566858 21.723429-55.442286 38.290286-118.857143 71.424-151.442285 24.576-32 63.414857-84.004571 70.838857-111.433143-6.290286-59.428571-8.009143-122.294857-9.142857-177.152-1.133714-58.843429 8.009143-110.299429 74.276572-146.285714C431.469714 3.437714 452.608 0 474.88 0c39.424-0.585143 83.419429 10.861714 111.433143 31.414857 44.580571 33.133714 72.557714 103.424 69.156571 153.709714-2.304 39.424 4.571429 80.018286 17.152 122.294858 14.848 49.700571 38.290286 84.553143 75.995429 124.562285 45.129143 48.018286 80.566857 142.299429 90.843428 202.276572 9.142857 55.990857-3.437714 90.843429-15.433142 92.562285-18.285714 2.852571-29.696 60.562286-86.857143 58.294858-36.571429-1.718857-40.009143-23.442286-50.285715-42.276572-16.566857-29.147429-33.133714-20.004571-39.424 10.861714-3.437714 15.433143-1.133714 38.290286 3.986286 55.442286 10.276571 35.986286 6.838857 69.705143 0.585143 111.433143-11.995429 78.848 55.442286 93.696 100.571429 55.990857 44.580571-37.156571 54.272-42.861714 110.299428-62.281143 85.138286-29.147429 56.576-54.857143 10.861714-70.290285-41.142857-13.714286-42.861714-82.870857-28.013714-96 3.437714 74.276571 42.276571 85.138286 58.294857 95.414857z"/></svg></span>
+              <span class="nav-dl__t">Linux · AppImage</span>
+              <span class="nav-dl__chev" aria-hidden="true">›</span>
+            </a>
+
+            <p class="nav-dl__group" data-i18n="dl.gAe">AE 扩展</p>
+            <a class="nav-dl__item" role="menuitem" data-dl="cepWin" href="https://github.com/yancongya/iSparta-next/releases/latest/download/isparta-next-cep-win.zip" target="_blank" rel="noopener">
+              <span class="nav-dl__ico" aria-hidden="true"><svg viewBox="0 0 1024 1024" fill="currentColor"><path d="M386.986667 737.28h118.613333l74.666667 146.773333h108.373333L512 421.12zM85.333333 128v768L401.92 128z m532.48 0L938.666667 887.893333V128z"/></svg></span>
+              <span class="nav-dl__t">Windows</span>
+              <span class="nav-dl__chev" aria-hidden="true">›</span>
+            </a>
+            <a class="nav-dl__item" role="menuitem" data-dl="cepMac" href="https://github.com/yancongya/iSparta-next/releases/latest/download/isparta-next-cep-mac.zip" target="_blank" rel="noopener">
+              <span class="nav-dl__ico" aria-hidden="true"><svg viewBox="0 0 1024 1024" fill="currentColor"><path d="M386.986667 737.28h118.613333l74.666667 146.773333h108.373333L512 421.12zM85.333333 128v768L401.92 128z m532.48 0L938.666667 887.893333V128z"/></svg></span>
+              <span class="nav-dl__t">macOS</span>
+            </a>
+          </div>
+        </div>
+      </div>
     </nav>
   </header>
   <main>
 
+  <!-- 首屏 hero（对齐 workbuddy.cn）：大标题 → 两行副标题 → 一行信息条 → 黑色胶囊主 CTA
+       + 次级入口 → 无边框产品截图（底部渐隐遮罩）。
+       信息条放在标题与截图之间（参考站即如此）：它解释「这是什么 / 跑在什么上」，
+       压在截图下方会显得是图的注脚，反而抢走截图的位置。 -->
   <section class="hero">
     <div class="hero-copy">
-      <p class="eyebrow mono" data-i18n="hero.eyebrow">桌面软件 + AE 插件，功能双份</p>
-      <h1 class="hero-title">
-        <span data-i18n="hero.h1a">装一次，</span><br />
-        <span class="hero-accent" id="hero-accent-word" data-i18n="hero.h1b">桌面和 AE 里都好使</span>
-      </h1>
+      <h1 class="hero-title hero-title--scramble" data-i18n="hero.h1" id="hero-title">图片变动图</h1>
       <p class="hero-sub" data-i18n="hero.sub">
-        把一堆图片变成 APNG / WebP / GIF 动图，也能把现有动图改小。桌面端拖文件就开工；在 After Effects 里自动读出工程全部合成，勾选就导出，两边功能一模一样，文件太大自动压到合适。
+        iSparta-next 是一款开源的动图转换工作台。PNG 序列、APNG、WebP、GIF 互转与压缩，桌面拖文件批量处理，AE 里直接导出合成。
       </p>
+
+      <!-- 信息条：能力说明 + 平台/版本，夹在副标题与 CTA 之间 -->
+      <ul class="hero-facts mono">
+        <li class="hero-facts__cap" data-i18n="hero.cap">iSparta-next 工作台 · 任务列表与输出设置</li>
+        <li class="hero-facts__row">
+          <span data-i18n="hero.m1">Win / macOS / Linux</span>
+          <span data-i18n="hero.m2">Electron 28</span>
+          <span id="hero-version" title="最新 Release 版本">v3.6.0<span class="hero-version-date mono"> · 2026-10-08</span></span>
+        </li>
+      </ul>
+
       <div class="hero-actions">
-        <a class="btn btn-primary" href="https://github.com/yancongya/iSparta-next/releases/latest/download/isparta-next-win-x64.exe" target="_blank" rel="noopener">
-          <span data-i18n="hero.cta">下载安装包</span>
+        <!-- CTA 文案：默认短名，hover 才展开成全名。
+             两段文案叠放（grid 同格 + 交叉淡入）而不是改 textContent ——
+             后者会在 hover 时重排按钮宽度，抖得很难看。 -->
+        <a class="btn btn-primary hero-cta" href="https://github.com/yancongya/iSparta-next/releases/latest/download/isparta-next-win-x64.exe" target="_blank" rel="noopener">
+          <span class="hero-cta__slot"><span class="hero-cta__t hero-cta__t--short" data-i18n="hero.ctaShort">立即下载 iSparta</span><span class="hero-cta__t hero-cta__t--full" data-i18n="hero.cta">立即下载 iSparta-next</span></span>
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 2v9M4.5 8.5 8 12l3.5-3.5M3 14h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </a>
-        <a class="btn btn-ghost" href="https://github.com/yancongya/iSparta-next" target="_blank" rel="noopener" data-i18n="hero.source">查看源码</a>
+        <a class="hero-alt" href="#download" data-i18n="hero.alt">更多下载</a>
       </div>
-      <ul class="hero-meta mono">
-        <li data-i18n="hero.m1">Win / macOS / Linux</li>
-        <li data-i18n="hero.m2">Electron 28</li>
-        <li id="hero-version" title="最新 Release 版本">v3.4.0<span class="hero-version-date mono"> · 2026-09-22</span></li>
-      </ul>
     </div>
 
-    <div class="hero-stage" id="hero-stage" role="group" aria-label="转换演示台">
-      <svg class="hero-svg" id="hero-svg" viewBox="0 0 520 420" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <pattern id="checker" width="12" height="12" patternUnits="userSpaceOnUse">
-            <rect width="12" height="12" fill="#f7f1e8"/>
-            <rect width="6" height="6" fill="#e8dfd0"/>
-            <rect x="6" y="6" width="6" height="6" fill="#e8dfd0"/>
-          </pattern>
-          <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
-            <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#c2410c" flood-opacity="0.12"/>
-          </filter>
-        </defs>
-
-        <!-- ① 帧堆：可点/可拖投喂 -->
-        <g id="film">
-          <g class="frame frame--grab" data-i="0" tabindex="0" role="button" aria-label="把第 1 帧投进收集器" transform="rotate(-7 88 92)">
-            <rect x="52" y="48" width="72" height="72" rx="10" fill="url(#checker)" stroke="#c2410c" stroke-width="1.5"/>
-            <rect x="66" y="66" width="28" height="20" rx="3" fill="#c2410c" opacity=".85"/>
-            <text x="112" y="112" text-anchor="middle" class="svg-label">01</text>
-          </g>
-          <g class="frame frame--grab" data-i="1" tabindex="0" role="button" aria-label="把第 2 帧投进收集器" transform="rotate(2 136 100)">
-            <rect x="100" y="56" width="72" height="72" rx="10" fill="url(#checker)" stroke="#c2410c" stroke-width="1.5"/>
-            <circle cx="136" cy="92" r="17" fill="#ea580c" opacity=".75"/>
-            <text x="160" y="120" text-anchor="middle" class="svg-label">02</text>
-          </g>
-          <g class="frame frame--grab" data-i="2" tabindex="0" role="button" aria-label="把第 3 帧投进收集器" transform="rotate(9 184 108)">
-            <rect x="148" y="64" width="72" height="72" rx="10" fill="url(#checker)" stroke="#c2410c" stroke-width="1.5"/>
-            <path d="M166 116 L184 84 L202 116 Z" fill="#c2410c" opacity=".8"/>
-            <text x="208" y="128" text-anchor="middle" class="svg-label">03</text>
-          </g>
-        </g>
-
-        <!-- ③ 转换核 -->
-        <g id="core-node" filter="url(#soft)">
-          <rect x="196" y="196" width="128" height="56" rx="12" fill="#fffdf8" stroke="#c2410c" stroke-width="1.5"/>
-          <circle cx="226" cy="224" r="11" fill="none" stroke="#c2410c" stroke-width="2.2"/>
-          <circle cx="226" cy="224" r="3.6" fill="#c2410c"/>
-          <path d="M226 210.5 v4 M226 233.5 v4 M212.5 224 h4 M235.5 224 h4" stroke="#c2410c" stroke-width="1.8" stroke-linecap="round"/>
-          <text x="290" y="229" text-anchor="middle" class="svg-chip" fill="#c2410c">自动转换</text>
-        </g>
-        <path d="M120 210 C150 226, 168 222, 196 220" fill="none" stroke="#e4d0bf" stroke-width="3" stroke-dasharray="4 6" opacity=".85"/>
-        <path d="M324 214 C352 200, 356 176, 372 156" fill="none" stroke="#e4d0bf" stroke-width="3" stroke-dasharray="4 6" opacity=".85"/>
-
-        <g id="outputs">
-          <g class="out-chip" data-out="APNG">
-            <rect x="330" y="48" width="88" height="36" rx="18" fill="#fffdf8" stroke="#c2410c" stroke-width="1.5"/>
-            <text x="374" y="71" text-anchor="middle" class="svg-chip">APNG</text>
-          </g>
-          <g class="out-chip" data-out="WebP">
-            <rect x="400" y="100" width="88" height="36" rx="18" fill="#fffdf8" stroke="#c2410c" stroke-width="1.5"/>
-            <text x="444" y="123" text-anchor="middle" class="svg-chip">WebP</text>
-          </g>
-          <g class="out-chip" data-out="GIF">
-            <rect x="318" y="152" width="88" height="36" rx="18" fill="#fffdf8" stroke="#c2410c" stroke-width="1.5"/>
-            <text x="362" y="175" text-anchor="middle" class="svg-chip">GIF</text>
-          </g>
-        </g>
-
-        <!-- ④ 分流轨道 + 双端出品卡 -->
-        <g id="dual-flow" aria-hidden="true">
-          <path id="branch-a" d="M226 252 C204 288, 158 292, 118 306" fill="none" stroke="#e4d0bf" stroke-width="4" stroke-linecap="round" opacity=".75"/>
-          <path id="branch-b" d="M294 252 C316 288, 360 292, 400 306" fill="none" stroke="#e4d0bf" stroke-width="4" stroke-linecap="round" opacity=".75"/>
-          <g class="engine-card" id="engine-desktop">
-            <rect x="28" y="306" width="164" height="88" rx="10" fill="#fffdf8" stroke="#c2410c" stroke-width="1.5"/>
-            <rect x="28" y="306" width="164" height="16" rx="8" fill="#2d2d30"/>
-            <circle cx="40" cy="314" r="2.4" fill="#e07a6a"/><circle cx="49" cy="314" r="2.4" fill="#e0c56a"/><circle cx="58" cy="314" r="2.4" fill="#7acb8a"/>
-            <text x="150" y="317" text-anchor="middle" class="svg-label" fill="#c9c9c9">iSparta</text>
-            <rect x="42" y="334" width="96" height="8" rx="4" fill="#e4d0bf"/>
-            <rect x="42" y="350" width="72" height="8" rx="4" fill="#efe3d2"/>
-            <rect x="42" y="368" width="52" height="18" rx="9" fill="#fff" stroke="#c2410c" stroke-width="1.2"/>
-            <text x="68" y="381" text-anchor="middle" class="svg-chip" font-size="9">GIF</text>
-            <text x="150" y="381" text-anchor="middle" class="svg-label">桌面工作台</text>
-          </g>
-          <g class="engine-card" id="engine-ae">
-            <rect x="328" y="306" width="164" height="88" rx="10" fill="#fffdf8" stroke="#c2410c" stroke-width="1.5"/>
-            <rect x="328" y="306" width="164" height="16" rx="8" fill="#2d2d30"/>
-            <text x="478" y="317" text-anchor="middle" class="svg-label" fill="#c9c9c9">Ae 面板</text>
-            <text x="342" y="342" class="svg-label">walk_cycle</text>
-            <text x="342" y="358" class="svg-label">fx_spark</text>
-            <rect x="342" y="368" width="52" height="18" rx="9" fill="#fff" stroke="#c2410c" stroke-width="1.2"/>
-            <text x="368" y="381" text-anchor="middle" class="svg-chip" font-size="9">APNG</text>
-            <rect x="400" y="368" width="48" height="18" rx="9" fill="#fff" stroke="#c2410c" stroke-width="1.2"/>
-            <text x="424" y="381" text-anchor="middle" class="svg-chip" font-size="9">WebP</text>
-            <text x="466" y="346" text-anchor="end" class="svg-label" opacity=".75">自动找全合成</text>
-          </g>
-          <circle id="flow-dot-a" class="flow-dot" r="5.5" cx="0" cy="0"/>
-          <circle id="flow-dot-b" class="flow-dot" r="5.5" cx="0" cy="0"/>
-        </g>
-
-        <!-- 背景漂浮装饰：胶片孔 / 星点 / 虚线弧 -->
-        <g id="hero-deco" aria-hidden="true">
-          <g class="deco-float d1">
-            <rect x="48" y="180" width="10" height="14" rx="2" fill="none" stroke="#c2410c" stroke-width="1.2" opacity=".35"/>
-          </g>
-          <g class="deco-float d2">
-            <rect x="470" y="200" width="10" height="14" rx="2" fill="none" stroke="#c2410c" stroke-width="1.2" opacity=".35"/>
-          </g>
-          <g class="deco-float d3">
-            <circle cx="300" cy="220" r="3" fill="#c2410c" opacity=".3"/>
-          </g>
-          <g class="deco-float d4">
-            <path d="M240 250 l4 8 8 1 -6 5 2 8 -8-4 -8 4 2-8 -6-5 8-1 z" fill="#c2410c" opacity=".22"/>
-          </g>
-          <g class="deco-float d5">
-            <path d="M90 220 C130 200, 160 240, 200 220" fill="none" stroke="#c2410c" stroke-width="1.2" stroke-dasharray="3 5" opacity=".28"/>
-          </g>
-        </g>
-
-        <!-- 收集器：#packet 由 GSAP 沿轨道定位，#packet-inner 交给 CSS 做接住/弹跳
-             （同层会互相覆盖：GSAP 写的是内联 transform，优先级压过 class 变换） -->
-        <g id="packet" transform="translate(96 186)" role="img" aria-label="帧收集器">
-          <g id="packet-inner">
-            <rect x="-24" y="-24" width="48" height="48" rx="10" fill="url(#checker)" stroke="#c2410c" stroke-width="2"/>
-            <rect x="-10" y="-8" width="20" height="14" rx="2" fill="#c2410c"/>
-            <text id="packet-count" x="0" y="42" text-anchor="middle" class="svg-label">0</text>
-          </g>
-        </g>
-
-        <!-- 小机器狗：#pet 定位，#pet-inner 做待机漂浮与奔跑（速度由 --pet-speed 驱动） -->
-        <g id="pet" transform="translate(226 330)">
-          <g id="pet-inner">
-          <rect x="0" y="8" width="36" height="28" rx="6" fill="#fffdf8" stroke="#c2410c" stroke-width="1.5"/>
-          <rect x="6" y="16" width="6" height="6" fill="#c2410c"/>
-          <rect x="24" y="16" width="6" height="6" fill="#c2410c"/>
-          <rect x="12" y="26" width="12" height="4" rx="1" fill="#c2410c" opacity=".7"/>
-          <rect x="8" y="0" width="6" height="10" rx="2" fill="#c2410c"/>
-          <rect x="22" y="0" width="6" height="10" rx="2" fill="#c2410c"/>
-          </g>
-        </g>
-      </svg>
-    </div>
+    <!-- 产品舞台：无边框大图，底部用渐隐遮罩融进页面（参考站观感） -->
+    <figure class="hero-stage" id="hero-stage" aria-label="iSparta-next 工作台界面">
+      <div class="hero-shot">
+        <img src="assets/shots/desktop-workspace-hd.webp" alt="iSparta-next 工作台：任务列表与输出设置" width="1440" height="1080" fetchpriority="high" />
+        <!-- 渐隐遮罩：只盖住底部一段，让截图「沉」进背景而不是硬边收口。
+             两端色都取自当前主题的 paper，暗色下改用深色，亮色下用纸色。 -->
+        <span class="hero-shot__fade" aria-hidden="true"></span>
+      </div>
+    </figure>
   </section>
 
   <!-- 可抓取产品说明（SEO 静态正文，不依赖 JS） -->
@@ -1037,68 +980,55 @@
   <section class="section" id="shots">
     <div class="section-head">
       <p class="eyebrow mono" data-i18n="shots.eb">07 · REAL UI</p>
-      <h2 data-i18n="shots.h2">真实软件界面，不是概念稿</h2>
+      <h2 data-i18n="shots.h2">桌面版和 CEP 端界面预览</h2>
       <p class="section-sub" data-i18n="shots.sub">应用真实界面：空状态导入、任务卡片列表、参数设置、默认设置（命名 / 路径 / 大小上限）。</p>
     </div>
     <p class="shots-intro">
       <strong data-i18n="shots.brand">iSparta-next 工作台</strong>
-      <span data-i18n="shots.intro">与仓库 public/screenshot/ 同源 · 桌面 Electron 实拍</span>
+      <span data-i18n="shots.intro">与仓库 docs/screenshots/ 同源 · 桌面 Electron 实拍</span>
     </p>
+
+    <!-- 图源唯一真相源 = docs/screenshots/，由 scripts/sync-screenshots.js 同步到
+         assets/shots/。改图后必须重跑该脚本，否则 --check 会失败。 -->
     <figure class="shot-main">
-      <img src="assets/main.png" alt="iSparta-next" width="980" height="749" loading="lazy" />
+      <img src="assets/shots/desktop-workspace-hd.webp" alt="iSparta-next 桌面工作台" width="1440" height="1080" loading="lazy" />
       <div class="shot-bar">
-        <span data-i18n="shots.capMain">主界面 · 任务列表 + 输出设置（路径变量 / 大小阈值）</span>
-        <span class="mono">main.png</span>
+        <span data-i18n="shots.capMain">桌面工作台 · 任务列表 + 输出设置（路径变量 / 大小阈值）</span>
+        <span class="mono">desktop-workspace-hd.webp</span>
       </div>
     </figure>
     <div class="shots-side">
       <figure class="shot">
-        <img src="assets/empty.png" alt="empty" width="980" height="749" loading="lazy" />
+        <img src="assets/shots/desktop-empty.webp" alt="空状态：拖放、粘贴或点击打开目录" width="984" height="742" loading="lazy" />
         <figcaption class="mono" data-i18n="shots.capEmpty">空状态 · Drop / Paste / Click</figcaption>
       </figure>
       <figure class="shot">
-        <img src="assets/settings.png" alt="settings" width="980" height="749" loading="lazy" />
+        <img src="assets/shots/desktop-settings-general.webp" alt="默认设置：语言、主题、输出路径变量与大小阈值" width="984" height="742" loading="lazy" />
         <figcaption class="mono" data-i18n="shots.capSet">默认设置 · 主题 / {srcPath} / 阈值</figcaption>
+      </figure>
+    </div>
+
+    <!-- AE 扩展端：同一套工作台，宿主换成 After Effects -->
+    <p class="shots-intro shots-intro--sub">
+      <strong data-i18n="shots.brandAe">iSparta-next · AE 扩展</strong>
+      <span data-i18n="shots.introAe">装在 After Effects 面板里 · 与桌面端共用同一套转换核</span>
+    </p>
+    <div class="shots-side shots-side--triple">
+      <figure class="shot">
+        <img src="assets/shots/cep-task-list.webp" alt="AE 扩展：合成任务列表" width="1440" height="1080" loading="lazy" />
+        <figcaption class="mono" data-i18n="shots.capCepList">合成列表 · 勾选 / 帧率 / 帧数</figcaption>
+      </figure>
+      <figure class="shot">
+        <img src="assets/shots/cep-comp-tree.webp" alt="AE 扩展：合成树与尺寸信息" width="1440" height="1080" loading="lazy" />
+        <figcaption class="mono" data-i18n="shots.capCepTree">合成树 · 尺寸 / 帧率 / 帧数</figcaption>
+      </figure>
+      <figure class="shot">
+        <img src="assets/shots/cep-output-settings.webp" alt="AE 扩展：输出路径变量与大小阈值" width="1440" height="1080" loading="lazy" />
+        <figcaption class="mono" data-i18n="shots.capCepSet">输出设置 · 变量路径 / 大小阈值</figcaption>
       </figure>
     </div>
   </section>
 
-  <section class="section section-dl" id="download">
-    <div class="dl-panel">
-      <div>
-        <p class="eyebrow mono" data-i18n="dl.eb">08 · GET IT</p>
-        <h2 data-i18n="dl.h2">选一个系统，直接开箱</h2>
-        <p class="section-sub" data-i18n="dl.sub">安装包由 GitHub Actions 构建。Windows 包可同时安装桌面与 AE 扩展。Windows / Linux 安装版支持应用内自动更新；macOS 未签名，首次打开见 Release 说明。</p>
-      </div>
-      <div class="dl-grid">
-        <a class="dl-card" data-dl="win" href="https://github.com/yancongya/iSparta-next/releases/latest/download/isparta-next-win-x64.exe" target="_blank" rel="noopener">
-          <span class="dl-os">Windows</span>
-          <span class="dl-file mono">win-x64.exe · NSIS · latest</span>
-        </a>
-        <a class="dl-card" data-dl="macArm" href="https://github.com/yancongya/iSparta-next/releases/latest/download/isparta-next-mac-arm64.zip" target="_blank" rel="noopener">
-          <span class="dl-os">macOS · Apple Silicon</span>
-          <span class="dl-file mono">mac-arm64.zip · latest</span>
-        </a>
-        <a class="dl-card" data-dl="macX64" href="https://github.com/yancongya/iSparta-next/releases/latest/download/isparta-next-mac-x64.zip" target="_blank" rel="noopener">
-          <span class="dl-os">macOS · Intel</span>
-          <span class="dl-file mono">mac-x64.zip · latest</span>
-        </a>
-        <a class="dl-card" data-dl="linux" href="https://github.com/yancongya/iSparta-next/releases/latest/download/isparta-next-linux-x64.AppImage" target="_blank" rel="noopener">
-          <span class="dl-os">Linux</span>
-          <span class="dl-file mono">linux-x64.AppImage · latest</span>
-        </a>
-
-        <a class="dl-card" data-dl="cepWin" href="https://github.com/yancongya/iSparta-next/releases/latest/download/isparta-next-cep-win.zip" target="_blank" rel="noopener">
-          <span class="dl-os">AE 扩展 · Windows</span>
-          <span class="dl-file mono">cep-win.zip · 解压到 CEP extensions</span>
-        </a>
-        <a class="dl-card" data-dl="cepMac" href="https://github.com/yancongya/iSparta-next/releases/latest/download/isparta-next-cep-mac.zip" target="_blank" rel="noopener">
-          <span class="dl-os">AE 扩展 · macOS</span>
-          <span class="dl-file mono">cep-mac.zip · 解压到 CEP extensions</span>
-        </a>
-      </div>
-    </div>
-  </section>
 
   <!-- lineage + why + authors at the end -->
   <section class="section section-why" id="why">
@@ -1305,17 +1235,123 @@
     </div>
   </section>
 
+  <!-- 下载区：参考 workbuddy.cn —— 无卡片外壳的裸排版，靠「小标签 + 巨标题 + 两组图标卡」建立层级。
+       两组按「桌面端 / AE 扩展」分，与参考站的「桌面端 / 移动端」同理：本项目只有这两类受众。 -->
+  <section class="section section-dl" id="download">
+    <div class="section-head dl-head">
+      <p class="dl-tag mono" data-i18n="dl.eb">10 · 免费开始 · 开源可商用</p>
+      <h2 class="dl-title" data-i18n="dl.h2">立即下载，专注出片</h2>
+      <p class="section-sub" data-i18n="dl.sub">安装包由 GitHub Actions 构建。Windows 包可同时安装桌面与 AE 扩展；macOS 未签名，首次打开见 Release 说明。</p>
+    </div>
+
+    <div class="dl-groups">
+      <div class="dl-group">
+        <p class="dl-group__label" data-i18n="dl.gDesktop">桌面端</p>
+        <p class="dl-group__desc" data-i18n="dl.gDesktopDesc">一次装全：桌面应用 + AE 扩展（安装向导的组件页可只装桌面）。</p>
+        <div class="dl-row">
+          <a class="dl-tile" data-dl="macArm" href="https://github.com/yancongya/iSparta-next/releases/latest/download/isparta-next-mac-arm64.zip" target="_blank" rel="noopener">
+            <span class="dl-tile__ico" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.7 12.7c0-2.3 1.9-3.4 2-3.5-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.1-2.8.9-3.5.9-.7 0-1.8-.9-3-.8-1.5 0-2.9.9-3.7 2.3-1.6 2.7-.4 6.8 1.1 9 .8 1.1 1.7 2.3 2.9 2.3 1.2 0 1.6-.7 3-.7s1.8.7 3 .7c1.2 0 2-1.1 2.8-2.2.9-1.2 1.2-2.5 1.2-2.5s-2.4-.9-2.4-3.7zM14.4 5.6c.6-.8 1-1.8.9-2.9-.9 0-2 .6-2.6 1.4-.6.7-1.1 1.7-1 2.8 1 .1 2-.5 2.7-1.3z"/></svg>
+            </span>
+            <span class="dl-tile__name">macOS</span>
+            <span class="dl-tile__sub mono">Apple Silicon</span>
+          </a>
+          <a class="dl-tile" data-dl="win" href="https://github.com/yancongya/iSparta-next/releases/latest/download/isparta-next-win-x64.exe" target="_blank" rel="noopener">
+            <span class="dl-tile__ico" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 5.5 10.5 4.4v7.1H3V5.5zm8.5-1.2L21 3v8.5h-9.5V4.3zM3 12.5h7.5v7.1L3 18.5v-6zm8.5 0H21V21l-9.5-1.3v-7.2z"/></svg>
+            </span>
+            <span class="dl-tile__name">Windows</span>
+            <span class="dl-tile__sub mono">x64 · 含 AE 扩展</span>
+          </a>
+          <a class="dl-tile" data-dl="macX64" href="https://github.com/yancongya/iSparta-next/releases/latest/download/isparta-next-mac-x64.zip" target="_blank" rel="noopener">
+            <span class="dl-tile__ico" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.7 12.7c0-2.3 1.9-3.4 2-3.5-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.1-2.8.9-3.5.9-.7 0-1.8-.9-3-.8-1.5 0-2.9.9-3.7 2.3-1.6 2.7-.4 6.8 1.1 9 .8 1.1 1.7 2.3 2.9 2.3 1.2 0 1.6-.7 3-.7s1.8.7 3 .7c1.2 0 2-1.1 2.8-2.2.9-1.2 1.2-2.5 1.2-2.5s-2.4-.9-2.4-3.7zM14.4 5.6c.6-.8 1-1.8.9-2.9-.9 0-2 .6-2.6 1.4-.6.7-1.1 1.7-1 2.8 1 .1 2-.5 2.7-1.3z"/></svg>
+            </span>
+            <span class="dl-tile__name">macOS</span>
+            <span class="dl-tile__sub mono">Intel x64</span>
+          </a>
+          <a class="dl-tile" data-dl="linux" href="https://github.com/yancongya/iSparta-next/releases/latest/download/isparta-next-linux-x64.AppImage" target="_blank" rel="noopener">
+            <span class="dl-tile__ico" aria-hidden="true">
+              <svg viewBox="0 0 1024 1024" fill="currentColor"><path d="M433.700571 234.861714c-11.446857 1.133714-7.424 11.446857-13.714285 11.446857-5.705143 0.585143-4.571429-12.580571 13.714285-11.446857z m49.737143 8.009143c-5.705143 1.718857-6.290286-9.142857-16.566857-6.290286 16.566857-7.424 22.272 3.986286 16.566857 6.290286z m-200.594285 243.968c-5.156571-1.718857-3.986286 8.557714-9.142858 16.566857-3.986286 7.424-14.299429 13.129143-6.290285 14.299429 2.852571 0.585143 10.861714-6.290286 14.299428-14.299429 2.852571-9.728 5.705143-14.848 1.133715-16.566857z m488.594285 205.165714c0-10.276571-22.272-20.004571-31.414857-23.990857 15.433143-51.419429 8.557714-72.009143-1.718857-120.576-8.009143-36.571429-41.728-86.272-67.986286-101.705143 6.838857 5.705143 19.419429 22.272 32.585143 47.433143 22.857143 42.861714 45.714286 106.276571 30.866286 158.866286-5.705143 20.553143-19.419429 23.442286-28.562286 23.990857-40.009143 4.571429-16.566857-48.018286-33.133714-119.442286-18.870857-80.018286-38.290286-85.723429-42.861714-92.013714-23.442286-104.009143-49.152-93.696-56.576-132.571428-6.290286-34.852571 30.281143-63.414857-19.419429-73.142858-15.433143-2.852571-37.156571-18.285714-45.714286-19.419428s-13.129143-57.709714 18.870857-59.428572c31.414857-2.304 37.156571 35.437714 31.414858 50.285715-9.142857 14.848 0.585143 20.553143 16.018285 15.433143 12.580571-3.986286 4.571429-37.156571 7.424-41.728-8.009143-48.018286-28.013714-54.857143-48.566857-58.843429-78.848 6.290286-43.446857 93.147429-51.419428 85.138286-11.446857-11.995429-44.580571-1.133714-44.580572-8.557715 0.585143-44.580571-14.299429-70.290286-34.852571-70.838857-22.857143-0.585143-32 31.414857-33.133715 49.700572-1.718857 17.152 9.728 53.138286 18.285715 50.285714 5.705143-1.718857 15.433143-13.129143 5.156571-12.580571-5.156571 0-13.129143-12.580571-14.299428-27.428572-0.585143-14.848 5.156571-29.696 24.576-29.147428 22.272 0.585143 22.272 45.129143 20.004571 46.848a104.850286 104.850286 0 0 0-17.700571 16.566857c-7.424 11.995429-21.723429 15.433143-27.428572 20.553143-9.728 10.276571-11.995429 21.723429-4.571428 25.709714 26.294857 14.848 17.700571 32 54.272 33.133714 23.990857 1.133714 41.728-3.437714 58.294857-8.557714 12.580571-3.986286 53.138286-12.580571 61.696-27.428572 3.986286-6.290286 8.557714-6.290286 11.446857-4.571428 5.705143 2.852571 6.838857 13.714286-7.424 17.152-20.004571 5.705143-40.009143 16.566857-58.294857 23.442286-17.700571 7.424-23.442286 10.276571-40.009143 13.129142-37.705143 6.838857-65.718857-13.714286-40.557714 10.861715 8.557714 8.009143 16.566857 13.129143 38.290285 12.580571 48.018286-1.718857 101.156571-59.428571 106.276572-33.718857 1.133714 5.705143-14.848 12.580571-27.428572 18.870857-44.580571 21.723429-75.995429 65.133714-104.557714 50.285714-25.709714-13.714286-51.419429-77.129143-50.870857-48.566857 0.585143 43.995429-57.709714 82.870857-30.866286 133.156572-17.700571 4.571429-57.161143 88.576-62.866286 131.986285-3.437714 25.161143 2.304 55.990857-3.986285 73.142858-8.557714 25.161143-47.433143-23.990857-34.852572-84.004572 2.304-10.276571 0-12.580571-2.852571-7.424-15.433143 28.013714-6.838857 67.437714 5.705143 94.866286 5.156571 11.995429 18.285714 17.152 28.013714 27.428571 20.004571 22.857143 98.852571 81.152 112.566857 95.414857 17.700571 16.566857 12.580571 55.442286-23.990857 59.428572 18.870857 35.437714 37.156571 38.838857 36.571429 96.585143 21.723429-11.446857 13.129143-36.571429 3.986285-52.553143-6.290286-11.446857-14.299429-16.566857-12.580571-19.419429 1.133714-1.718857 12.580571-11.446857 18.870857-3.986285 19.419429 21.723429 55.990857 25.709714 94.866286 20.553142 39.424-4.571429 81.700571-18.285714 101.156571-49.700571 9.142857-14.848 15.433143-20.004571 19.419429-17.152 4.571429 2.304 6.290286 12.580571 5.705143 29.696-0.585143 18.285714-8.009143 37.156571-13.129143 52.553143-5.156571 17.700571-6.838857 29.696 10.276571 30.281143 4.571429-32 13.714286-63.414857 16.018286-95.414857 2.852571-36.571429-23.442286-104.009143 5.156571-137.728 7.424-9.142857 16.566857-10.276571 29.147429-10.276572 1.718857-45.714286 72.009143-42.276571 95.414857-23.442286zM412.562286 219.428571c2.304-14.299429-4.571429-24.576-8.009143-25.709714-6.838857-1.718857-5.705143 8.557714-2.304 7.424 2.304 0 5.156571 3.437714 3.986286 8.557714-1.133714 6.838857-0.585143 11.446857 4.571428 11.446858 0.585143 0 1.718857 0 1.718857-1.718858z m239.433143 112.566858c-2.304-10.861714-10.276571-6.838857-19.419429-12.580572-10.861714-6.838857-13.129143-18.285714-17.152-14.299428-11.995429 13.129143 14.848 40.557714 26.294857 42.861714 6.838857 1.133714 11.995429-8.009143 10.276572-16.018286zM550.290286 210.285714c0.585143-13.714286-11.446857-20.553143-14.299429-20.004571-7.424 0.585143-5.156571 3.986286-1.718857 5.156571 4.571429 1.133714 9.142857 9.142857 10.276571 17.700572 0 1.133714 5.705143-1.133714 5.705143-2.852572z m30.866285-133.156571c0.585143-2.852571-6.838857-6.290286-11.995428-10.276572-4.571429-4.571429-9.142857-8.557714-13.714286-8.557714-11.446857 1.133714-5.705143 13.129143-7.424 18.870857-2.304 6.290286-10.861714 11.446857-5.156571 16.018286 5.156571 3.986286 8.557714-6.290286 19.419428-10.276571 2.852571-1.133714 16.018286 0.585143 18.870857-5.705143z m322.852572 766.317714c70.290286 43.446857-26.294857 79.433143-67.986286 100.571429-32.585143 16.566857-75.995429 53.138286-92.013714 68.571428-11.995429 11.446857-61.696 17.152-89.709714 2.852572-32.585143-16.566857-15.433143-42.861714-65.718858-44.580572-25.161143-0.585143-49.700571-0.585143-74.276571-0.585143-21.723429 0.585143-43.446857 1.718857-65.718857 2.304-75.446857 1.718857-82.870857 50.285714-131.437714 48.566858-33.133714-1.133714-74.861714-27.428571-146.870858-42.276572-50.285714-10.276571-98.852571-13.129143-109.129142-35.437714s12.580571-47.433143 14.299428-69.156572c1.718857-29.147429-21.723429-68.571429-4.571428-83.419428 14.848-13.129143 46.299429-3.437714 66.852571-14.848 21.723429-12.580571 30.866286-22.272 30.866286-49.152 8.009143 27.428571-0.585143 49.700571-18.285715 60.562286-10.861714 6.838857-30.866286 10.276571-47.433142 8.557714-13.129143-1.133714-21.138286 0.585143-24.576 5.705143-5.156571 6.290286-3.437714 17.700571 2.852571 32.585143s13.714286 24.576 12.580571 42.861714c-0.585143 18.285714-21.138286 40.009143-17.700571 55.442286 1.133714 5.705143 6.838857 10.861714 21.138286 14.848 22.857143 6.290286 64.585143 12.580571 105.142857 22.272 45.129143 11.446857 92.013714 32 121.161143 28.013714 86.857143-11.995429 37.156571-105.142857 23.442285-127.414857-73.728-115.419429-122.294857-190.866286-161.133714-161.133715-9.728 8.009143-10.276571-19.419429-9.728-30.281142 1.718857-37.705143 20.553143-51.419429 32-80.566858 21.723429-55.442286 38.290286-118.857143 71.424-151.442285 24.576-32 63.414857-84.004571 70.838857-111.433143-6.290286-59.428571-8.009143-122.294857-9.142857-177.152-1.133714-58.843429 8.009143-110.299429 74.276572-146.285714C431.469714 3.437714 452.608 0 474.88 0c39.424-0.585143 83.419429 10.861714 111.433143 31.414857 44.580571 33.133714 72.557714 103.424 69.156571 153.709714-2.304 39.424 4.571429 80.018286 17.152 122.294858 14.848 49.700571 38.290286 84.553143 75.995429 124.562285 45.129143 48.018286 80.566857 142.299429 90.843428 202.276572 9.142857 55.990857-3.437714 90.843429-15.433142 92.562285-18.285714 2.852571-29.696 60.562286-86.857143 58.294858-36.571429-1.718857-40.009143-23.442286-50.285715-42.276572-16.566857-29.147429-33.133714-20.004571-39.424 10.861714-3.437714 15.433143-1.133714 38.290286 3.986286 55.442286 10.276571 35.986286 6.838857 69.705143 0.585143 111.433143-11.995429 78.848 55.442286 93.696 100.571429 55.990857 44.580571-37.156571 54.272-42.861714 110.299428-62.281143 85.138286-29.147429 56.576-54.857143 10.861714-70.290285-41.142857-13.714286-42.861714-82.870857-28.013714-96 3.437714 74.276571 42.276571 85.138286 58.294857 95.414857z"/></svg>
+            </span>
+            <span class="dl-tile__name">Linux</span>
+            <span class="dl-tile__sub mono">AppImage · x64</span>
+          </a>
+        </div>
+      </div>
+
+      <div class="dl-group">
+        <p class="dl-group__label" data-i18n="dl.gAe">AE 扩展</p>
+        <p class="dl-group__desc" data-i18n="dl.gAeDesc">仅扩展主体，不含桌面应用。</p>
+        <div class="dl-row">
+          <a class="dl-tile" data-dl="cepWin" href="https://github.com/yancongya/iSparta-next/releases/latest/download/isparta-next-cep-win.zip" target="_blank" rel="noopener">
+            <span class="dl-tile__ico" aria-hidden="true">
+              <svg viewBox="0 0 1024 1024" fill="currentColor"><path d="M386.986667 737.28h118.613333l74.666667 146.773333h108.373333L512 421.12zM85.333333 128v768L401.92 128z m532.48 0L938.666667 887.893333V128z"/></svg>
+            </span>
+            <span class="dl-tile__name">Windows</span>
+            <span class="dl-tile__sub mono">cep-win.zip</span>
+          </a>
+          <a class="dl-tile" data-dl="cepMac" href="https://github.com/yancongya/iSparta-next/releases/latest/download/isparta-next-cep-mac.zip" target="_blank" rel="noopener">
+            <span class="dl-tile__ico" aria-hidden="true">
+              <svg viewBox="0 0 1024 1024" fill="currentColor"><path d="M386.986667 737.28h118.613333l74.666667 146.773333h108.373333L512 421.12zM85.333333 128v768L401.92 128z m532.48 0L938.666667 887.893333V128z"/></svg>
+            </span>
+            <span class="dl-tile__name">macOS</span>
+            <span class="dl-tile__sub mono">cep-mac.zip</span>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <p class="dl-note" data-i18n="dl.note">Windows / Linux 安装版支持应用内自动更新；AE 扩展由同一个安装包的组件页一次装完。</p>
+  </section>
+
+
   </main>
+  <!-- 页脚：参考 workbuddy.cn —— 深色通栏，左品牌+一句定位，右四列链接，
+       底部一条分隔线内的版权行，最下缘是超大描边字标（装饰，不承载信息）。 -->
   <footer class="foot">
     <div class="foot-inner">
-      <p><strong>iSparta-next</strong> · <span data-i18n="foot.note">基于经典 iSparta 与社区 fork 重构</span></p>
-      <p class="mono foot-links">
-        <a href="https://github.com/yancongya/iSparta-next" target="_blank" rel="noopener">GitHub</a>
-        <a href="https://github.com/yancongya/iSparta-next/releases" target="_blank" rel="noopener">Releases</a>
-        <a href="https://github.com/yancongya/iSparta-next/blob/master/LICENSE" target="_blank" rel="noopener" data-i18n="foot.license">许可证：MIT</a>
-        <a href="mailto:admin@itycon.cn" data-i18n="foot.contact">联系：admin@itycon.cn</a>
-        <a href="../README.md">README</a>
-      </p>
+      <div class="foot-brand">
+        <p class="foot-logo">ISPARTA<span>-next</span></p>
+        <p class="foot-note" data-i18n="foot.note">开源动图转换工作台。桌面拖文件批量转，AE 里直接导出合成。</p>
+      </div>
+      <nav class="foot-cols" aria-label="footer">
+        <div class="foot-col">
+          <p class="foot-col__t" data-i18n="foot.c1t">项目</p>
+          <a href="https://github.com/yancongya/iSparta-next" target="_blank" rel="noopener">GitHub</a>
+          <a href="https://github.com/yancongya/iSparta-next/blob/master/LICENSE" target="_blank" rel="noopener" data-i18n="foot.license">许可证：MIT</a>
+          <a href="../README.md">README</a>
+        </div>
+        <div class="foot-col">
+          <p class="foot-col__t" data-i18n="foot.c2t">下载</p>
+          <a href="https://github.com/yancongya/iSparta-next/releases" target="_blank" rel="noopener">Releases</a>
+          <a href="https://github.com/yancongya/iSparta-next/releases/latest/download/isparta-next-win-x64.exe" target="_blank" rel="noopener">Windows</a>
+          <a href="https://github.com/yancongya/iSparta-next/releases/latest/download/isparta-next-mac-arm64.zip" target="_blank" rel="noopener">macOS</a>
+        </div>
+        <div class="foot-col">
+          <p class="foot-col__t" data-i18n="foot.c3t">文档</p>
+          <a href="#about" data-i18n="nav.about">关于</a>
+          <a href="#shots" data-i18n="nav.shots">界面</a>
+          <a href="#ae" data-i18n="nav.ae">AE 扩展</a>
+        </div>
+        <div class="foot-col">
+          <p class="foot-col__t" data-i18n="foot.c4t">联系</p>
+          <a href="mailto:admin@itycon.cn" data-i18n="foot.contact">admin@itycon.cn</a>
+          <a href="https://github.com/yancongya/iSparta-next/issues" target="_blank" rel="noopener">问题反馈</a>
+        </div>
+      </nav>
+    </div>
+
+    <div class="foot-legal">
+      <p class="mono" data-i18n="foot.copyright">Copyright © 2026 iSparta-next · MIT License</p>
+    </div>
+
+    <!-- 装饰性超大描边字标：纯视觉收尾，aria-hidden 不进无障碍树。
+         有 WebGL 时由 setupFootGiant 把字栅格化成纹理，散成尘埃、鼠标靠近归位；
+         无 WebGL / 减少动效 / 初始化失败时 .foot-giant 原样显示（canvas 保持透明） -->
+    <div class="foot-giant-wrap">
+      <p class="foot-giant" id="foot-giant" aria-hidden="true">ISPARTA</p>
+      <canvas class="foot-giant-fx" id="foot-giant-fx" aria-hidden="true"></canvas>
     </div>
   </footer>
 
@@ -1323,7 +1359,7 @@
        本地副本 72KB + 43KB，GreenSock 标准许可允许自托管部署，许可头保留在文件内 -->
   <script src="assets/vendor/gsap.min.js"></script>
   <script src="assets/vendor/ScrollTrigger.min.js"></script>
-  <script src="i18n.js?v=20261008-copy1"></script>
-  <script src="main.js?v=20261008-copy1"></script>
+  <script src="i18n.js?v=20261008-hero1"></script>
+  <script src="main.js?v=20261009-footfx"></script>
 </body>
 </html>

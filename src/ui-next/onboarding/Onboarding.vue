@@ -1,46 +1,78 @@
 <template>
   <div class="ob" :class="{ 'ob--cep': isCep }">
-    <!-- 顶栏：窗口装饰 + 面板名 + 右上角设置（主题 · 语言） -->
+    <!-- 顶栏：拖拽区 + 面板名 + 右上角设置（主题 · 语言）；桌面独立窗另有自绘窗口按钮 -->
     <header class="ob-top">
-      <span class="ob-top__win" aria-hidden="true"><i></i><i></i><i></i></span>
       <span class="ob-top__name">{{ $t('obPanelName') }}</span>
 
-      <div class="ob-set">
-        <button
-          type="button"
-          class="ob-set__btn"
-          aria-haspopup="true"
-          :aria-expanded="popOpen ? 'true' : 'false'"
-          @click.stop="togglePop"
-        >
-          <is-icon name="settings" size="sm" />
-          <span class="ob-set__val">{{ themeLabel }}</span>
-          <span class="ob-set__sep" aria-hidden="true">·</span>
-          <span class="ob-set__val">{{ langLabel }}</span>
-        </button>
+      <div class="ob-top__right">
+        <div class="ob-set">
+          <button
+            type="button"
+            class="ob-set__btn"
+            aria-haspopup="true"
+            :aria-expanded="popOpen ? 'true' : 'false'"
+            @click.stop="togglePop"
+          >
+            <is-icon name="settings" size="sm" />
+            <span class="ob-set__val">{{ themeLabel }}</span>
+            <span class="ob-set__sep" aria-hidden="true">·</span>
+            <span class="ob-set__val">{{ langLabel }}</span>
+          </button>
 
-        <transition name="ob-pop">
-          <div v-if="popOpen" class="ob-set__pop" @click.stop>
-            <div class="ob-set__field">
-              <span class="ob-set__lbl">{{ $t('appearance') }}</span>
-              <is-segmented
-                :value="themeMode"
-                :options="themeOptions"
-                size="sm"
-                @change="applyTheme"
-              />
+          <transition name="ob-pop">
+            <div v-if="popOpen" class="ob-set__pop" @click.stop>
+              <div class="ob-set__field">
+                <span class="ob-set__lbl">{{ $t('appearance') }}</span>
+                <is-segmented
+                  :value="themeMode"
+                  :options="themeOptions"
+                  size="sm"
+                  @change="applyTheme"
+                />
+              </div>
+              <div class="ob-set__field">
+                <span class="ob-set__lbl">{{ $t('language') }}</span>
+                <is-segmented
+                  :value="langMode"
+                  :options="langOptions"
+                  size="sm"
+                  @change="applyLang"
+                />
+              </div>
             </div>
-            <div class="ob-set__field">
-              <span class="ob-set__lbl">{{ $t('language') }}</span>
-              <is-segmented
-                :value="langMode"
-                :options="langOptions"
-                size="sm"
-                @change="applyLang"
-              />
-            </div>
-          </div>
-        </transition>
+          </transition>
+        </div>
+
+        <!-- 窗口按钮：仅桌面独立窗（CEP 是 AE 面板，没有窗口可控制） -->
+        <div v-if="canControlWindow" class="ob-win">
+          <button
+            type="button"
+            class="ob-win__btn"
+            :title="$t('obWinMinimize')"
+            :aria-label="$t('obWinMinimize')"
+            @click="winMinimize"
+          >
+            <is-icon name="minus" size="xs" />
+          </button>
+          <button
+            type="button"
+            class="ob-win__btn"
+            :title="maximized ? $t('obWinRestore') : $t('obWinMaximize')"
+            :aria-label="maximized ? $t('obWinRestore') : $t('obWinMaximize')"
+            @click="winToggleMaximize"
+          >
+            <is-icon :name="maximized ? 'copy' : 'square'" size="xs" />
+          </button>
+          <button
+            type="button"
+            class="ob-win__btn ob-win__btn--danger"
+            :title="$t('obWinClose')"
+            :aria-label="$t('obWinClose')"
+            @click="winClose"
+          >
+            <is-icon name="close" size="xs" />
+          </button>
+        </div>
       </div>
     </header>
 
@@ -79,10 +111,12 @@
 
 <script>
 /**
- * 首启引导外壳（桌面 / CEP 共用）
+ * 首启引导外壳（桌面独立窗 / CEP 面板浮层 共用）
  *
- * 外框三部分：顶栏（含右上角设置）→ 进度点 → 内容区 + 页脚。
+ * 外框三部分：顶栏（拖拽区 + 设置 + 桌面窗口按钮）→ 进度点 → 内容区 + 页脚。
  * 环节要点：
+ *   · 桌面是 frameless 独立窗，顶栏必须挂 `-webkit-app-region: drag` 才能拖动窗口；
+ *     内部所有可点元素（设置胶囊、弹层、窗口按钮）都要显式 `no-drag`，否则点不动。
  *   · 主题**不自建状态**，一律读写 ThemeManager（与 Home.vue 共用同一实例，
  *     所以「引导里切了、主界面没变」不会发生）。
  *   · 语言写入 globalSetting.language 并同步 i18n.locale，值可为 'system'；
@@ -105,6 +139,9 @@ import FinishStep from './steps/FinishStep.vue'
 
 const LANG_LABELS = { 'zh-cn': '简体', 'zh-tw': '繁體', 'en-us': 'EN' }
 
+/** 宿主桥；CEP / browser-mock 下 windowApi.window 不存在，窗口按钮整组隐藏 */
+const windowApi = (typeof window !== 'undefined' && window.ispartaAPI) || null
+
 export default {
   name: 'Onboarding',
   components: { WelcomeStep, ImportStep, OutputStep, NamingStep, PathVarsStep, AeStep, FinishStep },
@@ -116,11 +153,14 @@ export default {
       themeMode: ThemeManager.getMode(),
       // 解析后的实际主题（'dark'|'light'），胶囊显示它；模式在弹层里选
       themeResolved: ThemeManager.get(),
-      langMode: MODE_SYSTEM
+      langMode: MODE_SYSTEM,
+      maximized: false
     }
   },
   computed: {
     isCep () { return hostAdapter.kind === 'cep' },
+    // 宿主窗口按钮是否存在：CEP 在 AE 面板里，没有窗口可最小化/最大化/关闭
+    canControlWindow () { return !!windowApi && windowApi.window },
     steps () {
       return [
         { key: 'welcome', component: WelcomeStep },
@@ -168,9 +208,14 @@ export default {
       this.themeMode = d.mode
       this.themeResolved = d.theme
     })
+    // 最大化状态会因双击拖拽区 / Win+↑ 变化，主进程推回来切图标
+    if (windowApi && windowApi.window && typeof windowApi.window.onMaximizedChange === 'function') {
+      this.unwatchMax = windowApi.window.onMaximizedChange((v) => { this.maximized = v })
+    }
   },
   beforeDestroy () {
     if (this.unwatchTheme) { this.unwatchTheme() }
+    if (this.unwatchMax) { this.unwatchMax() }
     document.removeEventListener('keydown', this.onKeydown)
     document.removeEventListener('click', this.onDocClick)
   },
@@ -194,6 +239,17 @@ export default {
     /** 跳过：与走完一样写完成标记，避免下次启动又弹 */
     skip () { onboarding.finish() },
     finish () { onboarding.finish() },
+
+    /* ---------- 窗口按钮（桌面独立窗） ---------- */
+    winMinimize () {
+      if (windowApi && windowApi.window) { windowApi.window.minimize() }
+    },
+    winToggleMaximize () {
+      if (windowApi && windowApi.window) { windowApi.window.toggleMaximize() }
+    },
+    winClose () {
+      if (windowApi && windowApi.window) { windowApi.window.close() }
+    },
 
     /* ---------- 右上角设置 ---------- */
     togglePop () { this.popOpen = !this.popOpen },
@@ -249,6 +305,7 @@ export default {
 .ob {
   position: fixed;
   inset: 0;
+  /* 桌面独立窗下 .ob 就是窗口本身（z-index 无意义）；CEP 仍是工作台上的浮层 */
   z-index: calc(var(--is-z-dialog) + 100);
   display: flex;
   flex-direction: column;
@@ -264,42 +321,76 @@ export default {
 /* ---------- 顶栏 ---------- */
 .ob-top {
   position: relative;
-  flex: 0 0 40px;
+  flex: 0 0 44px;
   display: flex;
   align-items: center;
   gap: var(--is-s-3);
-  padding: 0 var(--is-s-3);
+  /* 右侧留出窗口按钮的宽度，按钮才不会被顶到窗口边缘外 */
+  padding: 0 0 0 var(--is-s-5);
   background: var(--is-panel);
   border-bottom: 1px solid var(--is-border);
+  /* 桌面独立窗 frameless：整条顶栏是拖拽区，窗口才能被拖动 */
+  -webkit-app-region: drag;
 }
 
-.ob-top__win {
-  display: flex;
-  gap: 6px;
-  flex: 0 0 auto;
-}
-
-.ob-top__win i {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: var(--is-track);
-}
+/* 可点元素必须显式退出拖拽区，否则按钮按下被拖拽吞掉 */
+.ob-top__right,
+.ob-set__btn,
+.ob-win__btn { -webkit-app-region: no-drag; }
 
 .ob-top__name {
   flex: 1 1 auto;
   min-width: 0;
   font-size: var(--is-fs-sm);
-  color: var(--is-text-2);
+  color: var(--is-text-3);
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
 
-.ob--cep .ob-top__win { display: none; }
+.ob-top__right {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  align-self: stretch;
+}
+
+/* ---------- 窗口按钮 ---------- */
+.ob-win { display: flex; align-items: stretch; }
+
+.ob-win__btn {
+  width: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  color: var(--is-text-2);
+  cursor: pointer;
+  transition: background-color var(--is-dur-fast) var(--is-ease-std),
+    color var(--is-dur-fast) var(--is-ease-std);
+}
+
+.ob-win__btn:hover { background: var(--is-inset); color: var(--is-text); }
+.ob-win__btn:active { background: var(--is-track); }
+
+/* 关闭按钮 hover 走危险色，与其他平台惯例一致 */
+.ob-win__btn--danger:hover {
+  background: #d93025;
+  color: #fff;
+}
+
+/* CEP 窄面板不该有一排占 138px 的窗口按钮 */
+.ob--cep .ob-top { padding-right: 0; }
 
 /* ---------- 右上角设置 ---------- */
-.ob-set { position: relative; flex: 0 0 auto; }
+.ob-set {
+  position: relative;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  padding-right: var(--is-s-2);
+}
 
 .ob-set__btn {
   display: flex;
@@ -328,7 +419,8 @@ export default {
 .ob-set__pop {
   position: absolute;
   top: calc(100% + 8px);
-  right: 0;
+  /* 贴设置胶囊右侧；面板有窗口按钮时按钮在更右，这里仍对齐胶囊不越出窗口 */
+  right: var(--is-s-2);
   /* 296px：容得下「跟随系统 / 亮色 / 暗色」与「简体 / 繁體 / EN / 跟随系统」各一行，
      否则 IsSegmented 会折行。CEP 极窄 520 下仍在窗口内（left ≈ 224）。 */
   width: 296px;
@@ -341,6 +433,7 @@ export default {
   border: 1px solid var(--is-border-strong);
   background: var(--is-elevated);
   box-shadow: var(--is-shadow-lg);
+  -webkit-app-region: no-drag;
 }
 
 .ob-set__field {
@@ -412,8 +505,9 @@ export default {
   overflow-y: auto;
   padding: var(--is-s-2) var(--is-s-8) var(--is-s-6);
   width: 100%;
-  /* 720：输出页的「大小门槛」是左舞台 + 右设置的横向双栏，640 会把右侧压到折行 */
-  max-width: 720px;
+  /* 880：宽出 720 是为了末页 2×2 卡片横排（每列 ~420px，文字不必折成三行），
+     同时输出页的「大小门槛」左右双栏也不至于挤。仍窄于窗口时不留白边。 */
+  max-width: 880px;
   margin: 0 auto;
 }
 
@@ -479,6 +573,11 @@ export default {
   .ob-count { display: none; }
 }
 
+/* 窗口被拖窄到放不下两列时，卡片降为单列（先横排后滚动，而不是全程竖排） */
+@media (max-width: 700px) {
+  .ob-cards { grid-template-columns: minmax(0, 1fr); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .ob-dot,
   .ob-pop-enter-active,
@@ -504,12 +603,20 @@ export default {
   gap: var(--is-s-4);
 }
 
+/* 居中排版：标题/说明/按钮靠内容宽，但**网格类子元素必须显式撑满**。
+   flex column 的 align-items:center 会给子项 align-self:center，宽度退回
+   shrink-to-fit —— .ob-cards 那样 minmax(190px,1fr) 的 grid 只够排一列，
+   表现为卡片竖排 + 页面被迫滚动。 */
 .ob-pane--center {
   align-items: center;
   text-align: center;
   gap: var(--is-s-3);
   padding-top: var(--is-s-4);
 }
+
+.ob-pane--center > .ob-cards,
+.ob-pane--center > .ob-mini,
+.ob-pane--center > .ob-ways { width: 100%; }
 
 .ob-demo {
   display: flex;
@@ -546,16 +653,20 @@ export default {
 }
 
 /* ---------- 卡片网格 ---------- */
+/* 固定两列：auto-fit 在窄容器会退化成 1 列，导致末页四张卡竖排并需要滚动。
+   2×2 是「宽屏横排 / 窄屏单列」之间唯一稳定的形状。 */
 .ob-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--is-s-3);
 }
 
+/* 横排卡：2×2 布局下每列约 420px，竖排图标会把文字挤成窄条 */
 .ob-card {
   display: flex;
-  flex-direction: column;
-  gap: var(--is-s-2);
+  flex-direction: row;
+  align-items: flex-start;
+  gap: var(--is-s-3);
   padding: var(--is-s-4);
   border-radius: var(--is-r-md);
   border: 1px solid var(--is-border);
@@ -565,16 +676,29 @@ export default {
     transform var(--is-dur-base) var(--is-ease-out);
 }
 
+.ob-card__ico {
+  color: var(--is-accent);
+  display: flex;
+  /* 图标与标题文字的视觉中线对齐 */
+  padding-top: 2px;
+  flex: 0 0 auto;
+}
+
+/* 标题+说明占满余下宽度：flex 子项默认 min-width:auto 会被长英文撑破列宽 */
+.ob-card__body {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--is-s-1);
+  text-align: left;
+}
+
 /* 卡片不可点，但整块一起抬一下 —— 光标划过时才有「这是一张卡」的实感 */
 .ob-card:hover {
   border-color: var(--is-border-hi);
   background: var(--is-elevated);
   transform: translateY(-2px);
-}
-
-.ob-card__ico {
-  color: var(--is-accent);
-  display: flex;
 }
 
 .ob-card__title {
@@ -645,7 +769,6 @@ export default {
 @media (max-width: 480px) {
   .ob-h1 { font-size: var(--is-fs-xl); }
   .ob-h2 { font-size: var(--is-fs-lg); }
-  .ob-cards { grid-template-columns: 1fr; }
 }
 
 /* 降低动效：卡片只留描边/底色变化，不位移 */

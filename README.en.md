@@ -93,13 +93,27 @@ Details: [`docs/compose/ROADMAP-isparta-next.md`](docs/compose/ROADMAP-isparta-n
 
 ## Screenshots
 
-| Empty state (drop / paste / open) | Main workspace (tasks + output settings) |
-| :---: | :---: |
-| <img src="public/screenshot/empty.png" alt="Empty state: drop, paste, or open a folder" width="480"> | <img src="public/screenshot/main.png" alt="Main workspace with task list and output settings" width="480"> |
+> Single source of truth lives in [`docs/screenshots/`](docs/screenshots). After changing an image run `node scripts\sync-screenshots.js` to refresh the landing-page copy; `--check` verifies they have not drifted (CI runs it).
 
-| Default settings |
+**Desktop**
+
+| Workbench (task list + output settings) | Empty state (drop / paste / open) |
+| :---: | :---: |
+| <img src="docs/screenshots/desktop-workspace-hd.webp" alt="Desktop workbench with task list and output settings" width="480"> | <img src="docs/screenshots/desktop-empty.webp" alt="Empty state: drop, paste, or open a folder" width="480"> |
+
+| Default settings (language / theme / path vars / size cap) | Default settings (version & updates) |
+| :---: | :---: |
+| <img src="docs/screenshots/desktop-settings-general.webp" alt="Default settings: language, theme, output path variables, size limit" width="480"> | <img src="docs/screenshots/desktop-settings-update.webp" alt="Default settings: current version, update check and about" width="480"> |
+
+**AE extension** (same workbench, hosted in the After Effects panel)
+
+| Comp list | Comp tree |
+| :---: | :---: |
+| <img src="docs/screenshots/cep-task-list.webp" alt="AE extension: comp task list with selection, fps and frame count" width="480"> | <img src="docs/screenshots/cep-comp-tree.webp" alt="AE extension: comp tree with size, fps and frame count" width="480"> |
+
+| Output settings (path vars + size cap) |
 | :---: |
-| <img src="public/screenshot/settings.png" alt="Default settings: language, theme, fps, output path, size limit" width="480"> |
+| <img src="docs/screenshots/cep-output-settings.webp" alt="AE extension: output path variables and size limit settings" width="480"> |
 
 ## Download
 

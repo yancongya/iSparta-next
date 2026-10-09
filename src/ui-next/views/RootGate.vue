@@ -4,7 +4,7 @@
     <home />
 
     <transition name="rg-fade">
-      <onboarding v-if="open" />
+      <onboarding v-if="overlay" />
     </transition>
   </div>
 </template>
@@ -19,23 +19,30 @@
  *   桌面：src/router.js 的 `/` 路由 component → RootGate
  *   CEP ：src/cep/main.js 的 render → RootGate
  *
+ * ⚠ overlay 只对「没有自己的窗口可开」的一端为真：
+ *   · 桌面引导是独立无边框小窗（见 onboarding/state.js），此窗口只是工作台，
+ *     state.open 恒 false —— 早期版本在这里再叠一层会导致引导弹两次。
+ *   · CEP 在 AE 面板内，没有窗口可开，仍靠这层浮层。
+ *
  * 后续 W3 的启动进度页（BootSplash）也在这里分流，不新增入口。
  */
 import Home from './Home.vue'
 import Onboarding from '../onboarding/Onboarding.vue'
-import { state, shouldAutoOpen } from '../onboarding/state'
+import { state, shouldAutoOpen, open as openOnboarding } from '../onboarding/state'
+import hostAdapter from '../../util/host-env'
 
 export default {
   name: 'RootGate',
   components: { Home, Onboarding },
   computed: {
+    isStandalone () { return hostAdapter.kind === 'electron' },
     // state 是 Vue.observable 单例，引导内部的 close/finish 会直接驱动这里
-    open () { return state.open }
+    overlay () { return !this.isStandalone && state.open }
   },
   created () {
     // 挂载前判定：main.js 已完成 ThemeManager.init() / syncLocaleFromStorage()，
     // 此刻 storage 路径已绑定，读得到真实标记。
-    if (shouldAutoOpen()) { state.open = true }
+    if (shouldAutoOpen()) { openOnboarding() }
   }
 }
 </script>

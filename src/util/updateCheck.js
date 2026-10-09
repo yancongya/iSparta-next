@@ -185,10 +185,17 @@ export async function checkUpdate (deps) {
     return Object.assign({}, result, { state: 'disabled' })
   }
 
-  // 节流：非手动检查且 24h 内查过，直接回缓存，不发网络请求
+  // 节流：非手动检查且 24h 内查过，直接回缓存，不发网络请求。
+  // ⚠ `current` 是**本机版本**（本地事实），不能跟着缓存回滚 —— 缓存是上个会话写的，
+  //   用户热更新 / 装新版后 current 会停在旧值，界面就出现「当前版本 v3.6.0」与
+  //   「发现新版本 vX（当前 v3.4.1）」自相矛盾。故只复用 latest/notes/资产探测等远端信息。
   var since = now - (Number(d.lastCheckAt) || 0)
   if (!d.force && d.lastCheckAt && since < THROTTLE_MS && d.cachedResult) {
-    return Object.assign({}, d.cachedResult, { throttled: true, checkedAt: d.cachedResult.checkedAt || now })
+    return Object.assign({}, d.cachedResult, {
+      current: deps.currentVersion || d.cachedResult.current || '',
+      throttled: true,
+      checkedAt: d.cachedResult.checkedAt || now
+    })
   }
 
   var latest = null

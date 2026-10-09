@@ -224,6 +224,8 @@ module.exports = {
     // about & update check
     "aboutVersion":"Current version",
     "aboutVersionTip":"Release notes",
+    "aboutSite":"Visit website",
+    "aboutDesc":"Convert and compress PNG sequences, APNG, WebP and GIF — on desktop and in the AE extension.",
     "updateCheckNow":"Check for updates",
     "updateChecking":"Checking…",
     "updateAvailable":"Update {latest} available (current {current})",
@@ -264,6 +266,11 @@ module.exports = {
     "obPrev":"Back",
     "obNext":"Next",
     "obDone":"Get started",
+    //  Window buttons of the standalone frameless onboarding window
+    "obWinMinimize":"Minimize",
+    "obWinMaximize":"Maximize",
+    "obWinRestore":"Restore down",
+    "obWinClose":"Close",
     "obWelcomeSub":"PNG sequence / APNG / WebP / GIF conversion and compression",
     "obWelcomeHint":"Switch theme and language from the top-right at any time. Reopen this guide later with the \u201c?\u201d button in the top bar.",
     "obWelcomeLang":"Multilingual",

@@ -15,6 +15,20 @@ contextBridge.exposeInMainWorld('ispartaAPI', {
       ipcRenderer.on(channel, (event, ...args) => callback(...args))
     }
   },
+  // 无边框窗口的宿主动作（引导小窗自绘按钮用）。
+  // 独立成一组而非混进 ipc：这些是「窗口」语义，不是通用消息通道，
+  // 且 CEP / browser-mock 下整组不存在，调用方按存在性探测即可。
+  window: {
+    minimize: () => ipcRenderer.send('win:minimize'),
+    toggleMaximize: () => ipcRenderer.send('win:toggle-maximize'),
+    close: () => ipcRenderer.send('win:close'),
+    // 订阅最大化状态变化 → 返回取消订阅函数
+    onMaximizedChange: (callback) => {
+      const listener = (event, value) => callback(!!value)
+      ipcRenderer.on('win:maximized', listener)
+      return () => ipcRenderer.removeListener('win:maximized', listener)
+    }
+  },
   fs: {
     existsSync: (p) => sync('fs:existsSync', p),
     readDataUrl: (p) => sync('fs:readDataUrl', p),

@@ -61,6 +61,7 @@ export default {
   align-items: center;
   gap: var(--is-s-1);
   padding: var(--is-s-4) var(--is-s-3);
+  min-width: 0;
   border-radius: var(--is-r-md);
   border: 1px solid var(--is-border);
   background: var(--is-card);
@@ -93,6 +94,8 @@ export default {
   line-height: 1.5;
   color: var(--is-text-3);
   text-align: center;
+  /* 面板拉宽后三列各 ~270px，长文案（英文）仍会折行；这里按词换行而非撑破网格 */
+  overflow-wrap: anywhere;
 }
 
 @media (max-width: 480px) {

@@ -224,6 +224,8 @@ module.exports = {
     // 關於與更新檢查
     "aboutVersion":"目前版本",
     "aboutVersionTip":"更新說明",
+    "aboutSite":"前往官網",
+    "aboutDesc":"PNG 序列 / APNG / WebP / GIF 互轉與壓縮，桌面與 AE 擴充功能雙端可用。",
     "updateCheckNow":"檢查更新",
     "updateChecking":"檢查中…",
     "updateAvailable":"發現新版本 {latest}（目前 {current}）",
@@ -264,6 +266,11 @@ module.exports = {
     "obPrev":"上一步",
     "obNext":"下一步",
     "obDone":"開始使用",
+    //  引導獨立視窗的視窗按鈕（無邊框視窗自繪）
+    "obWinMinimize":"最小化",
+    "obWinMaximize":"最大化",
+    "obWinRestore":"向下還原",
+    "obWinClose":"關閉",
     "obWelcomeSub":"PNG 序列 / APNG / WebP / GIF 互轉與壓縮",
     "obWelcomeHint":"右上角可隨時切換佈景與語言；看完後可用頂欄「?」重新開啟本引導。",
     "obWelcomeLang":"多語言",

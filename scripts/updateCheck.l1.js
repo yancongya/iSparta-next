@@ -212,6 +212,25 @@ async function main () {
     ok('case9 throttle', r.throttled === true && r.state === 'latest' && s.calls.length === 0, { r, calls: s.calls.length })
   }
 
+  // 9b throttle：current 必须以本机版本为准，不被缓存里的旧值带偏。
+  // 回归：热更新 / 装新版后，界面曾出现「当前版本 v3.6.0」与「（当前 v3.4.1）」并存。
+  {
+    const cached = { state: 'available', current: '3.4.1', latest: '3.6.0', checkedAt: 1 }
+    const s = stub({
+      deps: {
+        force: false,
+        lastCheckAt: 1000000 - 1000,
+        now: 1000000,
+        cachedResult: cached,
+        currentVersion: '3.6.0'
+      },
+      head: () => { throw new Error('should not hit network') }
+    })
+    const r = await checkUpdate(s.deps)
+    ok('case9b throttle current not stale', r.current === '3.6.0' && r.latest === '3.6.0',
+      { current: r.current, latest: r.latest })
+  }
+
   // 10 skip
   {
     const s = stub({

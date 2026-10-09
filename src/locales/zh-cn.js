@@ -224,6 +224,8 @@ module.exports = {
     // 关于与更新检查
     "aboutVersion":"当前版本",
     "aboutVersionTip":"更新说明",
+    "aboutSite":"前往官网",
+    "aboutDesc":"PNG 序列 / APNG / WebP / GIF 互转与压缩，桌面与 AE 扩展双端可用。",
     "updateCheckNow":"检查更新",
     "updateChecking":"检查中…",
     "updateAvailable":"发现新版本 {latest}（当前 {current}）",
@@ -264,6 +266,11 @@ module.exports = {
     "obPrev":"上一步",
     "obNext":"下一步",
     "obDone":"开始使用",
+    // 引导独立窗的窗口按钮（无边框窗口自绘，悬浮提示与无障碍标签共用）
+    "obWinMinimize":"最小化",
+    "obWinMaximize":"最大化",
+    "obWinRestore":"向下还原",
+    "obWinClose":"关闭",
     "obWelcomeSub":"PNG 序列 / APNG / WebP / GIF 互转与压缩",
     "obWelcomeHint":"右上角可随时切换主题与语言；看完后可用顶栏「?」重新打开本引导。",
     "obWelcomeLang":"多语言",

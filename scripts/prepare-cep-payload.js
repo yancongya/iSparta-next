@@ -3,6 +3,8 @@
  * 输出：build/cep-payload/io.github.isparta-next/
  *   - targets/cep/**（排除开发文档与空 bin 说明）
  *   - 编码器小工具子集（targets/cep/bin 优先，否则 public/bin）
+ *   - install/ 安装辅助（Windows 的 Add Keys.reg、macOS 的 install-as-admin、
+ *     以及两份平台安装说明）—— 独立 zip 按平台取子集，见 pack-cep-zip.js --platform
  *   - version.json 版本清单
  * 用法：node scripts/prepare-cep-payload.js
  * 失败退出码 1。
@@ -65,6 +67,28 @@ function stageBinaries () {
   return staged
 }
 
+function stageInstallHelpers () {
+  // 安装辅助文件（注册表 / defaults 脚本 + 两份平台安装说明）随扩展一起分发。
+  // 放在 payload 的 install/ 下，打 zip 时由 pack-cep-zip.js --platform 取子集：
+  // Windows 包不该带 install-as-admin，macOS 包不该带 Add Keys.reg。
+  const src = path.join(root, 'public', 'install')
+  const dest = path.join(outExt, 'install')
+  if (!fs.existsSync(src)) {
+    console.warn('prepare-cep-payload WARN 缺少 public/install（独立 zip 将不含安装辅助）')
+    return []
+  }
+  fs.mkdirSync(dest, { recursive: true })
+  const staged = []
+  for (const name of fs.readdirSync(src)) {
+    if (SKIP_COPY.has(name)) continue
+    const from = path.join(src, name)
+    if (!fs.statSync(from).isFile()) continue
+    copyFile(from, path.join(dest, name))
+    staged.push(name)
+  }
+  return staged
+}
+
 function stageVersionJson (stagedBins) {
   const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'))
   const manifestPath = path.join(srcCep, 'CSXS', 'manifest.xml')
@@ -121,6 +145,7 @@ function main () {
   }
 
   const stagedBins = stageBinaries()
+  const stagedInstall = stageInstallHelpers()
   const win64 = stagedBins.filter((s) => s.startsWith('win64/'))
   if (!win64.length) {
     console.warn('prepare-cep-payload WARN 未暂存 win64 编码器（请拷贝 public/bin/win64 子集或 targets/cep/bin/win64）')
@@ -131,6 +156,7 @@ function main () {
   console.log('  out   ', path.relative(root, outExt))
   console.log('  version', doc.version, '/ ext', doc.extensionBundleVersion)
   console.log('  bins  ', stagedBins.length ? stagedBins.join(', ') : '(none)')
+  console.log('  install', stagedInstall.length ? stagedInstall.join(', ') : '(none)')
 }
 
 main()

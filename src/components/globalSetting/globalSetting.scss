@@ -37,6 +37,47 @@
     font-size: var(--is-fs-md);
   }
 
+  // 关于区：产品名 + 版本 + 一句说明 + 官网按钮，贴在设置面板最底部
+  .gs-about {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--is-s-4);
+    margin-bottom: var(--is-s-2);
+  }
+
+  .gs-about__text {
+    display: flex;
+    align-items: baseline;
+    // 窄面板（CEP 520）下允许换行，别把按钮挤出可视区
+    flex-wrap: wrap;
+    gap: var(--is-s-2);
+    min-width: 0;
+  }
+
+  .gs-about__name {
+    color: var(--is-text);
+    font-size: var(--is-fs-md);
+    font-weight: var(--is-fw-semi);
+  }
+
+  .gs-about__ver {
+    color: var(--is-text-3);
+    font-family: var(--is-font-mono, ui-monospace, monospace);
+    font-size: var(--is-fs-sm);
+  }
+
+  .gs-about__desc {
+    flex: 1 1 100%;
+    color: var(--is-text-3);
+    font-size: var(--is-fs-sm);
+    line-height: 1.5;
+  }
+
+  .gs-about > .is-button {
+    flex: none;
+  }
+
   // 检查更新状态常显行（不只 toast）
   .gs-update-status {
     margin: calc(var(--is-s-3) * -1) 0 var(--is-s-4);

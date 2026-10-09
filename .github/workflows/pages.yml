@@ -5,6 +5,9 @@ on:
     branches: [master]
     paths:
       - 'landing/**'
+      # 截图唯一真相源在 docs/screenshots/：改了它落地页也要跟着更新
+      - 'docs/screenshots/**'
+      - 'scripts/sync-screenshots.js'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
 
@@ -29,6 +32,16 @@ jobs:
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
+
+      # 截图同步：docs/screenshots/ → landing/assets/shots/。
+      # 放在上传前，保证 Pages 上的图永远与仓库源图一致（不依赖提交物是否同步过）。
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Sync screenshots
+        run: node scripts/sync-screenshots.js
 
       - name: Upload landing
         uses: actions/upload-pages-artifact@v3

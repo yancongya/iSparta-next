@@ -207,7 +207,9 @@ export async function runUpdateCheck (opts) {
     if (!result || typeof result !== 'object') {
       result = { state: 'error', current: (meta && meta.version) || '', latest: null }
     }
-    if (!result.current && meta && meta.version) {
+    // current 永远是本机版本：以本次实读的 meta 为准，覆盖任何来源（缓存 / CEP 桥
+    // 落盘的旧 version.json / env 强制版本）带来的陈旧值。
+    if (meta && meta.version && result.current !== meta.version) {
       result = Object.assign({}, result, { current: meta.version })
     }
 
@@ -569,9 +571,22 @@ export function getUpdateState () {
   return state
 }
 
+/**
+ * 启动时从 storage 恢复上次结果。
+ * 缓存里的 `current` 是**写它那会儿**的本机版本，会比当前代码旧（热更新、装新版后都如此），
+ * 故一律用本次实读的 meta.version 覆盖，只保留 latest/notes/资产探测等远端信息。
+ */
 export function bootstrapUpdateFromStorage () {
   var prefs = loadUpdatePrefs()
-  state.lastResult = prefs.lastResult
+  if (prefs.lastResult && typeof prefs.lastResult === 'object') {
+    loadMeta().then(function (meta) {
+      if (!meta || !meta.version) { return }
+      state.lastResult = Object.assign({}, state.lastResult, { current: meta.version })
+      refreshBadge()
+    }).catch(function () { /* 读不到版本就按缓存原样显示 */ })
+  } else {
+    state.lastResult = prefs.lastResult
+  }
   refreshBadge()
   return prefs
 }

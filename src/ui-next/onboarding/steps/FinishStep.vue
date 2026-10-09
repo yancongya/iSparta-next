@@ -7,8 +7,10 @@
     <ul class="ob-cards">
       <li v-for="c in cards" :key="c.title" class="ob-card">
         <span class="ob-card__ico"><is-icon :name="c.icon" size="md" /></span>
-        <span class="ob-card__title">{{ c.title }}</span>
-        <span class="ob-card__text">{{ c.text }}</span>
+        <span class="ob-card__body">
+          <span class="ob-card__title">{{ c.title }}</span>
+          <span class="ob-card__text">{{ c.text }}</span>
+        </span>
       </li>
     </ul>
 
