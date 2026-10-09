@@ -1991,14 +1991,16 @@
 
   /* ---------- 微交互：滚动进度 / 磁吸 / 倾斜 / 火花 ---------- */
   /**
-   * Hero 大标题：进场时字符乱序闪一下，随即归位（不绑 hover 重播）。
+   * Hero 大标题：进场时字符乱序闪一下随即归位；鼠标移入再闪一次。
    *
    * 实现要点（都是踩过的坑）：
-   *  · 必须把标题按「字符」拆成 <span class="sc">，单个字符才能独立位移；
+   *  · 必须把标题按「字符」拆成 <span class="sc">，单个字符才能独立替换；
    *    拆完要把原文本记下来，语言切换时按新文本重新拆。
    *  · 乱序时**不能整段替换 textContent** —— 那样每次都要重排 span，
    *    动画会被打断。改成只改 span 的 textContent。
    *  · 中文没有空格，按字拆即可；含空格的文案（英文）保留空格不参与乱序。
+   *  · hover 重播必须上锁（armed）。中文字换成窄的拉丁字符会让 h1 的盒子在指针
+   *    底下伸缩，mouseenter/leave 被反复触发 —— 指针明明没动却在持续乱序。
    *  · 无 GSAP / 用户偏好减少动效时，直接不做任何事（标题保持静态可读）。
    */
   const SCRAMBLE_CHARS = "abcdefghijklmnopqrstuvwxyz0123456789/*+-<>[]{}#@%&";
@@ -2038,8 +2040,7 @@
     function play() {
       if (tl) tl.kill();
       rollWindows();
-      // 0.1s：只在进场时闪一下就归位。曾用 0.34s 且挂 mouseenter 重播，
-      // 结果鼠标扫过标题就持续乱序，反而看不清字 —— 一次短闪才像「解码完成」。
+      // 0.1s：闪一下就归位。曾用 0.34s，鼠标扫过标题时要等半秒才看清写的什么。
       tl = window.gsap.timeline();
       tl.to({}, {
         duration: 0.1,
@@ -2075,6 +2076,21 @@
 
     splitChars();
     schedulePlay();
+
+    /**
+     * hover 重播，上锁防连击。
+     * 中文字换成窄的拉丁字符时 h1 的盒子会在指针底下伸缩，pointerenter/leave
+     * 于是被反复触发 —— 指针一动不动却在持续乱序（上锁前的老毛病）。
+     * armed 只在指针真正离开后才复位。
+     */
+    var armed = true;
+    title.addEventListener("pointerenter", function () {
+      if (!armed) return;
+      armed = false;
+      play();
+    });
+    title.addEventListener("pointerleave", function () { armed = true; });
+
     // 语言切换会重写文案 → 重新拆并重闪一次
     document.addEventListener("is:lang-applied", function () {
       splitChars();

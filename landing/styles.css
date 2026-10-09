@@ -701,7 +701,7 @@ html[data-theme="dark"] .hero-actions .btn-primary {
   opacity: 1;
 }
 
-/* 乱序标题：进场时字符随机乱一次（GSAP 驱动，见 main.js setupHeroScramble）。
+/* 乱序标题：进场与鼠标移入时字符随机乱一次（GSAP 驱动，见 main.js setupHeroScramble）。
    字符拆成 inline-block 才能单独替换；无 GSAP / 减少动效时保持静态。 */
 .hero-title--scramble {
   cursor: default;
