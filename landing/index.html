@@ -28,7 +28,7 @@
 
   <link rel="icon" href="assets/icon.png" />
   <link rel="apple-touch-icon" href="assets/icon.png" />
-  <link rel="stylesheet" href="styles.css?v=20261009-alt-head2" />
+  <link rel="stylesheet" href="styles.css?v=20261010-merge" />
 
   <!-- Structured data -->
   <script type="application/ld+json">
@@ -313,6 +313,60 @@
         <p>桌面端与 AE 扩展共用同一套压缩 / 合成 / 降质算法，输出的大小规则与命名习惯完全一致。</p>
       </article>
     </div>
+    <!-- 工程要点横轨：原 09 · WHY NEXT 段落。
+         去掉与上面卡片重复的三条（体积可控 / 批量与路径 / 两端同一颗引擎），
+         只留四条工程侧说明；纵向滚动经 ScrollTrigger pin 驱动横向位移，
+         无 JS / 减少动效时退回成原生可横向滚动的容器。 -->
+    <div class="rail" id="rail-why">
+      <div class="rail__head">
+        <p class="rail__title" data-i18n="why.h2">不是缝缝补补，是整台重做</p>
+        <p class="rail__hint mono" data-i18n="why.railHint">向下滚动 · 横向浏览</p>
+      </div>
+      <div class="rail__viewport">
+        <div class="rail__track">
+        <article class="why-card">
+          <div class="why-ill" aria-hidden="true">
+            <svg viewBox="0 0 64 40" class="why-svg"><rect x="8" y="8" width="48" height="28" rx="6" class="wy-box"/><path d="M20 22h24M32 14v16" class="wy-stroke wy-plus"/><circle cx="48" cy="14" r="3" class="wy-dot"/></svg>
+          </div>
+          <p class="why-card__tag mono" data-i18n="why.tag1">运行时</p>
+          <h3 data-i18n="why.1t">Electron 28 · 安全隔离</h3>
+          <p data-i18n="why.1d">contextIsolation、sandbox，能力走 IPC 白名单，不再依赖 remote / 裸 Node。</p>
+        </article>
+        <article class="why-card">
+          <div class="why-ill" aria-hidden="true">
+            <svg viewBox="0 0 64 40" class="why-svg"><rect x="6" y="6" width="22" height="28" rx="4" class="wy-box"/><rect x="34" y="6" width="24" height="12" rx="3" class="wy-fill"/><rect x="34" y="22" width="24" height="12" rx="3" class="wy-box"/></svg>
+          </div>
+          <p class="why-card__tag mono" data-i18n="why.tag2">界面</p>
+          <h3 data-i18n="why.2t">自研工作台</h3>
+          <p data-i18n="why.2d">两栏任务列表、亮暗主题、前后对比；不再绑定 Element UI。</p>
+        </article>
+        <article class="why-card">
+          <div class="why-ill" aria-hidden="true">
+            <svg viewBox="0 0 64 40" class="why-svg"><path d="M32 6l18 8v10c0 10-8 16-18 20-10-4-18-10-18-20V14z" class="wy-box"/><path d="M24 22l6 6 12-12" class="wy-stroke"/></svg>
+          </div>
+          <p class="why-card__tag mono" data-i18n="why.tag5">依赖</p>
+          <h3 data-i18n="why.5t">安全基线</h3>
+          <p data-i18n="why.5d">libwebp 1.5（修 CVE-2023-4863）；受控 execFile，降低注入风险。</p>
+        </article>
+        <article class="why-card">
+          <div class="why-ill" aria-hidden="true">
+            <svg viewBox="0 0 64 40" class="why-svg"><circle cx="18" cy="20" r="8" class="wy-box"/><circle cx="46" cy="12" r="6" class="wy-fill"/><circle cx="46" cy="28" r="6" class="wy-box"/><path d="M26 20h12M40 14l-4 4M40 26l-4-4" class="wy-stroke"/></svg>
+          </div>
+          <p class="why-card__tag mono" data-i18n="why.tag6">发版</p>
+          <h3 data-i18n="why.6t">三端 CI</h3>
+          <p data-i18n="why.6d">GitHub Actions 构建 Win / macOS / Linux，自动版本与 Release Notes。</p>
+        </article>
+        <article class="why-card">
+          <div class="why-ill" aria-hidden="true">
+            <svg viewBox="0 0 64 40" class="why-svg"><path d="M26 6l-10 18h10l-4 10 16-20H28z" class="wy-fill"/><path d="M10 30h10M44 30h10" class="wy-stroke"/></svg>
+          </div>
+          <p class="why-card__tag mono" data-i18n="why.tag8">开发</p>
+          <h3 data-i18n="why.8t">热更新开发链路</h3>
+          <p data-i18n="why.8d">桌面与 CEP 面板都接开发服务器，改代码即时生效，免去反复重装重启。</p>
+        </article>
+        </div>
+      </div>
+    </div>
   </section>
 
 
@@ -581,60 +635,7 @@
   </section>
 
   <!-- compare: real before/after wipe on repo's own test fixture -->
-  <section class="section section-compare" id="compare">
-    <div class="section-head">
-      <p class="eyebrow mono" data-i18n="cmp.eb">05 · COMPARE</p>
-      <h2 data-i18n="cmp.h2">拖一下，看 GIF 把边缘吃掉了</h2>
-      <p class="section-sub" data-i18n="cmp.sub">
-        同一帧素材，左边是 PNG 序列原帧，右边是实际导出结果。切换格式后拖动分隔线：GIF 只有 2 级透明，边缘全是锯齿；APNG / WebP 保留了完整的半透明过渡。
-      </p>
-    </div>
-
-    <div class="cmp-board">
-      <div
-        class="is-compare"
-        id="cmp-stage"
-        tabindex="0"
-        role="slider"
-        aria-label="前后对比"
-        data-i18n-aria="cmp.aria"
-        aria-valuemin="0"
-        aria-valuemax="100"
-        aria-valuenow="50"
-      >
-        <div class="is-compare__canvas is-checker">
-          <img class="is-compare__base" id="cmp-base" src="assets/cmp-src.png" alt="PNG 序列原帧" width="300" height="300" draggable="false" />
-          <img class="is-compare__over" id="cmp-over" src="assets/cmp-apng.png" alt="APNG 导出首帧" width="300" height="300" draggable="false" />
-          <span class="is-compare__tag is-compare__tag--l mono" data-i18n="cmp.src">原帧</span>
-          <span class="is-compare__tag is-compare__tag--r mono" id="cmp-over-tag">APNG</span>
-        </div>
-        <div class="is-compare__divider" id="cmp-divider">
-          <span class="is-compare__grip" aria-hidden="true">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M5 3 2 7l3 4M9 3l3 4-3 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </span>
-        </div>
-      </div>
-
-      <aside class="cmp-side">
-        <div class="cmp-tabs" role="tablist" aria-label="导出格式">
-          <button type="button" role="tab" class="cmp-tab is-on" data-cmp="apng" aria-selected="true">APNG</button>
-          <button type="button" role="tab" class="cmp-tab" data-cmp="gif" aria-selected="false">GIF</button>
-          <button type="button" role="tab" class="cmp-tab" data-cmp="webp" aria-selected="false">WebP</button>
-        </div>
-
-        <dl class="cmp-stats" id="cmp-stats" aria-live="polite"></dl>
-
-        <p class="cmp-note" data-i18n="cmp.note">
-          数据取自本仓库 test/ 下的同一素材（300×300 · 13 帧）实测，非示意值。
-        </p>
-        <p class="cmp-hint mono" data-i18n="cmp.hint">拖动分隔线 · 或聚焦后按 ← →</p>
-      </aside>
-    </div>
-  </section>
-  <div class="film-holes" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
-
-
-  <section class="section section-ae" id="ae">
+    <section class="section section-ae" id="ae">
     <div class="section-head">
       <p class="eyebrow mono" data-i18n="ae.eb">06 · AFTER EFFECTS</p>
       <h2 data-i18n="ae.h2">同步支持 CEP 端一步安装！</h2>
@@ -1083,80 +1084,7 @@
 
 
   <!-- lineage + why + authors at the end -->
-  <section class="section section-why" id="why">
-    <div class="section-head">
-      <p class="eyebrow mono" data-i18n="why.eb">09 · WHY NEXT</p>
-      <h2 data-i18n="why.h2">不是旧版补丁，是重做过的工作台</h2>
-      <p class="section-sub" data-i18n="why.sub">原版长期停更；本仓库在社区 fork 基建上重写前后端，而不是只修几个按钮。</p>
-    </div>
-    <div class="why-cards">
-      <article class="why-card">
-        <div class="why-ill" aria-hidden="true">
-          <svg viewBox="0 0 64 40" class="why-svg"><rect x="8" y="8" width="48" height="28" rx="6" class="wy-box"/><path d="M20 22h24M32 14v16" class="wy-stroke wy-plus"/><circle cx="48" cy="14" r="3" class="wy-dot"/></svg>
-        </div>
-        <p class="why-card__tag mono" data-i18n="why.tag1">运行时</p>
-        <h3 data-i18n="why.1t">Electron 28 · 安全隔离</h3>
-        <p data-i18n="why.1d">contextIsolation、sandbox，能力走 IPC 白名单，不再依赖 remote / 裸 Node。</p>
-      </article>
-      <article class="why-card">
-        <div class="why-ill" aria-hidden="true">
-          <svg viewBox="0 0 64 40" class="why-svg"><rect x="6" y="6" width="22" height="28" rx="4" class="wy-box"/><rect x="34" y="6" width="24" height="12" rx="3" class="wy-fill"/><rect x="34" y="22" width="24" height="12" rx="3" class="wy-box"/></svg>
-        </div>
-        <p class="why-card__tag mono" data-i18n="why.tag2">界面</p>
-        <h3 data-i18n="why.2t">自研工作台</h3>
-        <p data-i18n="why.2d">两栏任务列表、亮暗主题、前后对比；不再绑定 Element UI。</p>
-      </article>
-      <article class="why-card">
-        <div class="why-ill" aria-hidden="true">
-          <svg viewBox="0 0 64 40" class="why-svg"><path d="M8 28c8-16 16-16 24 0s16 16 24 0" class="wy-stroke"/><circle cx="32" cy="14" r="4" class="wy-dot"/><path d="M28 32h8" class="wy-stroke"/></svg>
-        </div>
-        <p class="why-card__tag mono" data-i18n="why.tag3">导出</p>
-        <h3 data-i18n="why.3t">自动压小 · 存放随心 · 命名可控</h3>
-        <p data-i18n="why.3d">大小超限自动降质量重压；保存位置和文件名都由你拼。</p>
-      </article>
-      <article class="why-card">
-        <div class="why-ill" aria-hidden="true">
-          <svg viewBox="0 0 64 40" class="why-svg"><rect x="8" y="10" width="12" height="20" rx="2" class="wy-box"/><rect x="26" y="6" width="12" height="28" rx="2" class="wy-fill"/><rect x="44" y="12" width="12" height="16" rx="2" class="wy-box"/><path d="M8 34h48" class="wy-stroke"/></svg>
-        </div>
-        <p class="why-card__tag mono" data-i18n="why.tag4">批量</p>
-        <h3 data-i18n="why.4t">任务流水线</h3>
-        <p data-i18n="why.4d">多选、粘贴导入、全局默认设置、四态进度与批量开始。</p>
-      </article>
-      <article class="why-card">
-        <div class="why-ill" aria-hidden="true">
-          <svg viewBox="0 0 64 40" class="why-svg"><path d="M32 6l18 8v10c0 10-8 16-18 20-10-4-18-10-18-20V14z" class="wy-box"/><path d="M24 22l6 6 12-12" class="wy-stroke"/></svg>
-        </div>
-        <p class="why-card__tag mono" data-i18n="why.tag5">依赖</p>
-        <h3 data-i18n="why.5t">安全基线</h3>
-        <p data-i18n="why.5d">libwebp 1.5（修 CVE-2023-4863）；受控 execFile，降低注入风险。</p>
-      </article>
-      <article class="why-card">
-        <div class="why-ill" aria-hidden="true">
-          <svg viewBox="0 0 64 40" class="why-svg"><circle cx="18" cy="20" r="8" class="wy-box"/><circle cx="46" cy="12" r="6" class="wy-fill"/><circle cx="46" cy="28" r="6" class="wy-box"/><path d="M26 20h12M40 14l-4 4M40 26l-4-4" class="wy-stroke"/></svg>
-        </div>
-        <p class="why-card__tag mono" data-i18n="why.tag6">发版</p>
-        <h3 data-i18n="why.6t">三端 CI</h3>
-        <p data-i18n="why.6d">GitHub Actions 构建 Win / macOS / Linux，自动版本与 Release Notes。</p>
-      </article>
-      <article class="why-card">
-        <div class="why-ill" aria-hidden="true">
-          <svg viewBox="0 0 64 40" class="why-svg"><rect x="6" y="10" width="22" height="24" rx="4" class="wy-box"/><rect x="36" y="10" width="22" height="24" rx="4" class="wy-fill"/><path d="M28 20h8" class="wy-stroke"/><path d="M33 17l3 3-3 3" class="wy-stroke"/></svg>
-        </div>
-        <p class="why-card__tag mono" data-i18n="why.tag7">扩展</p>
-        <h3 data-i18n="why.7t">CEP 面板同步重做</h3>
-        <p data-i18n="why.7d">After Effects 面板复用同一套组件与设计令牌，不是另做一套缩水界面。</p>
-      </article>
-      <article class="why-card">
-        <div class="why-ill" aria-hidden="true">
-          <svg viewBox="0 0 64 40" class="why-svg"><path d="M26 6l-10 18h10l-4 10 16-20H28z" class="wy-fill"/><path d="M10 30h10M44 30h10" class="wy-stroke"/></svg>
-        </div>
-        <p class="why-card__tag mono" data-i18n="why.tag8">开发</p>
-        <h3 data-i18n="why.8t">热更新开发链路</h3>
-        <p data-i18n="why.8d">桌面与 CEP 面板都接开发服务器，改代码即时生效，免去反复重装重启。</p>
-      </article>
-    </div>
-  </section>
-
+  
   <section class="section section-lineage" id="lineage">
     <div class="section-head">
       <p class="eyebrow mono" data-i18n="lineage.eb">10 · LINEAGE</p>
@@ -1433,7 +1361,7 @@
        本地副本 72KB + 43KB，GreenSock 标准许可允许自托管部署，许可头保留在文件内 -->
   <script src="assets/vendor/gsap.min.js"></script>
   <script src="assets/vendor/ScrollTrigger.min.js"></script>
-  <script src="i18n.js?v=20261009-shots-lb"></script>
-  <script src="main.js?v=20261009-shots-lb"></script>
+  <script src="i18n.js?v=20261010-merge"></script>
+  <script src="main.js?v=20261010-merge"></script>
 </body>
 </html>

@@ -1307,153 +1307,6 @@
   }
 
 
-  /* ---------- 04 · COMPARE：真实前后擦除对比 ---------- */
-  // 数据全部来自本仓库 test/ 下同一素材（300x300 · 13 帧）的实测值，非示意
-  const CMP_SRC = { size: "1028.5 KB", alpha: 141, semi: "25.6%", colors: 19490 };
-  const CMP = {
-    apng: { img: "assets/cmp-apng.png", tag: "APNG", size: "244.6 KB", vs: "-76.2%", alpha: 27, semi: "25.7%", colors: 244, alphaOk: true },
-    gif:  { img: "assets/cmp-gif.png",  tag: "GIF",  size: "270.1 KB", vs: "-73.7%", alpha: 2,  semi: "0%",    colors: 233, alphaOk: false },
-    webp: { img: "assets/cmp-webp.png", tag: "WebP", size: "438.2 KB", vs: "-57.4%", alpha: 27, semi: "25.7%", colors: 10323, alphaOk: true }
-  };
-
-  function cmpLabels() {
-    return isEn()
-      ? { size: "File size", vs: "vs source", alpha: "Alpha levels", semi: "Semi-transparent", colors: "Colors" }
-      : { size: "整段体积", vs: "相对源序列", alpha: "Alpha 级数", semi: "半透明像素", colors: "颜色数" };
-  }
-
-  function renderCmpStats(key) {
-    const el = document.getElementById("cmp-stats");
-    const d = CMP[key];
-    if (!el || !d) return;
-    const L = cmpLabels();
-    const rows = [
-      [L.size, d.size, ""],
-      [L.vs, d.vs, "is-ok"],
-      [L.alpha, String(d.alpha), d.alphaOk ? "is-ok" : "is-bad"],
-      [L.semi, d.semi, d.alphaOk ? "is-ok" : "is-bad"],
-      [L.colors, d.colors.toLocaleString("en-US"), ""]
-    ];
-    el.innerHTML = rows
-      .map(function (r) {
-        return '<dt>' + r[0] + '</dt><dd class="' + r[2] + '">' + r[1] + "</dd>";
-      })
-      .join("");
-    // 数值跳动：让「切换格式」有可见因果
-    if (!reduceMotion) {
-      el.querySelectorAll("dd").forEach(function (dd, i) {
-        window.setTimeout(function () {
-          dd.classList.remove("is-flash");
-          void dd.offsetWidth;
-          dd.classList.add("is-flash");
-        }, i * 45);
-      });
-    }
-  }
-
-  function setupCompare() {
-    const stage = document.getElementById("cmp-stage");
-    const over = document.getElementById("cmp-over");
-    const tag = document.getElementById("cmp-over-tag");
-    if (!stage || !over) return;
-
-    let target = 50;
-    let pos = 50;
-    let raf = null;
-    let dragging = false;
-
-    function paint() {
-      stage.style.setProperty("--cmp-pos", pos.toFixed(2) + "%");
-      stage.setAttribute("aria-valuenow", String(Math.round(pos)));
-    }
-
-    function tick() {
-      const diff = target - pos;
-      if (Math.abs(diff) < 0.1) {
-        pos = target;
-        paint();
-        raf = null;
-        return;
-      }
-      // 阻尼跟随：手柄不粘指针，带一点追手感（与应用内对比滑块同一配方）
-      pos += diff * 0.22;
-      paint();
-      raf = window.requestAnimationFrame(tick);
-    }
-
-    function kick() {
-      if (reduceMotion) {
-        pos = target;
-        paint();
-        return;
-      }
-      if (raf === null) raf = window.requestAnimationFrame(tick);
-    }
-
-    function fromClientX(x) {
-      const r = stage.getBoundingClientRect();
-      if (!r.width) return;
-      target = Math.max(0, Math.min(100, ((x - r.left) / r.width) * 100));
-      kick();
-    }
-
-    stage.addEventListener("pointerdown", function (e) {
-      dragging = true;
-      stage.classList.add("is-dragging");
-      if (stage.setPointerCapture) {
-        try { stage.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
-      }
-      fromClientX(e.clientX);
-      e.preventDefault();
-    });
-    stage.addEventListener("pointermove", function (e) {
-      if (dragging) fromClientX(e.clientX);
-    });
-    function endDrag() {
-      dragging = false;
-      stage.classList.remove("is-dragging");
-    }
-    stage.addEventListener("pointerup", endDrag);
-    stage.addEventListener("pointercancel", endDrag);
-
-    stage.addEventListener("keydown", function (e) {
-      if (e.key === "ArrowLeft") { target = Math.max(0, target - 4); }
-      else if (e.key === "ArrowRight") { target = Math.min(100, target + 4); }
-      else if (e.key === "Home") { target = 0; }
-      else if (e.key === "End") { target = 100; }
-      else return;
-      e.preventDefault();
-      kick();
-    });
-
-    let curKey = "apng";
-    // 语言切换后统计标签要跟着换（i18n 只重写带 data-i18n 的节点，JS 生成的内容得自己重渲染）
-    document.addEventListener("is:lang-change", function () {
-      renderCmpStats(curKey);
-    });
-
-    document.querySelectorAll(".cmp-tab").forEach(function (tab) {
-      tab.addEventListener("click", function () {
-        const key = tab.getAttribute("data-cmp");
-        const d = CMP[key];
-        if (!d) return;
-        curKey = key;
-        document.querySelectorAll(".cmp-tab").forEach(function (t) {
-          const on = t === tab;
-          t.classList.toggle("is-on", on);
-          t.setAttribute("aria-selected", on ? "true" : "false");
-        });
-        over.src = d.img;
-        if (tag) tag.textContent = d.tag;
-        renderCmpStats(key);
-      });
-    });
-
-    renderCmpStats(curKey);
-    paint();
-  }
-
-
   /* ---------- 04 · RUN LOG：与 IsLogPanel 同构的演示板 ---------- */
   const LOG_SCRIPT = [
     { level: "info", msg: "导入目录 frames · 识别 24 帧 PNG", detail: "" },
@@ -1978,7 +1831,6 @@
 
   resolveLatestDownloads();
 
-  setupCompare();
   setupLogBoard();
   setupAeStage();
   setupScroll();
@@ -2732,7 +2584,79 @@
 
   setupHeroScramble();
   setupHeroCta();
+/**
+ * 工程要点横轨：纵向滚动驱动横向位移（scrub，不 pin）。
+ *
+ * 最初用 pin + pinSpacing，试下来轨道下方会空出约 280px —— pin 期间该段是
+ * fixed，pin 补出来的间距要等下一段滚上来才填上，中间就是一段空洞。
+ * 改成不 pin：轨道随段落正常滚过视口，只在它可见的那段滚动区间里横向滑动。
+ * 同样是「纵向滚动带出横向浏览」，但不冻结布局，也就不会和 sticky 顶栏打架。
+ *
+ * 四道闸，任一条不满足就退回原生横滚容器：
+ *  1. 减少动效 —— scrub 是典型的晕动症来源，必须整个关掉。
+ *  2. 无 GSAP / ScrollTrigger —— 自托管脚本没加载失败时不能留半截行为。
+ *  3. 轨道没溢出 —— 视口比轨道还宽就没有横着看的必要。
+ *  4. 窄屏 —— 卡片本来就排得下，强行横移反而更难读。
+ */
+function setupRail() {
+  var rail = document.getElementById("rail-why")
+  if (!rail) return
+  var viewport = rail.querySelector(".rail__viewport")
+  var track = rail.querySelector(".rail__track")
+  if (!viewport || !track) return
+
+  function fallback() {
+    rail.classList.add("rail--static")
+    track.style.transform = ""
+  }
+
+  if (reduceMotion || !hasGsap || !window.ScrollTrigger) return fallback()
+
+  function shift() {
+    return Math.max(0, track.scrollWidth - viewport.clientWidth)
+  }
+
+  function usable() {
+    // 溢出不足半屏，或视口本身很窄，都没有横着看的必要
+    return shift() > viewport.clientWidth * 0.35 && window.innerWidth > 860
+  }
+
+  if (!usable()) return fallback()
+
+  rail.classList.add("rail--driven")
+
+  window.ScrollTrigger.create({
+    trigger: rail,
+    // 轨道底部碰到视口底部就开始推，完全滚出视口顶就结束。
+    // 不 pin，所以这段区间正好等于轨道在视口里穿过的距离。
+    start: "top bottom",
+    end: "bottom top",
+    scrub: 0.6,
+    invalidateOnRefresh: true,
+    onUpdate: function (self) {
+      track.style.transform = "translate3d(" + -shift() * self.progress + "px,0,0)"
+    },
+  })
+
+  // 视口尺寸变了（旋转 / 改窗口 / 移动端地址栏收起）要重新判定能不能用
+  var rt = 0
+  window.addEventListener("resize", function () {
+    clearTimeout(rt)
+    rt = setTimeout(function () {
+      if (usable()) {
+        if (rail.classList.contains("rail--static")) {
+          rail.classList.remove("rail--static")
+          rail.classList.add("rail--driven")
+        }
+      } else {
+        fallback()
+      }
+    }, 220)
+  })
+}
+
   setupMicro();
+  setupRail();
   setupShotsTabs();
   setupFootGiant();
 })();
