@@ -291,8 +291,8 @@
     "en-US": {
       "about.railHint": "Scroll down · browse sideways",
       "about.h2a": "What is iSparta-next?",
-      "about.h2b": "A modern successor to the stalled iSparta",
-      "about.sub1": "An open-source, cross-platform desktop converter for designers and front-enders working with",
+      "about.h2b": "A modern successor to iSparta",
+      "about.sub1": "An open-source, cross-platform desktop converter for designers working with",
       "about.subFmt": "PNG sequences, APNG, Animated WebP and GIF",
       "about.sub2": ". Everything else is on the rail to the right — scroll it sideways.",
       "seo.fmt.t": "Format conversion",
