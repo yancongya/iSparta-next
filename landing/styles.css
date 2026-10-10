@@ -3163,6 +3163,32 @@ html[data-theme="dark"] .cmp-tab.is-on { color: #0c0f0e; }
   overscroll-behavior-x: contain;
   scrollbar-width: thin;
   padding-bottom: 8px;
+
+  /* 左右羽化：卡片在屏幕边缘被硬切（尤其 driven 形态下轨道被推到最左/最右）很生硬。
+     用 mask 让卡片自身淡出，而不是盖一层半透明灰 —— overlay 会在卡片上留一层脏色。
+     -webkit- 前缀给 Safari（它要 -webkit-mask-image）。
+     注意：mask-image 会让元素成为绝对定位后代的包含块（同 backdrop-filter），
+     这里 viewport 内只有 .rail__track，没有 sticky/absolute 后代，安全。
+
+     羽化宽度由 --fade-l / --fade-r 控制（driven 形态下由 main.js 按剩余量写入）：
+     固定羽化会把首张卡与末张卡一起淡掉，看着像没对齐；只有那一侧外面
+     确实还有内容时才需要羽化。退化形态没人写这两个变量，走下面的默认值。 */
+  --fade-l: 88px;
+  --fade-r: 136px;
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    #000 var(--fade-l),
+    #000 calc(100% - var(--fade-r)),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    #000 var(--fade-l),
+    #000 calc(100% - var(--fade-r)),
+    transparent 100%
+  );
 }
 
 .rail__track {
@@ -3370,7 +3396,7 @@ html[data-theme="dark"] .cmp-tab.is-on { color: #0c0f0e; }
    在这里显得又空又大 —— 每张卡的文字只占卡片一半宽，右侧一片空白。
    整组按半栏收紧：内距、序号列、标题与正文都降一档。 */
 .lineage-cols .tl-item {
-  padding: 0 0 18px 26px;
+  padding: 0 0 14px 26px;
 }
 
 .lineage-cols .tl-dot {
@@ -3416,9 +3442,16 @@ html[data-theme="dark"] .cmp-tab.is-on { color: #0c0f0e; }
   padding: 10px 8px;
 }
 
-/* 两列的**盒子**已经等高了（align-items:stretch），但右列的 rel-shell 被拉到 571
-   而里面的 rel-board 只有 460 —— 底下空一截，肉眼看着仍是两列不等高。
-   让 shell 变成弹性列、board 吃掉剩余高度。 */
+/* 两列的**盒子**等高（align-items:stretch）还不等于看着等高：
+   行高由内容多的那一列决定，短的那列底下就空一截。
+   但**不能**用 space-between 去撑满 —— 那会把四项摊开，行高跟着变大，
+   右列被迫拉伸跟着长高，两列一起变高，作者墙的顶部 margin 也被挤没了。
+   正确做法：左列保持自然高度，右列封顶 + 内部滚动，再让右列吃掉剩余高度对齐。 */
+.lineage-cols .tl-item:last-child {
+  padding-bottom: 0;
+}
+
+/* rel-shell 变弹性列、rel-board 吃掉剩余高度 —— 让右列真的被撑满。 */
 .lineage-cols .rel-shell {
   display: flex;
   flex-direction: column;
@@ -3427,6 +3460,24 @@ html[data-theme="dark"] .cmp-tab.is-on { color: #0c0f0e; }
 .lineage-cols .rel-board {
   min-height: 0;
   flex: 1 1 auto;
+}
+
+/* 版本轨与详情各自封顶并内部滚动 —— 面板高度由左列的自然高度决定，
+   右列只负责把空白填满，不会反过来把两列一起撑高。 */
+.lineage-cols .rel-board__main {
+  min-height: 0;
+}
+
+.lineage-cols .rel-nav,
+.lineage-cols .rel-pane {
+  max-height: 340px;
+  min-height: 0;
+}
+
+/* 作者墙与上方两列之间要留呼吸。之前靠 .rel-shell 的 margin-bottom，
+   两列改自适应后 margin 被清掉了，这里显式补回。 */
+.lineage-cols + .authors {
+  margin-top: 28px;
 }
 
 /* ==========================================================================

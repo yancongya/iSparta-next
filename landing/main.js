@@ -2476,8 +2476,11 @@ function setupRail() {
   function fallback() {
     rail.classList.add("rail--static")
     track.style.transform = ""
-    // 退化形态由浏览器自己滚；driven 形态可能已经把 scrollLeft 挪过，
-    // 切回来时要归零，否则轨道一进去就是「已经滚到中间」的位置。
+    // 退化形态用固定羽化（原生横滚时位置不由我们管），把动态变量清掉
+    viewport.style.removeProperty("--fade-l")
+    viewport.style.removeProperty("--fade-r")
+    // 驱动形态可能已经把 scrollLeft 挪过，切回来时要归零，
+    // 否则轨道一进去就是「已经滚到中间」的位置。
     viewport.scrollLeft = 0
   }
 
@@ -2502,10 +2505,23 @@ rail.classList.add("rail--driven")
   // 于是内容被多推了 scrollLeft 那么多一段，末卡对不齐右缘（右侧空一大片）。
   // driven 形态下改用这个变量单点控制，scrollLeft 交给退化形态自己用。
   var offset = 0
+  var FADE = 96 // 与 CSS 里的羽化宽度一致
+
+  /**
+   * 羽化蒙版随位置收合。
+   * 固定蒙版会把首张卡（左缘）与末张卡（右缘）也一起淡掉 —— 起点处 [00] 半透明、
+   * 终点处 [11] 半透明，看着像没对齐。所以只有「那一侧外面确实还有内容」时才羽化：
+   * 左侧剩余量 = offset，右侧剩余量 = shift - offset。
+   */
+  function syncFade(max) {
+    viewport.style.setProperty("--fade-l", Math.min(FADE, offset) + "px")
+    viewport.style.setProperty("--fade-r", Math.min(FADE, max - offset) + "px")
+  }
 
   function paint(px) {
     offset = px
     track.style.transform = "translate3d(" + -px + "px,0,0)"
+    syncFade(shift())
   }
 
   window.ScrollTrigger.create({
