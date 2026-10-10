@@ -71,3 +71,5 @@ build.status
 .bak/
 # 工作区记忆：本地工作日志，非团队共享资产（.workbuddy/skills/ 仍可入库）
 .workbuddy/memory/
+# playwright-cli 的截图与快照落点（本地核验用，不入库）
+.playwright-cli/
