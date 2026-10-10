@@ -678,6 +678,13 @@ button{font-family:inherit;color:inherit}
       </div>
     </div>
 
+    <!--启动进度窗是**独立的一扇窗**，不占这一步的步骤位；
+         故放在单独一页 boot.html 预览，这里只给一个入口。 -->
+    <div class="group">
+      <span class="lbl" data-t="lblBoot">启动进度窗</span>
+      <a class="np-preset" href="boot.html" style="display:inline-block;text-decoration:none" data-t="bootEntry">单独打开预览页 →</a>
+    </div>
+
     <div class="note" data-t="note"></div>
   </aside>
 
@@ -1160,6 +1167,7 @@ button{font-family:inherit;color:inherit}
       h1: '引导页预览台',
       sub: 'iSparta-next · dev only · 无构建、无依赖',
       lblView: '视图', viewWizard: '引导向导', viewReuse: '落地页复用',
+      lblBoot: '启动进度窗', bootEntry: '单独打开预览页 →',
       lblRuntime: '运行时', rtDesktop: '桌面', rtCep: 'CEP',
       lblMotion: '动效', motionOn: '开', motionOff: '关',
       lblEnv: '系统环境 · 生产参考',
@@ -1216,6 +1224,7 @@ button{font-family:inherit;color:inherit}
       h1: '引導頁預覽台',
       sub: 'iSparta-next · dev only · 無建置、無相依',
       lblView: '檢視', viewWizard: '引導精靈', viewReuse: '落地頁重用',
+      lblBoot: '啟動進度窗', bootEntry: '單獨打開預覽頁 →',
       lblRuntime: '執行環境', rtDesktop: '桌面', rtCep: 'CEP',
       lblMotion: '動效', motionOn: '開', motionOff: '關',
       lblEnv: '系統環境 · 生產參考',
@@ -1272,6 +1281,7 @@ button{font-family:inherit;color:inherit}
       h1: 'Guide Preview',
       sub: 'iSparta-next · dev only · no build, no deps',
       lblView: 'View', viewWizard: 'Wizard', viewReuse: 'Landing reuse',
+      lblBoot: 'Boot window', bootEntry: 'Open the standalone preview →',
       lblRuntime: 'Runtime', rtDesktop: 'Desktop', rtCep: 'CEP',
       lblMotion: 'Motion', motionOn: 'On', motionOff: 'Off',
       lblEnv: 'System env · prod ref',

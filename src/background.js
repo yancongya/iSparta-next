@@ -35,6 +35,25 @@ let win
 const OB_WIDTH = 1120
 const OB_HEIGHT = 780
 
+// ---------------------------------------------------------------- 启动进度窗
+// 同样是独立无边框小窗（与引导窗是两个不同的窗，不合并）：
+//   · 应用启动/更新重启后，先显示这一扇，告知「正在准备」与真实阶段；
+//   · 渲染层跑完发`boot:done`，主进程关掉它，再决定开引导窗还是显示主窗。
+// 尺寸参照产品内「正在处理」页的宽幅比例（截图约 1.7:1），比引导窗更宽更矮：
+// 这一屏只有「插画 + 标题 + 副文案 + 细进度条 + 状态词」五段，宽幅留白才撑得住；
+// 接近正方形会挤成「小卡片」，与参考图的观感完全不同。
+// 视觉规格（44px 顶栏 / 圆角 / 令牌 / 字重）仍全部沿用 Onboarding.vue 的 `.ob-*`。
+const BOOT_WIDTH = 720
+const BOOT_HEIGHT = 420
+
+let bootWin = null
+/** boot 窗是否已完成（收到 boot:done 或已超时兜底）；false 时主窗不 show */
+let bootDone = false
+/** boot 期间渲染层请求开引导窗 → 先记下，boot 结束后再开，避免两窗叠着 */
+let pendingOnboarding = false
+/** boot 兜底定时器 */
+let bootFallbackTimer = null
+
 let onboardingWin = null
 
 /** 引导小窗的 webPreferences 与主窗一致（sandbox + contextIsolation，preload 桥） */
@@ -103,6 +122,99 @@ function openOnboardingWindow () {
 
   return onboardingWin
 }
+
+/**
+ * 打开启动进度窗（独立无边框小窗）。
+ *
+ * 与引导窗的关系：**两个独立的窗**，只共用设计规格。
+ * 引导窗要等渲染层 storage 就绪才能判定是否弹（onboarding/state.js 的 isDone），
+ * 而启动进度恰恰处于「storage 还没就绪」的阶段 —— 若把它做成引导的第 0 步，
+ * 就成了「未就绪的阶段依赖依赖它的阶段」，顺序上说不通。所以它独立开窗。
+ */
+function openBootWindow () {
+  if (bootWin && !bootWin.isDestroyed()) { return bootWin }
+  bootDone = false
+
+  bootWin = new BrowserWindow({
+    width: BOOT_WIDTH,
+    height: BOOT_HEIGHT,
+    // 固定尺寸：启动进度是瞬时页面，给用户 resize 只会让居中布局跑偏
+    resizable: false,
+    maximizable: false,
+    fullscreen: false,
+    frame: false,
+    show: false,
+    autoHideMenuBar: true,
+    center: true,
+    backgroundColor: '#0c0f0e',
+    icon: path.join(__static, 'icons/icon.' + (process.platform === 'win32' ? 'ico'
+      : process.platform === 'darwin' ? 'icns' : 'png')),
+    webPreferences: onboardingWebPreferences()
+  })
+
+  bootWin.on('closed', () => { bootWin = null })
+
+  if (process.env.WEBPACK_DEV_SERVER_URL) {
+    bootWin.loadURL(process.env.WEBPACK_DEV_SERVER_URL + '#/boot')
+  } else {
+    createProtocol('app')
+    bootWin.loadURL('app://./index.html#/boot')
+  }
+
+  bootWin.once('ready-to-show', () => {
+    if (!bootWin || bootWin.isDestroyed()) { return }
+    bootWin.show()
+  })
+
+  return bootWin
+}
+
+/** 关掉启动进度窗并把主窗显示出来（引导窗路径由调用方另行处理） */
+function closeBootWindow () {
+  if (bootFallbackTimer) { clearTimeout(bootFallbackTimer); bootFallbackTimer = null }
+  if (bootWin && !bootWin.isDestroyed()) {
+    bootWin.destroy()
+    bootWin = null
+  }
+}
+
+/**
+ * boot 结束的统一出口：关boot 窗 → 有pending 引导请求就开引导窗，否则显示主窗。
+ * 两条路径（正常 boot:done / 超时兜底）都必须走这里，否则会出现
+ * 「启动窗关了但主窗也不显示」的黑屏死锁。
+ */
+function finishBoot () {
+  if (bootDone) { return }
+  bootDone = true
+  closeBootWindow()
+  if (pendingOnboarding) {
+    pendingOnboarding = false
+    openOnboardingWindow()
+    return
+  }
+  if (win && !win.isDestroyed()) {
+    win.setTitle(app.getName() + ' ' + app.getVersion())
+    win.show()
+  }
+}
+
+// 渲染层启动阶段跑完：`boot:done`
+ipcMain.on('boot:done', () => { finishBoot() })
+
+ipcMain.on('boot:progress', (_e, pct) => {
+  if (process.env.IS_TEST) { return }
+  const p = Number(pct)
+  if (Number.isFinite(p)) { console.log('[boot] progress', Math.round(p) + '%') }
+})
+
+/**
+ * 启动窗顶栏标题：与主窗完全同源（app.getName() + ' ' + app.getVersion()）。
+ * 渲染层自己拿不到 app 对象（sandbox + contextIsolation），所以由主进程推下去。
+ * 不用 i18n 键 —— 软件名与版本号不是可翻译文案，键化反而会与主窗标题漂移。
+ */
+ipcMain.handle('boot:info', () => ({
+  title: app.getName() + ' ' + app.getVersion()
+}))
 
 // Scheme must be registered before the app is ready
 protocol.registerSchemesAsPrivileged([
@@ -175,8 +287,13 @@ function createWindow () {
   })
   win.once('ready-to-show', () => {
     win.setTitle(app.getName() + ' ' + app.getVersion())
-    win.show()
+    // boot 窗在场时主窗先不show：两扇窗同屏会互相穿帮，
+    // 且用户看到的第一眼应当是「正在准备」，不是可以直接操作的工作台。
+    if (bootDone) { win.show() }
   })
+  //兜底：boot 窗若因故一直没发 boot:done，8 秒后无条件放行，绝不黑屏卡死
+  if (bootFallbackTimer) { clearTimeout(bootFallbackTimer) }
+  bootFallbackTimer = setTimeout(() => { finishBoot() }, 8000)
 }
 
 // Quit when all windows are closed.
@@ -244,6 +361,13 @@ app.on('ready', async () => {
     // }
 
   }
+  // 启动顺序：先开「正在准备」窗，再建主窗（主窗此时不 show，见 createWindow）。
+  // IS_TEST 下不起boot 窗，测试脚本直接操作主窗。
+  if (process.env.IS_TEST) {
+    bootDone = true
+  } else {
+    openBootWindow()
+  }
   createWindow()
 })
 
@@ -266,6 +390,11 @@ if (isDevelopment) {
 // 渲染层不直接 new BrowserWindow，只发意图；窗口显示/隐藏/销毁都在这里收口，
 // 保证「引导在前、工作台在后」的层级关系不会被渲染层搞乱。
 ipcMain.on('onboarding:open', function () {
+  // boot 窗还在时先记下：两扇无边框窗同屏会互相穿帮，等 boot 结束再开
+  if (!bootDone) {
+    pendingOnboarding = true
+    return
+  }
   try {
     openOnboardingWindow()
   } catch (e) {

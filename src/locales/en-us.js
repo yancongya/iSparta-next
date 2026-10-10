@@ -266,6 +266,13 @@ module.exports = {
     "obPrev":"Back",
     "obNext":"Next",
     "obDone":"Get started",
+    // Step 0 "Preparing" (boot progress)
+    "obBootTitle":"Preparing",
+    "obBootSub":"Setting up the environment and extensions for the first launch",
+    "obBootStageEnv":"Reading local settings",
+    "obBootStageTheme":"Applying theme and language",
+    "obBootStageCep":"Checking AE extension",
+    "obBootStageReady":"Ready",
     //  Window buttons of the standalone frameless onboarding window
     "obWinMinimize":"Minimize",
     "obWinMaximize":"Maximize",
