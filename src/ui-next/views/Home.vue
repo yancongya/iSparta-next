@@ -11,35 +11,34 @@
     <is-notice-host></is-notice-host>
 
     <!-- 自绘顶栏（桌面 frameless）：品牌名 + 版本号 + 窗口按钮。空态/有任务共用。 -->
-    <is-win-bar></is-win-bar>
+    <is-win-bar>
+      <template #tools>
+        <!-- 空态工具按钮：视图切换 / 帮助 / 设置 / 主题 -->
+        <button
+          v-if="supportsCompImport"
+          type="button"
+          class="ib-iconbtn"
+          :class="{ 'is-active': compTreeOpen }"
+          :title="compTreeOpen ? $t('inputItems') : $t('compTreeOpen')"
+          @click="toggleView"
+        >
+          <is-icon :name="compTreeOpen ? 'list' : 'layers'" />
+        </button>
+        <button type="button" class="ib-iconbtn" :title="$t('obOpenGuide') || '使用引导'" @click="openOnboarding">
+          <is-icon name="question" />
+        </button>
+        <button type="button" class="ib-iconbtn" :title="$t('defaultSetting')" @click="openGlobalSetting">
+          <is-icon name="settings" />
+          <span v-if="updateBadge" class="ib-rail__badge" aria-hidden="true" />
+        </button>
+        <button type="button" class="ib-iconbtn" :title="themeTitle" @click="toggleTheme">
+          <is-icon :name="theme === 'dark' ? 'sun' : 'moon'" />
+        </button>
+      </template>
+    </is-win-bar>
 
     <!-- 空态：无任务时全屏导入 -->
     <section v-if="!items.length && !compTreeOpen" class="ib-import">
-      <div class="ib-import__top">
-        <div class="ib-import__acts">
-          <!-- 单按钮切换视图：图标跟当前模式走（任务列表 list ↔ 合成树 layers） -->
-          <button
-            v-if="supportsCompImport"
-            type="button"
-            class="ib-iconbtn"
-            :class="{ 'is-active': compTreeOpen }"
-            :title="compTreeOpen ? $t('inputItems') : $t('compTreeOpen')"
-            @click="toggleView"
-          >
-            <is-icon :name="compTreeOpen ? 'list' : 'layers'" />
-          </button>
-          <button type="button" class="ib-iconbtn" :title="$t('obOpenGuide') || '使用引导'" @click="openOnboarding">
-            <is-icon name="question" />
-          </button>
-          <button type="button" class="ib-iconbtn" :title="$t('defaultSetting')" @click="openGlobalSetting">
-            <is-icon name="settings" />
-            <span v-if="updateBadge" class="ib-rail__badge" aria-hidden="true" />
-          </button>
-          <button type="button" class="ib-iconbtn" :title="themeTitle" @click="toggleTheme">
-            <is-icon :name="theme === 'dark' ? 'sun' : 'moon'" />
-          </button>
-        </div>
-      </div>
       <!-- 合成树占任务列表区；不与空态画框嵌套 -->
       <div v-if="supportsCompImport && compTreeOpen" class="ib-main__list">
         <comp-tree @add="onCompTreeAdd" @close="compTreeOpen = false" />

@@ -22,6 +22,9 @@
 
     <div class="wbar__spacer" />
 
+    <!-- 工具按钮插槽：空态的视图切换/帮助/设置/主题插这里，与窗口按钮同行 -->
+    <slot name="tools" />
+
     <!-- mac 有原生红绿灯（titleBarStyle:hiddenInset），不自绘窗口按钮 -->
     <div v-if="canControlWindow" class="wbar__wins">
       <button
@@ -77,7 +80,7 @@
  */
 import IsIcon from './ui/IsIcon.vue'
 import hostAdapter from '../../util/host-env'
-import { LANDING_URL } from '../../brand'
+import { APP_NAME, APP_VERSION, LANDING_URL } from '../../brand'
 
 const DBL_CLICK_MS = 400
 const BAR_HEIGHT = 40
@@ -98,10 +101,10 @@ export default {
   },
   computed: {
     appName () {
-      return this.$store.state.appName || 'iSparta-next'
+      return APP_NAME
     },
     appVersion () {
-      return this.$store.state.appVersion || ''
+      return APP_VERSION
     },
     isMac () {
       if (typeof navigator === 'undefined') { return false }
