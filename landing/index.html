@@ -28,7 +28,7 @@
 
   <link rel="icon" href="assets/icon.png" />
   <link rel="apple-touch-icon" href="assets/icon.png" />
-  <link rel="stylesheet" href="styles.css?v=20261010-merge" />
+  <link rel="stylesheet" href="styles.css?v=20261010-logdel" />
 
   <!-- Structured data -->
   <script type="application/ld+json">
@@ -601,49 +601,7 @@
   </section>
 
   <!-- runtime log panel demo -->
-  <section class="section section-log" id="log">
-    <div class="section-head">
-      <p class="eyebrow mono" data-i18n="log.eb">04 · RUN LOG</p>
-      <h2 data-i18n="log.h2">转换过程，一条条摊开给你看</h2>
-      <p class="section-sub" data-i18n="log.sub">
-        工具条一键打开运行日志：按级别筛（信息 / 成功 / 警告 / 错误），自动跟读最新输出。路径不对、编码失败、阈值重压——不用猜，直接翻这一屏。
-      </p>
-    </div>
-
-    <div class="log-shell">
-    <div class="log-board" role="group" aria-label="运行日志演示">
-      <div class="log-board__chrome">
-        <span class="log-board__dots" aria-hidden="true"><i></i><i></i><i></i></span>
-        <span class="log-board__title mono" data-i18n="log.title">运行日志</span>
-        <span class="log-board__count mono" id="log-count">0 / 0</span>
-      </div>
-
-      <div class="log-board__bar" role="group" aria-label="日志级别筛选">
-        <button type="button" class="chip chip--sm is-on" data-log-filter="all" data-i18n="log.all">全部</button>
-        <button type="button" class="chip chip--sm" data-log-filter="info" data-i18n="log.info">信息</button>
-        <button type="button" class="chip chip--sm" data-log-filter="ok" data-i18n="log.ok">成功</button>
-        <button type="button" class="chip chip--sm" data-log-filter="warn" data-i18n="log.warn">警告</button>
-        <button type="button" class="chip chip--sm" data-log-filter="error" data-i18n="log.error">错误</button>
-        <span class="log-board__spacer"></span>
-        <label class="log-board__follow">
-          <input type="checkbox" id="log-follow" checked />
-          <span data-i18n="log.follow">自动跟随</span>
-        </label>
-      </div>
-
-      <div class="log-board__list" id="log-list" tabindex="0" aria-live="polite"></div>
-
-      <div class="log-board__foot">
-        <button type="button" class="chip chip--quiet" id="log-replay" data-i18n="log.replay">再播一遍</button>
-        <span class="log-board__spacer"></span>
-        <button type="button" class="chip chip--quiet" id="log-clear" data-i18n="log.clear">清空</button>
-      </div>
-    </div>
-    </div>
-  </section>
-
-  <!-- compare: real before/after wipe on repo's own test fixture -->
-    <section class="section section-ae" id="ae">
+  <section class="section section-ae" id="ae">
     <div class="section-head">
       <p class="eyebrow mono" data-i18n="ae.eb">06 · AFTER EFFECTS</p>
       <h2 data-i18n="ae.h2">同步支持 CEP 端一步安装！</h2>
@@ -1373,7 +1331,7 @@
        本地副本 72KB + 43KB，GreenSock 标准许可允许自托管部署，许可头保留在文件内 -->
   <script src="assets/vendor/gsap.min.js"></script>
   <script src="assets/vendor/ScrollTrigger.min.js"></script>
-  <script src="i18n.js?v=20261010-merge"></script>
-  <script src="main.js?v=20261010-merge"></script>
+  <script src="i18n.js?v=20261010-logdel"></script>
+  <script src="main.js?v=20261010-logdel"></script>
 </body>
 </html>

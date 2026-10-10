@@ -1307,137 +1307,6 @@
   }
 
 
-  /* ---------- 04 · RUN LOG：与 IsLogPanel 同构的演示板 ---------- */
-  const LOG_SCRIPT = [
-    { level: "info", msg: "导入目录 frames · 识别 24 帧 PNG", detail: "" },
-    { level: "info", msg: "输出格式 APNG · 帧频 25 · 循环 ∞" },
-    { level: "ok", msg: "解析帧序完成 · 自然排序" },
-    { level: "info", msg: "开始编码 apngasm…" },
-    { level: "ok", msg: "APNG 生成成功 · 1.86 MB" },
-    { level: "warn", msg: "体积超过阈值 1MB · 自动降质量重压" },
-    { level: "info", msg: "重压 #1 质量 80 → 75" },
-    { level: "ok", msg: "重压完成 · 0.94 MB · 进线" },
-    { level: "info", msg: "写出 {srcPath}/export/{date}/示例贴纸.png" },
-    { level: "error", msg: "示例：路径不存在 D:/missing/frames" },
-    { level: "ok", msg: "任务队列完成 · 成功 1 / 失败 0" }
-  ]
-
-  function setupLogBoard() {
-    const list = document.getElementById("log-list")
-    const countEl = document.getElementById("log-count")
-    const followEl = document.getElementById("log-follow")
-    const replayBtn = document.getElementById("log-replay")
-    const clearBtn = document.getElementById("log-clear")
-    if (!list) return
-
-    let entries = []
-    let filter = "all"
-    let seq = 0
-    let playTimer = null
-
-    function pad(n) {
-      return n < 10 ? "0" + n : String(n)
-    }
-
-    function nowStr() {
-      const d = new Date()
-      return pad(d.getHours()) + ":" + pad(d.getMinutes()) + ":" + pad(d.getSeconds())
-    }
-
-    function matches(e) {
-      return filter === "all" || e.level === filter
-    }
-
-    function updateCount() {
-      if (!countEl) return
-      const shown = entries.filter(matches).length
-      countEl.textContent = shown + " / " + entries.length
-    }
-
-    function render() {
-      list.innerHTML = ""
-      const shown = entries.filter(matches)
-      if (!shown.length) {
-        const p = document.createElement("p")
-        p.className = "log-board__empty"
-        p.textContent = filter === "all" ? "（暂无日志）" : "（当前级别无条目）"
-        list.appendChild(p)
-        updateCount()
-        return
-      }
-      shown.forEach(function (e) {
-        const row = document.createElement("div")
-        row.className = "log-row is-" + e.level
-        row.innerHTML =
-          '<span class="log-row__t mono"></span><span class="log-row__lv mono"></span><span class="log-row__msg"></span>'
-        row.querySelector(".log-row__t").textContent = e.t
-        row.querySelector(".log-row__lv").textContent = e.level
-        row.querySelector(".log-row__msg").textContent = e.msg
-        list.appendChild(row)
-      })
-      if (followEl && followEl.checked) {
-        list.scrollTop = list.scrollHeight
-      }
-      updateCount()
-    }
-
-    function push(entry) {
-      seq += 1
-      entries.push({ id: seq, t: nowStr(), level: entry.level, msg: entry.msg })
-      if (entries.length > 40) entries.shift()
-      render()
-    }
-
-    function play() {
-      if (playTimer) {
-        window.clearInterval(playTimer)
-        playTimer = null
-      }
-      entries = []
-      seq = 0
-      render()
-      let i = 0
-      playTimer = window.setInterval(function () {
-        if (i >= LOG_SCRIPT.length) {
-          window.clearInterval(playTimer)
-          playTimer = null
-          return
-        }
-        push(LOG_SCRIPT[i])
-        i += 1
-      }, reduceMotion ? 0 : 420)
-      if (reduceMotion) {
-        LOG_SCRIPT.forEach(push)
-        window.clearInterval(playTimer)
-        playTimer = null
-      }
-    }
-
-    document.querySelectorAll("[data-log-filter]").forEach(function (btn) {
-      btn.addEventListener("click", function () {
-        filter = btn.getAttribute("data-log-filter") || "all"
-        document.querySelectorAll("[data-log-filter]").forEach(function (b) {
-          b.classList.toggle("is-on", b === btn)
-        })
-        render()
-      })
-    })
-    if (followEl) followEl.addEventListener("change", render)
-    if (replayBtn) replayBtn.addEventListener("click", play)
-    if (clearBtn) {
-      clearBtn.addEventListener("click", function () {
-        if (playTimer) {
-          window.clearInterval(playTimer)
-          playTimer = null
-        }
-        entries = []
-        render()
-      })
-    }
-
-    play()
-  }
-
   /* ---------- AE 面板区块：CEP 窄屏面板交互演示 ----------
      结构对齐真实 CEP：ib-rail 顶栏 / mod-list 列表 / mod-bar 底栏 / ib-set-overlay 设置层 */
   function setupAeStage() {
@@ -1831,7 +1700,6 @@
 
   resolveLatestDownloads();
 
-  setupLogBoard();
   setupAeStage();
   setupScroll();
   setupCurrentDevice();
@@ -2608,6 +2476,9 @@ function setupRail() {
   function fallback() {
     rail.classList.add("rail--static")
     track.style.transform = ""
+    // 退化形态由浏览器自己滚；driven 形态可能已经把 scrollLeft 挪过，
+    // 切回来时要归零，否则轨道一进去就是「已经滚到中间」的位置。
+    viewport.scrollLeft = 0
   }
 
   if (reduceMotion || !hasGsap || !window.ScrollTrigger) return fallback()
@@ -2623,45 +2494,49 @@ function setupRail() {
 
   if (!usable()) return fallback()
 
-  rail.classList.add("rail--driven")
+rail.classList.add("rail--driven")
+
+  // 横向位移的**唯一真相源**。
+  // 之前 wheel 既写 viewport.scrollLeft 又写 transform，两个一起生效 ——
+  // overflow-x:hidden 只是不显示滚动条，并不阻止程序化 scrollLeft，
+  // 于是内容被多推了 scrollLeft 那么多一段，末卡对不齐右缘（右侧空一大片）。
+  // driven 形态下改用这个变量单点控制，scrollLeft 交给退化形态自己用。
+  var offset = 0
 
   function paint(px) {
+    offset = px
     track.style.transform = "translate3d(" + -px + "px,0,0)"
   }
 
-window.ScrollTrigger.create({
-  trigger: rail,
-  // 起点用 top 78% 而不是 top bottom：轨道有三百多高，若一碰到视口下沿就开始推，
-  // 读者刚看到这一段时 [00]–[03] 就已经被推出屏幕了。
-  // 终点 bottom 22% 让轨道在离开视口前刚好推到底。
-  start: "top 78%",
-  end: "bottom 22%",
-  scrub: 0.6,
-  invalidateOnRefresh: true,
-  onUpdate: function (self) {
-    paint(shift() * self.progress)
-  },
-})
+  window.ScrollTrigger.create({
+    trigger: rail,
+    // 起点用 top 78% 而不是 top bottom：轨道有三百多高，若一碰到视口下沿就开始推，
+    // 读者刚看到这一段时 [00]–[03] 就已经被推出屏幕了。
+    // 终点 bottom 22% 让轨道在离开视口前刚好推到底。
+    start: "top 78%",
+    end: "bottom 22%",
+    scrub: 0.6,
+    invalidateOnRefresh: true,
+    onUpdate: function (self) {
+      paint(shift() * self.progress)
+    },
+  })
 
   /**
    * 鼠标滚轮直接横滚。
    * 只在「还移得动」的方向上拦截；到头了就把控制权还给页面，
    * 否则鼠标会被困在这条轨道里出不去 —— 横向滚动区最常见的坑。
-   * 接管时必须自己同步 scrollLeft，否则下一次 scrub 会按页面进度
-   * 把轨道拽回纵向对应的位置，表现为「横滚一下又弹回去」。
    */
   viewport.addEventListener(
     "wheel",
     function (e) {
       if (e.ctrlKey) return // 缩放手势别抢
-      var max = viewport.scrollWidth - viewport.clientWidth
+      var max = shift()
       if (max <= 0) return
-      var next = viewport.scrollLeft + e.deltaY
-      if ((viewport.scrollLeft <= 0 && e.deltaY < 0) ||
-          (viewport.scrollLeft >= max - 1 && e.deltaY > 0)) return
+      var next = offset + e.deltaY
+      if ((offset <= 0 && e.deltaY < 0) || (offset >= max - 1 && e.deltaY > 0)) return
       e.preventDefault()
-      viewport.scrollLeft = Math.max(0, Math.min(max, next))
-      paint(viewport.scrollLeft)
+      paint(Math.max(0, Math.min(max, next)))
     },
     { passive: false }
   )

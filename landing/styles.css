@@ -1976,180 +1976,15 @@ html[data-theme="dark"] .dl-badge {
   }
 }
 
-/* naming panels — closer to setting.vue / PathVars */
-/* runtime log board — desktop dialog mockup (IsLogPanel) */
-.log-shell {
-  max-width: 860px;
-  margin: 0 auto;
-  perspective: 900px;
-}
-
-.log-board {
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  box-shadow:
-    0 1px 2px color-mix(in srgb, var(--ink) 6%, transparent),
-    0 18px 48px color-mix(in srgb, var(--ink) 10%, transparent);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  min-height: 420px;
-}
-
-.log-board__chrome {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 14px;
-  border-bottom: 1px solid var(--line);
-  background: color-mix(in srgb, var(--paper) 55%, var(--card));
-}
-
-.log-board__dots {
-  display: flex;
-  gap: 6px;
-}
-
-.log-board__dots i {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--line);
-}
-
-.log-board__dots i:nth-child(1) { background: #e07a6a; }
-.log-board__dots i:nth-child(2) { background: #e0c56a; }
-.log-board__dots i:nth-child(3) { background: #7acb8a; }
-
-.log-board__title {
-  font-weight: 700;
-  font-size: 13px;
-  color: var(--ink);
-}
-
-.log-board__count {
-  margin-left: auto;
-  color: var(--muted);
-  font-size: 12px;
-}
-
 .log-board__bar,
-.log-board__foot {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 10px 14px;
-}
-
-.log-board__bar {
-  border-bottom: 1px solid var(--line);
-}
-
-.log-board__foot {
-  border-top: 1px solid var(--line);
-  background: color-mix(in srgb, var(--paper) 40%, var(--card));
-}
-
-.log-board__spacer {
-  flex: 1 1 auto;
-}
-
-.log-board__follow {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--muted);
-  font-size: 12px;
-  cursor: pointer;
-  user-select: none;
-}
-
-.log-board__list {
-  flex: 1 1 auto;
-  min-height: 240px;
-  max-height: 340px;
-  overflow: auto;
-  margin: 0;
-  padding: 8px 10px;
-  background: color-mix(in srgb, var(--paper) 70%, var(--card));
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.log-board__list:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: -2px;
-}
-
-.log-row {
-  display: grid;
-  grid-template-columns: 70px 56px minmax(0, 1fr);
-  gap: 10px;
-  align-items: baseline;
-  padding: 7px 10px;
-  border-radius: 8px;
-  border: 1px solid transparent;
-  font-size: 12.5px;
-  line-height: 1.45;
-  background: var(--card);
-  animation: logIn 0.28s ease;
-}
 
 @keyframes logIn {
   from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: none; }
 }
 
-.log-row__t {
-  color: var(--muted);
-  font-family: var(--mono);
-  font-size: 11px;
-}
-
-.log-row__lv {
-  font-family: var(--mono);
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.log-row__msg {
-  color: var(--ink);
-  min-width: 0;
-  word-break: break-word;
-}
-
-.log-row.is-info .log-row__lv { color: var(--muted); }
-.log-row.is-ok {
-  border-color: color-mix(in srgb, var(--ok) 28%, transparent);
-  background: color-mix(in srgb, var(--ok) 7%, var(--card));
-}
-.log-row.is-ok .log-row__lv { color: var(--ok); }
-.log-row.is-warn {
-  border-color: color-mix(in srgb, var(--warn) 30%, transparent);
-  background: color-mix(in srgb, var(--warn) 8%, var(--card));
-}
-.log-row.is-warn .log-row__lv { color: var(--warn); }
-.log-row.is-error {
-  border-color: color-mix(in srgb, #b91c1c 30%, transparent);
-  background: color-mix(in srgb, #b91c1c 7%, var(--card));
-}
-.log-row.is-error .log-row__lv { color: #b91c1c; }
-
-html[data-theme="dark"] .log-row.is-error .log-row__lv { color: #f87171; }
-html[data-theme="dark"] .log-row.is-error {
   border-color: color-mix(in srgb, #f87171 28%, transparent);
   background: color-mix(in srgb, #f87171 8%, var(--card));
-}
-
-.log-board__empty {
-  margin: 36px auto;
-  color: var(--muted);
-  font-size: 13px;
 }
 
 .name-grid {
@@ -3581,8 +3416,17 @@ html[data-theme="dark"] .cmp-tab.is-on { color: #0c0f0e; }
   padding: 10px 8px;
 }
 
+/* 两列的**盒子**已经等高了（align-items:stretch），但右列的 rel-shell 被拉到 571
+   而里面的 rel-board 只有 460 —— 底下空一截，肉眼看着仍是两列不等高。
+   让 shell 变成弹性列、board 吃掉剩余高度。 */
+.lineage-cols .rel-shell {
+  display: flex;
+  flex-direction: column;
+}
+
 .lineage-cols .rel-board {
   min-height: 0;
+  flex: 1 1 auto;
 }
 
 /* ==========================================================================
@@ -4100,12 +3944,15 @@ html[data-theme="dark"] .cmp-tab.is-on { color: #0c0f0e; }
    AE 双端区块：动态插画（对齐 hero-stage / pet 拟物语言）
    ========================================================================== */
 /* AE 面板区块：左窄屏面板 + 右 2×4 卡片（与面板等高，卡内文字按容器高度缩放） */
+/* AE 段去外框：原来整段包在一张卡里（描边 + 底色 + 圆角 + 内距），
+   里面又各有自己的卡片，等于框中框。去到只剩栅格与内距，
+   跟 00 ABOUT / 07 REAL UI 一样走裸排版。 */
 .ae-stage {
   margin: 0 0 8px;
-  padding: 22px 22px 14px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius, 14px);
-  background: var(--card);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
 }
 /* JS 未就绪时也必须可见：只有 GSAP 接管后才由脚本设置初始透明态 */
 .ae-stage:not(.gsap-ready) {
