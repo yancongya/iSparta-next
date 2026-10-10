@@ -6,7 +6,7 @@
     :class="{ 'is-mac': isMac }"
     @dblclick="onDblClick"
   >
-    <div class="wbar__brand" :title="appName">
+    <div class="wbar__brand" :title="appName" @click="openLanding">
       <span class="wbar__mark" aria-hidden="true">
         <!-- 与 public/icons/icon-brand.svg 同源：品牌色 #c8f542 圆形播放标 -->
         <svg width="16" height="16" viewBox="0 0 1024 1024" fill="none">
@@ -76,6 +76,8 @@
  * 再画一套会重复。但红绿灯压在顶栏左上角，所以要给品牌区留出左侧内边距。
  */
 import IsIcon from './ui/IsIcon.vue'
+import hostAdapter from '../../util/host-env'
+import { LANDING_URL } from '../../brand'
 
 const DBL_CLICK_MS = 400
 const BAR_HEIGHT = 40
@@ -122,6 +124,9 @@ export default {
     document.removeEventListener('mouseup', this.onDocMouseUp, true)
   },
   methods: {
+    openLanding () {
+      hostAdapter.openExternal(LANDING_URL)
+    },
     winMinimize () {
       var api = windowApi()
       if (api && api.window) { api.window.minimize() }
@@ -180,6 +185,12 @@ export default {
 
 .wbar__brand {
   display: inline-flex;
+  cursor: pointer;
+  transition: color var(--is-dur-fast) var(--is-ease-std);
+}
+
+.wbar__brand:hover {
+  color: var(--is-accent);
   align-items: center;
   gap: 7px;
   min-width: 0;
@@ -218,7 +229,9 @@ export default {
 
 .wbar__wins {
   display: flex;
+  flex: none;
   align-self: stretch;
+  white-space: nowrap;
   /* 按钮必须退出拖拽区，否则点击被拖拽吞掉 */
   -webkit-app-region: no-drag;
 }
