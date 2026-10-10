@@ -28,14 +28,49 @@ Var ispartaAeScopeTip
 Var ispartaAeLabel
 ; 范围路径文案（由 $installMode 推导，见 ispartaResolveScope）
 Var ispartaAeScopeText
+; 静默安装日志文件（$TEMP\isparta-install.log）；静默失败无处弹窗，只能落盘
+Var ispartaLogPath
+; 静默/升级标记的文本形式（仅用于日志，LogicLib 宏不能直接拼进字符串）
+Var ispartaSilentText
+Var ispartaIsUpdatedText
 
 
 ; ---------- 文件级辅助函数（customHeader 在页声明之后展开） ----------
 !macro customHeader
+; ---------- 安装日志 ----------
+; 静默安装（/S）时无人看得到任何报错，MessageBox 还会直接挂住无人值守流程，
+; 所以失败一律写 $TEMP\isparta-install.log；弹窗只在交互式安装时出现。
+; 用法：Push "文本" + Call ispartaLog（NSIS 的 Call 不能带参数！）
+; ⚠ $0~$9 与 $R0~$R9 会被覆写，调用方不要跨行依赖
+Function ispartaLog
+  Pop $0
+  ${If} $ispartaLogPath == ""
+    StrCpy $ispartaLogPath "$TEMP\isparta-install.log"
+  ${EndIf}
+  FileOpen $1 $ispartaLogPath a
+  ${IfNot} ${errors}
+    FileWrite $1 "[${__DATE__} ${__TIME__}] $0"
+    FileClose $1
+  ${EndIf}
+FunctionEnd
+
+; 失败提示：交互式弹窗，/S 静默时只落日志（不阻塞无人值守流程）
+Function ispartaFail
+  ;栈：msg detail
+  Pop $1
+  Pop $0
+  Push "FAIL: $0 | $1"
+  Call ispartaLog
+  ${IfNot} ${Silent}
+    MessageBox MB_OK|MB_ICONEXCLAMATION "$0$\r$\n$\r$\n$1"
+  ${EndIf}
+FunctionEnd
 ; ---------- 函数定义（顶层：NSIS 才能解析 Call 引用，避免 6010 清零代码） ----------
   Function ispartaCopyCepToParent
     StrCpy $ispartaCopyOk "0"
     ${ifNot} ${FileExists} "$ispartaCepSrc\CSXS\manifest.xml"
+      Push "payload 缺失：$ispartaCepSrc\CSXS\manifest.xml"
+      Call ispartaLog
       Return
     ${endIf}
 
@@ -45,6 +80,8 @@ Var ispartaAeScopeText
     ; CopyFiles 目录 → 递归整树，落到父目录下同名子目录
     CopyFiles /SILENT "$ispartaCepSrc" "$1"
     ${if} ${errors}
+      Push "复制失败：$ispartaCepSrc → $1\${ISPARTA_CEP_ID}"
+      Call ispartaLog
       Return
     ${endIf}
 
@@ -301,6 +338,14 @@ Var ispartaAeScopeText
 !macro customInit
   StrCpy $ispartaInstallDesktop "1"
   StrCpy $ispartaInstallAe "1"
+  StrCpy $ispartaSilentText "0"
+  StrCpy $ispartaIsUpdatedText "0"
+  ${if} ${Silent}
+    StrCpy $ispartaSilentText "1"
+  ${endIf}
+  ${if} ${isUpdated}
+    StrCpy $ispartaIsUpdatedText "1"
+  ${endIf}
   ; 安装范围不在这里定：由「安装模式」页 → $installMode → ispartaResolveScope 推导
 
   ReadRegStr $0 SHELL_CONTEXT "${INSTALL_REGISTRY_KEY}" CepInstalled
@@ -329,6 +374,10 @@ Var ispartaAeScopeText
 
 ; ---------- 安装：复制扩展 / 快捷方式按需 ----------
 !macro customInstall
+  ; 开场留一行：静默/交互 + 是否升级 + 组件选择，排查静默失败时第一行就能定位
+  Push "install start: updated=$ispartaIsUpdatedText silent=$ispartaSilentText desktop=$ispartaInstallDesktop ae=$ispartaInstallAe"
+  Call ispartaLog
+
   ; 安装范围：与主程序安装模式一致（silent 升级不经组件页，这里兜底重推一次）
   Call ispartaResolveScope
 
@@ -346,7 +395,9 @@ Var ispartaAeScopeText
       StrCpy $1 $ispartaCepCommonParent
       Call ispartaCopyCepToParent
       ${if} $ispartaCopyOk != "1"
-        MessageBox MB_OK|MB_ICONEXCLAMATION "After Effects 扩展复制到统一 CEP 目录失败。$\r$\n可手动复制到 $ispartaCepCommonDest$\r$\n或改用「仅当前用户」重新安装。"
+        Push "After Effects 扩展复制到统一 CEP 目录失败。$\r$\n可手动复制到 $ispartaCepCommonDest$\r$\n或改用「仅当前用户」重新安装。"
+        Push "isparta: CEP system-scope copy failed"
+        Call ispartaFail
       ${else}
         WriteRegStr HKCU "Software\Adobe\CSXS.6" "PlayerDebugMode" "1"
         WriteRegStr HKCU "Software\Adobe\CSXS.7" "PlayerDebugMode" "1"
@@ -369,7 +420,9 @@ Var ispartaAeScopeText
       StrCpy $1 $ispartaCepUserParent
       Call ispartaCopyCepToParent
       ${if} $ispartaCopyOk != "1"
-        MessageBox MB_OK|MB_ICONEXCLAMATION "After Effects 扩展复制失败。$\r$\n可手动将 $ispartaCepSrc 复制到 $APPDATA\Adobe\CEP\extensions\${ISPARTA_CEP_ID}$\r$\n或使用已签名 ZXP / ExManCmd 安装后重试。"
+        Push "After Effects 扩展复制失败。$\r$\n可手动将 $ispartaCepSrc 复制到 $APPDATA\Adobe\CEP\extensions\${ISPARTA_CEP_ID}$\r$\n或使用已签名 ZXP / ExManCmd 安装后重试。"
+        Push "isparta: CEP user-scope copy failed"
+        Call ispartaFail
       ${else}
         WriteRegStr HKCU "Software\Adobe\CSXS.6" "PlayerDebugMode" "1"
         WriteRegStr HKCU "Software\Adobe\CSXS.7" "PlayerDebugMode" "1"

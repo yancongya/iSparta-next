@@ -24,7 +24,10 @@
  *     state.open 恒 false —— 早期版本在这里再叠一层会导致引导弹两次。
  *   · CEP 在 AE 面板内，没有窗口可开，仍靠这层浮层。
  *
- * 后续 W3 的启动进度页（BootSplash）也在这里分流，不新增入口。
+ *启动进度页（BootSplash）是**独立无边框小窗 + 独立路由 `#/boot`**，
+ *   由主进程在 app ready 时开、渲染层发boot:done 后关闭，不在这里分流。
+ *   （它处于「storage 尚未就绪」的阶段，而本组件的 shouldAutoOpen 恰恰依赖
+ *   storage就绪，故不能把启动页挂在 RootGate 下。）
  */
 import Home from './Home.vue'
 import Onboarding from '../onboarding/Onboarding.vue'

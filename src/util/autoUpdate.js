@@ -6,6 +6,7 @@
  */
 
 import { app, ipcMain } from 'electron'
+import { resetOnboardingForReplay } from './onboarding-replay'
 
 let updater = null
 let state = {
@@ -165,10 +166,16 @@ export function quitAndInstall (opts) {
       }
     } catch (eNotify) { /* 通知失败不阻断安装 */ }
 
-    // 略等一拍让 Toast 露出，再关应用进安装向导
+    // 重置首启引导标记：升级后按产品策略重播一遍引导（引导窗本身由渲染层判定）
+    try { resetOnboardingForReplay() } catch (eReset) { /* ignore */ }
+
+    // 略等一拍让 Toast 露出，再关应用进安装
     const run = () => {
-      // isSilent=false：显示 NSIS 向导；isForceRunAfter=true：装完自动启动
-      u.quitAndInstall(false, true)
+      // isSilent=true：追加 NSIS `/S`，静默安装，不再弹安装向导。
+      //   组件页已有 `${Silent} Abort`，默认 $ispartaInstallDesktop/$ispartaInstallAe
+      //   均为 "1"，所以桌面版与 CEP 扩展会一起装上。
+      // isForceRunAfter=true：装完自动启动（带 --force-run）。
+      u.quitAndInstall(true, true)
     }
     if (o.delayMs > 0) {
       setTimeout(run, o.delayMs)
