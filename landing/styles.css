@@ -857,7 +857,8 @@ html[data-theme="dark"] .hero-actions .btn-primary {
 
 .section-head {
   margin-bottom: 36px;
-  max-width: 40em;
+  /* 不设 max-width —— 宽度交给下面的子元素各自控制，
+     否则 .section-sub 会被父级的 40em 一起推到右边。 */
 }
 
 .section-head h2 {
@@ -871,25 +872,40 @@ html[data-theme="dark"] .hero-actions .btn-primary {
   color: var(--muted);
 }
 
-/* 标题块左右交替。
+/* 标题左右交替。
    之前 12 个区块的标题块全在 x=193 w=640，滚动时每段都是同一个构图，
-   眼睛没有东西可抓。这里让奇偶段交替靠边 —— 代价只有一条 CSS，
-   而且 :nth-of-type 数的是 tag 顺序，hero 占第 1 个，about 起算第 2 个。
-   只推块、不改文字对齐：中文标题右对齐会难读，块内的字仍按左对齐走。 */
-.section-head {
+   眼睛没有东西可抓。这里让奇偶段的「眉标 + 大标题」交替靠边。
+   只推这两样：正文说明（.section-sub）与下方内容区保持原位，
+   三者一起推会让说明文字和它描述的内容脱节。
+   :nth-of-type 数的是 tag 顺序，hero 占第 1 个，about 起算第 2 个。 */
+.section-head > .eyebrow,
+.section-head > h2,
+.section-head > .section-sub {
+  /* 必须用 rem 不能用 em：em 按元素自己的 font-size 算，
+     h2 是 33.6px，40em 就成了 1344px —— 比容器还宽，margin-left:auto 直接失效。
+     rem 统一按根字号算，三者都是 640px。 */
+  max-width: 40rem;
   margin-left: 0;
   margin-right: auto;
 }
 
-.section:nth-of-type(even) > .section-head {
+/* 下载区（.section-dl）是全页收尾的 CTA，整段保持左对齐不参与交替。
+   它的眉标是 .dl-tag 胶囊（inline-block），行内级盒子的 auto 外边距按规范算成 0，
+   转成块级 + fit-content 后又会顶到容器最右、与 640px 标题列对不齐 ——
+   与其为它单开一套规则，不如让这一段不交替。 */
+.section:not(.section-dl):nth-of-type(even) > .section-head > .eyebrow,
+.section:not(.section-dl):nth-of-type(even) > .section-head > h2 {
   margin-left: auto;
   margin-right: 0;
 }
 
-/* 窄屏放不下右推（正文会窄到没法读），窄屏一律回左 */
+/* 窄屏放不下右推（正文会被挤到没法读），窄屏一律回左 */
 @media (max-width: 860px) {
-  .section-head,
-  .section:nth-of-type(even) > .section-head {
+  .section-head > .eyebrow,
+  .section-head > h2,
+  .section-head > .section-sub,
+  .section:not(.section-dl):nth-of-type(even) > .section-head > .eyebrow,
+  .section:not(.section-dl):nth-of-type(even) > .section-head > h2 {
     margin-left: 0;
     margin-right: auto;
   }
