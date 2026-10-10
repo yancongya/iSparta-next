@@ -208,15 +208,6 @@ ipcMain.on('boot:progress', (_e, pct) => {
   if (Number.isFinite(p)) { console.log('[boot] progress', Math.round(p) + '%') }
 })
 
-/**
- * 启动窗顶栏标题：与主窗完全同源（app.getName() + ' ' + app.getVersion()）。
- * 渲染层自己拿不到 app 对象（sandbox + contextIsolation），所以由主进程推下去。
- * 不用 i18n 键 —— 软件名与版本号不是可翻译文案，键化反而会与主窗标题漂移。
- */
-ipcMain.handle('boot:info', () => ({
-  title: app.getName() + ' ' + app.getVersion()
-}))
-
 // Scheme must be registered before the app is ready
 protocol.registerSchemesAsPrivileged([
   { scheme: 'app', privileges: { secure: true, standard: true } },

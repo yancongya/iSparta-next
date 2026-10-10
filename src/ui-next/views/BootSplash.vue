@@ -1,47 +1,15 @@
 <template>
   <div class="bs">
-    <!-- 顶栏：与引导窗完全同规格（44px / 拖拽区 / 自绘窗口按钮）。
-         标题不是引导名 —— 启动阶段还没到引导；由主进程推与主窗同源的软件名+版本号。
-         logo 与 Home.vue 的 .ib-brand__mark 同一份几何（icon-brand.svg 同源）。 -->
-    <header class="bs-top">
-      <span class="bs-top__name">
-        <span class="bs-top__mark" aria-hidden="true">
-          <svg width="18" height="18" viewBox="0 0 1024 1024" fill="none">
-            <g transform="translate(512 512) scale(2.05) translate(-512 -395.636364)">
-              <path d="M512 395.636364m-232.727273 0a232.727273 232.727273 0 1 0 465.454546 0 232.727273 232.727273 0 1 0-465.454546 0Z" fill="#c8f542"/>
-              <path d="M453.806545 289.764848a7.214545 7.214545 0 0 1 8.168728-6.112969l77.548606 11.155394c1.881212 0.271515 3.580121 1.272242 4.728242 2.788848l70.943031 93.796849a7.214545 7.214545 0 0 1 0.100848 8.564363L544.267636 498.722909a7.214545 7.214545 0 0 1-4.871757 2.936243L461.459394 512.391758a7.214545 7.214545 0 0 1-6.997333-11.132122l67.285333-101.558303a7.214545 7.214545 0 0 0-0.077576-8.079515L455.00897 294.888727a7.214545 7.214545 0 0 1-1.202425-5.12z m-6.729697 37.783273a3.607273 3.607273 0 0 1 5.054061 0.702061l47.736243 63.146666a3.607273 3.607273 0 0 1 0.104727 8.556607L452.189091 466.540606a3.607273 3.607273 0 0 1-6.543515-2.102303V330.426182a3.607273 3.607273 0 0 1 1.435151-2.878061z" fill="#0c0f0e"/>
-            </g>
-          </svg>
-        </span>
-        <span class="bs-top__text">{{ winTitle }}</span>
-      </span>
-      <div class="bs-top__right">
-        <div class="bs-win">
-          <button
-            type="button"
-            class="bs-win__btn"
-            :title="$t('obWinMinimize')"
-            :aria-label="$t('obWinMinimize')"
-            @click="winMinimize"
-          >
-            <is-icon name="minus" size="xs" />
-          </button>
-          <button
-            type="button"
-            class="bs-win__btn bs-win__btn--danger"
-            :title="$t('obWinClose')"
-            :aria-label="$t('obWinClose')"
-            @click="winClose"
-          >
-            <is-icon name="close" size="xs" />
-          </button>
-        </div>
-      </div>
-    </header>
+    <!--
+      顶栏直接复用 IsWinBar（主窗自绘顶栏）：logo + 软件名 + 版本号 + 窗口按钮，
+      连 mac 红绿灯差异与「双击拖拽区最大化」的判定都是现成的。
+      自绘一份只会与主窗漂移 —— 主窗去掉原生标题bar 后，顶栏就以它为准。
+    -->
+    <is-win-bar />
 
     <!--
       内容区：严格照参考布局自上而下五段 ——
-      插画 → 大标题 → 副文案 → 整幅细进度条 → 条下左对齐状态词。
+      插画 → 大标题 → 副文案 → 整幅细进度条 → 条下居中状态词。
       进度百分比只走无障碍读数，不在视觉上另起一块（参考图没有右侧数字）。
     -->
     <main class="bs-body">
@@ -78,16 +46,20 @@
  *   启动进度属于「应用还没就绪」的阶段，而引导窗要等渲染层 storage 就绪才能判定
  *   是否弹出（onboarding/state.js 的 isDone）。若把它塞进引导流程，就等于让一个
  *   尚未就绪的阶段依赖一个依赖它的阶段，顺序上说不通。独立窗由主进程直接开，
- *   不参与引导的步骤状态机，两者只共用同一套 `.ob-*` 令牌与外壳规格。
+ *   不参与引导的步骤状态机。
+ *
+ * 顶栏不自己画：直接用IsWinBar（主窗自绘顶栏）。主窗去掉原生标题栏后，
+ * logo + 软件名 + 版本号 + 窗口按钮以它为准，另画一份必然漂移。
  *
  * 布局参照产品内「正在处理」页的通行版式（自上而下五段）：
- *   插画 → 大标题 → 副文案 → 整幅细进度条 → 条下左对齐状态词。
+ *   插画 → 大标题 → 副文案 → 整幅细进度条 → 条下居中状态词。
  * 百分比不进视觉层（参考图没有右侧数字），只作为 progressbar 的无障碍读数。
  *
  * 生命周期（主进程 background.js 负责，渲染层只报进度）：
  *   app ready → 开本窗（主窗先不show）→ 渲染层跑完阶段 → 发 boot:done
  *   → 主进程关本窗；需要重播引导则改开引导窗，否则 show 主窗。
  */
+import IsWinBar from '../components/IsWinBar.vue'
 import BootDemo from '../onboarding/demos/BootDemo.vue'
 
 /** 阶段键与 locales 的 obBootStage* 一一对应 */
@@ -99,13 +71,12 @@ const windowApi = (typeof window !== 'undefined' && window.ispartaAPI) || null
 
 export default {
   name: 'BootSplash',
-  components: { BootDemo },
+  components: { IsWinBar, BootDemo },
   data () {
     return {
       cursor: 0,
       done: STAGE_KEYS.map(() => false),
-      reported: 0,
-      winTitle: ''
+      reported: 0
     }
   },
   computed: {
@@ -128,8 +99,6 @@ export default {
     }
   },
   async mounted () {
-    // 标题与主窗同源；拿不到就留空，不让这一步失败影响启动
-    await this.loadTitle()
     // 各阶段对应真实的启动工作；任何一段失败都继续往下走，绝不把用户卡在启动页
     await this.stage(0, () => this.probeStorage())
     await this.stage(1, () => this.waitFrame())
@@ -146,15 +115,6 @@ export default {
   methods: {
     wait (ms) { return new Promise((r) => setTimeout(r, ms)) },
 
-    /** 顶栏标题：主进程推来，与主窗 `app.getName() + ' ' + app.getVersion()` 同一份 */
-    async loadTitle () {
-      try {
-        if (windowApi && windowApi.ipc && typeof windowApi.ipc.invoke === 'function') {
-          const info = await windowApi.ipc.invoke('boot:info')
-          if (info && info.title) { this.winTitle = info.title }
-        }
-      } catch (e) { /* 拿不到就留空，不显示错的标题 */ }
-    },
 
     /** 跑一个阶段：完成后推进游标与百分比，并向主进程报一次进度 */
     async stage (i, fn) {
@@ -200,12 +160,6 @@ export default {
       } catch (e) { /* ignore */ }
     },
 
-    winMinimize () {
-      if (windowApi && windowApi.window) { windowApi.window.minimize() }
-    },
-    winClose () {
-      if (windowApi && windowApi.window) { windowApi.window.close() }
-    }
   }
 }
 </script>
@@ -221,77 +175,6 @@ export default {
   user-select: none;
   -webkit-user-select: none;
 }
-
-/* ---------- 顶栏：与 Onboarding.vue 的 .ob-top 同规格 ---------- */
-.bs-top {
-  position: relative;
-  flex: 0 0 44px;
-  display: flex;
-  align-items: center;
-  gap: var(--is-s-3);
-  padding: 0 0 0 var(--is-s-5);
-  background: var(--is-panel);
-  border-bottom: 1px solid var(--is-border);
-  -webkit-app-region: drag;
-}
-
-.bs-top__right,
-.bs-win__btn { -webkit-app-region: no-drag; }
-
-.bs-top__name {
-  flex: 1 1 auto;
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: var(--is-s-2);
-  font-size: var(--is-fs-sm);
-  color: var(--is-text-3);
-  overflow: hidden;
-  white-space: nowrap;
-}
-
-/* logo 尺寸同 Home.vue 的 .ib-brand__mark（18px），色值直接用品牌双色 */
-.bs-top__mark {
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-}
-
-.bs-top__mark svg { display: block; }
-
-.bs-top__text {
-  min-width: 0;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-.bs-top__right {
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  align-self: stretch;
-}
-
-.bs-win { display: flex; align-items: stretch; }
-
-.bs-win__btn {
-  width: 46px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 0;
-  background: transparent;
-  color: var(--is-text-2);
-  cursor: pointer;
-  transition: background-color var(--is-dur-fast) var(--is-ease-std),
-    color var(--is-dur-fast) var(--is-ease-std);
-}
-
-.bs-win__btn:hover { background: var(--is-inset); color: var(--is-text); }
-.bs-win__btn:active { background: var(--is-track); }
-
-.bs-win__btn--danger:hover { background: #d93025; color: #fff; }
 
 /* ---------- 内容区 ---------- */
 .bs-body {
@@ -369,7 +252,6 @@ export default {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .bs-win__btn,
   .bs-bar__fill,
   .bs-status { transition: none; }
 }
