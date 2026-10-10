@@ -160,8 +160,8 @@ module.exports = {
     // list item tooltips
     "tipInputDir":"輸入目錄",
     "tipOutputDir":"輸出目錄",
-    "tipDelay":"逐幀延時",
-    "framePanelTip":"幀預覽 / 序列查看",
+    "tipDelay":"播放設定",
+    "framePanelTip":"播放設定",
     "tipChangeOutput":"修改輸出目錄",
     "tipTaskSetting":"輸出設置（僅本任務）",
     // appearance

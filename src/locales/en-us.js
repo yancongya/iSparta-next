@@ -160,8 +160,8 @@ module.exports = {
     // list item tooltips
     "tipInputDir":"Input folder",
     "tipOutputDir":"Output folder",
-    "tipDelay":"Per-frame delay",
-    "framePanelTip":"Frame preview / sequence",
+    "tipDelay":"Playback settings",
+    "framePanelTip":"Playback settings",
     "tipChangeOutput":"Change output folder",
     "tipTaskSetting":"Output settings (this task only)",
     // appearance

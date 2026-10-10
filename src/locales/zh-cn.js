@@ -160,8 +160,8 @@ module.exports = {
     // 列表项提示
     "tipInputDir":"输入目录",
     "tipOutputDir":"输出目录",
-    "tipDelay":"逐帧延时",
-    "framePanelTip":"帧预览 / 序列查看",
+    "tipDelay":"播放设置",
+    "framePanelTip":"播放设置",
     "tipChangeOutput":"修改输出目录",
     "tipTaskSetting":"输出设置（仅本任务）",
     // 外观与主题

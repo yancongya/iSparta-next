@@ -176,7 +176,7 @@
               class="iconbtn"
               :title="framePanelTitle(project)"
               @click.stop="onDelaySetting(project)"
-            ><is-icon name="settings" size="sm" /></button>
+            ><is-icon name="play" size="sm" /></button>
           </div>
         </div>
         <div
@@ -235,6 +235,12 @@ import { naturalSort } from '../../util/sort'
 import notice from '../../ui-next/notice'
 import hostAdapter, { getSourceAdapter } from '../../util/host-env'
 
+/* 封面播放的两个常量，放在组件外避免每次实例化都重建 */
+const THUMB_PLAY_MAX = 48
+// 帧率缺省 / 为 0 / 负数 / 非数时的兜底。setInterval 收到 NaN 或 0
+// 会退化成近乎不停顿地触发，把渲染线程打满。
+const THUMB_PLAY_FALLBACK_FPS = 12
+
 export default {
   components: {
     'dialay-dialog': DelayDialog,
@@ -255,6 +261,9 @@ export default {
       sortDir: 1,
       hoverFrame: 0,
       hoverTimer: null,
+      // 封面持续播放：每行一条游标 + 定时器（见 THUMB_PLAY_* 注释）
+      playRows: {},
+      playTick: 0,
       // 空白处框选
       marquee: { active: false, moved: false, x: 0, y: 0, w: 0, h: 0, startX: 0, startY: 0 },
       suppressBlankClick: false
@@ -271,11 +280,36 @@ export default {
       }
     })
   },
+  watch: {
+    // 增删任务、搜索过滤、排序都会改变 projectList 的长度与顺序。
+    // 播放游标按**渲染下标**索引，行序一变就整体错位（换个合成放动画），
+    // 所以列表一变就整体重启。
+    projectList: {
+      handler () {
+        if (!this._isBeingDestroyed) { this.startThumbPlay() }
+      },
+      deep: false
+    },
+    // 逐帧延时/帧率被改后，各行播放节奏要跟着变
+    storeItems () {
+      if (!this._isBeingDestroyed) { this.startThumbPlay() }
+    }
+  },
+  mounted () {
+    // 封面持续播放：列表进入即播，不必先悬停
+    this.$nextTick(function () { this.startThumbPlay() })
+  },
   beforeDestroy () {
     this.stopHover()
+    // 定时器必须在这里清掉：组件销毁后 interval 仍会跑，row.frame 变化触发
+    // 重渲染会报「访问已销毁实例」
+    this.stopThumbPlay()
     this.unbindMarquee()
   },
   computed: {
+    storeItems () {
+      return this.$store.getters.getterItems || []
+    },
     selectedList () {
       return this.$store.getters.getterSelected
     },
@@ -295,7 +329,7 @@ export default {
       return this.selectedCount > 0 && this.selectedCount < this.itemCount
     },
     projectList () {
-      var items = this.$store.getters.getterItems || []
+      var items = this.storeItems || []
       var isCompLike = hostAdapter && (hostAdapter.supportsCompImport || hostAdapter.kind === 'cep')
       // 搜索过滤：名称 / 输出名
       var kw = String(this.filterKeyword || '').trim().toLowerCase()
@@ -376,9 +410,9 @@ export default {
       // PNGs 序列 / 任意带多帧或可拆帧的任务都可打开预览面板
       return !!(files && files.length)
     },
-    framePanelTitle (project) {
-      var type = project && project.basic && project.basic.type
-      if (type === 'PNGs') return this.$t('tipDelay')
+    framePanelTitle () {
+      // 两个键现在都是「播放设置」：原先 tipDelay=逐帧延时、framePanelTip=帧预览，
+      // 按类型分流已无意义。保留键位只是不动 i18n 结构，实际统一取一个。
       return this.$t('framePanelTip')
     },
     frameCount (project) {
@@ -545,17 +579,82 @@ export default {
     },
     thumbSrc (project, index) {
       var basic = project && project.basic
-      // CEP 合成：优先首帧预览 thumbPath
+      // CEP 合成：只有一张首帧预览，无帧序列可播
       if (basic && basic.thumbPath) {
         return this.thumbFor(basic.thumbPath)
       }
       var list = basic && basic.fileList
       if (!list || !list.length) { return '' }
+      // 悬停优先：指针所在行按悬停节奏走，其余行按各自的持续播放游标走
+      var frame = 0
       if (this.hoverIdx === index) {
-        var i = this.hoverFrame % Math.min(list.length, 48)
-        return this.thumbFor(list[i])
+        frame = this.hoverFrame
+      } else {
+        var row = this.playRows[index]
+        if (row) { frame = row.frame }
       }
-      return this.thumbFor(list[0])
+      return this.thumbFor(list[frame % Math.min(list.length, THUMB_PLAY_MAX)])
+    },
+    /**
+     * 该行是否值得起播放定时器。
+     * CEP 合成（只有 thumbPath 单帧）不播；单帧任务播了也看不出变化。
+     */
+    canPlayThumb (project) {
+      var basic = project && project.basic
+      if (!basic || basic.thumbPath) { return false }
+      var list = basic.fileList
+      return !!(list && list.length > 1)
+    },
+    /**
+     * 帧间隔（毫秒）：取 options.frameRate。
+     * 之前 hover 播放写死 120ms，与导出结果的实际播放速度对不上 ——
+     * 用户看到的节奏和最终产物不是一回事。
+     */
+    frameIntervalOf (project) {
+      var raw = project && project.options && project.options.frameRate
+      var fps = Number(raw)
+      if (!isFinite(fps) || fps <= 0) { fps = THUMB_PLAY_FALLBACK_FPS }
+      return Math.max(16, Math.round(1000 / fps))
+    },
+    /**
+     * 启动整份列表的封面播放。
+     * 一行一个定时器而不是全局一个：各行帧率可能不同，逐帧延时设置也能
+     * 按行改，共用一个节拍就没法各播各的。
+     */
+    startThumbPlay () {
+      var self = this
+      this.stopThumbPlay()
+      var list = this.projectList
+      for (var i = 0; i < list.length; i++) {
+        if (!this.canPlayThumb(list[i])) { continue }
+        this.startRowPlay(i, list[i])
+      }
+      // 行数/帧率变化后要重启，否则新增行不会播、改过帧率的行速度不对
+      this.playTick = (this.playTick || 0) + 1
+      void self
+    },
+    startRowPlay (index, project) {
+      var self = this
+      var row = this.playRows[index] || { frame: 0, timer: null }
+      if (row.timer) { clearInterval(row.timer) }
+      row.frame = 0
+      row.timer = setInterval(function () {
+        var n = (project.basic.fileList || []).length
+        if (!n) { return }
+        row.frame = (row.frame + 1) % Math.min(n, THUMB_PLAY_MAX)
+        // 改 src 触发的重渲染由 Vue 批处理；这里直接赋值即可
+        void self
+      }, this.frameIntervalOf(project))
+      this.$set(this.playRows, index, row)
+    },
+    stopThumbPlay () {
+      var rows = this.playRows || {}
+      for (var k in rows) {
+        if (Object.prototype.hasOwnProperty.call(rows, k) && rows[k] && rows[k].timer) {
+          clearInterval(rows[k].timer)
+        }
+      }
+      this.playRows = {}
     },
     startHover (index) {
       this.stopHover()
