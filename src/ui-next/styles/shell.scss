@@ -31,6 +31,7 @@
 
   &__top {
     display: flex;
+    flex-wrap: nowrap;
     align-items: center;
     /* 品牌已移到顶部横条（IsWinBar），这里只剩工具按钮，右对齐 */
     justify-content: flex-end;
@@ -40,7 +41,9 @@
 
   &__acts {
     display: flex;
+    flex: none;
     gap: var(--is-s-2);
+    white-space: nowrap;
   }
 }
 
