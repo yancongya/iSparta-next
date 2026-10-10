@@ -327,7 +327,9 @@ ipcMain.on('win:close', function (event) {
 function bindMaximizeState (target) {
   const push = () => {
     if (target.isDestroyed()) { return }
-    target.webContents.send('win:maximized', target.isMaximized())
+    // isMaximized() 在 macOS 全屏下为 false，但红绿灯此时隐藏、需要收掉 padding，
+    // 所以把全屏也算进「展开态」一起推
+    target.webContents.send('win:maximized', target.isMaximized() || target.isFullScreen())
   }
   target.on('maximize', push)
   target.on('unmaximize', push)

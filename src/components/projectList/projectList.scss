@@ -241,6 +241,23 @@
       opacity: 1;
     }
 
+    // 秒数徽标：左上角，帧数/帧率 = 时长
+    &__dur {
+      position: absolute;
+      left: 0;
+      top: 0;
+      padding: 1px 4px;
+      border-bottom-right-radius: var(--is-r-sm);
+      background: rgba(0, 0, 0, 0.66);
+      color: #fff;
+      font-family: var(--is-mono);
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      line-height: 1.5;
+      pointer-events: none;
+    }
+
     // 帧数徽标：序列帧一眼可辨
     &__badge {
       position: absolute;

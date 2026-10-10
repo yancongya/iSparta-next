@@ -3,7 +3,7 @@
        整条是拖拽区（frameless 窗口必须靠它拖动），按钮与品牌点击要显式 no-drag。 -->
   <header
     class="wbar"
-    :class="{ 'is-mac': isMac }"
+    :class="{ 'is-mac': isMac, 'is-expanded': maximized }"
     @dblclick="onDblClick"
   >
     <div class="wbar__brand" :title="appName" @click="openLanding">
@@ -185,6 +185,9 @@ export default {
 
 /* mac 的系统红绿灯压在左上角，品牌区要让开，否则盖住图标 */
 .wbar.is-mac { padding-left: 82px; }
+
+/* mac 全屏/最大化时红绿灯隐藏，padding 收掉，品牌左移 */
+.wbar.is-mac.is-expanded { padding-left: 12px; }
 
 .wbar__brand {
   display: inline-flex;

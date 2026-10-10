@@ -75,6 +75,7 @@
             @mouseleave="stopHover"
           />
           <is-icon v-else name="image" class="thumb__ph" />
+          <span v-if="durationOf(project)" class="thumb__dur">{{ durationOf(project) }}</span>
           <span v-if="frameCount(project) > 1" class="thumb__badge">{{ frameCount(project) }}F</span>
           <span v-if="stateOf(project.process) === 'done'" class="thumb__cmp-hint">
             <is-icon name="eye" size="xs" />
@@ -414,6 +415,14 @@ export default {
       // 两个键现在都是「播放设置」：原先 tipDelay=逐帧延时、framePanelTip=帧预览，
       // 按类型分流已无意义。保留键位只是不动 i18n 结构，实际统一取一个。
       return this.$t('framePanelTip')
+    },
+    // 帧数/帧率 = 时长（秒），左上角显示
+    durationOf (project) {
+      var fc = this.frameCount(project)
+      var fps = Number(project && project.options && project.options.frameRate)
+      if (!fc || !isFinite(fps) || fps <= 0) return ''
+      var sec = fc / fps
+      return String(Math.round(sec * 10) / 10).replace(/\.0$/, '') + 's'
     },
     frameCount (project) {
       var list = project && project.basic && project.basic.fileList
