@@ -218,14 +218,18 @@ function bindMenuClicked () {
       case 'delItem':
         try {
           // 右键不改选中（见 itemRightClick 的注释），所以这里必须先按
-          // storeIndex 定位到被右击的那一条，再删 —— 直接 dispatch
-          // deleteSelected 会把「当前选中的别的任务」删掉。
-          // CEP DOM 菜单走的就是这条路径。
+          // storeIndex 定位到被右击的那一条，再删 —— 直接沿用当前选中会
+          // 删掉别人。
+          //
+          // 动作名是 removeSelectedForce 而非 deleteSelected —— 后者在
+          // store 里根本不存在，dispatch 静默失败，表现就是「点了没反应」。
+          // 与 Delete 键 / 底栏「删除所选」同一条路径（Home.vue 用的也是它），
+          // 运行中的任务会先杀进程再移除。
           const items = storeRef && storeRef.getters && storeRef.getters.getterItems
           const si = (payload && payload.storeIndex != null) ? payload.storeIndex : (payload && payload.index)
           if (storeRef && storeRef.dispatch && items && si != null && items[si]) {
             if (!items[si].isSelected) storeRef.dispatch('singleSelect', si)
-            storeRef.dispatch('deleteSelected')
+            storeRef.dispatch('removeSelectedForce')
           }
         } catch (eDel) { /* ignore */ }
         break

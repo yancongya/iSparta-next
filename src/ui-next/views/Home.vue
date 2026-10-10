@@ -24,6 +24,7 @@
             </svg>
           </span>
           <span class="ib-brand__text">{{ appName }}</span>
+          <span class="ib-brand__ver mono">{{ appVersion }}</span>
         </button>
         <div class="ib-import__acts">
           <!-- 单按钮切换视图：图标跟当前模式走（任务列表 list ↔ 合成树 layers） -->
@@ -123,6 +124,7 @@
             </svg>
           </span>
           <span class="ib-rail__brand-text">{{ appName }}</span>
+          <span class="ib-rail__brand-ver mono">{{ appVersion }}</span>
         </button>
 
         <!-- 使用引导：随时可重新调起（首启已自动弹过也能再打开） -->
@@ -293,7 +295,7 @@ import ThemeManager from '../theme'
 import { BP_NARROW, BP_WIDE } from '../styles/breakpoints'
 import { storage } from '../../util/node-env'
 import notice from '../notice'
-import { APP_NAME } from '../../brand'
+import { APP_NAME, APP_VERSION } from '../../brand'
 import updateService from '../../util/updateService'
 import hostAdapter, { getSourceAdapter } from '../../util/host-env'
 import CompTree from '../../components/compTree/compTree.vue'
@@ -345,6 +347,8 @@ export default {
   data () {
     return {
       appName: APP_NAME,
+      // 版本号从 package.json 读（brand.js 单一来源），与窗口标题同源
+      appVersion: APP_VERSION,
       // dragenter/dragleave 会在子元素间反复触发，用计数器判定真正的进出
       dragDepth: 0,
       dragging: false,

@@ -58,6 +58,17 @@
     svg { display: block; }
   }
 
+  // 版本号：跟在品牌名后，不继承大写与小字号 —— 品牌名是识别主体，
+  // 版本号只是角标信息，抢了视觉权重反而看不清是哪一版。
+  &__ver {
+    color: var(--is-text-3);
+    font-family: var(--is-mono, monospace);
+    font-size: var(--is-fs-xs);
+    font-weight: 400;
+    letter-spacing: 0.04em;
+    text-transform: none;
+  }
+
   // 可点击跳落地页（桌面空态 + CEP 顶栏）
   &--link {
     padding: 0;
@@ -107,6 +118,15 @@
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
+  }
+
+  // 版本号：竖轨宽窄，弱化成角标并允许收缩，品牌名优先占位
+  &-ver {
+    flex: none;
+    color: var(--is-text-3);
+    font-weight: 400;
+    letter-spacing: 0.04em;
+    text-transform: none;
   }
 }
 
