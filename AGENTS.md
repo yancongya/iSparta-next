@@ -182,7 +182,13 @@ CI：`release.yml` 负责 bump、打包、挂 Release（notes 模板见该 workf
 - **双端一起更**：同一 NSIS/Release 更新桌面与 AE 扩展；扩展不单独热更。桌面 electron-updater 完成后由应用自检并刷新 CEP 目录；CEP 内不跑 electron-updater。
 - **CEP 的更新路径（Windows）**：AE 面板不再只做「前往下载」——面板后台下**同一个官方安装包**（`src/util/cepUpdater.js` + 桥的 `updater:*` 通道），下载完成后主按钮是「**运行安装包**」（起 NSIS 向导，`detached + unref` 不阻塞面板），桌面与 AE 扩展由向导的组件页一次更完。**AE 不会被安装包重启**，装完必须引导用户重启 After Effects（文案 `updateCepDownloaded` / `updateCepInstallerBody`）。mac 无 NSIS，CEP 侧仍只能「前往下载」。
 - **更新偏好双端分键**：桌面与 AE 面板共用 `%TEMP%/iSparta/localstorage.json`（`os.tmpdir()`），更新节流相关键按宿主分开（`updateCheck.app` / `updateCheck.cep`，见 `src/util/updatePrefs.js`）——否则一端点过「稍后」会吃掉另一端的更新提示。主题、语言等其余偏好仍双端共享。
-- 不用 Bolt/Nx；一体安装走现有 NSIS 组件页；发版仍须用户点名（§2.2）。
+- **不用** Bolt/Nx；一体安装走现有 NSIS 组件页；发版仍须用户点名（§2.2）。
+- **macOS 没有安装向导，靠桌面应用自检补齐**（`mac.target` 只有 `zip`，electron-builder 无 mac 版 NSIS `include`）：
+  - **落盘**：桌面应用每次启动调 `ensureCepExtension`（`src/util/cepSync.js`），darwin 分支把 payload 拷到 `~/Library/Application Support/Adobe/CEP/extensions/`。所以 mac 用户只要「启动一次桌面应用」，扩展即到位，热更后也自动刷新。
+  - **PlayerDebugMode**：`src/util/cepDebugMode.js` 在落盘后执行 payload 自带的 `install/install-as-admin`（`public/install/` 是唯一真相源，随 payload 分发）。**不要在 JS 里再抄一份 CSXS 版本区间** —— Adobe 加版本时只改脚本，抄一份必然漂移。
+  - **只跑一次**：标记 `.player-debug-mode` 写在扩展目录内，刷新扩展会重建该目录、标记随之消失，语义即「这一份扩展已应用过」。避免每次启动都 `killall cfprefsd`。
+  - `public/install/安装方法-macOS.txt` 的「方式一」必须写「启动一次桌面应用」，**不得**沿用 Windows 的「组件页勾选」说法（mac 上不存在）；该文件原写的 `install-as-admin.zip` 也是错的 —— zip 里是裸脚本。
+  - payload 的 `version.json` 由 `extraResources` **一次打进所有平台**，`install.*` 字段必须按 `win32` / `darwin` 分列，写死 `%APPDATA%`/`HKCU` 会把错路径带进 mac 包。
 - **安装范围只问一次**：唯一真相源是 electron-builder 自带的「安装模式」页（`$installMode` = `all` / `CurrentUser`，选「所有用户」时该页已完成 UAC 提权）。它的结果同时决定**主程序**目录与 **CEP 落盘位置**（Common Files ↔ `%APPDATA%`，互斥禁双写）；NSIS 组件页**不再放安装范围 radio**，只只读显示落盘位置（`build/installer.nsh` 的 `ispartaResolveScope`）。AE 版本用注册表+多盘枚举探测，仅用于校验/展示/PlayerDebugMode，不装多份。详见 [`docs/PLAN-DUAL-TARGET.md`](docs/PLAN-DUAL-TARGET.md) §9。
 - 实现阶段同步更新本节与 `docs/PLAN-DUAL-TARGET.md` 勾选状态。
 

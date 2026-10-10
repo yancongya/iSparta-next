@@ -99,10 +99,24 @@ function stageVersionJson (stagedBins) {
     builtAt: new Date().toISOString(),
     payload: 'cep/' + EXT_ID,
     binaries: stagedBins,
+    // payload 由 electron-builder extraResources 一次性打进 **所有** 平台产物
+    // （mac 产物是 zip，没有安装向导可挂脚本，落盘与调试模式都由桌面应用自检完成，
+    //   见 src/util/cepSync.js 与 src/util/cepDebugMode.js）。
+    // 所以这三个字段必须按平台分列 —— 写死 %APPDATA% / HKCU 会把错误路径
+    // 原样带进 mac 包里的 version.json。三者均无运行时消费者，仅供排障参考。
     install: {
-      userCep: '%APPDATA%\\Adobe\\CEP\\extensions\\' + EXT_ID,
-      commonCep: '%CommonProgramFiles%\\Adobe\\CEP\\extensions\\' + EXT_ID,
-      playerDebugMode: 'HKCU\\Software\\Adobe\\CSXS.*\\PlayerDebugMode=1'
+      userCep: {
+        win32: '%APPDATA%\\Adobe\\CEP\\extensions\\' + EXT_ID,
+        darwin: '~/Library/Application Support/Adobe/CEP/extensions/' + EXT_ID
+      },
+      commonCep: {
+        win32: '%CommonProgramFiles%\\Adobe\\CEP\\extensions\\' + EXT_ID,
+        darwin: null // 本项目不向 macOS 系统级 CEP 目录安装
+      },
+      playerDebugMode: {
+        win32: 'NSIS 组件页写 HKCU\\Software\\Adobe\\CSXS.6-14\\PlayerDebugMode=1',
+        darwin: '扩展落盘后由桌面应用执行 install/install-as-admin（CSXS.5-25）'
+      }
     }
   })
 }

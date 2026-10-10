@@ -8,6 +8,7 @@ import { APP_NAME } from './brand'
 import { checkUpdate, isAllowedExternalUrl } from './util/updateCheck'
 import { registerAutoUpdateIpc } from './util/autoUpdate'
 import { ensureCepExtension } from './util/cepSync'
+import { ensurePlayerDebugMode } from './util/cepDebugMode'
 const isDevelopment = process.env.NODE_ENV !== 'production'
 const path = require("path");
 const fsp = require('fs');
@@ -488,6 +489,18 @@ try {
   })
   if (cepSyncResult && cepSyncResult.refreshed) {
     console.log('[cep-sync] refreshed', cepSyncResult.reason, cepSyncResult.dest, cepSyncResult.version)
+  }
+  // macOS 没有 NSIS 组件页可写 PlayerDebugMode，扩展落盘后用 payload 自带脚本补上
+  const cepDebugResult = ensurePlayerDebugMode({
+    platform: process.platform,
+    dest: cepSyncResult && cepSyncResult.dest,
+    payloadDir: cepSyncResult && cepSyncResult.payloadDir,
+    refreshed: !!(cepSyncResult && cepSyncResult.refreshed)
+  })
+  if (cepDebugResult.applied) {
+    console.log('[cep-debug] applied', cepDebugResult.script)
+  } else if (cepDebugResult.reason !== 'nsis-installer' && cepDebugResult.reason !== 'already-applied') {
+    console.warn('[cep-debug] skip', cepDebugResult.reason, cepDebugResult.error || '')
   }
 } catch (eCepSync) {
   console.warn('[cep-sync] skip', String(eCepSync && eCepSync.message || eCepSync))
