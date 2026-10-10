@@ -3451,27 +3451,34 @@ html[data-theme="dark"] .cmp-tab.is-on { color: #0c0f0e; }
   padding-bottom: 0;
 }
 
-/* rel-shell 变弹性列、rel-board 吃掉剩余高度 —— 让右列真的被撑满。 */
+/* 高度锚在左侧时间轴，右列不再参与行高计算。
+   做法：把 rel-shell 设为定位容器、rel-board 绝对定位铺满 —— 绝对定位的后代
+   不参与 grid 行高计算，行高就只由时间线决定（右列原本要 627、时间线只有 541，
+   行高被抬到 627，两列一起变高）。
+   随后 rel-board 撑满这个高度，内部（版本轨 / 详情）各自滚动，装不下的部分不再外溢。 */
 .lineage-cols .rel-shell {
-  display: flex;
-  flex-direction: column;
+  position: relative;
+  min-height: 0;
 }
 
 .lineage-cols .rel-board {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
   min-height: 0;
-  flex: 1 1 auto;
 }
 
-/* 版本轨与详情各自封顶并内部滚动 —— 面板高度由左列的自然高度决定，
-   右列只负责把空白填满，不会反过来把两列一起撑高。 */
 .lineage-cols .rel-board__main {
+  grid-template-rows: minmax(0, 1fr);
   min-height: 0;
 }
 
 .lineage-cols .rel-nav,
 .lineage-cols .rel-pane {
-  max-height: 340px;
+  max-height: none;
   min-height: 0;
+  overflow: auto;
 }
 
 /* 作者墙与上方两列之间要留呼吸。之前靠 .rel-shell 的 margin-bottom，
