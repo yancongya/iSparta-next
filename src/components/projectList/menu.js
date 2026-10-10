@@ -127,6 +127,11 @@ function showDomMenu (payload, x, y) {
   if (payload && payload.isRunning) {
     items.push({ id: 'stopItem', label: locale.stopItem || '终止任务' })
   }
+  // 删除：与桌面原生菜单同项（background.js 的 project-item 模板最后一项）。
+  // 「更改保存位置」不列在这里 —— 它要走原生目录选择弹窗，DOM 菜单做不到。
+  if (payload && payload.canDelete) {
+    items.push({ id: 'delItem', label: locale.delItem || '删除' })
+  }
 
   const el = document.createElement('div')
   el.className = 'is-ctx-menu'
@@ -212,7 +217,14 @@ function bindMenuClicked () {
         break
       case 'delItem':
         try {
-          if (storeRef && storeRef.dispatch) {
+          // 右键不改选中（见 itemRightClick 的注释），所以这里必须先按
+          // storeIndex 定位到被右击的那一条，再删 —— 直接 dispatch
+          // deleteSelected 会把「当前选中的别的任务」删掉。
+          // CEP DOM 菜单走的就是这条路径。
+          const items = storeRef && storeRef.getters && storeRef.getters.getterItems
+          const si = (payload && payload.storeIndex != null) ? payload.storeIndex : (payload && payload.index)
+          if (storeRef && storeRef.dispatch && items && si != null && items[si]) {
+            if (!items[si].isSelected) storeRef.dispatch('singleSelect', si)
             storeRef.dispatch('deleteSelected')
           }
         } catch (eDel) { /* ignore */ }
@@ -258,6 +270,9 @@ class rightMenu {
       type: p.type,
       compIndex: p.compIndex,
       compName: p.compName,
+      // 删除项是否可用：多选时菜单整组动作语义不同（桌面原生菜单也是这个约定），
+      // 由调用方按当前选择态决定
+      canDelete: p.canDelete != null ? p.canDelete : !isMultiItems,
       index: (p.index != null ? p.index : index),
       // 列表可能被排序/过滤，渲染下标 ≠ store 数组下标；变更类动作必须用 store 下标
       storeIndex: (p.storeIndex != null ? p.storeIndex : null),
@@ -277,8 +292,13 @@ class rightMenu {
       showDomMenu(menuPayload, x, y)
       return
     }
+    // x/y 必须传：原生 menu.popup 不传坐标时落点由系统决定，
+    // 在多显示器 / 负坐标屏上会弹到屏幕外，表现就是「右键没反应」。
+    // CEP 分支的 DOM 菜单用的是 window.__ispartaCtxX/Y，与此处同源。
     ipc.send('menu:popup', {
       menuId: 'project-item',
+      x: (typeof window !== 'undefined' && window.__ispartaCtxX) || 0,
+      y: (typeof window !== 'undefined' && window.__ispartaCtxY) || 0,
       payload: menuPayload
     })
   }
