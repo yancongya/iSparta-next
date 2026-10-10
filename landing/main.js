@@ -2585,7 +2585,7 @@
   setupHeroScramble();
   setupHeroCta();
 /**
- * 工程要点横轨：纵向滚动驱动横向位移（scrub，不 pin）。
+ * 00 · ABOUT 的横向能力轨：纵向滚动驱动横移（scrub，不 pin）+ 鼠标滚轮直滚。
  *
  * 最初用 pin + pinSpacing，试下来轨道下方会空出约 280px —— pin 期间该段是
  * fixed，pin 补出来的间距要等下一段滚上来才填上，中间就是一段空洞。
@@ -2594,12 +2594,12 @@
  *
  * 四道闸，任一条不满足就退回原生横滚容器：
  *  1. 减少动效 —— scrub 是典型的晕动症来源，必须整个关掉。
- *  2. 无 GSAP / ScrollTrigger —— 自托管脚本没加载失败时不能留半截行为。
+ *  2. 无 GSAP / ScrollTrigger —— 自托管脚本没加载成功时不能留半截行为。
  *  3. 轨道没溢出 —— 视口比轨道还宽就没有横着看的必要。
  *  4. 窄屏 —— 卡片本来就排得下，强行横移反而更难读。
  */
 function setupRail() {
-  var rail = document.getElementById("rail-why")
+  var rail = document.getElementById("rail-about")
   if (!rail) return
   var viewport = rail.querySelector(".rail__viewport")
   var track = rail.querySelector(".rail__track")
@@ -2618,25 +2618,53 @@ function setupRail() {
 
   function usable() {
     // 溢出不足半屏，或视口本身很窄，都没有横着看的必要
-    return shift() > viewport.clientWidth * 0.35 && window.innerWidth > 860
+    return shift() > viewport.clientWidth * 0.35 && window.innerWidth > 900
   }
 
   if (!usable()) return fallback()
 
   rail.classList.add("rail--driven")
 
-  window.ScrollTrigger.create({
-    trigger: rail,
-    // 轨道底部碰到视口底部就开始推，完全滚出视口顶就结束。
-    // 不 pin，所以这段区间正好等于轨道在视口里穿过的距离。
-    start: "top bottom",
-    end: "bottom top",
-    scrub: 0.6,
-    invalidateOnRefresh: true,
-    onUpdate: function (self) {
-      track.style.transform = "translate3d(" + -shift() * self.progress + "px,0,0)"
+  function paint(px) {
+    track.style.transform = "translate3d(" + -px + "px,0,0)"
+  }
+
+window.ScrollTrigger.create({
+  trigger: rail,
+  // 起点用 top 78% 而不是 top bottom：轨道有三百多高，若一碰到视口下沿就开始推，
+  // 读者刚看到这一段时 [00]–[03] 就已经被推出屏幕了。
+  // 终点 bottom 22% 让轨道在离开视口前刚好推到底。
+  start: "top 78%",
+  end: "bottom 22%",
+  scrub: 0.6,
+  invalidateOnRefresh: true,
+  onUpdate: function (self) {
+    paint(shift() * self.progress)
+  },
+})
+
+  /**
+   * 鼠标滚轮直接横滚。
+   * 只在「还移得动」的方向上拦截；到头了就把控制权还给页面，
+   * 否则鼠标会被困在这条轨道里出不去 —— 横向滚动区最常见的坑。
+   * 接管时必须自己同步 scrollLeft，否则下一次 scrub 会按页面进度
+   * 把轨道拽回纵向对应的位置，表现为「横滚一下又弹回去」。
+   */
+  viewport.addEventListener(
+    "wheel",
+    function (e) {
+      if (e.ctrlKey) return // 缩放手势别抢
+      var max = viewport.scrollWidth - viewport.clientWidth
+      if (max <= 0) return
+      var next = viewport.scrollLeft + e.deltaY
+      if ((viewport.scrollLeft <= 0 && e.deltaY < 0) ||
+          (viewport.scrollLeft >= max - 1 && e.deltaY > 0)) return
+      e.preventDefault()
+      viewport.scrollLeft = Math.max(0, Math.min(max, next))
+      paint(viewport.scrollLeft)
     },
-  })
+    { passive: false }
+  )
 
   // 视口尺寸变了（旋转 / 改窗口 / 移动端地址栏收起）要重新判定能不能用
   var rt = 0

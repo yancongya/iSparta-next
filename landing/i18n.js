@@ -11,6 +11,7 @@
 
   var DICT = {
     "zh-CN": {
+      "about.railHint": "向下滚动 · 横向浏览",
       "meta.title": "iSparta-next · APNG / WebP / GIF 转换工作台",
       "meta.desc":
         "iSparta-next：把 PNG 序列、APNG、Animated WebP、GIF 互转与压缩的开源桌面工具。支持大小阈值自动重压、路径变量、批量导出。Win / macOS / Linux 免费下载。",
@@ -176,8 +177,7 @@
         "Windows / Linux 安装版支持应用内自动更新；AE 扩展由同一个安装包的组件页一次装完，装完重启 After Effects 生效。",
       "why.eb": "09 \u00b7 WHY NEXT",
       "why.h2": "不是缝缝补补，是整台重做",
-      "why.railHint": "向下滚动 · 横向浏览",
-      "why.sub": "原版停更好久了。这边在社区 fork 的地基上，前后端都重写过。",
+            "why.sub": "原版停更好久了。这边在社区 fork 的地基上，前后端都重写过。",
       "why.tag1": "底层",
       "why.tag2": "界面",
       "why.tag3": "导出",
@@ -248,6 +248,7 @@
       "lang.toggle": "切换语言",
     },
     "en-US": {
+      "about.railHint": "Scroll down · browse sideways",
       "meta.title": "iSparta-next · APNG / WebP / GIF converter",
       "meta.desc":
         "iSparta-next: open-source desktop app to convert and compress PNG sequences, APNG, Animated WebP, and GIF. Size limit, path vars, batch export. Free for Win / macOS / Linux.",
@@ -414,8 +415,7 @@
         "Windows and Linux installers update in-app. The AE extension ships in the same installer's component page — restart After Effects once it lands.",
       "why.eb": "09 \u00b7 WHY NEXT",
       "why.h2": "Not a patch — a rebuilt workbench",
-      "why.railHint": "Scroll down · browse sideways",
-      "why.sub":
+            "why.sub":
         "The original stalled for years. This repo rewrote runtime and UI on top of community-fork foundations.",
       "why.tag1": "Runtime",
       "why.tag2": "UI",

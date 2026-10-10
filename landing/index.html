@@ -211,118 +211,25 @@
   </section>
 
   <!-- 可抓取产品说明（SEO 静态正文，不依赖 JS） -->
+  <!-- trae.ai「What You'll Unlock」式：左栏一个统一大标题（滚动时吸附），
+       右栏一轨横向浏览全部能力。
+       轨道卡片 = 原 ABOUT 六张能力卡 + 原 WHY NEXT 五条工程要点 + 一张运行日志面板卡。
+       编号 [NN] 由 CSS counter 生成，不往卡片里插元素。 -->
   <section class="section section-about" id="about">
-    <div class="section-head">
-      <p class="eyebrow mono">00 · ABOUT</p>
-      <h2>iSparta-next 是什么？iSparta 停更后的现代替代</h2>
-      <p class="section-sub">
-        iSparta-next（官网本页）是一款<strong>开源、跨平台的桌面动图转换工具</strong>，在长期停止维护的经典
-        <a href="https://github.com/iSparta/iSparta" target="_blank" rel="noopener">iSparta</a>
-        基础上重构，面向需要处理 <strong>PNG 序列、APNG、Animated WebP、GIF</strong> 的设计师与前端开发者。
-        与旧版相比，iSparta-next 升级到 Electron 28，重做了工作台 UI，并加入输出大小阈值、路径变量模板、批量导入与前后对比等能力。
-      </p>
-    </div>
-    <div class="about-grid">
-      <article class="about-card about-card--ill">
-        <div class="ill" aria-hidden="true">
-          <svg class="ill-svg ill-convert" viewBox="0 0 160 88" xmlns="http://www.w3.org/2000/svg">
-            <rect class="ill-frame f1" x="10" y="22" width="34" height="34" rx="6"/>
-            <rect class="ill-frame f2" x="10" y="22" width="34" height="34" rx="6"/>
-            <rect class="ill-frame f3" x="10" y="22" width="34" height="34" rx="6"/>
-            <path class="ill-rail" d="M52 39 H108" />
-            <g class="ill-chip c1"><rect x="112" y="14" width="40" height="20" rx="10"/><text x="132" y="28" text-anchor="middle">APNG</text></g>
-            <g class="ill-chip c2"><rect x="112" y="38" width="40" height="20" rx="10"/><text x="132" y="52" text-anchor="middle">WebP</text></g>
-            <g class="ill-chip c3"><rect x="112" y="62" width="40" height="20" rx="10"/><text x="132" y="76" text-anchor="middle">GIF</text></g>
-          </svg>
-        </div>
-        <h3>格式互转</h3>
-        <p>支持 PNG 序列合成 APNG / GIF / Animated WebP，以及 APNG、GIF、WebP 之间的互转与再压缩，适合表情包、贴纸与帧动画导出。</p>
-      </article>
-      <article class="about-card about-card--ill">
-        <div class="ill" aria-hidden="true">
-          <svg class="ill-svg ill-gate" viewBox="0 0 160 88" xmlns="http://www.w3.org/2000/svg">
-            <rect class="ill-tank" x="18" y="16" width="70" height="56" rx="8"/>
-            <rect class="ill-fill" x="24" y="40" width="58" height="28" rx="5"/>
-            <line class="ill-limit" x1="18" y1="36" x2="88" y2="36"/>
-            <text class="ill-cap" x="53" y="12" text-anchor="middle">1MB</text>
-            <g class="ill-scale">
-              <rect class="ill-needle" x="118" y="28" width="6" height="32" rx="3"/>
-              <circle class="ill-dial" cx="121" cy="64" r="14"/>
-              <path class="ill-tick" d="M121 52 V58"/>
-            </g>
-          </svg>
-        </div>
-        <h3>体积可控</h3>
-        <p>输出大小阈值可在超出上限时自动按步长降质量重压，适配平台 1MB 等体积限制，减少手动反复试压缩。</p>
-      </article>
-      <article class="about-card about-card--ill">
-        <div class="ill" aria-hidden="true">
-          <svg class="ill-svg ill-batch" viewBox="0 0 160 88" xmlns="http://www.w3.org/2000/svg">
-            <rect class="ill-folder fo1" x="12" y="18" width="40" height="30" rx="5"/>
-            <path class="ill-folder-tab" d="M18 18 h12 l4 6 h18 v0"/>
-            <rect class="ill-folder fo2" x="12" y="52" width="40" height="22" rx="5" opacity=".55"/>
-            <path class="ill-flow" d="M60 34 H88 M60 62 H88 M88 34 V62 M88 48 H112"/>
-            <rect class="ill-out" x="112" y="34" width="36" height="28" rx="6"/>
-            <text class="ill-cap" x="130" y="52" text-anchor="middle">{src}</text>
-          </svg>
-        </div>
-        <h3>批量与路径</h3>
-        <p>拖拽 / 粘贴导入多组帧目录；路径变量模板与源目录输出策略，便于按项目批量导出与归档。</p>
-      </article>
-      <article class="about-card about-card--ill">
-        <div class="ill" aria-hidden="true">
-          <svg class="ill-svg ill-dl" viewBox="0 0 160 88" xmlns="http://www.w3.org/2000/svg">
-            <rect class="ill-tray" x="36" y="54" width="88" height="18" rx="6"/>
-            <path class="ill-arrow" d="M80 12 V42 M68 32 L80 44 L92 32"/>
-            <circle class="ill-orb o1" cx="48" cy="28" r="5"/>
-            <circle class="ill-orb o2" cx="112" cy="24" r="4"/>
-            <circle class="ill-orb o3" cx="128" cy="40" r="3.5"/>
-          </svg>
-        </div>
-        <h3>系统与下载</h3>
-        <p>Windows / macOS / Linux 免费使用。安装包由 GitHub Actions 构建，可在
-          <a href="https://github.com/yancongya/iSparta-next/releases" target="_blank" rel="noopener">GitHub Releases</a>
-          获取最新版；亦可从本页下载区选择对应平台。</p>
-      </article>
-      <article class="about-card about-card--ill">
-        <div class="ill" aria-hidden="true">
-          <svg class="ill-svg ill-ae-install" viewBox="0 0 160 88" xmlns="http://www.w3.org/2000/svg">
-            <rect class="ill-tank" x="28" y="18" width="104" height="52" rx="8"/>
-            <rect class="ill-fill" x="40" y="30" width="36" height="12" rx="3"/>
-            <rect class="ill-fill" x="40" y="48" width="36" height="12" rx="3" opacity=".45"/>
-            <path class="ill-arrow" d="M110 32 v22 M100 44 l10 12 10-12"/>
-            <text class="ill-cap" x="58" y="78" text-anchor="middle">NSIS</text>
-          </svg>
-        </div>
-        <h3>一个安装包，按需勾选</h3>
-        <p>同一个安装包里，桌面版与 AE 扩展可单独勾选、也可一并安装；安装范围支持所有用户或仅当前用户。</p>
-      </article>
-      <article class="about-card about-card--ill">
-        <div class="ill" aria-hidden="true">
-          <svg class="ill-svg ill-ae-core" viewBox="0 0 160 88" xmlns="http://www.w3.org/2000/svg">
-            <circle class="ill-dial" cx="80" cy="44" r="18"/>
-            <circle class="ill-fill" cx="80" cy="44" r="8"/>
-            <path class="ill-flow" d="M80 18 V28 M80 60 V70 M50 44 H60 M100 44 H110"/>
-            <rect class="ill-frame" x="28" y="34" width="16" height="20" rx="3"/>
-            <rect class="ill-frame" x="116" y="34" width="16" height="20" rx="3"/>
-            <text class="ill-cap" x="36" y="68" text-anchor="middle">CEP</text>
-            <text class="ill-cap" x="124" y="68" text-anchor="middle">Desk</text>
-          </svg>
-        </div>
-        <h3>两端同一颗引擎</h3>
-        <p>桌面端与 AE 扩展共用同一套压缩 / 合成 / 降质算法，输出的大小规则与命名习惯完全一致。</p>
-      </article>
-    </div>
-    <!-- 工程要点横轨：原 09 · WHY NEXT 段落。
-         去掉与上面卡片重复的三条（体积可控 / 批量与路径 / 两端同一颗引擎），
-         只留四条工程侧说明；纵向滚动经 ScrollTrigger pin 驱动横向位移，
-         无 JS / 减少动效时退回成原生可横向滚动的容器。 -->
-    <div class="rail" id="rail-why">
-      <div class="rail__head">
-        <p class="rail__title" data-i18n="why.h2">不是缝缝补补，是整台重做</p>
-        <p class="rail__hint mono" data-i18n="why.railHint">向下滚动 · 横向浏览</p>
+    <div class="ab">
+      <div class="ab__aside">
+        <p class="eyebrow mono">00 · ABOUT</p>
+        <h2 class="ab__title">iSparta-next 是什么？<br />iSparta 停更后的现代替代</h2>
+        <p class="ab__sub">
+          开源、跨平台的桌面动图转换工具，面向处理
+          <strong>PNG 序列、APNG、Animated WebP、GIF</strong> 的设计师与前端开发者。
+          右边这一轨是可以横着看完的全部能力。
+        </p>
       </div>
-      <div class="rail__viewport">
+      <div class="ab__main">
+        <div class="rail" id="rail-about">
+          <p class="rail__hint mono" data-i18n="about.railHint">向下滚动 · 横向浏览</p>
+          <div class="rail__viewport">
         <div class="rail__track">
         <article class="why-card">
           <div class="why-ill" aria-hidden="true">
@@ -364,6 +271,107 @@
           <h3 data-i18n="why.8t">热更新开发链路</h3>
           <p data-i18n="why.8d">桌面与 CEP 面板都接开发服务器，改代码即时生效，免去反复重装重启。</p>
         </article>
+
+        <article class="about-card about-card--ill">
+          <div class="ill" aria-hidden="true">
+            <svg class="ill-svg ill-convert" viewBox="0 0 160 88" xmlns="http://www.w3.org/2000/svg">
+              <rect class="ill-frame f1" x="10" y="22" width="34" height="34" rx="6"/>
+              <rect class="ill-frame f2" x="10" y="22" width="34" height="34" rx="6"/>
+              <rect class="ill-frame f3" x="10" y="22" width="34" height="34" rx="6"/>
+              <path class="ill-rail" d="M52 39 H108" />
+              <g class="ill-chip c1"><rect x="112" y="14" width="40" height="20" rx="10"/><text x="132" y="28" text-anchor="middle">APNG</text></g>
+              <g class="ill-chip c2"><rect x="112" y="38" width="40" height="20" rx="10"/><text x="132" y="52" text-anchor="middle">WebP</text></g>
+              <g class="ill-chip c3"><rect x="112" y="62" width="40" height="20" rx="10"/><text x="132" y="76" text-anchor="middle">GIF</text></g>
+            </svg>
+          </div>
+          <h3>格式互转</h3>
+          <p>支持 PNG 序列合成 APNG / GIF / Animated WebP，以及 APNG、GIF、WebP 之间的互转与再压缩，适合表情包、贴纸与帧动画导出。</p>
+        </article>
+        <article class="about-card about-card--ill">
+          <div class="ill" aria-hidden="true">
+            <svg class="ill-svg ill-gate" viewBox="0 0 160 88" xmlns="http://www.w3.org/2000/svg">
+              <rect class="ill-tank" x="18" y="16" width="70" height="56" rx="8"/>
+              <rect class="ill-fill" x="24" y="40" width="58" height="28" rx="5"/>
+              <line class="ill-limit" x1="18" y1="36" x2="88" y2="36"/>
+              <text class="ill-cap" x="53" y="12" text-anchor="middle">1MB</text>
+              <g class="ill-scale">
+                <rect class="ill-needle" x="118" y="28" width="6" height="32" rx="3"/>
+                <circle class="ill-dial" cx="121" cy="64" r="14"/>
+                <path class="ill-tick" d="M121 52 V58"/>
+              </g>
+            </svg>
+          </div>
+          <h3>体积可控</h3>
+          <p>输出大小阈值可在超出上限时自动按步长降质量重压，适配平台 1MB 等体积限制，减少手动反复试压缩。</p>
+        </article>
+        <article class="about-card about-card--ill">
+          <div class="ill" aria-hidden="true">
+            <svg class="ill-svg ill-batch" viewBox="0 0 160 88" xmlns="http://www.w3.org/2000/svg">
+              <rect class="ill-folder fo1" x="12" y="18" width="40" height="30" rx="5"/>
+              <path class="ill-folder-tab" d="M18 18 h12 l4 6 h18 v0"/>
+              <rect class="ill-folder fo2" x="12" y="52" width="40" height="22" rx="5" opacity=".55"/>
+              <path class="ill-flow" d="M60 34 H88 M60 62 H88 M88 34 V62 M88 48 H112"/>
+              <rect class="ill-out" x="112" y="34" width="36" height="28" rx="6"/>
+              <text class="ill-cap" x="130" y="52" text-anchor="middle">{src}</text>
+            </svg>
+          </div>
+          <h3>批量与路径</h3>
+          <p>拖拽 / 粘贴导入多组帧目录；路径变量模板与源目录输出策略，便于按项目批量导出与归档。</p>
+        </article>
+        <article class="about-card about-card--ill">
+          <div class="ill" aria-hidden="true">
+            <svg class="ill-svg ill-dl" viewBox="0 0 160 88" xmlns="http://www.w3.org/2000/svg">
+              <rect class="ill-tray" x="36" y="54" width="88" height="18" rx="6"/>
+              <path class="ill-arrow" d="M80 12 V42 M68 32 L80 44 L92 32"/>
+              <circle class="ill-orb o1" cx="48" cy="28" r="5"/>
+              <circle class="ill-orb o2" cx="112" cy="24" r="4"/>
+              <circle class="ill-orb o3" cx="128" cy="40" r="3.5"/>
+            </svg>
+          </div>
+          <h3>系统与下载</h3>
+          <p>Windows / macOS / Linux 免费使用。安装包由 GitHub Actions 构建，可在
+            <a href="https://github.com/yancongya/iSparta-next/releases" target="_blank" rel="noopener">GitHub Releases</a>
+            获取最新版；亦可从本页下载区选择对应平台。</p>
+        </article>
+        <article class="about-card about-card--ill">
+          <div class="ill" aria-hidden="true">
+            <svg class="ill-svg ill-ae-install" viewBox="0 0 160 88" xmlns="http://www.w3.org/2000/svg">
+              <rect class="ill-tank" x="28" y="18" width="104" height="52" rx="8"/>
+              <rect class="ill-fill" x="40" y="30" width="36" height="12" rx="3"/>
+              <rect class="ill-fill" x="40" y="48" width="36" height="12" rx="3" opacity=".45"/>
+              <path class="ill-arrow" d="M110 32 v22 M100 44 l10 12 10-12"/>
+              <text class="ill-cap" x="58" y="78" text-anchor="middle">NSIS</text>
+            </svg>
+          </div>
+          <h3>一个安装包，按需勾选</h3>
+          <p>同一个安装包里，桌面版与 AE 扩展可单独勾选、也可一并安装；安装范围支持所有用户或仅当前用户。</p>
+        </article>
+        <article class="about-card about-card--ill">
+          <div class="ill" aria-hidden="true">
+            <svg class="ill-svg ill-ae-core" viewBox="0 0 160 88" xmlns="http://www.w3.org/2000/svg">
+              <circle class="ill-dial" cx="80" cy="44" r="18"/>
+              <circle class="ill-fill" cx="80" cy="44" r="8"/>
+              <path class="ill-flow" d="M80 18 V28 M80 60 V70 M50 44 H60 M100 44 H110"/>
+              <rect class="ill-frame" x="28" y="34" width="16" height="20" rx="3"/>
+              <rect class="ill-frame" x="116" y="34" width="16" height="20" rx="3"/>
+              <text class="ill-cap" x="36" y="68" text-anchor="middle">CEP</text>
+              <text class="ill-cap" x="124" y="68" text-anchor="middle">Desk</text>
+            </svg>
+          </div>
+          <h3>两端同一颗引擎</h3>
+          <p>桌面端与 AE 扩展共用同一套压缩 / 合成 / 降质算法，输出的大小规则与命名习惯完全一致。</p>
+        </article>
+    
+        <article class="why-card">
+          <div class="why-ill" aria-hidden="true">
+            <svg viewBox="0 0 64 40" class="why-svg"><rect x="6" y="8" width="52" height="24" rx="4" class="wy-box"/><path d="M13 16h12M13 22h20M13 28h9" class="wy-stroke"/><circle cx="48" cy="16" r="2.5" class="wy-fill"/><circle cx="48" cy="28" r="2.5" class="wy-fill"/></svg>
+          </div>
+          <p class="why-card__tag mono">日志</p>
+          <h3>运行日志面板</h3>
+          <p>转换过程一条条摊开：解析帧序、编码器进度、每轮重压的体积与耗时，出问题能直接定位到某一次尝试。</p>
+        </article>
+</div>
+      </div>
         </div>
       </div>
     </div>
@@ -1092,66 +1100,70 @@
       <p class="section-sub" data-i18n="lineage.sub">感谢原作者与每一位社区维护者。本仓库站在他们肩膀上继续改。</p>
     </div>
 
-    <ol class="timeline">
-      <li class="tl-item">
-        <div class="tl-dot"></div>
-        <div class="tl-body">
-          <p class="tl-tag mono" data-i18n="lineage.1tag">原版 · 长期停更</p>
-          <h3><a href="https://github.com/iSparta/iSparta" target="_blank" rel="noopener">iSparta / iSparta</a></h3>
-          <p data-i18n="lineage.1d">经典 APNG / WebP 桌面转换工具。Electron 与依赖停在旧线，大量历史 Issue 无人跟进，安全补丁跟不上——这是 fork 浪潮的起点。</p>
-        </div>
-      </li>
-      <li class="tl-item">
-        <div class="tl-dot"></div>
-        <div class="tl-body">
-          <p class="tl-tag mono" data-i18n="lineage.2tag">社区 fork</p>
-          <h3><a href="https://github.com/Xheldon/iSparta" target="_blank" rel="noopener">Xheldon / iSparta</a></h3>
-          <p data-i18n="lineage.2d">修复帧乱序等问题，部分界面修补，证明「还能继续维护」。</p>
-        </div>
-      </li>
-      <li class="tl-item">
-        <div class="tl-dot"></div>
-        <div class="tl-body">
-          <p class="tl-tag mono" data-i18n="lineage.3tag">基建 fork · 本仓库直接上游</p>
-          <h3><a href="https://github.com/bigxixi/iSparta" target="_blank" rel="noopener">bigxixi / iSparta</a></h3>
-          <p data-i18n="lineage.3d">libwebp 1.5（修 CVE-2023-4863）、Electron 6→13、Vue CLI 4、execFile 防注入、存储/转换锁修复、迁到 GitHub Actions。</p>
-        </div>
-      </li>
-      <li class="tl-item is-now">
-        <div class="tl-dot"></div>
-        <div class="tl-body">
-          <p class="tl-tag mono" data-i18n="lineage.4tag">当前 · iSparta-next</p>
-          <h3><a href="https://github.com/yancongya/iSparta-next" target="_blank" rel="noopener">yancongya / iSparta-next</a></h3>
-          <p data-i18n="lineage.4d">在 bigxixi 基建上再次 fork：Electron 28 + sandbox / IPC，弃用 Element UI 重做工作台，新增大小阈值、路径变量、拆字命名、前后对比等；三端 CI 发版。</p>
-        </div>
-      </li>
-    </ol>
+    <!-- 左：历程时间线；右：更新日志。两列等宽等高（align-items:stretch）。 -->
+    <div class="lineage-cols">
+      <ol class="timeline">
+        <li class="tl-item">
+          <div class="tl-dot"></div>
+          <div class="tl-body">
+            <p class="tl-tag mono" data-i18n="lineage.1tag">原版 · 长期停更</p>
+            <h3><a href="https://github.com/iSparta/iSparta" target="_blank" rel="noopener">iSparta / iSparta</a></h3>
+            <p data-i18n="lineage.1d">经典 APNG / WebP 桌面转换工具。Electron 与依赖停在旧线，大量历史 Issue 无人跟进，安全补丁跟不上——这是 fork 浪潮的起点。</p>
+          </div>
+        </li>
+        <li class="tl-item">
+          <div class="tl-dot"></div>
+          <div class="tl-body">
+            <p class="tl-tag mono" data-i18n="lineage.2tag">社区 fork</p>
+            <h3><a href="https://github.com/Xheldon/iSparta" target="_blank" rel="noopener">Xheldon / iSparta</a></h3>
+            <p data-i18n="lineage.2d">修复帧乱序等问题，部分界面修补，证明「还能继续维护」。</p>
+          </div>
+        </li>
+        <li class="tl-item">
+          <div class="tl-dot"></div>
+          <div class="tl-body">
+            <p class="tl-tag mono" data-i18n="lineage.3tag">基建 fork · 本仓库直接上游</p>
+            <h3><a href="https://github.com/bigxixi/iSparta" target="_blank" rel="noopener">bigxixi / iSparta</a></h3>
+            <p data-i18n="lineage.3d">libwebp 1.5（修 CVE-2023-4863）、Electron 6→13、Vue CLI 4、execFile 防注入、存储/转换锁修复、迁到 GitHub Actions。</p>
+          </div>
+        </li>
+        <li class="tl-item is-now">
+          <div class="tl-dot"></div>
+          <div class="tl-body">
+            <p class="tl-tag mono" data-i18n="lineage.4tag">当前 · iSparta-next</p>
+            <h3><a href="https://github.com/yancongya/iSparta-next" target="_blank" rel="noopener">yancongya / iSparta-next</a></h3>
+            <p data-i18n="lineage.4d">在 bigxixi 基建上再次 fork：Electron 28 + sandbox / IPC，弃用 Element UI 重做工作台，新增大小阈值、路径变量、拆字命名、前后对比等；三端 CI 发版。</p>
+          </div>
+        </li>
+      </ol>
 
-    <!-- 发布面板：左版本轨 + 右详情 -->
-    <div class="rel-shell">
-      <div class="rel-board" id="rel-board" role="group" aria-label="更新日志">
-        <div class="rel-board__chrome">
-          <span class="rel-board__dots" aria-hidden="true"><i></i><i></i><i></i></span>
-          <span class="rel-board__title mono" data-i18n="rel.title">更新日志</span>
-          <span class="rel-board__count mono" id="rel-count">0</span>
-          <a
-            class="chip chip--sm chip--quiet"
-            href="https://github.com/yancongya/iSparta-next/releases"
-            target="_blank"
-            rel="noopener"
-            data-i18n="rel.all"
-          >GitHub</a>
-        </div>
-        <div class="rel-board__main">
-          <nav class="rel-nav" id="rel-nav" aria-label="版本列表"></nav>
-          <section class="rel-pane" id="rel-pane">
-            <div class="rel-board__empty mono" data-i18n="rel.empty">加载中…</div>
-          </section>
-        </div>
-        <div class="rel-board__foot">
-          <span class="rel-board__hint mono" data-i18n="rel.sub">与 GitHub Releases 同源</span>
+      <!-- 发布面板：左版本轨 + 右详情 -->
+      <div class="rel-shell">
+        <div class="rel-board" id="rel-board" role="group" aria-label="更新日志">
+          <div class="rel-board__chrome">
+            <span class="rel-board__dots" aria-hidden="true"><i></i><i></i><i></i></span>
+            <span class="rel-board__title mono" data-i18n="rel.title">更新日志</span>
+            <span class="rel-board__count mono" id="rel-count">0</span>
+            <a
+              class="chip chip--sm chip--quiet"
+              href="https://github.com/yancongya/iSparta-next/releases"
+              target="_blank"
+              rel="noopener"
+              data-i18n="rel.all"
+            >GitHub</a>
+          </div>
+          <div class="rel-board__main">
+            <nav class="rel-nav" id="rel-nav" aria-label="版本列表"></nav>
+            <section class="rel-pane" id="rel-pane">
+              <div class="rel-board__empty mono" data-i18n="rel.empty">加载中…</div>
+            </section>
+          </div>
+          <div class="rel-board__foot">
+            <span class="rel-board__hint mono" data-i18n="rel.sub">与 GitHub Releases 同源</span>
+          </div>
         </div>
       </div>
+
     </div>
 
     <div class="authors">
