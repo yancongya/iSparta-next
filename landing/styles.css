@@ -1490,7 +1490,7 @@ html[data-theme="dark"] .gate-panel,
 html[data-theme="dark"] .gate-stage,
 html[data-theme="dark"] .name-panel,
 html[data-theme="dark"] .authors,
-html[data-theme="dark"] .tl-body,
+html[data-theme="dark"] .tl-card,
 html[data-theme="dark"] .outset {
   background: var(--card);
   border-color: var(--line);
@@ -3272,219 +3272,253 @@ html[data-theme="dark"] .cmp-tab.is-on { color: #0c0f0e; }
   }
 }
 
-/* lineage timeline */
-/* 07 · LINEAGE：左历程时间线 / 右更新日志。
-   原来是两块全宽竖排（615px + 460px），左边空着一大片；
-   改成两列自适应平分，align-items:stretch 让两块等高。 */
-.lineage-cols {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px 28px;
-  align-items: stretch;
-}
+/* ==========================================================================
+   LINEAGE 段布局
+   --------------------------------------------------------------------------
+   两段各自铺满整段宽度、上下堆叠：接力历程 → 更新日志 → 作者墙。
+   （曾经是「历程 | 更新日志」两列各占一半，历程那张卡被挤在半个屏宽里，
+   右半张空白看着像没做完；历程改成竖轨后卡片理应吃掉全部剩余宽度。）
+   ========================================================================== */
 
-.lineage-cols .timeline,
-.lineage-cols .rel-shell {
-  margin: 0;
-  min-width: 0;
-}
-
-/* 窄屏回单列。更新日志内部是「左版本轨 + 右详情」两列，
-   外层已经单列时它也得跟着叠，否则 148px 的轨会把详情挤没。 */
-@media (max-width: 900px) {
-  .lineage-cols {
-    grid-template-columns: 1fr;
+/* 窄屏下更新日志内部的两列会挤在一起，得自己叠回单列 */
+@media (max-width: 720px) {
+  .rel-board__main {
+    grid-template-columns: minmax(0, 1fr);
   }
 
-  .lineage-cols .rel-board__main {
-    grid-template-columns: 1fr;
-  }
-
-  .lineage-cols .rel-nav {
+  .rel-nav {
     flex-direction: row;
+    border-right: none;
+    border-bottom: 1px solid var(--line);
+    max-height: none;
     overflow-x: auto;
   }
+
+  .rel-nav__item {
+    min-width: 100px;
+  }
 }
 
-.lineage {
-  list-style: none;
-  margin: 0 0 40px;
-  padding: 0 0 0 4px;
-  position: relative;
-}
 
-/* timeline：list-style:none 不会去掉 ol 的 UA 默认 padding-inline-start(40px)，
-   必须显式归零，否则左边凭空多出 40px，竖线也跟着错位。 */
+/* ==========================================================================
+   接力历程：横轨 —— 一条横线 + 四个圆点，放在更新日志面板上方；
+   hover 某个圆点，它对应的那张卡片才淡出，**往下盖住**下面的更新日志面板。
+
+   为什么横线上面不留空
+   ---------------------
+   早先为了「卡片往上弹」在轨道上方预留了一整条 padding，结果没 hover 时那里
+   就是一屏空白，白占掉近 130px。改成往下浮出后，预留的位置不需要了 ——
+   轨道本身只有 32px（一个圆点那么高），卡片盖在面板上，浮层本来就该盖住内容。
+
+   为什么不需要量高度定高
+   --------------------
+   卡片绝对定位、不参与布局，轨道高度与 hover 状态、与卡片文案长短都无关，
+   天然不会跳 —— 不像下面的更新日志得「按最高的一块写死 + 切语言重量」。
+
+   首末两张卡要贴边
+   ----------------
+   圆点用 space-between 铺满整条轨，首尾两点就在轨道左右边缘；
+   卡片默认以圆点为轴心居中（translateX(-50%)），靠边那两张会有一半飞出
+   视口，所以首末各自改成左/右对齐。
+   ========================================================================== */
 .timeline {
+  --tl-dot: 32px;
+
   list-style: none;
-  margin: 0;
-  padding: 0;
+  margin: 26px 0 0;
+  /* list-style:none 不会去掉 ol 的 UA 默认 padding-inline-start(40px)，
+     必须显式归零，否则整条轨右移 40px。 */
+  padding: 0 10px;
   position: relative;
+  display: flex;
+  justify-content: space-between;
 }
 
+/* 横线：top 取 --tl-dot/2 - 1 = 15px，线中心（15+1）才落在圆点圆心（16px）上 */
 .timeline::before {
   content: "";
   position: absolute;
-  left: 11px;
-  top: 8px;
-  bottom: 8px;
-  width: 2px;
-  background: linear-gradient(180deg, var(--line), var(--accent), var(--line));
+  left: 16px;
+  right: 16px;
+  top: calc(var(--tl-dot) / 2 - 1px);
+  height: 2px;
+  border-radius: 1px;
+  background: linear-gradient(90deg, var(--line), var(--accent), var(--line));
 }
 
-.tl-item {
+/* 节点是卡片的定位容器：left:50% 才是「圆点圆心」而不是「整条轨的一半」。 */
+.tl-node {
   position: relative;
-  padding: 0 0 28px 40px;
+  display: flex;
+  align-items: center;
 }
 
-.tl-item:last-child {
-  padding-bottom: 0;
+/* 圆点 16px 很难命中；按钮撑一圈透明热区，视觉不变 */
+.tl-dot-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--tl-dot);
+  height: var(--tl-dot);
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+}
+
+.tl-dot-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
 }
 
 .tl-dot {
-  position: absolute;
-  left: 4px;
-  top: 6px;
   width: 16px;
   height: 16px;
   border-radius: 50%;
   background: var(--paper);
   border: 3px solid var(--line);
+  transition: border-color 0.16s, background 0.16s, box-shadow 0.16s;
 }
 
-.tl-item.is-now .tl-dot {
+/* hover / 键盘聚焦 / 点击钉住：圆点填成品牌色并撑出一圈光晕 */
+.tl-node:hover .tl-dot,
+.tl-node:focus-within .tl-dot,
+.tl-node.is-on .tl-dot {
   border-color: var(--accent);
-  box-shadow: 0 0 0 4px var(--accent-soft);
+  background: var(--accent);
+  box-shadow: 0 0 0 5px var(--accent-soft);
 }
 
-.tl-body {
-  background: var(--card);
+.tl-node.is-now .tl-dot {
+  border-color: var(--accent);
+}
+
+/* 卡片：默认藏在圆点下方，hover / 聚焦 / 点一下钉住时才淡出，
+   **往下盖住**下面的更新日志面板 —— 所以要压过面板（z-index）。
+   定位上下文是 .tl-node（32px 宽），left:50% 正好是圆点圆心；
+   宽度因此不能用百分比（会算成 32px），只能用视口单位。
+   淡出期间立刻收回 pointer-events，否则正在消失的卡片会挡住相邻圆点。 */
+.tl-card {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 50%;
+  width: min(520px, 58vw);
+  transform: translate(-50%, -10px);
+  z-index: 30;
+  padding: 13px 16px;
   border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: 18px 20px;
+  border-radius: 14px;
+  background: var(--card);
+  box-shadow: 0 12px 34px color-mix(in srgb, var(--ink) 12%, transparent);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
 }
 
-.tl-item.is-now .tl-body {
+.tl-node:hover .tl-card,
+.tl-node:focus-within .tl-card,
+.tl-node.is-on .tl-card {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translate(-50%, 0);
+}
+
+/* 首尾两张贴边，否则以圆点为轴心居中会有一半飞出视口 */
+.tl-node:first-child .tl-card {
+  left: 0;
+  transform: translate(0, -10px);
+}
+
+.tl-node:first-child:hover .tl-card,
+.tl-node:first-child:focus-within .tl-card,
+.tl-node:first-child.is-on .tl-card {
+  transform: translate(0, 0);
+}
+
+.tl-node:last-child .tl-card {
+  left: auto;
+  right: 0;
+  transform: translate(0, -10px);
+}
+
+.tl-node:last-child:hover .tl-card,
+.tl-node:last-child:focus-within .tl-card,
+.tl-node:last-child.is-on .tl-card {
+  transform: translate(0, 0);
+}
+
+.tl-node.is-now .tl-card {
   border-color: color-mix(in srgb, var(--accent) 50%, var(--line));
-  box-shadow: 0 10px 32px color-mix(in srgb, var(--accent) 10%, transparent);
+  box-shadow: 0 14px 40px color-mix(in srgb, var(--accent) 14%, transparent);
 }
 
 .tl-tag {
-  margin: 0 0 6px;
-  font-size: 11px;
+  margin: 0 0 5px;
+  font-size: 10px;
+  font-weight: 700;
   color: var(--accent);
-  font-weight: 600;
   text-transform: uppercase;
 }
 
-.tl-body h3 {
-  margin: 0 0 8px;
-  font-size: 1.15rem;
-}
-
-.tl-body h3 a:hover {
-  color: var(--accent);
-}
-
-.tl-body p {
-  margin: 0;
-  color: var(--muted);
-  font-size: 0.95rem;
-}
-
-/* 时间线现在只占半栏（约 508px），原先按整幅 1044px 调的字号与内距
-   在这里显得又空又大 —— 每张卡的文字只占卡片一半宽，右侧一片空白。
-   整组按半栏收紧：内距、序号列、标题与正文都降一档。 */
-.lineage-cols .tl-item {
-  padding: 0 0 14px 26px;
-}
-
-.lineage-cols .tl-dot {
-  left: 0;
-  top: 5px;
-  width: 10px;
-  height: 10px;
-  border-width: 2px;
-}
-
-.lineage-cols .timeline::before {
-  left: 4px;
-  width: 2px;
-}
-
-.lineage-cols .tl-body {
-  padding: 12px 14px;
-  border-radius: 11px;
-  background: color-mix(in srgb, var(--paper) 45%, var(--card));
-}
-
-.lineage-cols .tl-tag {
-  margin-bottom: 4px;
-  font-size: 10px;
-}
-
-.lineage-cols .tl-body h3 {
-  margin-bottom: 6px;
+.tl-card__title {
+  margin: 0 0 6px;
   font-size: 1rem;
 }
 
-.lineage-cols .tl-body p {
+.tl-card__title a:hover {
+  color: var(--accent);
+}
+
+.tl-card__text {
+  margin: 0;
+  color: var(--muted);
   font-size: 13px;
-  line-height: 1.6;
+  line-height: 1.65;
 }
 
-/* 更新日志半栏后内部也收一收：版本轨 148px 会把详情挤成一条 */
-.lineage-cols .rel-board__main {
-  grid-template-columns: 116px minmax(0, 1fr);
-}
+/* 窄屏回竖轨：横轨在手机上圆点间距太密、卡片也容易顶到屏幕外 */
+@media (max-width: 720px) {
+  .timeline {
+    padding: 56px 0 56px 10px;
+    flex-direction: column;
+    justify-content: space-between;
+  }
 
-.lineage-cols .rel-nav {
-  padding: 10px 8px;
-}
+  .timeline::before {
+    left: 14px;
+    right: auto;
+    top: 56px;
+    bottom: 56px;
+    width: 2px;
+    height: auto;
+    background: linear-gradient(180deg, var(--line), var(--accent), var(--line));
+  }
 
-/* 两列的**盒子**等高（align-items:stretch）还不等于看着等高：
-   行高由内容多的那一列决定，短的那列底下就空一截。
-   但**不能**用 space-between 去撑满 —— 那会把四项摊开，行高跟着变大，
-   右列被迫拉伸跟着长高，两列一起变高，作者墙的顶部 margin 也被挤没了。
-   正确做法：左列保持自然高度，右列封顶 + 内部滚动，再让右列吃掉剩余高度对齐。 */
-.lineage-cols .tl-item:last-child {
-  padding-bottom: 0;
-}
+  /* 竖轨下卡片改为「从右侧淡入并垂直居中于圆点」，仍然不参与布局 */
+  .tl-card,
+  .tl-node:first-child .tl-card,
+  .tl-node:last-child .tl-card {
+    top: 50%;
+    left: 34px;
+    right: auto;
+    width: calc(100vw - 96px);
+    transform: translate(-10px, -50%);
+  }
 
-/* 高度锚在左侧时间轴，右列不再参与行高计算。
-   做法：把 rel-shell 设为定位容器、rel-board 绝对定位铺满 —— 绝对定位的后代
-   不参与 grid 行高计算，行高就只由时间线决定（右列原本要 627、时间线只有 541，
-   行高被抬到 627，两列一起变高）。
-   随后 rel-board 撑满这个高度，内部（版本轨 / 详情）各自滚动，装不下的部分不再外溢。 */
-.lineage-cols .rel-shell {
-  position: relative;
-  min-height: 0;
-}
-
-.lineage-cols .rel-board {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-}
-
-.lineage-cols .rel-board__main {
-  grid-template-rows: minmax(0, 1fr);
-  min-height: 0;
-}
-
-.lineage-cols .rel-nav,
-.lineage-cols .rel-pane {
-  max-height: none;
-  min-height: 0;
-  overflow: auto;
-}
-
-/* 作者墙与上方两列之间要留呼吸。之前靠 .rel-shell 的 margin-bottom，
-   两列改自适应后 margin 被清掉了，这里显式补回。 */
-.lineage-cols + .authors {
-  margin-top: 28px;
+  .tl-node:hover .tl-card,
+  .tl-node:focus-within .tl-card,
+  .tl-node.is-on .tl-card,
+  .tl-node:first-child:hover .tl-card,
+  .tl-node:first-child:focus-within .tl-card,
+  .tl-node:first-child.is-on .tl-card,
+  .tl-node:last-child:hover .tl-card,
+  .tl-node:last-child:focus-within .tl-card,
+  .tl-node:last-child.is-on .tl-card {
+    transform: translate(0, -50%);
+  }
 }
 
 /* ==========================================================================
@@ -3571,8 +3605,10 @@ html[data-theme="dark"] .cmp-tab.is-on { color: #0c0f0e; }
 }
 
 .rel-shell {
-  /* 与 timeline→面板 同级节奏：上 36 / 下 40，避免和 .authors 贴死 */
-  margin: 36px 0 40px;
+  /* 上：与上面的竖轨留出分组感；下：避免和 .authors 贴死。
+     （原来这条 margin 被两列布局的 .lineage-cols .rel-shell{margin:0} 覆盖成 0，
+     两列拆掉后恢复。） */
+  margin: 30px 0 0;
 }
 
 .rel-board {
@@ -3585,7 +3621,7 @@ html[data-theme="dark"] .cmp-tab.is-on { color: #0c0f0e; }
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  min-height: 360px;
+  min-height: 480px;
 }
 
 .rel-board__chrome {
@@ -3611,7 +3647,7 @@ html[data-theme="dark"] .cmp-tab.is-on { color: #0c0f0e; }
 .rel-board__main {
   display: grid;
   grid-template-columns: 148px 1fr;
-  min-height: 280px;
+  min-height: 420px;
   flex: 1 1 auto;
 }
 
@@ -3640,7 +3676,7 @@ html[data-theme="dark"] .cmp-tab.is-on { color: #0c0f0e; }
   border-right: 1px solid var(--line);
   background: color-mix(in srgb, var(--paper) 70%, var(--card));
   overflow: auto;
-  max-height: 360px;
+  max-height: 480px;
 }
 
 .rel-nav__item {
@@ -3714,7 +3750,7 @@ html[data-theme="dark"] .cmp-tab.is-on { color: #0c0f0e; }
 .rel-pane {
   padding: 16px 18px;
   overflow: auto;
-  max-height: 360px;
+  max-height: 480px;
 }
 
 .rel-pane__head {
@@ -3926,16 +3962,20 @@ html[data-theme="dark"] .cmp-tab.is-on { color: #0c0f0e; }
   }
 }
 
-/* author wall */
+/* 作者墙：四组信息量都不大，4 列排成一行即可。之前行距 20px、字号 14px
+   撑到 333px，比上面的更新日志面板还抢眼；这里只收紧各处间距与字号，
+   掉到 ~250px：作为段尾的署名区，而不是又一个主体区块。
+   ⚠ 别改成 2 列 —— 4 组会排成两行，高度反而涨上去。 */
 .authors {
+  margin-top: 40px;
   background: var(--card);
   border: 1px solid var(--line);
   border-radius: 20px;
-  padding: 28px 24px;
+  padding: 20px 22px;
 }
 
 .authors-title {
-  margin: 0 0 20px;
+  margin: 0 0 13px;
   font-size: 12px;
   color: var(--muted);
   font-weight: 600;
@@ -3945,13 +3985,13 @@ html[data-theme="dark"] .cmp-tab.is-on { color: #0c0f0e; }
 
 .authors-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 20px 16px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0 20px;
 }
 
 .author-group h4 {
-  margin: 0 0 10px;
-  font-size: 13px;
+  margin: 0 0 6px;
+  font-size: 12.5px;
   color: var(--ink);
 }
 
@@ -3961,13 +4001,13 @@ html[data-theme="dark"] .cmp-tab.is-on { color: #0c0f0e; }
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .author-group a {
   color: var(--accent);
   font-weight: 600;
-  font-size: 14px;
+  font-size: 13.5px;
 }
 
 .author-group a:hover {
@@ -3975,14 +4015,14 @@ html[data-theme="dark"] .cmp-tab.is-on { color: #0c0f0e; }
 }
 
 .author-tools li {
-  font-size: 13px;
+  font-size: 12.5px;
   color: var(--muted);
   font-family: var(--mono);
 }
 
 .authors-note {
-  margin: 22px 0 0;
-  font-size: 13px;
+  margin: 14px 0 0;
+  font-size: 12.5px;
   color: var(--muted);
 }
 

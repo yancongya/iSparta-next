@@ -591,14 +591,12 @@
       stagger: 0.06,
       duration: 0.4,
     });
-    gsap.utils.toArray(".tl-item").forEach(function (item, idx) {
-      gsap.from(item, {
-        scrollTrigger: { trigger: item, start: "top 90%" },
-        opacity: 0,
-        x: -16,
-        duration: 0.5,
-        delay: idx * 0.05,
-      });
+    gsap.from(".tl-node", {
+      scrollTrigger: { trigger: ".timeline", start: "top 92%" },
+      opacity: 0,
+      y: 12,
+      stagger: 0.05,
+      duration: 0.45,
     });
     gsap.from(".authors", {
       scrollTrigger: { trigger: ".authors", start: "top 92%" },
@@ -1707,6 +1705,10 @@
   // 语言切换后重挂「当前设备」徽标（它是 JS 生成的，不走 data-i18n）
   document.addEventListener("is:lang-applied", function () {
     setupCurrentDevice();
+    // 更新日志面板同样整块由 JS 生成，内部文案（当前版本 / 新功能 / 下载按钮 OS 名…）
+  // 全部走 tRel() 渲染那一刻的语言。data-i18n 只改带标记的节点，管不到这里，
+  // 不重渲的话切到英文后面板会留一整块中文。
+    if (relReleases.length) renderRelBoard(relReleases);
   });
 
   /* ---------- 微交互：滚动进度 / 磁吸 / 倾斜 / 火花 ---------- */
@@ -2574,8 +2576,55 @@ rail.classList.add("rail--driven")
   })
 }
 
+  /* ==========================================================================
+   接力历程（左列竖轨）
+   --------------------------------------------------------------------------
+   显隐本身全靠 CSS（:hover / :focus-within / .is-on），没有 JS 也能用。
+   这里只补两件 CSS 做不到的事：
+     · 触屏没有 hover —— 点圆点即钉住（.is-on），再点一次取消；
+     · 点别处把之前钉住的那张收回去，免得「关不掉」。
+   卡片是绝对定位的，轨道高度只由圆点决定，所以这里不需要任何高度测量。
+   ========================================================================== */
+function setupLineageDots() {
+    var list = document.querySelector(".timeline");
+    if (!list) return;
+    var nodes = Array.prototype.slice.call(list.querySelectorAll(".tl-node"));
+
+    nodes.forEach(function (node) {
+      var btn = node.querySelector(".tl-dot-btn");
+      if (!btn) return;
+      btn.addEventListener("click", function (e) {
+        e.stopPropagation();
+        var on = node.classList.contains("is-on");
+        nodes.forEach(function (n) { n.classList.remove("is-on"); });
+        if (!on) node.classList.add("is-on");
+      });
+    });
+
+    document.addEventListener("click", function () {
+      nodes.forEach(function (n) { n.classList.remove("is-on"); });
+    });
+
+    // 竖轨只有 4 个圆点，方向键在轨内移动，Esc 收起当前钉住的那张
+    list.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") {
+        nodes.forEach(function (n) { n.classList.remove("is-on"); });
+        return;
+      }
+      var d = e.key === "ArrowDown" ? 1 : e.key === "ArrowUp" ? -1 : 0;
+      if (!d) return;
+      e.preventDefault();
+      var idx = nodes.indexOf(document.activeElement.closest(".tl-node"));
+      if (idx < 0) idx = d > 0 ? -1 : nodes.length;
+      var next = Math.max(0, Math.min(nodes.length - 1, idx + d));
+      var btn = nodes[next] && nodes[next].querySelector(".tl-dot-btn");
+      if (btn) btn.focus();
+    });
+  }
+
   setupMicro();
   setupRail();
+  setupLineageDots();
   setupShotsTabs();
   setupFootGiant();
 })();

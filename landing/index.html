@@ -235,25 +235,25 @@
           <div class="why-ill" aria-hidden="true">
             <svg viewBox="0 0 64 40" class="why-svg"><rect x="8" y="8" width="48" height="28" rx="6" class="wy-box"/><path d="M20 22h24M32 14v16" class="wy-stroke wy-plus"/><circle cx="48" cy="14" r="3" class="wy-dot"/></svg>
           </div>
-          <p class="why-card__tag mono" data-i18n="why.tag1">运行时</p>
-          <h3 data-i18n="why.1t">Electron 28 · 安全隔离</h3>
-          <p data-i18n="why.1d">contextIsolation、sandbox，能力走 IPC 白名单，不再依赖 remote / 裸 Node。</p>
+          <p class="why-card__tag mono" data-i18n="why.tag1">底层</p>
+          <h3 data-i18n="why.1t">Electron 28 · 关好门窗</h3>
+          <p data-i18n="why.1d">contextIsolation、sandbox，该走 IPC 的都走 IPC，不再让渲染层裸碰 Node。</p>
         </article>
         <article class="why-card">
           <div class="why-ill" aria-hidden="true">
             <svg viewBox="0 0 64 40" class="why-svg"><rect x="6" y="6" width="22" height="28" rx="4" class="wy-box"/><rect x="34" y="6" width="24" height="12" rx="3" class="wy-fill"/><rect x="34" y="22" width="24" height="12" rx="3" class="wy-box"/></svg>
           </div>
           <p class="why-card__tag mono" data-i18n="why.tag2">界面</p>
-          <h3 data-i18n="why.2t">自研工作台</h3>
-          <p data-i18n="why.2d">两栏任务列表、亮暗主题、前后对比；不再绑定 Element UI。</p>
+          <h3 data-i18n="why.2t">自己画的界面</h3>
+          <p data-i18n="why.2d">两栏任务列表、亮暗主题、前后对比、运行日志面板。不绑 Element UI，想改就改。</p>
         </article>
         <article class="why-card">
           <div class="why-ill" aria-hidden="true">
             <svg viewBox="0 0 64 40" class="why-svg"><path d="M32 6l18 8v10c0 10-8 16-18 20-10-4-18-10-18-20V14z" class="wy-box"/><path d="M24 22l6 6 12-12" class="wy-stroke"/></svg>
           </div>
           <p class="why-card__tag mono" data-i18n="why.tag5">依赖</p>
-          <h3 data-i18n="why.5t">安全基线</h3>
-          <p data-i18n="why.5d">libwebp 1.5（修 CVE-2023-4863）；受控 execFile，降低注入风险。</p>
+          <h3 data-i18n="why.5t">安全底子</h3>
+          <p data-i18n="why.5d">libwebp 1.5（修了 CVE-2023-4863）；execFile 受控执行，少踩注入坑。</p>
         </article>
         <article class="why-card">
           <div class="why-ill" aria-hidden="true">
@@ -261,7 +261,7 @@
           </div>
           <p class="why-card__tag mono" data-i18n="why.tag6">发版</p>
           <h3 data-i18n="why.6t">三端 CI</h3>
-          <p data-i18n="why.6d">GitHub Actions 构建 Win / macOS / Linux，自动版本与 Release Notes。</p>
+          <p data-i18n="why.6d">Win / macOS / Linux 自动构建，版本号和 Release 说明也自动出。</p>
         </article>
         <article class="why-card">
           <div class="why-ill" aria-hidden="true">
@@ -381,7 +381,7 @@
   <section class="section" id="convert">
     <div class="section-head">
       <p class="eyebrow mono" data-i18n="convert.eb">01 · WORKBENCH</p>
-      <h2 data-i18n="convert.h2">一条任务，就是一次完整导出</h2>
+      <h2 data-i18n="convert.h2">一个页面，从导入到出片</h2>
       <p class="section-sub" data-i18n="convert.sub">选哪个文件夹、出什么格式、每秒几帧、循环几次、最大多大、文件叫什么、存到哪儿——全在一张卡片上配好，点开始就完事。</p>
     </div>
 
@@ -433,17 +433,17 @@
       </div>
 
       <div class="task-legend">
-        <button type="button" class="chip chip--quiet" data-task-state="idle" data-i18n="task.idle">未处理</button>
-        <button type="button" class="chip chip--quiet" data-task-state="running" data-i18n="task.running">转换中</button>
-        <button type="button" class="chip chip--quiet is-on" data-task-state="done" data-i18n="task.done">成功</button>
-        <button type="button" class="chip chip--quiet" data-task-state="fail" data-i18n="task.fail">失败</button>
+        <button type="button" class="chip chip--quiet" data-task-state="idle" data-i18n="task.idle">排队中</button>
+        <button type="button" class="chip chip--quiet" data-task-state="running" data-i18n="task.running">正在转</button>
+        <button type="button" class="chip chip--quiet is-on" data-task-state="done" data-i18n="task.done">搞定</button>
+        <button type="button" class="chip chip--quiet" data-task-state="fail" data-i18n="task.fail">翻车</button>
       </div>
 
       <!-- output settings strip — same language as app right panel -->
       <div class="outset">
         <div class="outset__row">
           <div class="outset__group">
-            <p class="outset__cap mono" data-i18n="outset.src">源类型</p>
+            <p class="outset__cap mono" data-i18n="outset.src">源格式</p>
             <div class="chip-row chip-row--sm" id="in-chips" role="group" aria-label="输入格式">
               <button type="button" class="chip chip--sm is-on" data-in="PNGs" data-i18n="outset.pngs">PNG 序列</button>
               <button type="button" class="chip chip--sm" data-in="APNG">APNG</button>
@@ -452,18 +452,18 @@
             </div>
           </div>
           <div class="outset__group outset__group--grow">
-            <p class="outset__cap mono" data-i18n="outset.fmt">输出格式</p>
+            <p class="outset__cap mono" data-i18n="outset.fmt">要输出成</p>
             <div class="chip-row chip-row--sm" id="out-chips" role="group" aria-label="输出格式"></div>
           </div>
         </div>
         <div class="outset__flow" id="pipeline" aria-hidden="true">
-          <span class="flow-step" data-step="scan" data-i18n="flow.scan">解析帧</span>
+          <span class="flow-step" data-step="scan" data-i18n="flow.scan">认帧</span>
           <span class="flow-sep"></span>
           <span class="flow-step" data-step="pack" data-i18n="flow.pack">编码</span>
           <span class="flow-sep"></span>
           <span class="flow-step" data-step="size" data-i18n="flow.size">压大小</span>
           <span class="flow-sep"></span>
-          <span class="flow-step" data-step="out" data-i18n="flow.out">写出</span>
+          <span class="flow-step" data-step="out" data-i18n="flow.out">落盘</span>
         </div>
         <p class="pipeline-note" id="pipeline-note">当前路径：<strong>PNG 序列 → APNG</strong></p>
       </div>
@@ -534,26 +534,26 @@
           </span>
         </label>
         <label class="gate-field">
-          <span data-i18n="play.autoQ">超出后自动降质量</span>
+          <span data-i18n="play.autoQ">超了自动降质量</span>
           <input type="checkbox" id="gate-auto-q" checked class="gate-check" />
         </label>
         <label class="gate-field">
-          <span data-i18n="play.step">每次递减</span>
+          <span data-i18n="play.step">每次降</span>
           <span class="gate-field__row">
             <input type="number" id="gate-step" min="1" max="20" step="1" value="12" />
             <span class="mono">q</span>
           </span>
         </label>
         <label class="gate-field">
-          <span data-i18n="play.tries">最多重试</span>
+          <span data-i18n="play.tries">最多试</span>
           <span class="gate-field__row">
             <input type="number" id="gate-tries" min="3" max="8" step="1" value="5" />
             <span class="mono" data-i18n="play.times">次</span>
           </span>
         </label>
-        <p class="gate-hint" data-i18n="play.hint">配置对齐 options.sizeLimit。左栏滑块即时反映该质量下体积是否落在阈值内。</p>
+        <p class="gate-hint" data-i18n="play.hint">跟应用里的 options.sizeLimit 一套逻辑。左边拖滑块，右边马上告诉你这质量过不过线。</p>
         <div class="play-actions">
-          <button type="button" class="btn btn-primary btn-sm" id="btn-auto" data-i18n="play.replay">自动重压演示</button>
+          <button type="button" class="btn btn-primary btn-sm" id="btn-auto" data-i18n="play.replay">再演一遍自动重压</button>
         </div>
       </aside>
     </div>
@@ -564,7 +564,7 @@
     <div class="section-head">
       <p class="eyebrow mono" data-i18n="naming.eb">03 · NAMING</p>
       <h2 data-i18n="naming.h2">文件名能拆开挑，存放位置你说了算</h2>
-      <p class="section-sub" data-i18n="naming.sub">长文件名自动拆成词，点一下留一个，也能只留文字；存放位置用 {工程名} 这类积木拼，实际路径马上预览给你看。</p>
+      <p class="section-sub" data-i18n="naming.sub">长文件名自动拆成词，点一下留一个，漏掉的字只留文字也行；存放位置用 {工程名} 这类积木拼，实际路径马上预览给你看。</p>
     </div>
 
     <div class="name-grid">
@@ -580,7 +580,7 @@
           </button>
         </div>
         <div class="name-tokens" id="token-row" aria-label="输出名分词"></div>
-        <div class="name-hint mono" id="name-hint" data-i18n="naming.hint">点字词可取消；漏斗=只留文字</div>
+        <div class="name-hint mono" id="name-hint" data-i18n="naming.hint">点字词可取消；漏斗 = 只留文字</div>
       </div>
 
       <!-- right: path vars like PathVars + output path -->
@@ -588,7 +588,7 @@
         <p class="lab-label mono" data-i18n="naming.path">输出路径</p>
         <div class="path-presets" role="group" aria-label="输出路径预设">
           <button type="button" class="chip is-on" data-preset="output" data-i18n="naming.preset.src">源目录</button>
-          <button type="button" class="chip" data-preset="beside" data-i18n="naming.preset.beside">目录旁级</button>
+          <button type="button" class="chip" data-preset="beside" data-i18n="naming.preset.beside">旁边扔</button>
           <button type="button" class="chip" data-preset="custom" data-i18n="naming.preset.custom">自定义</button>
         </div>
         <p class="path-field-label mono" data-i18n="naming.varPath">变量路径</p>
@@ -993,7 +993,7 @@
         role="tabpanel"
         aria-labelledby="shots-tab-desktop"
       >
-        <p class="shots-hint" data-i18n="shots.intro">与仓库 docs/screenshots/ 同源 · 桌面 Electron 实拍</p>
+        <p class="shots-hint" data-i18n="shots.intro">和仓库 docs/screenshots/ 同源 · Electron 实拍</p>
         <div class="shots-grid">
           <figure class="shot" tabindex="0">
             <div class="shot__frame">
@@ -1005,13 +1005,13 @@
             <div class="shot__frame">
               <img src="assets/shots/desktop-empty.webp" alt="空状态：拖放、粘贴或点击打开目录" width="984" height="742" loading="lazy" />
             </div>
-            <figcaption class="mono" data-i18n="shots.capEmpty">空状态 · Drop / Paste / Click</figcaption>
+            <figcaption class="mono" data-i18n="shots.capEmpty">空状态 · 拖入 / 粘贴 / 点开</figcaption>
           </figure>
           <figure class="shot" tabindex="0">
             <div class="shot__frame">
               <img src="assets/shots/desktop-settings-general.webp" alt="默认设置：语言、主题、输出路径变量与大小阈值" width="984" height="742" loading="lazy" />
             </div>
-            <figcaption class="mono" data-i18n="shots.capSet">默认设置 · 主题 / {srcPath} / 阈值</figcaption>
+            <figcaption class="mono" data-i18n="shots.capSet">默认设置 · 命名 / {srcPath} / 大小上限</figcaption>
           </figure>
         </div>
       </div>
@@ -1054,43 +1054,54 @@
   <section class="section section-lineage" id="lineage">
     <div class="section-head">
       <p class="eyebrow mono" data-i18n="lineage.eb">06 · LINEAGE</p>
-      <h2 data-i18n="lineage.h2">从原版到 iSparta-next</h2>
-      <p class="section-sub" data-i18n="lineage.sub">感谢原作者与每一位社区维护者。本仓库站在他们肩膀上继续改。</p>
+      <h2 data-i18n="lineage.h2">从原版一路走到 iSparta-next</h2>
+      <p class="section-sub" data-i18n="lineage.sub">谢谢原作者和每一位社区维护者。后面的故事，是接着他们的脚印往前走。</p>
     </div>
 
-    <!-- 左：历程时间线；右：更新日志。两列等宽等高（align-items:stretch）。 -->
-    <div class="lineage-cols">
-      <ol class="timeline">
-        <li class="tl-item">
-          <div class="tl-dot"></div>
-          <div class="tl-body">
+    <!-- 左：接力历程 —— 竖轨铺满整段宽度：左边只留一条时间轴，
+     hover 圆点才淡出右侧那张铺满宽度的横条卡片。
+     卡片绝对定位在各自圆点上（top:50% 居中），轨道高度只由圆点决定 ——
+     所以 hover 不会让这段忽高忽低，也不用像更新日志那样量高度定高。
+     下：更新日志（面板结构未动）。两段各自全宽，上下堆叠。 -->
+    <ol class="timeline">
+        <li class="tl-node">
+          <button class="tl-dot-btn" type="button" aria-controls="tl-card-1" aria-label="iSparta / iSparta">
+            <span class="tl-dot" aria-hidden="true"></span>
+          </button>
+          <div class="tl-card" id="tl-card-1">
             <p class="tl-tag mono" data-i18n="lineage.1tag">原版 · 长期停更</p>
-            <h3><a href="https://github.com/iSparta/iSparta" target="_blank" rel="noopener">iSparta / iSparta</a></h3>
-            <p data-i18n="lineage.1d">经典 APNG / WebP 桌面转换工具。Electron 与依赖停在旧线，大量历史 Issue 无人跟进，安全补丁跟不上——这是 fork 浪潮的起点。</p>
+            <h3 class="tl-card__title"><a href="https://github.com/iSparta/iSparta" target="_blank" rel="noopener">iSparta / iSparta</a></h3>
+            <p class="tl-card__text" data-i18n="lineage.1d">老牌 APNG / WebP 桌面工具。Electron 停在旧线，Issue 攒一堆没人修——于是大家开始各自 fork。</p>
           </div>
         </li>
-        <li class="tl-item">
-          <div class="tl-dot"></div>
-          <div class="tl-body">
+        <li class="tl-node">
+          <button class="tl-dot-btn" type="button" aria-controls="tl-card-2" aria-label="Xheldon / iSparta">
+            <span class="tl-dot" aria-hidden="true"></span>
+          </button>
+          <div class="tl-card" id="tl-card-2">
             <p class="tl-tag mono" data-i18n="lineage.2tag">社区 fork</p>
-            <h3><a href="https://github.com/Xheldon/iSparta" target="_blank" rel="noopener">Xheldon / iSparta</a></h3>
-            <p data-i18n="lineage.2d">修复帧乱序等问题，部分界面修补，证明「还能继续维护」。</p>
+            <h3 class="tl-card__title"><a href="https://github.com/Xheldon/iSparta" target="_blank" rel="noopener">Xheldon / iSparta</a></h3>
+            <p class="tl-card__text" data-i18n="lineage.2d">修了帧乱序之类的问题，界面也补了补，证明这项目还能继续养。</p>
           </div>
         </li>
-        <li class="tl-item">
-          <div class="tl-dot"></div>
-          <div class="tl-body">
+        <li class="tl-node">
+          <button class="tl-dot-btn" type="button" aria-controls="tl-card-3" aria-label="bigxixi / iSparta">
+            <span class="tl-dot" aria-hidden="true"></span>
+          </button>
+          <div class="tl-card" id="tl-card-3">
             <p class="tl-tag mono" data-i18n="lineage.3tag">基建 fork · 本仓库直接上游</p>
-            <h3><a href="https://github.com/bigxixi/iSparta" target="_blank" rel="noopener">bigxixi / iSparta</a></h3>
-            <p data-i18n="lineage.3d">libwebp 1.5（修 CVE-2023-4863）、Electron 6→13、Vue CLI 4、execFile 防注入、存储/转换锁修复、迁到 GitHub Actions。</p>
+            <h3 class="tl-card__title"><a href="https://github.com/bigxixi/iSparta" target="_blank" rel="noopener">bigxixi / iSparta</a></h3>
+            <p class="tl-card__text" data-i18n="lineage.3d">libwebp 1.5（CVE-2023-4863）、Electron 6→13、Vue CLI 4、execFile 防注入、存储/转换锁修复、迁到 GitHub Actions。</p>
           </div>
         </li>
-        <li class="tl-item is-now">
-          <div class="tl-dot"></div>
-          <div class="tl-body">
-            <p class="tl-tag mono" data-i18n="lineage.4tag">当前 · iSparta-next</p>
-            <h3><a href="https://github.com/yancongya/iSparta-next" target="_blank" rel="noopener">yancongya / iSparta-next</a></h3>
-            <p data-i18n="lineage.4d">在 bigxixi 基建上再次 fork：Electron 28 + sandbox / IPC，弃用 Element UI 重做工作台，新增大小阈值、路径变量、拆字命名、前后对比等；三端 CI 发版。</p>
+        <li class="tl-node is-now">
+          <button class="tl-dot-btn" type="button" aria-controls="tl-card-4" aria-label="yancongya / iSparta-next">
+            <span class="tl-dot" aria-hidden="true"></span>
+          </button>
+          <div class="tl-card" id="tl-card-4">
+            <p class="tl-tag mono" data-i18n="lineage.4tag">现在 · iSparta-next</p>
+            <h3 class="tl-card__title"><a href="https://github.com/yancongya/iSparta-next" target="_blank" rel="noopener">yancongya / iSparta-next</a></h3>
+            <p class="tl-card__text" data-i18n="lineage.4d">从 bigixixi 原版再次 fork：Electron 28 + sandbox / IPC，重做 Element UI 外壳的工作台，新增大小上限自动重压、路径变量自定义、批量与前后对比，并有 CI 打包。</p>
           </div>
         </li>
       </ol>
@@ -1108,21 +1119,19 @@
               target="_blank"
               rel="noopener"
               data-i18n="rel.all"
-            >GitHub</a>
+            >查看全部发布</a>
           </div>
           <div class="rel-board__main">
             <nav class="rel-nav" id="rel-nav" aria-label="版本列表"></nav>
             <section class="rel-pane" id="rel-pane">
-              <div class="rel-board__empty mono" data-i18n="rel.empty">加载中…</div>
+              <div class="rel-board__empty mono" data-i18n="rel.empty">暂无版本记录，可前往 GitHub Releases 查看。</div>
             </section>
           </div>
           <div class="rel-board__foot">
-            <span class="rel-board__hint mono" data-i18n="rel.sub">与 GitHub Releases 同源</span>
+            <span class="rel-board__hint mono" data-i18n="rel.sub">与 GitHub Releases 同源 · 左轨切换版本</span>
           </div>
         </div>
       </div>
-
-    </div>
 
     <div class="authors">
       <h3 class="authors-title mono" data-i18n="authors.title">作者墙 · Credits</h3>
@@ -1181,7 +1190,7 @@
           </ul>
         </div>
       </div>
-      <p class="authors-note" data-i18n="authors.note">若你是历史贡献者而未列出，欢迎提 PR 补上。</p>
+      <p class="authors-note" data-i18n="authors.note">漏了哪位历史贡献者？欢迎 PR 补上。</p>
     </div>
   </section>
 
@@ -1191,7 +1200,7 @@
     <div class="section-head dl-head">
       <p class="dl-tag mono" data-i18n="dl.eb">07 · 免费开始 · 开源可商用</p>
       <h2 class="dl-title" data-i18n="dl.h2">立即下载，专注出片</h2>
-      <p class="section-sub" data-i18n="dl.sub">安装包由 GitHub Actions 构建。Windows 包可同时安装桌面与 AE 扩展；macOS 未签名，首次打开见 Release 说明。</p>
+      <p class="section-sub" data-i18n="dl.sub">所有链接永远指向最新版。macOS 未签名，第一次打开被拦请看 Release 说明。</p>
     </div>
 
     <div class="dl-groups">
