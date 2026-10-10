@@ -144,6 +144,16 @@ function createWindow () {
     // Electron 默认图标。exe 文件自身的图标由 electron-builder 的 rcedit 负责，另一回事。
     icon: path.join(__static, 'icons/icon.' + (process.platform === 'win32' ? 'ico'
       : process.platform === 'darwin' ? 'icns' : 'png')),
+    // 主窗口去掉原生标题栏：软件名 + 版本号移到自绘顶部横条（IsWinBar），
+    // 最小化/最大化/关闭由渲染层自绘，走 win:* 三个通道。
+    // 与首启引导独立窗（createOnboardingWindow 的 frame:false）同一套做法。
+    //
+    // mac 例外：titleBarStyle:'hiddenInset' 保留左上角红绿灯，只去掉标题栏文字。
+    //  macOS 的 frame:false 会连系统按钮与全屏手势一起失去（引导窗目前就是那样），
+    //  主窗口是长期使用的主界面，不能跟着退化。
+    ...(process.platform === 'darwin'
+      ? { titleBarStyle: 'hiddenInset' }
+      : { frame: false }),
     title: app.getName() + ' ' + app.getVersion(),
     show: false,
     autoHideMenuBar: true,
@@ -170,6 +180,8 @@ function createWindow () {
   win.on('closed', () => {
     win = null
   })
+  // 自绘标题栏去掉了原生最大化图标切换，靠 win:maximized 回推给渲染层
+  bindMaximizeState(win)
   // 页面 <title> 会覆盖窗口标题，统一锁到 productName + 版本号
   win.on('page-title-updated', (event) => {
     event.preventDefault()

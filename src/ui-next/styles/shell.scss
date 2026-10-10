@@ -11,6 +11,8 @@
   position: fixed;
   inset: 0;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
   background: var(--is-bg);
   color: var(--is-text);
   font-family: var(--is-font);
@@ -23,13 +25,15 @@
 // --------------------------------------------------------------------------
 .ib-import {
   display: flex;
-  height: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
   flex-direction: column;
 
   &__top {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    /* 品牌已移到顶部横条（IsWinBar），这里只剩工具按钮，右对齐 */
+    justify-content: flex-end;
     flex: none;
     padding: var(--is-s-3) var(--is-s-4);
   }
@@ -579,7 +583,7 @@ body.is-theme-light .ib-drop .keyboard-key {
 // --------------------------------------------------------------------------
 .ib-ws {
   display: flex;
-  height: 100%;
+  flex: 1 1 auto;
   min-height: 0;
 }
 

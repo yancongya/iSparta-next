@@ -10,22 +10,12 @@
     <globalsetting></globalsetting>
     <is-notice-host></is-notice-host>
 
-    <!-- 空态：无任务时全屏导入（CEP 先铺合成列表，仍为空才显示） -->
+    <!-- 自绘顶栏（桌面 frameless）：品牌名 + 版本号 + 窗口按钮。空态/有任务共用。 -->
+    <is-win-bar></is-win-bar>
+
+    <!-- 空态：无任务时全屏导入 -->
     <section v-if="!items.length && !compTreeOpen" class="ib-import">
       <div class="ib-import__top">
-        <button type="button" class="ib-brand ib-brand--link" :title="appName" @click="openLanding">
-          <span class="ib-brand__mark" aria-hidden="true">
-            <!-- 与 public/icons/icon-brand.svg 同源：品牌色 #c8f542 圆形播放标 -->
-            <svg width="18" height="18" viewBox="0 0 1024 1024" fill="none">
-              <g transform="translate(512 512) scale(2.05) translate(-512 -395.636364)">
-                <path d="M512 395.636364m-232.727273 0a232.727273 232.727273 0 1 0 465.454546 0 232.727273 232.727273 0 1 0-465.454546 0Z" fill="#c8f542"/>
-                <path d="M453.806545 289.764848a7.214545 7.214545 0 0 1 8.168728-6.112969l77.548606 11.155394c1.881212 0.271515 3.580121 1.272242 4.728242 2.788848l70.943031 93.796849a7.214545 7.214545 0 0 1 0.100848 8.564363L544.267636 498.722909a7.214545 7.214545 0 0 1-4.871757 2.936243L461.459394 512.391758a7.214545 7.214545 0 0 1-6.997333-11.132122l67.285333-101.558303a7.214545 7.214545 0 0 0-0.077576-8.079515L455.00897 294.888727a7.214545 7.214545 0 0 1-1.202425-5.12z m-6.729697 37.783273a3.607273 3.607273 0 0 1 5.054061 0.702061l47.736243 63.146666a7.214545 7.214545 0 0 1 0.104727 8.556607L452.189091 466.540606a3.607273 3.607273 0 0 1-6.543515-2.102303V330.426182a3.607273 3.607273 0 0 1 1.435151-2.878061z" fill="#0c0f0e"/>
-              </g>
-            </svg>
-          </span>
-          <span class="ib-brand__text">{{ appName }}</span>
-          <span class="ib-brand__ver mono">{{ appVersion }}</span>
-        </button>
         <div class="ib-import__acts">
           <!-- 单按钮切换视图：图标跟当前模式走（任务列表 list ↔ 合成树 layers） -->
           <button
@@ -285,6 +275,7 @@ import setting from '../../components/setting/setting.vue'
 import sortBar from '../../components/sortBar/sortBar.vue'
 import globalSetting from '../../components/globalSetting/globalSetting.vue'
 import IsNoticeHost from '../components/IsNoticeHost.vue'
+import IsWinBar from '../components/IsWinBar.vue'
 import IsLogPanel from '../components/IsLogPanel.vue'
 import IsUpdateDialog from '../components/IsUpdateDialog.vue'
 import IsUpdateDock from '../components/IsUpdateDock.vue'
@@ -340,6 +331,7 @@ export default {
     'sort-bar': sortBar,
     'globalsetting': globalSetting,
     'is-notice-host': IsNoticeHost,
+    'is-win-bar': IsWinBar,
     'is-log-panel': IsLogPanel,
     'is-update-dialog': IsUpdateDialog,
     'is-update-dock': IsUpdateDock
