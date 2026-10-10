@@ -12,6 +12,59 @@
   var DICT = {
     "zh-CN": {
       "about.railHint": "向下滚动 · 横向浏览",
+      "about.h2a": "iSparta-next 是什么？",
+      "about.h2b": "iSparta 停更后的现代替代",
+      "about.sub1": "开源、跨平台的桌面动图转换工具，面向处理",
+      "about.subFmt": "PNG 序列、APNG、Animated WebP、GIF",
+      "about.sub2": "的设计师与前端开发者。右边这一轨是可以横着看完的全部能力。",
+      "seo.fmt.t": "格式互转",
+      "seo.fmt.d":
+        "支持 PNG 序列合成 APNG / GIF / Animated WebP，以及 APNG、GIF、WebP 之间的互转与再压缩，适合表情包、贴纸与帧动画导出。",
+      "seo.size.t": "体积可控",
+      "seo.size.d":
+        "输出大小阈值可在超出上限时自动按步长降质量重压，适配平台 1MB 等体积限制，减少手动反复试压缩。",
+      "seo.batch.t": "批量与路径",
+      "seo.batch.d":
+        "拖拽 / 粘贴导入多组帧目录；路径变量模板与源目录输出策略，便于按项目批量导出与归档。",
+      "seo.dl.t": "系统与下载",
+      "seo.dl.d1": "Windows / macOS / Linux 免费使用。安装包由 GitHub Actions 构建，可在",
+      "seo.dl.d2": "获取最新版；亦可从本页下载区选择对应平台。",
+      "seo.pkg.t": "一个安装包，按需勾选",
+      "seo.pkg.d":
+        "同一个安装包里，桌面版与 AE 扩展可单独勾选、也可一并安装；安装范围支持所有用户或仅当前用户。",
+      "seo.core.t": "两端同一颗引擎",
+      "seo.core.d":
+        "桌面端与 AE 扩展共用同一套压缩 / 合成 / 降质算法，输出的大小规则与命名习惯完全一致。",
+      "seo.log.tag": "日志",
+      "seo.log.t": "运行日志面板",
+      "seo.log.d":
+        "转换过程一条条摊开：解析帧序、编码器进度、每轮重压的体积与耗时，出问题能直接定位到某一次尝试。",
+      "a11y.heroFig": "iSparta-next 工作台界面",
+      "a11y.heroVer": "最新 Release 版本",
+      "a11y.taskItem": "任务条示例",
+      "a11y.taskCheck": "选中任务",
+      "a11y.taskStatus": "切换状态",
+      "a11y.thumbCmp": "转换完成后可对比",
+      "a11y.inFmt": "输入格式",
+      "a11y.outFmt": "输出格式",
+      "a11y.gateFormats": "各格式体积预览",
+      "a11y.gateLog": "重压试次",
+      "a11y.gateUnit": "阈值单位",
+      "a11y.nameTokens": "输出名分词",
+      "a11y.nameFilter": "只留文字 / 恢复全部",
+      "a11y.pathPresets": "输出路径预设",
+      "a11y.pathVars": "路径变量",
+      "a11y.aeStage": "AE 合成导出演示",
+      "a11y.aeSearch": "搜索",
+      "a11y.shot.workbench": "iSparta-next 桌面工作台：任务列表与输出设置",
+      "a11y.shot.empty": "空状态：拖放、粘贴或点击打开目录",
+      "a11y.shot.settings": "默认设置：语言、主题、输出路径变量与大小阈值",
+      "a11y.shot.tree": "AE 扩展：合成树与尺寸信息",
+      "a11y.shot.tasks": "AE 扩展：合成任务列表",
+      "a11y.shot.output": "AE 扩展：输出路径变量与大小阈值",
+      "a11y.relNav": "版本列表",
+      "a11y.foot": "页脚导航",
+      "foot.issue": "问题反馈",
       "meta.title": "iSparta-next · APNG / WebP / GIF 转换工作台",
       "meta.desc":
         "iSparta-next：把 PNG 序列、APNG、Animated WebP、GIF 互转与压缩的开源桌面工具。支持大小阈值自动重压、路径变量、批量导出。Win / macOS / Linux 免费下载。",
@@ -162,6 +215,7 @@
       "dl.thisDevice": "当前设备",
       "dl.note":
         "Windows / Linux 安装版支持应用内自动更新。AE 扩展始终与桌面应用同版本：Windows 由安装向导装完，macOS 在首次启动桌面应用时自动落盘；装完重启 After Effects 生效。",
+      "dl.winSub": "x64 · 含 AE 扩展",
       "why.eb": "09 \u00b7 WHY NEXT",
       "why.h2": "不是缝缝补补，是整台重做",
             "why.sub": "原版停更好久了。这边在社区 fork 的地基上，前后端都重写过。",
@@ -236,6 +290,59 @@
     },
     "en-US": {
       "about.railHint": "Scroll down · browse sideways",
+      "about.h2a": "What is iSparta-next?",
+      "about.h2b": "A modern successor to the stalled iSparta",
+      "about.sub1": "An open-source, cross-platform desktop converter for designers and front-enders working with",
+      "about.subFmt": "PNG sequences, APNG, Animated WebP and GIF",
+      "about.sub2": ". Everything else is on the rail to the right — scroll it sideways.",
+      "seo.fmt.t": "Format conversion",
+      "seo.fmt.d":
+        "Builds APNG / GIF / Animated WebP from PNG sequences, then converts and re-compresses freely between APNG, GIF and WebP — the format set stickers, emotes and frame animations need.",
+      "seo.size.t": "Size you control",
+      "seo.size.d":
+        "When output passes your size cap, quality steps down and the file is re-encoded automatically — fits platforms with a 1MB limit without hand-tuning the slider.",
+      "seo.batch.t": "Batch and paths",
+      "seo.batch.d":
+        "Drag or paste in several frame folders at once; path variables and source-relative output keep exports sorted by project.",
+      "seo.dl.t": "Everywhere, free",
+      "seo.dl.d1": "Free on Windows, macOS and Linux. Builds come from GitHub Actions — grab the latest from",
+      "seo.dl.d2": ", or pick your platform in the download section below.",
+      "seo.pkg.t": "One installer, pick and choose",
+      "seo.pkg.d":
+        "The desktop app and the AE extension ship in one installer: tick either, or both. Install scope is all users or just this one.",
+      "seo.core.t": "One engine on both ends",
+      "seo.core.d":
+        "Desktop and the AE extension share the same compression, compositing and re-encode code — identical size rules and naming on either side.",
+      "seo.log.tag": "Log",
+      "seo.log.t": "A live log panel",
+      "seo.log.d":
+        "Every step laid out in order: frame parsing, encoder progress, size and time for each re-encode attempt — so a bad run points straight at the attempt that caused it.",
+      "a11y.heroFig": "iSparta-next workbench",
+      "a11y.heroVer": "Latest release",
+      "a11y.taskItem": "Example task row",
+      "a11y.taskCheck": "Select task",
+      "a11y.taskStatus": "Toggle status",
+      "a11y.thumbCmp": "Compare once converted",
+      "a11y.inFmt": "Input formats",
+      "a11y.outFmt": "Output formats",
+      "a11y.gateFormats": "Size preview per format",
+      "a11y.gateLog": "Re-encode attempts",
+      "a11y.gateUnit": "Size unit",
+      "a11y.nameTokens": "Output name tokens",
+      "a11y.nameFilter": "Keep text only / restore all",
+      "a11y.pathPresets": "Output path presets",
+      "a11y.pathVars": "Path variables",
+      "a11y.aeStage": "AE composition export demo",
+      "a11y.aeSearch": "Search",
+      "a11y.shot.workbench": "iSparta-next desktop workbench: task list and output settings",
+      "a11y.shot.empty": "Empty state: drop, paste, or click to open a folder",
+      "a11y.shot.settings": "Default settings: language, theme, output path variables and size cap",
+      "a11y.shot.tree": "AE extension: composition tree with size info",
+      "a11y.shot.tasks": "AE extension: composition task list",
+      "a11y.shot.output": "AE extension: output path variables and size cap",
+      "a11y.relNav": "Release list",
+      "a11y.foot": "Footer",
+      "foot.issue": "Report an issue",
       "meta.title": "iSparta-next · APNG / WebP / GIF converter",
       "meta.desc":
         "iSparta-next: open-source desktop app to convert and compress PNG sequences, APNG, Animated WebP, and GIF. Size limit, path vars, batch export. Free for Win / macOS / Linux.",
@@ -387,6 +494,7 @@
       "dl.thisDevice": "This device",
       "dl.note":
         "Windows and Linux installers update in-app. The AE extension always matches the app: the wizard places it on Windows, the app places it on first launch on macOS — restart After Effects once it lands.",
+      "dl.winSub": "x64 · with AE extension",
       "why.eb": "09 \u00b7 WHY NEXT",
       "why.h2": "Not a patch — a rebuilt workbench",
             "why.sub":
@@ -512,8 +620,13 @@
     document.documentElement.lang = lang;
     var pack = DICT[lang] || DICT["zh-CN"];
     document.title = pack["meta.title"];
-    var meta = document.querySelector('meta[name="description"]');
-    if (meta) meta.setAttribute("content", pack["meta.desc"]);
+    // description / og:description / twitter:description 共用同一句 meta.desc ——
+    // 三处各写一份必然漂移（曾经 HTML 里的 og 文案就与 meta.desc 对不上）。
+    ['meta[name="description"]', 'meta[property="og:description"]', 'meta[name="twitter:description"]']
+      .forEach(function (sel) {
+        var m = document.querySelector(sel);
+        if (m) m.setAttribute("content", pack["meta.desc"]);
+      });
 
     document.querySelectorAll("[data-i18n]").forEach(function (el) {
       var key = el.getAttribute("data-i18n");
@@ -526,6 +639,17 @@
     document.querySelectorAll("[data-i18n-aria]").forEach(function (el) {
       var key = el.getAttribute("data-i18n-aria");
       if (pack[key] != null) el.setAttribute("aria-label", pack[key]);
+    });
+    // placeholder / alt：输入框占位提示与图片替代文本都是用户可感知的文案。
+    // data-i18n-placeholder 早就在 HTML 里写了却没有对应实现（合成树搜索框一直
+    // 停在中文），data-i18n-alt 则是给图片准备的。
+    document.querySelectorAll("[data-i18n-placeholder]").forEach(function (el) {
+      var key = el.getAttribute("data-i18n-placeholder");
+      if (pack[key] != null) el.setAttribute("placeholder", pack[key]);
+    });
+    document.querySelectorAll("[data-i18n-alt]").forEach(function (el) {
+      var key = el.getAttribute("data-i18n-alt");
+      if (pack[key] != null) el.setAttribute("alt", pack[key]);
     });
 
     var langBtn = document.getElementById("lang-toggle");

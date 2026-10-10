@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>iSparta-next 官网 · APNG / GIF / WebP 动图转换工具（iSparta 维护版替代）</title>
-  <meta name="description" content="iSparta-next 官方产品页：开源动图工具。图片序列转 APNG、Animated WebP、GIF，动图压缩、大小超限自动压小、命名与保存位置自定义，桌面版 + After Effects 扩展双端一体，支持 Win / macOS / Linux 免费下载。" />
+  <title>iSparta-next · APNG / WebP / GIF 转换工作台</title>
+  <meta name="description" content="iSparta-next：把 PNG 序列、APNG、Animated WebP、GIF 互转与压缩的开源桌面工具。支持大小阈值自动重压、路径变量、批量导出。Win / macOS / Linux 免费下载。" />
   <meta name="keywords" content="iSparta-next,iSparta-next官网,iSparta替代,iSparta维护版,APNG转GIF,APNG转WebP,GIF转APNG,WebP转APNG,PNG序列合成动图,表情包压缩,动图压缩,APNG工具,Animated WebP,GIF优化,开源桌面转换工具,Electron动图工具" />
   <meta name="author" content="yancongya" />
   <meta name="robots" content="index, follow, max-image-preview:large" />
@@ -13,8 +13,8 @@
   <!-- Open Graph -->
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="iSparta-next" />
-  <meta property="og:title" content="iSparta-next 官网 · APNG / GIF / WebP 动图转换工具" />
-  <meta property="og:description" content="开源动图工具：图片序列转 APNG / WebP / GIF，超限自动压小，命名与保存位置自定义；桌面版 + AE 扩展双端一体，Win / macOS / Linux 免费下载。" />
+  <meta property="og:title" content="iSparta-next · APNG / WebP / GIF 转换工作台" />
+  <meta property="og:description" content="iSparta-next：把 PNG 序列、APNG、Animated WebP、GIF 互转与压缩的开源桌面工具。支持大小阈值自动重压、路径变量、批量导出。Win / macOS / Linux 免费下载。" />
   <meta property="og:url" content="https://yancongya.github.io/iSparta-next/" />
   <meta property="og:image" content="https://yancongya.github.io/iSparta-next/assets/shots/desktop-workspace-hd.webp" />
   <meta property="og:locale" content="zh_CN" />
@@ -22,8 +22,8 @@
 
   <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="iSparta-next 官网 · APNG / GIF / WebP 动图转换工具" />
-  <meta name="twitter:description" content="开源桌面动图工作台：格式互转、体积压缩、批量导出。iSparta 的现代维护版。" />
+  <meta name="twitter:title" content="iSparta-next · APNG / WebP / GIF 转换工作台" />
+  <meta name="twitter:description" content="iSparta-next：把 PNG 序列、APNG、Animated WebP、GIF 互转与压缩的开源桌面工具。支持大小阈值自动重压、路径变量、批量导出。Win / macOS / Linux 免费下载。" />
   <meta name="twitter:image" content="https://yancongya.github.io/iSparta-next/assets/shots/desktop-workspace-hd.webp" />
 
   <link rel="icon" href="assets/icon.png" />
@@ -183,7 +183,7 @@
         <li class="hero-facts__row">
           <span data-i18n="hero.m1">Win / macOS / Linux</span>
           <span data-i18n="hero.m2">Electron 28</span>
-          <span id="hero-version" title="最新 Release 版本">v3.6.0<span class="hero-version-date mono"> · 2026-10-08</span></span>
+          <span id="hero-version"  data-i18n-title="a11y.heroVer"title="最新 Release 版本">v3.6.0<span class="hero-version-date mono"> · 2026-10-08</span></span>
         </li>
       </ul>
 
@@ -200,9 +200,9 @@
     </div>
 
     <!-- 产品舞台：无边框大图，底部用渐隐遮罩融进页面（参考站观感） -->
-    <figure class="hero-stage" id="hero-stage" aria-label="iSparta-next 工作台界面">
+    <figure class="hero-stage" id="hero-stage"  data-i18n-aria="a11y.heroFig"aria-label="iSparta-next 工作台界面">
       <div class="hero-shot">
-        <img src="assets/shots/desktop-workspace-hd.webp" alt="iSparta-next 工作台：任务列表与输出设置" width="1440" height="1080" fetchpriority="high" />
+        <img src="assets/shots/desktop-workspace-hd.webp"  data-i18n-alt="a11y.shot.workbench"alt="iSparta-next 工作台：任务列表与输出设置" width="1440" height="1080" fetchpriority="high" />
         <!-- 渐隐遮罩：只盖住底部一段，让截图「沉」进背景而不是硬边收口。
              两端色都取自当前主题的 paper，暗色下改用深色，亮色下用纸色。 -->
         <span class="hero-shot__fade" aria-hidden="true"></span>
@@ -219,11 +219,11 @@
     <div class="ab">
       <div class="ab__aside">
         <p class="eyebrow mono">00 · ABOUT</p>
-        <h2 class="ab__title">iSparta-next 是什么？<br />iSparta 停更后的现代替代</h2>
+        <h2 class="ab__title"><span data-i18n="about.h2a">iSparta-next 是什么？</span><br /><span data-i18n="about.h2b">iSparta 停更后的现代替代</span></h2>
         <p class="ab__sub">
-          开源、跨平台的桌面动图转换工具，面向处理
-          <strong>PNG 序列、APNG、Animated WebP、GIF</strong> 的设计师与前端开发者。
-          右边这一轨是可以横着看完的全部能力。
+          <span data-i18n="about.sub1">开源、跨平台的桌面动图转换工具，面向处理</span>
+          <strong data-i18n="about.subFmt">PNG 序列、APNG、Animated WebP、GIF</strong>
+          <span data-i18n="about.sub2">的设计师与前端开发者。右边这一轨是可以横着看完的全部能力。</span>
         </p>
       </div>
       <div class="ab__main">
@@ -284,8 +284,8 @@
               <g class="ill-chip c3"><rect x="112" y="62" width="40" height="20" rx="10"/><text x="132" y="76" text-anchor="middle">GIF</text></g>
             </svg>
           </div>
-          <h3>格式互转</h3>
-          <p>支持 PNG 序列合成 APNG / GIF / Animated WebP，以及 APNG、GIF、WebP 之间的互转与再压缩，适合表情包、贴纸与帧动画导出。</p>
+          <h3 data-i18n="seo.fmt.t">格式互转</h3>
+          <p data-i18n="seo.fmt.d">支持 PNG 序列合成 APNG / GIF / Animated WebP，以及 APNG、GIF、WebP 之间的互转与再压缩，适合表情包、贴纸与帧动画导出。</p>
         </article>
         <article class="about-card about-card--ill">
           <div class="ill" aria-hidden="true">
@@ -301,8 +301,8 @@
               </g>
             </svg>
           </div>
-          <h3>体积可控</h3>
-          <p>输出大小阈值可在超出上限时自动按步长降质量重压，适配平台 1MB 等体积限制，减少手动反复试压缩。</p>
+          <h3 data-i18n="seo.size.t">体积可控</h3>
+          <p data-i18n="seo.size.d">输出大小阈值可在超出上限时自动按步长降质量重压，适配平台 1MB 等体积限制，减少手动反复试压缩。</p>
         </article>
         <article class="about-card about-card--ill">
           <div class="ill" aria-hidden="true">
@@ -315,8 +315,8 @@
               <text class="ill-cap" x="130" y="52" text-anchor="middle">{src}</text>
             </svg>
           </div>
-          <h3>批量与路径</h3>
-          <p>拖拽 / 粘贴导入多组帧目录；路径变量模板与源目录输出策略，便于按项目批量导出与归档。</p>
+          <h3 data-i18n="seo.batch.t">批量与路径</h3>
+          <p data-i18n="seo.batch.d">拖拽 / 粘贴导入多组帧目录；路径变量模板与源目录输出策略，便于按项目批量导出与归档。</p>
         </article>
         <article class="about-card about-card--ill">
           <div class="ill" aria-hidden="true">
@@ -328,10 +328,10 @@
               <circle class="ill-orb o3" cx="128" cy="40" r="3.5"/>
             </svg>
           </div>
-          <h3>系统与下载</h3>
-          <p>Windows / macOS / Linux 免费使用。安装包由 GitHub Actions 构建，可在
+          <h3 data-i18n="seo.dl.t">系统与下载</h3>
+          <p><span data-i18n="seo.dl.d1">Windows / macOS / Linux 免费使用。安装包由 GitHub Actions 构建，可在</span>
             <a href="https://github.com/yancongya/iSparta-next/releases" target="_blank" rel="noopener">GitHub Releases</a>
-            获取最新版；亦可从本页下载区选择对应平台。</p>
+            <span data-i18n="seo.dl.d2">获取最新版；亦可从本页下载区选择对应平台。</span></p>
         </article>
         <article class="about-card about-card--ill">
           <div class="ill" aria-hidden="true">
@@ -343,8 +343,8 @@
               <text class="ill-cap" x="58" y="78" text-anchor="middle">NSIS</text>
             </svg>
           </div>
-          <h3>一个安装包，按需勾选</h3>
-          <p>同一个安装包里，桌面版与 AE 扩展可单独勾选、也可一并安装；安装范围支持所有用户或仅当前用户。</p>
+          <h3 data-i18n="seo.pkg.t">一个安装包，按需勾选</h3>
+          <p data-i18n="seo.pkg.d">同一个安装包里，桌面版与 AE 扩展可单独勾选、也可一并安装；安装范围支持所有用户或仅当前用户。</p>
         </article>
         <article class="about-card about-card--ill">
           <div class="ill" aria-hidden="true">
@@ -358,17 +358,17 @@
               <text class="ill-cap" x="124" y="68" text-anchor="middle">Desk</text>
             </svg>
           </div>
-          <h3>两端同一颗引擎</h3>
-          <p>桌面端与 AE 扩展共用同一套压缩 / 合成 / 降质算法，输出的大小规则与命名习惯完全一致。</p>
+          <h3 data-i18n="seo.core.t">两端同一颗引擎</h3>
+          <p data-i18n="seo.core.d">桌面端与 AE 扩展共用同一套压缩 / 合成 / 降质算法，输出的大小规则与命名习惯完全一致。</p>
         </article>
     
         <article class="why-card">
           <div class="why-ill" aria-hidden="true">
             <svg viewBox="0 0 64 40" class="why-svg"><rect x="6" y="8" width="52" height="24" rx="4" class="wy-box"/><path d="M13 16h12M13 22h20M13 28h9" class="wy-stroke"/><circle cx="48" cy="16" r="2.5" class="wy-fill"/><circle cx="48" cy="28" r="2.5" class="wy-fill"/></svg>
           </div>
-          <p class="why-card__tag mono">日志</p>
-          <h3>运行日志面板</h3>
-          <p>转换过程一条条摊开：解析帧序、编码器进度、每轮重压的体积与耗时，出问题能直接定位到某一次尝试。</p>
+          <p class="why-card__tag mono" data-i18n="seo.log.tag">日志</p>
+          <h3 data-i18n="seo.log.t">运行日志面板</h3>
+          <p data-i18n="seo.log.d">转换过程一条条摊开：解析帧序、编码器进度、每轮重压的体积与耗时，出问题能直接定位到某一次尝试。</p>
         </article>
 </div>
       </div>
@@ -388,14 +388,14 @@
     <div class="workbench">
       <!-- task card -->
       <div class="mod-list" id="mod-list">
-        <div class="item is-selected is-done" data-state="done" id="task-item" tabindex="0" role="article" aria-label="任务条示例">
+        <div class="item is-selected is-done" data-state="done" id="task-item" tabindex="0" role="article"  data-i18n-aria="a11y.taskItem"aria-label="任务条示例">
           <div class="check">
-            <button type="button" class="checkbox is-on" id="task-check" aria-pressed="true" aria-label="选中任务"></button>
+            <button type="button" class="checkbox is-on" id="task-check" aria-pressed="true" data-i18n-aria="a11y.taskCheck" aria-label="选中任务"></button>
           </div>
           <div class="thumb is-checker">
             <div class="thumb-art" aria-hidden="true"><span></span><span></span><span></span></div>
             <span class="thumb__badge">24F</span>
-            <span class="thumb__cmp-hint" title="转换完成后可对比">
+            <span class="thumb__cmp-hint"  data-i18n-title="a11y.thumbCmp"title="转换完成后可对比">
               <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M1 6s2-3.5 5-3.5S11 6 11 6s-2 3.5-5 3.5S1 6 1 6z" stroke="currentColor" stroke-width="1.2"/><circle cx="6" cy="6" r="1.4" fill="currentColor"/></svg>
             </span>
           </div>
@@ -420,7 +420,7 @@
           </div>
           <div class="side">
             <div class="meta">
-              <button type="button" class="status is-done" id="task-status" title="切换状态">
+              <button type="button" class="status is-done" id="task-status"  data-i18n-title="a11y.taskStatus"title="切换状态">
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7.2l2.6 2.6L11 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 <span id="task-status-text">生成成功</span>
               </button>
@@ -444,7 +444,7 @@
         <div class="outset__row">
           <div class="outset__group">
             <p class="outset__cap mono" data-i18n="outset.src">源格式</p>
-            <div class="chip-row chip-row--sm" id="in-chips" role="group" aria-label="输入格式">
+            <div class="chip-row chip-row--sm" id="in-chips" role="group"  data-i18n-aria="a11y.inFmt"aria-label="输入格式">
               <button type="button" class="chip chip--sm is-on" data-in="PNGs" data-i18n="outset.pngs">PNG 序列</button>
               <button type="button" class="chip chip--sm" data-in="APNG">APNG</button>
               <button type="button" class="chip chip--sm" data-in="GIF">GIF</button>
@@ -453,7 +453,7 @@
           </div>
           <div class="outset__group outset__group--grow">
             <p class="outset__cap mono" data-i18n="outset.fmt">要输出成</p>
-            <div class="chip-row chip-row--sm" id="out-chips" role="group" aria-label="输出格式"></div>
+            <div class="chip-row chip-row--sm" id="out-chips" role="group"  data-i18n-aria="a11y.outFmt"aria-label="输出格式"></div>
           </div>
         </div>
         <div class="outset__flow" id="pipeline" aria-hidden="true">
@@ -507,13 +507,13 @@
           </div>
         </div>
 
-        <div class="gate-formats" id="gate-formats" aria-label="各格式体积预览">
+        <div class="gate-formats" id="gate-formats"  data-i18n-aria="a11y.gateFormats"aria-label="各格式体积预览">
           <button type="button" class="gate-fmt is-on" data-fmt="APNG">APNG</button>
           <button type="button" class="gate-fmt" data-fmt="GIF">GIF</button>
           <button type="button" class="gate-fmt" data-fmt="WEBP">WebP</button>
         </div>
 
-        <ol class="gate-log" id="gate-log" aria-label="重压试次"></ol>
+        <ol class="gate-log" id="gate-log"  data-i18n-aria="a11y.gateLog"aria-label="重压试次"></ol>
       </div>
 
       <!-- right: settings, same height -->
@@ -527,7 +527,7 @@
           <span data-i18n="play.limit">阈值</span>
           <span class="gate-field__row">
             <input type="number" id="gate-max" min="0.1" step="0.1" value="1" />
-            <span class="gate-unit" role="group" aria-label="阈值单位">
+            <span class="gate-unit" role="group"  data-i18n-aria="a11y.gateUnit"aria-label="阈值单位">
               <button type="button" class="gate-unit__btn is-on" data-unit="MB">MB</button>
               <button type="button" class="gate-unit__btn" data-unit="KB">KB</button>
             </span>
@@ -573,27 +573,27 @@
         <p class="lab-label mono" data-i18n="naming.outName">输出名字</p>
         <div class="name-row">
           <input id="name-input" class="name-input mono" type="text" value="示例贴纸-行走循环 高清_v3" spellcheck="false" />
-          <button type="button" class="name-filter" id="name-filter" title="只留文字 / 恢复全部" aria-pressed="false">
+          <button type="button" class="name-filter" id="name-filter"  data-i18n-title="a11y.nameFilter"title="只留文字 / 恢复全部" aria-pressed="false">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
               <path d="M2 3h12l-4.5 5.2V13L6.5 11.5V8.2L2 3z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
             </svg>
           </button>
         </div>
-        <div class="name-tokens" id="token-row" aria-label="输出名分词"></div>
+        <div class="name-tokens" id="token-row"  data-i18n-aria="a11y.nameTokens"aria-label="输出名分词"></div>
         <div class="name-hint mono" id="name-hint" data-i18n="naming.hint">点字词可取消；漏斗 = 只留文字</div>
       </div>
 
       <!-- right: path vars like PathVars + output path -->
       <div class="name-panel">
         <p class="lab-label mono" data-i18n="naming.path">输出路径</p>
-        <div class="path-presets" role="group" aria-label="输出路径预设">
+        <div class="path-presets" role="group"  data-i18n-aria="a11y.pathPresets"aria-label="输出路径预设">
           <button type="button" class="chip is-on" data-preset="output" data-i18n="naming.preset.src">源目录</button>
           <button type="button" class="chip" data-preset="beside" data-i18n="naming.preset.beside">旁边扔</button>
           <button type="button" class="chip" data-preset="custom" data-i18n="naming.preset.custom">自定义</button>
         </div>
         <p class="path-field-label mono" data-i18n="naming.varPath">变量路径</p>
         <input id="path-template" class="path-input mono" type="text" value="{srcPath}" spellcheck="false" />
-        <div class="path-vars" id="path-vars" role="group" aria-label="路径变量"></div>
+        <div class="path-vars" id="path-vars" role="group"  data-i18n-aria="a11y.pathVars"aria-label="路径变量"></div>
         <p class="path-field-label mono" data-i18n="naming.realPath">真实路径</p>
         <p class="path-preview mono" id="path-preview"></p>
       </div>
@@ -609,7 +609,7 @@
         iSparta-next 深度嵌入 AE，基于 CEP 重新定制前后端，打开面板就自动识别全部合成，直接导出成动图，全程不用离开 AE。
       </p>
     </div>
-    <div class="ae-stage" id="ae-stage" role="group" aria-label="AE 合成导出演示">
+    <div class="ae-stage" id="ae-stage" role="group"  data-i18n-aria="a11y.aeStage"aria-label="AE 合成导出演示">
       <div class="ae-stage-grid">
         <!-- 左：CEP 面板模拟（窄屏，体现小屏自适应） -->
         <figure class="ae-panel">
@@ -640,7 +640,7 @@
               <!-- 过滤条 mod-list__filter：全选 + 搜索 + 排序 chips -->
               <div class="cep-filter">
                 <label class="cep-cb" title="全选" data-i18n-title="ae.pAll"><input type="checkbox" id="ae-all" /><i></i></label>
-                <input class="cep-search" id="ae-search" type="search" placeholder="搜索" data-i18n-title="ae.pSearch" aria-label="搜索" />
+                <input class="cep-search" id="ae-search" type="search" placeholder="搜索" data-i18n-placeholder="ae.pSearch" data-i18n-title="ae.pSearch" data-i18n-aria="a11y.aeSearch" aria-label="搜索" />
                 <button class="cep-chip is-on" type="button" data-sort="fps">fps<i></i></button>
                 <button class="cep-chip" type="button" data-sort="frames"><span data-i18n="ae.pFrames">帧数</span><i></i></button>
               </div>
@@ -997,19 +997,19 @@
         <div class="shots-grid">
           <figure class="shot" tabindex="0">
             <div class="shot__frame">
-              <img src="assets/shots/desktop-workspace-hd.webp" alt="iSparta-next 桌面工作台：任务列表与输出设置" width="1440" height="1080" loading="lazy" />
+              <img src="assets/shots/desktop-workspace-hd.webp"  data-i18n-alt="a11y.shot.workbench"alt="iSparta-next 桌面工作台：任务列表与输出设置" width="1440" height="1080" loading="lazy" />
             </div>
             <figcaption class="mono" data-i18n="shots.capMain">桌面工作台 · 任务列表 + 输出设置（路径变量 / 大小阈值）</figcaption>
           </figure>
           <figure class="shot" tabindex="0">
             <div class="shot__frame">
-              <img src="assets/shots/desktop-empty.webp" alt="空状态：拖放、粘贴或点击打开目录" width="984" height="742" loading="lazy" />
+              <img src="assets/shots/desktop-empty.webp"  data-i18n-alt="a11y.shot.empty"alt="空状态：拖放、粘贴或点击打开目录" width="984" height="742" loading="lazy" />
             </div>
             <figcaption class="mono" data-i18n="shots.capEmpty">空状态 · 拖入 / 粘贴 / 点开</figcaption>
           </figure>
           <figure class="shot" tabindex="0">
             <div class="shot__frame">
-              <img src="assets/shots/desktop-settings-general.webp" alt="默认设置：语言、主题、输出路径变量与大小阈值" width="984" height="742" loading="lazy" />
+              <img src="assets/shots/desktop-settings-general.webp"  data-i18n-alt="a11y.shot.settings"alt="默认设置：语言、主题、输出路径变量与大小阈值" width="984" height="742" loading="lazy" />
             </div>
             <figcaption class="mono" data-i18n="shots.capSet">默认设置 · 命名 / {srcPath} / 大小上限</figcaption>
           </figure>
@@ -1027,19 +1027,19 @@
         <div class="shots-grid">
           <figure class="shot" tabindex="0">
             <div class="shot__frame">
-              <img src="assets/shots/cep-comp-tree.webp" alt="AE 扩展：合成树与尺寸信息" width="1440" height="1080" loading="lazy" />
+              <img src="assets/shots/cep-comp-tree.webp"  data-i18n-alt="a11y.shot.tree"alt="AE 扩展：合成树与尺寸信息" width="1440" height="1080" loading="lazy" />
             </div>
             <figcaption class="mono" data-i18n="shots.capCepTree">合成树 · 尺寸 / 帧率 / 帧数</figcaption>
           </figure>
           <figure class="shot" tabindex="0">
             <div class="shot__frame">
-              <img src="assets/shots/cep-task-list.webp" alt="AE 扩展：合成任务列表" width="1440" height="1080" loading="lazy" />
+              <img src="assets/shots/cep-task-list.webp"  data-i18n-alt="a11y.shot.tasks"alt="AE 扩展：合成任务列表" width="1440" height="1080" loading="lazy" />
             </div>
             <figcaption class="mono" data-i18n="shots.capCepList">合成列表 · 勾选 / 帧率 / 帧数</figcaption>
           </figure>
           <figure class="shot" tabindex="0">
             <div class="shot__frame">
-              <img src="assets/shots/cep-output-settings.webp" alt="AE 扩展：输出路径变量与大小阈值" width="1440" height="1080" loading="lazy" />
+              <img src="assets/shots/cep-output-settings.webp"  data-i18n-alt="a11y.shot.output"alt="AE 扩展：输出路径变量与大小阈值" width="1440" height="1080" loading="lazy" />
             </div>
             <figcaption class="mono" data-i18n="shots.capCepSet">输出设置 · 变量路径 / 大小阈值</figcaption>
           </figure>
@@ -1108,7 +1108,7 @@
 
       <!-- 发布面板：左版本轨 + 右详情 -->
       <div class="rel-shell">
-        <div class="rel-board" id="rel-board" role="group" aria-label="更新日志">
+        <div class="rel-board" id="rel-board" role="group" data-i18n-aria="rel.title" aria-label="更新日志">
           <div class="rel-board__chrome">
             <span class="rel-board__dots" aria-hidden="true"><i></i><i></i><i></i></span>
             <span class="rel-board__title mono" data-i18n="rel.title">更新日志</span>
@@ -1122,7 +1122,7 @@
             >查看全部发布</a>
           </div>
           <div class="rel-board__main">
-            <nav class="rel-nav" id="rel-nav" aria-label="版本列表"></nav>
+            <nav class="rel-nav" id="rel-nav"  data-i18n-aria="a11y.relNav"aria-label="版本列表"></nav>
             <section class="rel-pane" id="rel-pane">
               <div class="rel-board__empty mono" data-i18n="rel.empty">暂无版本记录，可前往 GitHub Releases 查看。</div>
             </section>
@@ -1220,7 +1220,7 @@
               <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 5.5 10.5 4.4v7.1H3V5.5zm8.5-1.2L21 3v8.5h-9.5V4.3zM3 12.5h7.5v7.1L3 18.5v-6zm8.5 0H21V21l-9.5-1.3v-7.2z"/></svg>
             </span>
             <span class="dl-tile__name">Windows</span>
-            <span class="dl-tile__sub mono">x64 · 含 AE 扩展</span>
+            <span class="dl-tile__sub mono" data-i18n="dl.winSub">x64 · 含 AE 扩展</span>
           </a>
           <a class="dl-tile" data-dl="macX64" href="https://github.com/yancongya/iSparta-next/releases/latest/download/isparta-next-mac-x64.zip" target="_blank" rel="noopener">
             <span class="dl-tile__ico" aria-hidden="true">
@@ -1274,7 +1274,7 @@
         <p class="foot-logo">ISPARTA<span>-next</span></p>
         <p class="foot-note" data-i18n="foot.note">开源动图转换工作台。桌面拖文件批量转，AE 里直接导出合成。</p>
       </div>
-      <nav class="foot-cols" aria-label="footer">
+      <nav class="foot-cols"  data-i18n-aria="a11y.foot"aria-label="footer">
         <div class="foot-col">
           <p class="foot-col__t" data-i18n="foot.c1t">项目</p>
           <a href="https://github.com/yancongya/iSparta-next" target="_blank" rel="noopener">GitHub</a>
@@ -1296,7 +1296,7 @@
         <div class="foot-col">
           <p class="foot-col__t" data-i18n="foot.c4t">联系</p>
           <a href="mailto:admin@itycon.cn" data-i18n="foot.contact">admin@itycon.cn</a>
-          <a href="https://github.com/yancongya/iSparta-next/issues" target="_blank" rel="noopener">问题反馈</a>
+          <a href="https://github.com/yancongya/iSparta-next/issues" target="_blank" rel="noopener" data-i18n="foot.issue">问题反馈</a>
         </div>
       </nav>
     </div>
