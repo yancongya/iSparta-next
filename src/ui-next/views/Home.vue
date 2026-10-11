@@ -13,32 +13,40 @@
     <!-- 自绘顶栏（桌面 frameless）：品牌名 + 版本号 + 窗口按钮。空态/有任务共用。 -->
     <is-win-bar>
       <template #tools>
-        <!-- 空态工具按钮：视图切换 / 帮助 / 设置 / 主题 -->
-        <button
-          v-if="supportsCompImport"
-          type="button"
-          class="ib-iconbtn"
-          :class="{ 'is-active': compTreeOpen }"
-          :title="compTreeOpen ? $t('inputItems') : $t('compTreeOpen')"
-          @click="toggleView"
-        >
-          <is-icon :name="compTreeOpen ? 'list' : 'layers'" />
-        </button>
-        <button type="button" class="ib-iconbtn" :title="$t('obOpenGuide') || '使用引导'" @click="openOnboarding">
-          <is-icon name="question" />
-        </button>
-        <button type="button" class="ib-iconbtn" :title="$t('defaultSetting')" @click="openGlobalSetting">
-          <is-icon name="settings" />
-          <span v-if="updateBadge" class="ib-rail__badge" aria-hidden="true" />
-        </button>
-        <button type="button" class="ib-iconbtn" :title="themeTitle" @click="toggleTheme">
-          <is-icon :name="theme === 'dark' ? 'sun' : 'moon'" />
-        </button>
+        <!--
+          空态工具按钮：视图切换 / 帮助 / 设置 / 主题。
+          ⚠ 这组按钮原在空态区块的 .ib-import__top 内，天然只在空态出现；
+          搬进顶栏插槽后父容器约束没了，必须自己补isEmpty 判定，
+          否则有任务时右上角会多出这四个按钮（与竖轨里的入口重复）。
+          判定式与下方空态 section 的 v-if 保持一致，改一处要同步两处。
+        -->
+        <template v-if="isEmpty">
+          <button
+            v-if="supportsCompImport"
+            type="button"
+            class="ib-iconbtn"
+            :class="{ 'is-active': compTreeOpen }"
+            :title="compTreeOpen ? $t('inputItems') : $t('compTreeOpen')"
+            @click="toggleView"
+          >
+            <is-icon :name="compTreeOpen ? 'list' : 'layers'" />
+          </button>
+          <button type="button" class="ib-iconbtn" :title="$t('obOpenGuide') || '使用引导'" @click="openOnboarding">
+            <is-icon name="question" />
+          </button>
+          <button type="button" class="ib-iconbtn" :title="$t('defaultSetting')" @click="openGlobalSetting">
+            <is-icon name="settings" />
+            <span v-if="updateBadge" class="ib-rail__badge" aria-hidden="true" />
+          </button>
+          <button type="button" class="ib-iconbtn" :title="themeTitle" @click="toggleTheme">
+            <is-icon :name="theme === 'dark' ? 'sun' : 'moon'" />
+          </button>
+        </template>
       </template>
     </is-win-bar>
 
     <!-- 空态：无任务时全屏导入 -->
-    <section v-if="!items.length && !compTreeOpen" class="ib-import">
+    <section v-if="isEmpty" class="ib-import">
       <!-- 合成树占任务列表区；不与空态画框嵌套 -->
       <div v-if="supportsCompImport && compTreeOpen" class="ib-main__list">
         <comp-tree @add="onCompTreeAdd" @close="compTreeOpen = false" />
@@ -360,6 +368,14 @@ export default {
   computed: {
     items () {
       return this.$store.getters.getterItems
+    },
+    /**
+     * 空态：无任务且未打开合成树。
+     * 顶栏工具按钮与空态区块**共用这一个判定**——两处曾各写一份，
+     * 搬进顶栏插槽后工具按钮漏了守卫，导致有任务时右上角也多出一组。
+     */
+    isEmpty () {
+      return !this.items.length && !this.compTreeOpen
     },
     supportsFileImport () {
       return hostAdapter.supportsFileImport !== false
