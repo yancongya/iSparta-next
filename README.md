@@ -2,17 +2,22 @@
 
 **中文** | [English](README.en.md)
 
-[![Latest release](https://img.shields.io/github/v/release/yancongya/iSparta-next?include_prereleases&label=Release)](https://github.com/yancongya/iSparta-next/releases/latest)
-[![Downloads](https://img.shields.io/github/downloads/yancongya/iSparta-next/total.svg)](https://github.com/yancongya/iSparta-next/releases)
-[![Build Multi-Platform](https://img.shields.io/github/actions/workflow/status/yancongya/iSparta-next/build.yml?branch=master&label=CI)](https://github.com/yancongya/iSparta-next/actions/workflows/build.yml)
-[![Electron](https://img.shields.io/badge/Electron-28.3.3-47848F?logo=electron&logoColor=white)](https://www.electronjs.org/)
-[![Vue](https://img.shields.io/badge/Vue-2.x-42b883?logo=vue.js&logoColor=white)](https://vuejs.org/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/yancongya/iSparta-next/blob/master/LICENSE)
+![Latest release](https://img.shields.io/github/v/release/yancongya/iSparta-next?include_prereleases\&label=Release)
+
+![Downloads](https://img.shields.io/github/downloads/yancongya/iSparta-next/total.svg)
+
+![Build Multi-Platform](https://img.shields.io/github/actions/workflow/status/yancongya/iSparta-next/build.yml?branch=master\&label=CI)
+
+![Electron](https://img.shields.io/badge/Electron-28.3.3-47848F?logo=electron\&logoColor=white)
+
+![Vue](https://img.shields.io/badge/Vue-2.x-42b883?logo=vue.js\&logoColor=white)
+
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 
 **iSparta-next** 是在停更多年的经典 [iSparta](https://github.com/iSparta/iSparta) 基础上重构的桌面动图转换工具，支持 **APNG / Animated WebP / GIF / PNG 序列** 之间的互转与压缩。
 
 > **[点此前往 Releases 下载安装包 →](https://github.com/yancongya/iSparta-next/releases)**  
-> **产品官网 / 落地页：** **[https://yancongya.github.io/iSparta-next/](https://yancongya.github.io/iSparta-next/)**  
+> **产品官网 / 落地页：** **<https://yancongya.github.io/iSparta-next/>**  
 > iSparta-next 是停更 [iSparta](https://github.com/iSparta/iSparta) 的现代维护替代：APNG / Animated WebP / GIF / PNG 序列转换与压缩  
 > 技术栈：Electron 28 + Vue 2 · 支持 Windows / macOS / Linux
 
@@ -62,25 +67,25 @@
 
 ### 与旧版 / 中间 fork 的关系
 
-| 来源 | 状态 | 相对原版的主要动作 | 与本仓库关系 |
-| --- | --- | --- | --- |
-| [iSparta/iSparta](https://github.com/iSparta/iSparta)（原版） | **长期停更** | 经典 APNG/WebP 转换工具；大量 bug 未修 | 产品形态来源，**不建议再直接使用** |
-| [Xheldon/iSparta](https://github.com/Xheldon/iSparta) | 社区维护中 | 修帧乱序等问题；部分界面修补 | 历史参考之一 |
-| [bigxixi/iSparta](https://github.com/bigxixi/iSparta) | 社区 fork | libwebp 1.5（修 CVE-2023-4863）、Electron 6→13、Vue CLI 4、`execFile` 防注入、存储/锁死修复、GitHub Actions | **本仓库的直接上游** |
-| **本仓库 iSparta-next** | **当前维护版** | 见下方「相对旧版：修了什么 / 多了什么」 | 在 bigxixi 基建上完成前后端重构与功能扩展，安装包见 [Releases](https://github.com/yancongya/iSparta-next/releases) |
+| 来源                                                        | 状态        | 相对原版的主要动作                                                                                  | 与本仓库关系                                                                                        |
+| --------------------------------------------------------- | --------- | ------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------- |
+| [iSparta/iSparta](https://github.com/iSparta/iSparta)（原版） | **长期停更**  | 经典 APNG/WebP 转换工具；大量 bug 未修                                                                | 产品形态来源，**不建议再直接使用**                                                                           |
+| [Xheldon/iSparta](https://github.com/Xheldon/iSparta)     | 社区维护中     | 修帧乱序等问题；部分界面修补                                                                             | 历史参考之一                                                                                        |
+| [bigxixi/iSparta](https://github.com/bigxixi/iSparta)     | 社区 fork   | libwebp 1.5（修 CVE-2023-4863）、Electron 6→13、Vue CLI 4、`execFile` 防注入、存储/锁死修复、GitHub Actions | **本仓库的直接上游**                                                                                  |
+| **本仓库 iSparta-next**                                      | **当前维护版** | 见下方「相对旧版：修了什么 / 多了什么」                                                                      | 在 bigxixi 基建上完成前后端重构与功能扩展，安装包见 [Releases](https://github.com/yancongya/iSparta-next/releases) |
 
 ### 相对旧版：修了什么
 
-| 类别 | 旧版问题 | iSparta-next 现状 |
-| --- | --- | --- |
-| 安全 | 依赖 `electron.remote`；渲染进程可裸调 Node；命令拼接有注入风险 | IPC + preload 白名单；`contextIsolation` / `sandbox` / `nodeIntegration:false`；`execFile` 受控执行 |
-| 运行时 | Electron 停在旧主版本，安全补丁缺失 | **Electron 28.3.3** |
-| 依赖安全 | 旧 libwebp 存在高危漏洞（CVE-2023-4863 等） | 继承上游升级的 **libwebp 1.5** 及对应二进制 |
-| 帧序 | 导入/打开目录时偶发帧错乱、乱序 | 自然排序补全打开目录与拖拽路径；同树 APNG 去重 |
-| Windows 路径 | 「打开原目录」在 Windows 下路径分隔符异常 | 已兼容修复 |
-| 存储 / 状态 | 缓存读空、转换锁死、导入 options 共享引用污染 | 存储改主进程实现；转换锁与缓存恢复加固；导入实例隔离 |
-| 命名 | 强制/自动追加 `_apng` 后缀，输出位置也不直观 | 默认后缀留空；首个输出预设直接写源目录（不再强行建 `/output`） |
-| 打包 | Travis/AppVeyor 失效；Windows 无签名环境易卡 | GitHub Actions；本地 `electronDist` + 跳过签名，`build:windows` 可出包 |
+| 类别         | 旧版问题                                        | iSparta-next 现状                                                                            |
+| ---------- | ------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| 安全         | 依赖 `electron.remote`；渲染进程可裸调 Node；命令拼接有注入风险 | IPC + preload 白名单；`contextIsolation` / `sandbox` / `nodeIntegration:false`；`execFile` 受控执行 |
+| 运行时        | Electron 停在旧主版本，安全补丁缺失                      | **Electron 28.3.3**                                                                        |
+| 依赖安全       | 旧 libwebp 存在高危漏洞（CVE-2023-4863 等）           | 继承上游升级的 **libwebp 1.5** 及对应二进制                                                             |
+| 帧序         | 导入/打开目录时偶发帧错乱、乱序                            | 自然排序补全打开目录与拖拽路径；同树 APNG 去重                                                                 |
+| Windows 路径 | 「打开原目录」在 Windows 下路径分隔符异常                   | 已兼容修复                                                                                      |
+| 存储 / 状态    | 缓存读空、转换锁死、导入 options 共享引用污染                 | 存储改主进程实现；转换锁与缓存恢复加固；导入实例隔离                                                                 |
+| 命名         | 强制/自动追加 `_apng` 后缀，输出位置也不直观                 | 默认后缀留空；首个输出预设直接写源目录（不再强行建 `/output`）                                                       |
+| 打包         | Travis/AppVeyor 失效；Windows 无签名环境易卡          | GitHub Actions；本地 `electronDist` + 跳过签名，`build:windows` 可出包                                |
 
 ### 相对旧版：多了什么功能
 
@@ -88,34 +93,24 @@
 
 1. **输出大小阈值**  
    默认 1MB；超出可警告 / 自动删除 / 按步长自动降质量重压，适配贴纸与平台体积上限。
-
 2. **输出路径策略 + 变量模板**  
    源目录 / 旁级目录 / 自定义目录；支持 `{srcPath}` `{srcName}` `{srcParent}` 等路径变量，批量导出更可控。
-
 3. **前后对比滑块**  
    转换完成后点击缩略图，可滑动（或键盘微调）对比原图与输出效果。
-
 4. **粘贴导入**  
    除拖拽、打开目录外，支持直接粘贴截图入队。
-
 5. **亮 / 暗主题（含跟随系统）**  
    顶栏一键切换；输出设置、弹窗、开始按钮等全套界面同主题。
-
 6. **自研 UI 工作台（替换 Element UI）**  
    两栏布局（任务列表 + 输出设置）、封面 1:1 缩略图、悬停预览、折叠面板、进度光带、批量统计、设计 token 化，降低第三方组件库耦合。
-
 7. **交互与动效增强**  
    列表入场、数字滚动、完成彩带、拖放反馈；尊重 `prefers-reduced-motion`。
-
 8. **逐帧延时配置**  
    PNG 序列可单独调整每帧 delay，不再只能用全局帧频。
-
 9. **全局默认设置**  
    预设输出格式、质量、后缀、大小阈值等，减少重复配置。
-
 10. **多任务批量工作流强化**  
     多选、批量开始、统一输出到目录、失败/成功统计、打开输出目录等路径更完整。
-
 11. **运行日志面板**  
     工具条一键打开；按级别筛选（全部 / 信息 / 成功 / 警告 / 错误），支持自动滚动跟读，便于排查转换失败与路径问题。
 
@@ -127,33 +122,33 @@
 
 **桌面端**
 
-| 工作台（任务列表 + 输出设置） | 空状态（拖放 / 粘贴导入） |
-| :---: | :---: |
+|                                     工作台（任务列表 + 输出设置）                                     |                                   空状态（拖放 / 粘贴导入）                                   |
+| :--------------------------------------------------------------------------------------: | :--------------------------------------------------------------------------------: |
 | <img src="docs/screenshots/desktop-workspace-hd.webp" alt="桌面工作台：任务列表与输出设置" width="480"> | <img src="docs/screenshots/desktop-empty.webp" alt="空状态：拖放、粘贴、点击打开目录" width="480"> |
 
-| 默认设置（语言 / 主题 / 路径变量 / 大小阈值） | 默认设置（版本与更新） |
-| :---: | :---: |
+|                                     默认设置（语言 / 主题 / 路径变量 / 大小阈值）                                     |                                          默认设置（版本与更新）                                          |
+| :-------------------------------------------------------------------------------------------------: | :-------------------------------------------------------------------------------------------: |
 | <img src="docs/screenshots/desktop-settings-general.webp" alt="默认设置：语言、主题、输出路径变量与大小阈值" width="480"> | <img src="docs/screenshots/desktop-settings-update.webp" alt="默认设置：当前版本、检查更新与关于" width="480"> |
 
 **AE 扩展端**（同一套工作台，装在 After Effects 面板里）
 
-| 合成列表 | 合成树 |
-| :---: | :---: |
+|                                            合成列表                                           |                                           合成树                                          |
+| :---------------------------------------------------------------------------------------: | :------------------------------------------------------------------------------------: |
 | <img src="docs/screenshots/cep-task-list.webp" alt="AE 扩展：合成任务列表，可勾选并显示帧率帧数" width="480"> | <img src="docs/screenshots/cep-comp-tree.webp" alt="AE 扩展：合成树，显示尺寸、帧率与帧数" width="480"> |
 
-| 输出设置（变量路径 + 大小阈值） |
-| :---: |
+|                                      输出设置（变量路径 + 大小阈值）                                      |
+| :-----------------------------------------------------------------------------------------: |
 | <img src="docs/screenshots/cep-output-settings.webp" alt="AE 扩展：输出路径变量与大小阈值设置" width="480"> |
 
 ## 下载
 
 请直接到 **[Releases](https://github.com/yancongya/iSparta-next/releases)** 页面下载最新安装包。
 
-| 平台 | 产物 | 架构 |
-| --- | --- | --- |
-| Windows | `.zip` | x64 |
-| macOS | `.zip`（内含 `.app`） | x64 / arm64 |
-| Linux | `.tar.gz` | x64 |
+| 平台      | 产物                | 架构          |
+| ------- | ----------------- | ----------- |
+| Windows | `.zip`            | x64         |
+| macOS   | `.zip`（内含 `.app`） | x64 / arm64 |
+| Linux   | `.tar.gz`         | x64         |
 
 三端均由 GitHub Actions 构建。macOS 包为 **未签名** 构建：解压后若系统拦截，可在「系统设置 → 隐私与安全性」中允许打开，或对 App 执行 `xattr -dr com.apple.quarantine`。
 
@@ -163,14 +158,14 @@
 
 ### 格式转换
 
-| 输入 | 输出 | 说明 |
-| --- | --- | --- |
-| PNG 序列 | APNG | 多帧合并为动图，可设帧频、循环次数；支持逐帧延时 |
-| GIF | APNG | 无损 / 可控质量转 APNG |
-| WebP | APNG | 动图 WebP 转 APNG |
-| APNG | Animated WebP | 可设循环、无损、压缩质量 |
-| APNG | GIF | APNG 转 GIF |
-| APNG | APNG | 无损 / 有损压缩，减小体积 |
+| 输入     | 输出            | 说明                       |
+| ------ | ------------- | ------------------------ |
+| PNG 序列 | APNG          | 多帧合并为动图，可设帧频、循环次数；支持逐帧延时 |
+| GIF    | APNG          | 无损 / 可控质量转 APNG          |
+| WebP   | APNG          | 动图 WebP 转 APNG           |
+| APNG   | Animated WebP | 可设循环、无损、压缩质量             |
+| APNG   | GIF           | APNG 转 GIF               |
+| APNG   | APNG          | 无损 / 有损压缩，减小体积           |
 
 ### 工作流能力
 
@@ -231,10 +226,10 @@ npm run build:windows
 
 仓库里有两条 Actions 工作流：
 
-| 工作流 | 文件 | 触发 | 作用 |
-| --- | --- | --- | --- |
-| **Build Multi-Platform** | [build.yml](.github/workflows/build.yml) | push `master` / 手动 | 构建 Win/Linux/macOS Artifact（约 7 天），**不发 Release** |
-| **Release** | [release.yml](.github/workflows/release.yml) | 手动 `workflow_dispatch` | 自动升版本 → 提交并打 tag → 构建三端 → 创建 GitHub Release |
+| 工作流                      | 文件                                           | 触发                     | 作用                                                |
+| ------------------------ | -------------------------------------------- | ---------------------- | ------------------------------------------------- |
+| **Build Multi-Platform** | [build.yml](.github/workflows/build.yml)     | push `master` / 手动     | 构建 Win/Linux/macOS Artifact（约 7 天），**不发 Release** |
+| **Release**              | [release.yml](.github/workflows/release.yml) | 手动 `workflow_dispatch` | 自动升版本 → 提交并打 tag → 构建三端 → 创建 GitHub Release       |
 
 #### 日常构建
 
@@ -256,19 +251,21 @@ gh workflow run release.yml -R yancongya/iSparta-next -f bump=patch -f prereleas
 ```
 
 选择：
-   - **bump**：`patch` / `minor` / `major`（从当前 `package.json` 版本递增）
-   - **prerelease**：勾选后在 GitHub 上标为 Pre-release（测试包可勾，正式版可不勾）
-   - **dry_run**：只试算版本并构建，不提交、不打 tag、不发 Release
+
+- **bump**：`patch` / `minor` / `major`（从当前 `package.json` 版本递增）
+- **prerelease**：勾选后在 GitHub 上标为 Pre-release（测试包可勾，正式版可不勾）
+- **dry_run**：只试算版本并构建，不提交、不打 tag、不发 Release
 
 运行成功后会：
-   - 更新 `package.json` / `package-lock.json` 版本号
-   - 提交 `chore(release): vX.Y.Z [skip ci]` 并创建 `vX.Y.Z` 标签
-   - **自动汇总**上个 tag 以来的 commit（feat/fix/docs/ci 等）生成 Release Notes
-   - 用该版本号在 GitHub runner 上构建 Win / Linux / macOS，资产命名为：
-     - `isparta-next-<ver>-win-x64.zip`
-     - `isparta-next-<ver>-linux-x64.tar.gz`
-     - `isparta-next-<ver>-mac-arm64.zip`
-     - `isparta-next-<ver>-mac-x64.zip`
+
+- 更新 `package.json` / `package-lock.json` 版本号
+- 提交 `chore(release): vX.Y.Z [skip ci]` 并创建 `vX.Y.Z` 标签
+- **自动汇总**上个 tag 以来的 commit（feat/fix/docs/ci 等）生成 Release Notes
+- 用该版本号在 GitHub runner 上构建 Win / Linux / macOS，资产命名为：
+  - `isparta-next-<ver>-win-x64.zip`
+  - `isparta-next-<ver>-linux-x64.tar.gz`
+  - `isparta-next-<ver>-mac-arm64.zip`
+  - `isparta-next-<ver>-mac-x64.zip`
 
 > 说明：发版提交带 `[skip ci]`，避免和日常 CI 重复构建。  
 > 三端（Win / Linux / macOS x64+arm64）均由 Release 工作流在云端打包并挂到同一 Release。  
@@ -327,7 +324,7 @@ iSparta-next/
 
 从渲染界面到原生 CLI，再到 AE 扩展双端——连线对应真实的 IPC / 桥 / 执行边界：
 
-<img src="public/architecture-zh.svg" alt="iSparta-next 架构图：Vue 界面经 preload IPC 白名单与 Electron 主进程通信，主进程驱动共享转换核并调用原生 CLI；同一套 Vue 界面与转换核经宿主/源适配器运行在 After Effects CEP 扩展中" width="880">
+<img src="docs/diagrams/architecture-zh.svg" alt="iSparta-next 架构图：Vue 界面经 preload IPC 白名单与 Electron 主进程通信，主进程驱动共享转换核并调用原生 CLI；同一套 Vue 界面与转换核经宿主/源适配器运行在 After Effects CEP 扩展中" width="880">
 
 ## 安全架构（iSparta-next 演进）
 
