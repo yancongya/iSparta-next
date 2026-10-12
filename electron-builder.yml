@@ -13,8 +13,12 @@ extraResources:
     to: cep
     filter:
       - "**/*"
-# 使用本地已安装的 Electron，避免打包时再下载 zip
-electronDist: ./node_modules/electron/dist
+# 不配置 electronDist：electron-builder 22.14.13 的 unpack() 只在
+# <dist>/electron-v<ver>-<platform>-<arch>.zip 存在时才按目标架构下载/解包；
+# 否则会直接 copyDir 本地 node_modules/electron/dist（当前宿主架构），
+# 导致 mac-x64 包实为 arm64（P0，影响 v3.3.16~v3.6.0）。
+# 移除后按 platform+arch 走 unpack-electron，本地已有
+# %LOCALAPPDATA%/electron/Cache 的 win32-x64 zip 缓存，不额外联网。
 electronVersion: 28.3.3
 publish:
   - provider: github

@@ -20,6 +20,7 @@
 | `lib/cli.js` | 仅 bin 定位 / mac 自愈 / checkTools（**无编码**） |
 | `lib/cs.js` | evalScript / SystemPath |
 | `bin/` | 编码器落盘（见 `bin/README.md`） |
+| （安装辅助） | **不进扩展文件夹**：发行 zip 顶层平铺 `安装方法-<plat>.txt` + 平台脚本（源自 `public/install/`，按平台取子集，见 `scripts/pack-cep-zip.js`）；解压即见，拷贝扩展时不会连带拷进 extensions 目录 |
 
 ## 开发 / 构建
 
@@ -60,7 +61,8 @@ if (Test-Path $dst) { Remove-Item $dst -Recurse -Force }
 New-Item -ItemType Junction -Path $dst -Target $src
 ```
 
-4. 未签名：写 `PlayerDebugMode`（CSXS.6–11）：
+4. 未签名：写 `PlayerDebugMode`。发行 zip **顶层**已附带现成脚本（Windows 双击 `Add Keys.reg`
+   覆盖 CSXS.5–22，macOS 双击 `安装扩展.command` → `install-as-admin` 覆盖 CSXS.5–25）；手动写则循环 CSXS.6–14（与 `build/installer.nsh` 一致）：
 
 ```powershell
 foreach ($v in 6..14) {
@@ -70,7 +72,7 @@ foreach ($v in 6..14) {
 }
 ```
 
-5. AE → 窗口 → 扩展 → **iSparta**。
+5. AE → 窗口 → 扩展 → **iSparta-next**（菜单名随版本注入，见 CSXS/manifest.xml 的 `<Menu>`）。
 
 macOS：
 

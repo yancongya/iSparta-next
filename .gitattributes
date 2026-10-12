@@ -23,3 +23,9 @@ landing/*.js                         text eol=lf
 public/lib/forge.js                   -text
 targets/cep/lib/forge.js              -text
 targets/cep/ui/lib/forge.js           -text
+
+# ③ macOS 安装辅助（shell / .command）—— 必须 LF：CRLF 会让 bash 报
+#    $'\r': command not found，双击「安装扩展.command」直接失败。
+#    且必须保留可执行位（zip 条目权限取自文件系统，CI 打包前会 chmod +x）。
+public/install/install-as-admin       text eol=lf
+public/install/*.command              text eol=lf

@@ -137,7 +137,18 @@ function main () {
     if (SKIP_COPY.has(name)) continue
     // bin 由 stageBinaries 重新挑选，避免空 README 以外的残留
     if (name === 'bin') continue
+    // 顶层 install 只由 stageInstallHelpers 从 public/install 播种，
+    // 不从 targets/cep 拷，防止两处内容漂移
+    if (name === 'install') continue
     copyTree(path.join(srcCep, name), path.join(outExt, name))
+  }
+
+  // 防御：vue-cli 会把 public/install 整棵复制进 outputDir（targets/cep/ui），
+  // 形成 ui/install 污染——安装辅助只允许存在于 payload 根 install/，出现即剔除
+  const pollutedUiInstall = path.join(outExt, 'ui', 'install')
+  if (fs.existsSync(pollutedUiInstall)) {
+    console.warn('prepare-cep-payload WARN 剔除 targets/cep/ui/install 污染产物（public/install 被复制进 outputDir）')
+    fs.rmSync(pollutedUiInstall, { recursive: true, force: true })
   }
   // 保留 bin 说明（不含二进制本体）
   if (fs.existsSync(path.join(srcCep, 'bin', 'README.md'))) {

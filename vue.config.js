@@ -15,7 +15,20 @@ module.exports = {
     config.resolve.alias.set('events', require.resolve('events/'))
     try { config.plugins.delete('hmr') } catch (e) { /* ignore */ }
 
-      },
+    // CEP 构建：public/ 会被 copy-webpack-plugin 整棵复制进 outputDir
+    // （targets/cep/ui），导致 ui/install/ 污染包内容——安装辅助应只存在于
+    // 包根 install/（由 prepare-cep-payload / pack-cep-zip / CI 播种）。
+    // ignore glob 相对 from 目录（public/），故写 install 与 install/**
+    if (process.env.BUILD_TARGET === 'cep') {
+      config.plugin('copy').tap((args) => {
+        const patterns = args[0]
+        for (const p of patterns) {
+          p.ignore = [...(p.ignore || []), 'install', 'install/**']
+        }
+        return args
+      })
+    }
+  },
   configureWebpack: {
     target: 'web'
   },

@@ -185,6 +185,8 @@ jobs:
           mkdir -p "${STAGE}"
 
           # 可分发文件：整棵 targets/cep，排除开发垃圾
+          # ui/install/ 是 vue-cli 把 public/install 复制进 outputDir 的污染产物，必须排除
+          # /README.md 是 targets/cep 开发文档（junction/npm 路径），不进发行包（bin/README.md 保留）
           rsync -a \
             --exclude '.DS_Store' \
             --exclude 'Thumbs.db' \
@@ -196,8 +198,30 @@ jobs:
             --exclude '.gitignore' \
             --exclude '.vscode/' \
             --exclude '.idea/' \
+            --exclude 'ui/install/' \
+            --exclude '/install/' \
+            --exclude '/README.md' \
             targets/cep/ "${STAGE}/"
 
+          # 安装辅助按平台播种，**平铺 zip 顶层**（BG Renderer 式，与扩展文件夹同级，
+          # 解压即见；不藏进 io.github.isparta-next/install/）
+          # 与 scripts/pack-cep-zip.js PLATFORM_INSTALL_FILES 对齐
+          if [ "${PLATFORM}" = 'win' ]; then
+            INSTALL_FILES=('Add Keys.reg' '安装方法-Windows.txt')
+          else
+            INSTALL_FILES=('install-as-admin' '安装扩展.command' '安装方法-macOS.txt')
+          fi
+          for f in "${INSTALL_FILES[@]}"; do
+            if [ ! -f "public/install/${f}" ]; then
+              echo "public/install/${f} missing" >&2
+              exit 1
+            fi
+            cp -f "public/install/${f}" ".cep-stage/"
+          done
+          # mac：zip 条目权限取自文件系统，缺 +x 则解压后双击 .command / 跑脚本会失败
+          if [ "${PLATFORM}" = 'mac' ]; then
+            chmod +x ".cep-stage/install-as-admin" ".cep-stage/安装扩展.command"
+          fi
 
           # 扩展显示名带版本号（AE 窗口→扩展菜单可见）
           sed -i "s|<Menu>[^<]*</Menu>|<Menu>iSparta-next ${VERSION}</Menu>|" "${STAGE}/CSXS/manifest.xml"
@@ -219,7 +243,8 @@ jobs:
 
           mkdir -p release
           DEST="isparta-next-${VERSION}-cep-${PLATFORM}.zip"
-          (cd .cep-stage && zip -r -q "../release/${DEST}" "${STAGE_ID}")
+          # zip 根 = 安装辅助（顶层平铺）+ 扩展文件夹
+          (cd .cep-stage && zip -r -q "../release/${DEST}" "${STAGE_ID}" "${INSTALL_FILES[@]}")
           ls -lh release
           echo "Packed ${DEST} (version=${VERSION})"
 
