@@ -102,6 +102,54 @@ function readExtensionBundleVersion (manifestPath, fallback) {
 }
 
 /**
+ * 组装 version.json 文档（**唯一来源**，写入方必须走这里，防字段漂移）。
+ * 三个写入通道字段对齐（docs/CEP-ALIGNMENT.md）：
+ *   1. prepare-cep-payload（桌面 payload / 本地独立 zip）
+ *   2. NSIS installer.nsh（安装时覆盖 installedAt/source）
+ *   3. cepSync 自检刷新（refreshExtFromPayload 覆盖 refreshedAt/source）
+ *   4. CI 独立 zip（scripts/seed-cep-zip-version.js —— rsync 源码树没有清单，
+ *      必须补播，否则 CI 包与本地包不一致：桌面自检判 not-installed、
+ *      面板 updater:meta 只能回退 brand 静态版本）
+ *
+ * install 元数据必须按 win32 / darwin 分列 —— payload 由 extraResources 一次性
+ * 打进所有平台产物，写死 %APPDATA%/HKCU 会把错路径带进 mac 包。仅供排障参考。
+ *
+ * @param {object} opts
+ *   version {string} 必填（package.json 版本）
+ *   extensionBundleVersion {string} manifest 的 ExtensionBundleVersion
+ *   builtAt {string} ISO 时间；缺省当前时间
+ *   payload {string} 来源标识；缺省 cep/<EXT_ID>
+ *   binaries {string[]} 已暂存的编码器相对路径列表
+ */
+function buildVersionDoc (opts) {
+  const o = opts || {}
+  return {
+    id: EXT_ID,
+    name: EXT_NAME,
+    displayName: EXT_DISPLAY_NAME,
+    version: o.version || '',
+    extensionBundleVersion: o.extensionBundleVersion || o.version || '',
+    builtAt: o.builtAt || new Date().toISOString(),
+    payload: o.payload || ('cep/' + EXT_ID),
+    binaries: o.binaries || [],
+    install: {
+      userCep: {
+        win32: '%APPDATA%\\Adobe\\CEP\\extensions\\' + EXT_ID,
+        darwin: '~/Library/Application Support/Adobe/CEP/extensions/' + EXT_ID
+      },
+      commonCep: {
+        win32: '%CommonProgramFiles%\\Adobe\\CEP\\extensions\\' + EXT_ID,
+        darwin: null // 本项目不向 macOS 系统级 CEP 目录安装
+      },
+      playerDebugMode: {
+        win32: 'NSIS 组件页写 HKCU\\Software\\Adobe\\CSXS.6-14\\PlayerDebugMode=1',
+        darwin: '扩展落盘后由桌面应用执行 install/install-as-admin（CSXS.5-25）'
+      }
+    }
+  }
+}
+
+/**
  * 判断是否需要刷新：应用版本 / payload / 已安装 三者 version 不一致，或未安装。
  * @returns {{ need: boolean, reason: string, installed: object|null, payload: object|null }}
  */
@@ -193,6 +241,7 @@ module.exports = {
   readVersionJson,
   writeVersionJson,
   readExtensionBundleVersion,
+  buildVersionDoc,
   compareVersions,
   refreshExtFromPayload
 }

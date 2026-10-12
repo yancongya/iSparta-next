@@ -20,7 +20,8 @@ const {
   copyFile,
   copyTree,
   writeVersionJson,
-  readExtensionBundleVersion
+  readExtensionBundleVersion,
+  buildVersionDoc
 } = require('../src/util/cep-payload-common')
 
 const root = path.join(__dirname, '..')
@@ -93,32 +94,14 @@ function stageVersionJson (stagedBins) {
   const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'))
   const manifestPath = path.join(srcCep, 'CSXS', 'manifest.xml')
   const extBundleVersion = readExtensionBundleVersion(manifestPath, pkg.version)
-  return writeVersionJson(outExt, {
+  // 文档组装在 cep-payload-common.buildVersionDoc（唯一来源）：
+  //   prepare / CI zip 播种共用，字段与 NSIS、cepSync 自检刷新对齐。
+  //   install 元数据按 win32/darwin 分列的注释见 buildVersionDoc。
+  return writeVersionJson(outExt, buildVersionDoc({
     version: pkg.version,
     extensionBundleVersion: extBundleVersion,
-    builtAt: new Date().toISOString(),
-    payload: 'cep/' + EXT_ID,
-    binaries: stagedBins,
-    // payload 由 electron-builder extraResources 一次性打进 **所有** 平台产物
-    // （mac 产物是 zip，没有安装向导可挂脚本，落盘与调试模式都由桌面应用自检完成，
-    //   见 src/util/cepSync.js 与 src/util/cepDebugMode.js）。
-    // 所以这三个字段必须按平台分列 —— 写死 %APPDATA% / HKCU 会把错误路径
-    // 原样带进 mac 包里的 version.json。三者均无运行时消费者，仅供排障参考。
-    install: {
-      userCep: {
-        win32: '%APPDATA%\\Adobe\\CEP\\extensions\\' + EXT_ID,
-        darwin: '~/Library/Application Support/Adobe/CEP/extensions/' + EXT_ID
-      },
-      commonCep: {
-        win32: '%CommonProgramFiles%\\Adobe\\CEP\\extensions\\' + EXT_ID,
-        darwin: null // 本项目不向 macOS 系统级 CEP 目录安装
-      },
-      playerDebugMode: {
-        win32: 'NSIS 组件页写 HKCU\\Software\\Adobe\\CSXS.6-14\\PlayerDebugMode=1',
-        darwin: '扩展落盘后由桌面应用执行 install/install-as-admin（CSXS.5-25）'
-      }
-    }
-  })
+    binaries: stagedBins
+  }))
 }
 
 function main () {

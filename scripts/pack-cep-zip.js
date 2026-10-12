@@ -195,6 +195,12 @@ async function main () {
       console.error('pack-cep-zip FAIL zip 内存在 ui/install 污染（public/install 被复制进 outputDir）：', uiPollution)
       process.exit(1)
     }
+    // version.json 版本清单必须在：桌面自检（cepSync）与面板 updater:meta 的事实源。
+    // 本地包走 prepare-cep-payload 自带；CI 包由 seed-cep-zip-version.js 播种。
+    if (!entries.includes(`${EXT_ID}/version.json`)) {
+      console.error('pack-cep-zip FAIL zip 缺少 version.json 版本清单（扩展根）')
+      process.exit(1)
+    }
     // install/ 目录不该出现在包里：安装辅助是 zip 顶层平铺（BG Renderer 式），
     // 藏进 io.github.isparta-next/install/ 会让用户解压后第一眼看不到
     const installDir = entries.filter((e) => /(^|[\\/])install[\\/]/.test(e))

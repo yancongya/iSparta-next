@@ -241,6 +241,16 @@ jobs:
             fi
           done
 
+          # version.json 版本清单：targets/cep 源码树没有它（本地 pack 走
+          # prepare-cep-payload 自带），CI 必须补播，否则与本地包不一致 ——
+          # 桌面自检判 not-installed 每次启动全量重拷、面板 updater:meta 只能回退
+          # brand 静态版本。字段对齐见 cep-payload-common.buildVersionDoc。
+          node scripts/seed-cep-zip-version.js "${STAGE}"
+          if [ ! -f "${STAGE}/version.json" ]; then
+            echo "version.json missing in stage" >&2
+            exit 1
+          fi
+
           mkdir -p release
           DEST="isparta-next-${VERSION}-cep-${PLATFORM}.zip"
           # zip 根 = 安装辅助（顶层平铺）+ 扩展文件夹
