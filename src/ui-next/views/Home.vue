@@ -11,19 +11,18 @@
     <is-notice-host></is-notice-host>
 
     <!-- 自绘顶栏（桌面 frameless）：品牌名 + 版本号 + 窗口按钮。
-         CEP 有任务态由 html.is-cep 的 .ib-rail 横排顶栏接管品牌与工具按钮，
-         再渲染这条会叠出第二条品牌顶栏（frameless 改动引入的回归）；
-         CEP 空态没有 .ib-rail，仍靠这条承载原 ib-import__top 移来的工具按钮。 -->
-    <is-win-bar v-if="showWinBar">
-      <template #tools>
-        <!--
-          空态工具按钮：视图切换 / 帮助 / 设置 / 主题。
-          ⚠ 这组按钮原在空态区块的 .ib-import__top 内，天然只在空态出现；
-          搬进顶栏插槽后父容器约束没了，必须自己补isEmpty 判定，
-          否则有任务时右上角会多出这四个按钮（与竖轨里的入口重复）。
-          判定式与下方空态 section 的 v-if 保持一致，改一处要同步两处。
-        -->
-        <template v-if="isEmpty">
+         ⚠ 空态工具按钮**不在这条顶栏里**：整条是 -webkit-app-region: drag 拖拽区，
+         插槽内容不带 no-drag 时 Windows 收不到鼠标事件（既无 hover 也点不动）。
+         它们改挂空态面板顶部（.ib-import__top），顺带让 win / mac 顶栏长得一致。
+         CEP 有任务态由 html.is-cep 的 .ib-rail 横排顶栏接管品牌，故这条不渲染。 -->
+    <is-win-bar v-if="showWinBar" />
+
+    <!-- 空态：无任务时全屏导入 -->
+    <section v-if="isEmpty" class="ib-import">
+      <!-- 空态工具按钮：视图切换（仅 CEP）/ 帮助 / 设置 / 主题。
+           挂在空态 section 内，天然只在空态出现，无需再写 isEmpty 守卫。 -->
+      <div class="ib-import__top">
+        <div class="ib-import__acts">
           <button
             v-if="supportsCompImport"
             type="button"
@@ -44,12 +43,9 @@
           <button type="button" class="ib-iconbtn" :title="themeTitle" @click="toggleTheme">
             <is-icon :name="theme === 'dark' ? 'sun' : 'moon'" />
           </button>
-        </template>
-      </template>
-    </is-win-bar>
+        </div>
+      </div>
 
-    <!-- 空态：无任务时全屏导入 -->
-    <section v-if="isEmpty" class="ib-import">
       <!-- 合成树占任务列表区；不与空态画框嵌套 -->
       <div v-if="supportsCompImport && compTreeOpen" class="ib-main__list">
         <comp-tree @add="onCompTreeAdd" @close="compTreeOpen = false" />

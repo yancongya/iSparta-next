@@ -9,6 +9,7 @@ import { checkUpdate, isAllowedExternalUrl } from './util/updateCheck'
 import { registerAutoUpdateIpc } from './util/autoUpdate'
 import { ensureCepExtension } from './util/cepSync'
 import { ensurePlayerDebugMode } from './util/cepDebugMode'
+import { markOnboardingDone } from './util/onboarding-replay'
 const isDevelopment = process.env.NODE_ENV !== 'production'
 const path = require("path");
 const fsp = require('fs');
@@ -56,6 +57,17 @@ let pendingOnboarding = false
 let bootFallbackTimer = null
 
 let onboardingWin = null
+/** 引导窗是否由渲染层主动收尾（finish/skip → onboarding:close）关闭；否则按用户关窗处理 */
+let onboardingClosedClean = false
+
+/** 把工作台还回来：引导结束 / 用户关掉引导窗 / 引导窗异常都走这里 */
+function showMainWindow () {
+  if (win && !win.isDestroyed()) {
+    if (win.isMinimized()) { win.restore() }
+    win.show()
+    win.focus()
+  }
+}
 
 /** 引导小窗的 webPreferences 与主窗一致（sandbox + contextIsolation，preload 桥） */
 function onboardingWebPreferences () {
@@ -100,15 +112,29 @@ function openOnboardingWindow () {
     webPreferences: onboardingWebPreferences()
   })
 
-  onboardingWin.on('closed', () => { onboardingWin = null })
+  onboardingWin.on('closed', () => {
+    onboardingWin = null
+    // 用系统关闭按钮（win 自绘按钮走 win:close → 同上）或 Alt+F4 关窗时，
+    // 渲染层**不会**走 onboarding.finish()，于是：
+    //   · 主窗还停在 hide 状态 → 应用看起来「闪退」了（其实只是没有可见窗口）；
+    //   · 完成标记没写 → 下次启动又弹一遍。
+    // 关窗一律视为「用户主动结束引导」：补写标记 + 把工作台还回来。
+    if (!onboardingClosedClean) {
+      try { markOnboardingDone() } catch (e) { /* 写不进去最多下次再弹 */ }
+      showMainWindow()
+    }
+    onboardingClosedClean = false
+  })
   bindMaximizeState(onboardingWin)
 
   if (process.env.WEBPACK_DEV_SERVER_URL) {
-    onboardingWin.loadURL(process.env.WEBPACK_DEV_SERVER_URL)
+    onboardingWin.loadURL(process.env.WEBPACK_DEV_SERVER_URL + '#/onboarding')
     if (!process.env.IS_TEST) onboardingWin.webContents.openDevTools()
   } else {
     createProtocol('app')
-    onboardingWin.loadURL('app://./index.html')
+    // ⚠ 必须是 #/onboarding：加载 '/' 会让 RootGate 把工作台渲染进这扇窗
+    // （根路由的引导浮层只对 CEP 为真），引导窗里出现的是一份空态工作台。
+    onboardingWin.loadURL('app://./index.html#/onboarding')
   }
 
   // 引导期间把主窗收起来：背后露出主窗的原生标题栏会立刻破掉沉浸感
@@ -117,8 +143,6 @@ function openOnboardingWindow () {
   onboardingWin.once('ready-to-show', () => {
     if (!onboardingWin || onboardingWin.isDestroyed()) { return }
     onboardingWin.show()
-    if (process.env.IS_TEST) { return }
-    onboardingWin.webContents.send('onboarding:ready')
   })
 
   return onboardingWin
@@ -195,7 +219,7 @@ function finishBoot () {
   }
   if (win && !win.isDestroyed()) {
     win.setTitle(app.getName() + ' ' + app.getVersion())
-    win.show()
+    showMainWindow()
   }
 }
 
@@ -407,18 +431,16 @@ ipcMain.on('onboarding:open', function () {
   }
 })
 
-// 引导关闭（走完 / 跳过 / Alt+F4）：销毁小窗并把工作台还回来
+// 引导关闭（走完 / 跳过）：销毁小窗并把工作台还回来
 ipcMain.on('onboarding:close', function () {
+  // 先打标：渲染层主动收尾，'closed' 里就不要再补写完成标记（finish 已写）
+  onboardingClosedClean = true
   if (onboardingWin && !onboardingWin.isDestroyed()) {
     // 走正常 close 才会触发 'closed' → 置空引用；这里同步兜底，双保险
     onboardingWin.destroy()
     onboardingWin = null
   }
-  if (win && !win.isDestroyed()) {
-    if (win.isMinimized()) { win.restore() }
-    win.show()
-    win.focus()
-  }
+  showMainWindow()
 })
 
 // 无边框窗口的按钮由渲染层自绘，主进程只提供「最小化/最大化/关闭」三个动作。

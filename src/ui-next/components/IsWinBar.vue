@@ -23,8 +23,12 @@
 
     <div class="wbar__spacer" />
 
-    <!-- 工具按钮插槽：空态的视图切换/帮助/设置/主题插这里，与窗口按钮同行 -->
-    <slot name="tools" />
+    <!-- 工具按钮插槽（可选，目前无调用方使用；空态工具按钮已回到空态面板顶部）。
+         ⚠ 必须包一层 .wbar__tools 并显式 no-drag：整条顶栏是拖拽区，
+         裸 slot 内容在 Windows 上收不到鼠标事件（既无 hover 也点不动）。 -->
+    <div class="wbar__tools">
+      <slot name="tools" />
+    </div>
 
     <!-- mac 有原生红绿灯（titleBarStyle:hiddenInset），不自绘窗口按钮 -->
     <div v-if="canControlWindow" class="wbar__wins">
@@ -236,6 +240,17 @@ export default {
   flex: 1 1 auto;
   min-width: 0;
 }
+
+/* 工具按钮插槽容器：必须退出拖拽区，否则子按钮点不动（Windows 实测） */
+.wbar__tools {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--is-s-2);
+  -webkit-app-region: no-drag;
+}
+
+.wbar__tools:empty { display: none; }
 
 .wbar__wins {
   display: flex;
