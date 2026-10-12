@@ -13,15 +13,19 @@
     <!-- 自绘顶栏（桌面 frameless）：品牌名 + 版本号 + 窗口按钮。
          ⚠ 空态工具按钮**不在这条顶栏里**：整条是 -webkit-app-region: drag 拖拽区，
          插槽内容不带 no-drag 时 Windows 收不到鼠标事件（既无 hover 也点不动）。
-         它们改挂空态面板顶部（.ib-import__top），顺带让 win / mac 顶栏长得一致。
+         它们挂在空态面板内部右上角（.ib-import__panel > .ib-import__acts），
+         空态因此只剩一条品牌顶栏，win / mac 长得一致。
          CEP 有任务态由 html.is-cep 的 .ib-rail 横排顶栏接管品牌，故这条不渲染。 -->
     <is-win-bar v-if="showWinBar" />
 
     <!-- 空态：无任务时全屏导入 -->
     <section v-if="isEmpty" class="ib-import">
-      <!-- 空态工具按钮：视图切换（仅 CEP）/ 帮助 / 设置 / 主题。
-           挂在空态 section 内，天然只在空态出现，无需再写 isEmpty 守卫。 -->
-      <div class="ib-import__top">
+      <!-- 面板 + 面板内右上角工具按钮共用这一个定位容器。
+           ⚠ 按钮是面板的**兄弟**节点而非子节点：上传框与合成树只有一份按钮标记，
+             不能为了塞进框内复制两份；所以定位偏移由 shell.scss 的
+             .ib-import__acts 手工补上面板那层外边距。 -->
+      <div class="ib-import__panel">
+        <!-- 空态工具按钮：视图切换（仅 CEP）/ 使用引导 / 设置 / 主题 -->
         <div class="ib-import__acts">
           <button
             v-if="supportsCompImport"
@@ -44,38 +48,38 @@
             <is-icon :name="theme === 'dark' ? 'sun' : 'moon'" />
           </button>
         </div>
-      </div>
 
-      <!-- 合成树占任务列表区；不与空态画框嵌套 -->
-      <div v-if="supportsCompImport && compTreeOpen" class="ib-main__list">
-        <comp-tree @add="onCompTreeAdd" @close="compTreeOpen = false" />
-      </div>
-      <!-- 空态：CEP 点击刷新合成；桌面点击/拖入导入文件 -->
-      <div
-        v-else
-        class="ib-drop"
-        :class="{ 'is-hot': dragging }"
-        @click="onPick"
-      >
-        <div class="ib-drop__icon">
-          <div class="ib-folder">
-            <div class="ib-folder__front">
-              <div class="ib-folder__tip"></div>
-              <div class="ib-folder__cover"></div>
-            </div>
-            <div class="ib-folder__back"></div>
-          </div>
+        <!-- 合成树占任务列表区；不与空态画框嵌套 -->
+        <div v-if="supportsCompImport && compTreeOpen" class="ib-main__list">
+          <comp-tree @add="onCompTreeAdd" @close="compTreeOpen = false" />
         </div>
-        <h1>{{ supportsCompImport ? $t('compRefresh') : $t('uploadTips') }}</h1>
-        <p class="ib-drop__rule">{{ supportsCompImport ? $t('uploadCompRule') : $t('uploadRule') }}</p>
-        <!-- 仅工程/扫描异常时提示；正常扫描结果静默 -->
-        <p v-if="projectStatusMsg" class="ib-drop__status">{{ projectStatusMsg }}</p>
-        <div v-if="!supportsCompImport" class="keyboard-hint">
-          <p>{{ $t('pasteHint') }}</p>
-          <div class="keyboard-keys">
-            <span class="keyboard-key" id="ctrl-key" :class="{ 'key-pressed': pressed === 'Control' }" @click.stop="onKeyClick('Control')">CTRL</span>
-            <span class="plus">+</span>
-            <span class="keyboard-key" id="v-key" :class="{ 'key-pressed': pressed === 'v' }" @click.stop="onKeyClick('v')">V</span>
+        <!-- 空态：CEP 点击刷新合成；桌面点击/拖入导入文件 -->
+        <div
+          v-else
+          class="ib-drop"
+          :class="{ 'is-hot': dragging }"
+          @click="onPick"
+        >
+          <div class="ib-drop__icon">
+            <div class="ib-folder">
+              <div class="ib-folder__front">
+                <div class="ib-folder__tip"></div>
+                <div class="ib-folder__cover"></div>
+              </div>
+              <div class="ib-folder__back"></div>
+            </div>
+          </div>
+          <h1>{{ supportsCompImport ? $t('compRefresh') : $t('uploadTips') }}</h1>
+          <p class="ib-drop__rule">{{ supportsCompImport ? $t('uploadCompRule') : $t('uploadRule') }}</p>
+          <!-- 仅工程/扫描异常时提示；正常扫描结果静默 -->
+          <p v-if="projectStatusMsg" class="ib-drop__status">{{ projectStatusMsg }}</p>
+          <div v-if="!supportsCompImport" class="keyboard-hint">
+            <p>{{ $t('pasteHint') }}</p>
+            <div class="keyboard-keys">
+              <span class="keyboard-key" id="ctrl-key" :class="{ 'key-pressed': pressed === 'Control' }" @click.stop="onKeyClick('Control')">CTRL</span>
+              <span class="plus">+</span>
+              <span class="keyboard-key" id="v-key" :class="{ 'key-pressed': pressed === 'v' }" @click.stop="onKeyClick('v')">V</span>
+            </div>
           </div>
         </div>
       </div>

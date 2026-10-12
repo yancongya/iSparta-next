@@ -29,17 +29,25 @@
   min-height: 0;
   flex-direction: column;
 
-  &__top {
+  // 面板（上传框 / 合成树）与面板内右上角工具按钮共用的定位容器
+  &__panel {
+    position: relative;
     display: flex;
-    flex-wrap: nowrap;
-    align-items: center;
-    /* 品牌已移到顶部横条（IsWinBar），这里只剩工具按钮，右对齐 */
-    justify-content: flex-end;
-    flex: none;
-    padding: var(--is-s-3) var(--is-s-4);
+    flex: 1 1 auto;
+    min-height: 0;
+    flex-direction: column;
   }
 
+  // 工具按钮压在面板右上角**内侧**（原来是面板外的一整行，看着像第二排顶栏）。
+  // ⚠ 偏移要手工补上面板那层外边距（.ib-drop 的右侧 margin = --is-s-4）：
+  //   按钮是面板的兄弟节点而不是子节点（面板两种形态只保留一份按钮标记，
+  //   不能为了塞进框内把这段标记复制两份）；改 .ib-drop 的 margin 时这里要同步，
+  //   否则按钮会漂回框外。
   &__acts {
+    position: absolute;
+    top: var(--is-s-3);
+    right: calc(var(--is-s-4) + var(--is-s-3));
+    z-index: 2;
     display: flex;
     flex: none;
     gap: var(--is-s-2);
