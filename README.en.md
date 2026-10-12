@@ -263,6 +263,12 @@ The matching `.cmd` wrappers under `scripts/dev/` (`run-preview` / `run-build-wi
 - **Tooling**: Vue CLI 4 · vue-cli-plugin-electron-builder · electron-builder  
 - **Engines**: APNG Tools (`apngasm` / `apngdis` / `apngopt` / `apngquant`), libwebp (`cwebp` / `dwebp` / `webpmux`), `gif2apng` / `apng2gif`  
 
+## Architecture
+
+From the renderer UI to the native CLIs, and across to the AE extension target — every edge maps to a real IPC / bridge / exec boundary:
+
+<img src="public/architecture-en.svg" alt="iSparta-next architecture: the Vue UI talks to the Electron main process through a preload IPC whitelist; the main process drives the shared conversion core and spawns native CLIs. The same Vue UI and conversion core run inside the After Effects CEP panel via host/source adapters." width="880">
+
 ## Security architecture
 
 - No `remote`; dialogs/menus via main-process IPC  

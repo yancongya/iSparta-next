@@ -1,0 +1,150 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="680" viewBox="0 0 1120 680" role="img" aria-labelledby="title desc">
+<!-- [INPUT]: Electron main/preload/renderer, shared processor, native CLIs, AE CEP dual-target. -->
+<!-- [OUTPUT]: Geek pixel-style architecture map for iSparta-next README. -->
+<!-- [POS]: Self-contained diagram; edges map to real IPC / bridge / exec boundaries. -->
+<title id="title">iSparta-next architecture</title>
+<desc id="desc">Vue renderer talks to Electron main via preload IPC whitelist. Main process owns fs/exec and drives the shared conversion processor, which shells native CLIs. The same Vue UI and processor run inside After Effects CEP via host/source adapters and JSX.</desc>
+<defs>
+  <pattern id="grid" width="16" height="16" patternUnits="userSpaceOnUse">
+    <rect width="2" height="2" fill="#222a2c"/>
+  </pattern>
+</defs>
+<rect width="1120" height="680" fill="#101518"/>
+<rect width="1120" height="680" fill="url(#grid)"/>
+
+<!-- Title -->
+<g fill="#fff4df" font-family="ui-monospace,SFMono-Regular,Consolas,monospace">
+  <text x="40" y="44" font-size="18" font-weight="bold">$ cat architecture.map</text>
+</g>
+
+<!-- Connection lines (crisp edges) -->
+<g fill="none" stroke="#d76a3e" stroke-width="4" shape-rendering="crispEdges">
+  <!-- UI -> Preload -->
+  <path d="M300 160H420"/>
+  <!-- Preload -> Main -->
+  <path d="M692 160H812"/>
+  <!-- Main down to Processor -->
+  <path d="M948 208V272"/>
+  <!-- Processor left to Native CLIs -->
+  <path d="M692 336H420"/>
+  <!-- Processor down-right area for AE bridge hint -->
+  <path d="M948 396V460"/>
+  <!-- AE CEP left connection from UI column -->
+  <path d="M172 208V460"/>
+  <!-- AE CEP to Shared Core label area -->
+  <path d="M300 496H420"/>
+  <!-- Shared processor to AE path -->
+  <path d="M692 496H812"/>
+</g>
+<!-- Arrow heads -->
+<g fill="#d76a3e" shape-rendering="crispEdges">
+  <path d="M420 152V168L432 160Z"/>
+  <path d="M812 152V168L824 160Z"/>
+  <path d="M940 272H956L948 284Z"/>
+  <path d="M420 328V344L408 336Z"/>
+  <path d="M940 460H956L948 472Z"/>
+  <path d="M164 460H180L172 472Z"/>
+  <path d="M420 488V504L432 496Z"/>
+  <path d="M812 488V504L824 496Z"/>
+</g>
+
+<!-- ========== Row 1: Desktop stack ========== -->
+<!-- Box: Vue UI (Renderer) -->
+<path d="M48 84H296V92H304V212H296V220H48V212H40V92H48Z" fill="#1c2428" stroke="#dd8959" stroke-width="2" shape-rendering="crispEdges"/>
+<path d="M56 100h8v8h-8zm16 0h8v8h-8zm16 0h8v8h-8z" fill="#dd8959" shape-rendering="crispEdges"/>
+<g font-family="ui-monospace,SFMono-Regular,Consolas,monospace">
+  <text x="56" y="140" fill="#fff4df" font-size="18" font-weight="bold">VUE UI</text>
+  <text x="56" y="166" fill="#b4c0b8" font-size="12">ui-next + components</text>
+  <text x="56" y="184" fill="#b4c0b8" font-size="12">Task list / settings</text>
+  <text x="56" y="202" fill="#b4c0b8" font-size="12">Compare / theme / i18n</text>
+</g>
+
+<!-- Box: Preload Bridge -->
+<path d="M436 84H684V92H692V212H684V220H436V212H428V92H436Z" fill="#1c2428" stroke="#dd8959" stroke-width="2" shape-rendering="crispEdges"/>
+<path d="M444 100h8v8h-8zm16 0h8v8h-8zm16 0h8v8h-8z" fill="#dd8959" shape-rendering="crispEdges"/>
+<g font-family="ui-monospace,SFMono-Regular,Consolas,monospace">
+  <text x="444" y="140" fill="#fff4df" font-size="18" font-weight="bold">PRELOAD</text>
+  <text x="444" y="166" fill="#b4c0b8" font-size="12">contextIsolation bridge</text>
+  <text x="444" y="184" fill="#b4c0b8" font-size="12">IPC whitelist API</text>
+  <text x="444" y="202" fill="#b4c0b8" font-size="12">nodeIntegration: false</text>
+</g>
+
+<!-- Box: Electron Main -->
+<path d="M824 84H1072V92H1080V212H1072V220H824V212H816V92H824Z" fill="#1c2428" stroke="#7dba9f" stroke-width="2" shape-rendering="crispEdges"/>
+<path d="M832 100h8v8h-8zm16 0h8v8h-8zm16 0h8v8h-8z" fill="#7dba9f" shape-rendering="crispEdges"/>
+<g font-family="ui-monospace,SFMono-Regular,Consolas,monospace">
+  <text x="832" y="140" fill="#fff4df" font-size="18" font-weight="bold">ELECTRON MAIN</text>
+  <text x="832" y="166" fill="#b4c0b8" font-size="12">background.js</text>
+  <text x="832" y="184" fill="#b4c0b8" font-size="12">Window / IPC / menu</text>
+  <text x="832" y="202" fill="#b4c0b8" font-size="12">fs · execFile · storage</text>
+</g>
+
+<!-- ========== Row 2: Shared core ========== -->
+<!-- Box: Shared Processor -->
+<path d="M436 276H684V284H692V404H684V412H436V404H428V284H436Z" fill="#1c2428" stroke="#dd8959" stroke-width="2" shape-rendering="crispEdges"/>
+<path d="M444 292h8v8h-8zm16 0h8v8h-8zm16 0h8v8h-8z" fill="#dd8959" shape-rendering="crispEdges"/>
+<g font-family="ui-monospace,SFMono-Regular,Consolas,monospace">
+  <text x="444" y="332" fill="#fff4df" font-size="18" font-weight="bold">PROCESSOR</text>
+  <text x="444" y="358" fill="#b4c0b8" font-size="12">util/processor/*</text>
+  <text x="444" y="376" fill="#b4c0b8" font-size="12">APNG / WebP / GIF</text>
+  <text x="444" y="394" fill="#b4c0b8" font-size="12">sizeGate · path vars</text>
+</g>
+
+<!-- Box: Native CLIs -->
+<path d="M48 276H296V284H304V404H296V412H48V404H40V284H48Z" fill="#1c2428" stroke="#7dba9f" stroke-width="2" shape-rendering="crispEdges"/>
+<path d="M56 292h8v8h-8zm16 0h8v8h-8zm16 0h8v8h-8z" fill="#7dba9f" shape-rendering="crispEdges"/>
+<g font-family="ui-monospace,SFMono-Regular,Consolas,monospace">
+  <text x="56" y="332" fill="#fff4df" font-size="18" font-weight="bold">NATIVE CLIs</text>
+  <text x="56" y="358" fill="#b4c0b8" font-size="12">apngasm / apngquant</text>
+  <text x="56" y="376" fill="#b4c0b8" font-size="12">cwebp / dwebp / mux</text>
+  <text x="56" y="394" fill="#b4c0b8" font-size="12">static/bin · public/bin</text>
+</g>
+
+<!-- Box: Vuex / Store (side note under main flow) -->
+<path d="M824 276H1072V284H1080V404H1072V412H824V404H816V284H824Z" fill="#1c2428" stroke="#7dba9f" stroke-width="2" shape-rendering="crispEdges"/>
+<path d="M832 292h8v8h-8zm16 0h8v8h-8zm16 0h8v8h-8z" fill="#7dba9f" shape-rendering="crispEdges"/>
+<g font-family="ui-monospace,SFMono-Regular,Consolas,monospace">
+  <text x="832" y="332" fill="#fff4df" font-size="18" font-weight="bold">HOST SERVICES</text>
+  <text x="832" y="358" fill="#b4c0b8" font-size="12">Updater · dialogs</text>
+  <text x="832" y="376" fill="#b4c0b8" font-size="12">Protocol / logs</text>
+  <text x="832" y="394" fill="#b4c0b8" font-size="12">cepSync · storage</text>
+</g>
+
+<!-- ========== Row 3: Dual target AE ========== -->
+<!-- Box: AE CEP Panel -->
+<path d="M48 460H296V468H304V588H296V596H48V588H40V468H48Z" fill="#1c2428" stroke="#779fc6" stroke-width="2" shape-rendering="crispEdges"/>
+<path d="M56 476h8v8h-8zm16 0h8v8h-8zm16 0h8v8h-8z" fill="#779fc6" shape-rendering="crispEdges"/>
+<g font-family="ui-monospace,SFMono-Regular,Consolas,monospace">
+  <text x="56" y="516" fill="#fff4df" font-size="18" font-weight="bold">AE CEP PANEL</text>
+  <text x="56" y="542" fill="#b4c0b8" font-size="12">Same Vue UI shell</text>
+  <text x="56" y="560" fill="#b4c0b8" font-size="12">Comp tree / task list</text>
+  <text x="56" y="578" fill="#b4c0b8" font-size="12">targets/cep · jsx</text>
+</g>
+
+<!-- Box: Adapters / Bridge -->
+<path d="M436 460H684V468H692V588H684V596H436V588H428V468H436Z" fill="#1c2428" stroke="#779fc6" stroke-width="2" shape-rendering="crispEdges"/>
+<path d="M444 476h8v8h-8zm16 0h8v8h-8zm16 0h8v8h-8z" fill="#779fc6" shape-rendering="crispEdges"/>
+<g font-family="ui-monospace,SFMono-Regular,Consolas,monospace">
+  <text x="444" y="516" fill="#fff4df" font-size="18" font-weight="bold">CEP BRIDGE</text>
+  <text x="444" y="542" fill="#b4c0b8" font-size="12">hostAdapter / source</text>
+  <text x="444" y="560" fill="#b4c0b8" font-size="12">node-env shape</text>
+  <text x="444" y="578" fill="#b4c0b8" font-size="12">exec · fs · path</text>
+</g>
+
+<!-- Box: AE Host -->
+<path d="M824 460H1072V468H1080V588H1072V596H824V588H816V468H824Z" fill="#1c2428" stroke="#779fc6" stroke-width="2" shape-rendering="crispEdges"/>
+<path d="M832 476h8v8h-8zm16 0h8v8h-8zm16 0h8v8h-8z" fill="#779fc6" shape-rendering="crispEdges"/>
+<g font-family="ui-monospace,SFMono-Regular,Consolas,monospace">
+  <text x="832" y="516" fill="#fff4df" font-size="18" font-weight="bold">AFTER EFFECTS</text>
+  <text x="832" y="542" fill="#b4c0b8" font-size="12">Select comps → PNG seq</text>
+  <text x="832" y="560" fill="#b4c0b8" font-size="12">Same processor out</text>
+  <text x="832" y="578" fill="#b4c0b8" font-size="12">APNG / WebP / GIF</text>
+</g>
+
+<!-- Footer labels -->
+<g font-family="ui-monospace,SFMono-Regular,Consolas,monospace" font-size="11" fill="#8b9a92">
+  <text x="40" y="640">DESKTOP ELECTRON 28</text>
+  <text x="400" y="640">SHARED CONVERSION CORE</text>
+  <text x="800" y="640">DUAL TARGET · AE CEP</text>
+</g>
+</svg>

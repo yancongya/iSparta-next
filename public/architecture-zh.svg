@@ -1,0 +1,142 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="680" viewBox="0 0 1120 680" role="img" aria-labelledby="title desc">
+<!-- [INPUT]: Electron 主进程/预加载/渲染进程、共享转换核、原生 CLI、AE CEP 双端。 -->
+<!-- [OUTPUT]: iSparta-next 极客像素风架构图，供 README 使用。 -->
+<!-- [POS]: 自包含工程图；连线对应真实 IPC / 桥 / 执行边界。 -->
+<title id="title">iSparta-next 架构</title>
+<desc id="desc">Vue 渲染进程经 preload IPC 白名单与 Electron 主进程通信。主进程负责文件与进程能力，驱动共享转换核，再调用原生 CLI。同一套 Vue 界面与转换核通过宿主/源适配器与 JSX 运行在 After Effects CEP 扩展中。</desc>
+<defs>
+  <pattern id="grid" width="16" height="16" patternUnits="userSpaceOnUse">
+    <rect width="2" height="2" fill="#222a2c"/>
+  </pattern>
+</defs>
+<rect width="1120" height="680" fill="#101518"/>
+<rect width="1120" height="680" fill="url(#grid)"/>
+
+<!-- 标题 -->
+<g fill="#fff4df" font-family="ui-monospace,SFMono-Regular,Consolas,'PingFang SC','Microsoft YaHei',monospace">
+  <text x="40" y="44" font-size="18" font-weight="bold">$ cat architecture.map</text>
+</g>
+
+<!-- 连线 -->
+<g fill="none" stroke="#d76a3e" stroke-width="4" shape-rendering="crispEdges">
+  <path d="M300 160H420"/>
+  <path d="M692 160H812"/>
+  <path d="M948 208V272"/>
+  <path d="M692 336H420"/>
+  <path d="M948 396V460"/>
+  <path d="M172 208V460"/>
+  <path d="M300 496H420"/>
+  <path d="M692 496H812"/>
+</g>
+<!-- 箭头 -->
+<g fill="#d76a3e" shape-rendering="crispEdges">
+  <path d="M420 152V168L432 160Z"/>
+  <path d="M812 152V168L824 160Z"/>
+  <path d="M940 272H956L948 284Z"/>
+  <path d="M420 328V344L408 336Z"/>
+  <path d="M940 460H956L948 472Z"/>
+  <path d="M164 460H180L172 472Z"/>
+  <path d="M420 488V504L432 496Z"/>
+  <path d="M812 488V504L824 496Z"/>
+</g>
+
+<!-- ========== 上排：桌面 Electron ========== -->
+<!-- Vue UI -->
+<path d="M48 84H296V92H304V212H296V220H48V212H40V92H48Z" fill="#1c2428" stroke="#dd8959" stroke-width="2" shape-rendering="crispEdges"/>
+<path d="M56 100h8v8h-8zm16 0h8v8h-8zm16 0h8v8h-8z" fill="#dd8959" shape-rendering="crispEdges"/>
+<g font-family="ui-monospace,SFMono-Regular,Consolas,'PingFang SC','Microsoft YaHei',monospace">
+  <text x="56" y="140" fill="#fff4df" font-size="18" font-weight="bold">VUE 界面</text>
+  <text x="56" y="166" fill="#b4c0b8" font-size="12">ui-next + 业务组件</text>
+  <text x="56" y="184" fill="#b4c0b8" font-size="12">任务列表 / 输出设置</text>
+  <text x="56" y="202" fill="#b4c0b8" font-size="12">对比 / 主题 / 多语言</text>
+</g>
+
+<!-- Preload -->
+<path d="M436 84H684V92H692V212H684V220H436V212H428V92H436Z" fill="#1c2428" stroke="#dd8959" stroke-width="2" shape-rendering="crispEdges"/>
+<path d="M444 100h8v8h-8zm16 0h8v8h-8zm16 0h8v8h-8z" fill="#dd8959" shape-rendering="crispEdges"/>
+<g font-family="ui-monospace,SFMono-Regular,Consolas,'PingFang SC','Microsoft YaHei',monospace">
+  <text x="444" y="140" fill="#fff4df" font-size="18" font-weight="bold">PRELOAD 桥</text>
+  <text x="444" y="166" fill="#b4c0b8" font-size="12">contextIsolation</text>
+  <text x="444" y="184" fill="#b4c0b8" font-size="12">IPC 白名单 API</text>
+  <text x="444" y="202" fill="#b4c0b8" font-size="12">禁止 nodeIntegration</text>
+</g>
+
+<!-- Electron Main -->
+<path d="M824 84H1072V92H1080V212H1072V220H824V212H816V92H824Z" fill="#1c2428" stroke="#7dba9f" stroke-width="2" shape-rendering="crispEdges"/>
+<path d="M832 100h8v8h-8zm16 0h8v8h-8zm16 0h8v8h-8z" fill="#7dba9f" shape-rendering="crispEdges"/>
+<g font-family="ui-monospace,SFMono-Regular,Consolas,'PingFang SC','Microsoft YaHei',monospace">
+  <text x="832" y="140" fill="#fff4df" font-size="18" font-weight="bold">ELECTRON 主进程</text>
+  <text x="832" y="166" fill="#b4c0b8" font-size="12">background.js</text>
+  <text x="832" y="184" fill="#b4c0b8" font-size="12">窗口 / IPC / 菜单</text>
+  <text x="832" y="202" fill="#b4c0b8" font-size="12">文件 · 进程 · 存储</text>
+</g>
+
+<!-- ========== 中排：共享核 ========== -->
+<!-- Processor -->
+<path d="M436 276H684V284H692V404H684V412H436V404H428V284H436Z" fill="#1c2428" stroke="#dd8959" stroke-width="2" shape-rendering="crispEdges"/>
+<path d="M444 292h8v8h-8zm16 0h8v8h-8zm16 0h8v8h-8z" fill="#dd8959" shape-rendering="crispEdges"/>
+<g font-family="ui-monospace,SFMono-Regular,Consolas,'PingFang SC','Microsoft YaHei',monospace">
+  <text x="444" y="332" fill="#fff4df" font-size="18" font-weight="bold">转换核</text>
+  <text x="444" y="358" fill="#b4c0b8" font-size="12">util/processor/*</text>
+  <text x="444" y="376" fill="#b4c0b8" font-size="12">APNG / WebP / GIF</text>
+  <text x="444" y="394" fill="#b4c0b8" font-size="12">体积阈值 · 路径变量</text>
+</g>
+
+<!-- Native CLIs -->
+<path d="M48 276H296V284H304V404H296V412H48V404H40V284H48Z" fill="#1c2428" stroke="#7dba9f" stroke-width="2" shape-rendering="crispEdges"/>
+<path d="M56 292h8v8h-8zm16 0h8v8h-8zm16 0h8v8h-8z" fill="#7dba9f" shape-rendering="crispEdges"/>
+<g font-family="ui-monospace,SFMono-Regular,Consolas,'PingFang SC','Microsoft YaHei',monospace">
+  <text x="56" y="332" fill="#fff4df" font-size="18" font-weight="bold">原生 CLI</text>
+  <text x="56" y="358" fill="#b4c0b8" font-size="12">apngasm / apngquant</text>
+  <text x="56" y="376" fill="#b4c0b8" font-size="12">cwebp / dwebp / mux</text>
+  <text x="56" y="394" fill="#b4c0b8" font-size="12">static/bin · public/bin</text>
+</g>
+
+<!-- Host Services -->
+<path d="M824 276H1072V284H1080V404H1072V412H824V404H816V284H824Z" fill="#1c2428" stroke="#7dba9f" stroke-width="2" shape-rendering="crispEdges"/>
+<path d="M832 292h8v8h-8zm16 0h8v8h-8zm16 0h8v8h-8z" fill="#7dba9f" shape-rendering="crispEdges"/>
+<g font-family="ui-monospace,SFMono-Regular,Consolas,'PingFang SC','Microsoft YaHei',monospace">
+  <text x="832" y="332" fill="#fff4df" font-size="18" font-weight="bold">宿主服务</text>
+  <text x="832" y="358" fill="#b4c0b8" font-size="12">更新 · 对话框</text>
+  <text x="832" y="376" fill="#b4c0b8" font-size="12">协议 / 运行日志</text>
+  <text x="832" y="394" fill="#b4c0b8" font-size="12">cepSync · 存储</text>
+</g>
+
+<!-- ========== 下排：双端 AE ========== -->
+<!-- AE CEP Panel -->
+<path d="M48 460H296V468H304V588H296V596H48V588H40V468H48Z" fill="#1c2428" stroke="#779fc6" stroke-width="2" shape-rendering="crispEdges"/>
+<path d="M56 476h8v8h-8zm16 0h8v8h-8zm16 0h8v8h-8z" fill="#779fc6" shape-rendering="crispEdges"/>
+<g font-family="ui-monospace,SFMono-Regular,Consolas,'PingFang SC','Microsoft YaHei',monospace">
+  <text x="56" y="516" fill="#fff4df" font-size="18" font-weight="bold">AE CEP 面板</text>
+  <text x="56" y="542" fill="#b4c0b8" font-size="12">同一套 Vue 工作台</text>
+  <text x="56" y="560" fill="#b4c0b8" font-size="12">合成树 / 任务列表</text>
+  <text x="56" y="578" fill="#b4c0b8" font-size="12">targets/cep · jsx</text>
+</g>
+
+<!-- CEP Bridge -->
+<path d="M436 460H684V468H692V588H684V596H436V588H428V468H436Z" fill="#1c2428" stroke="#779fc6" stroke-width="2" shape-rendering="crispEdges"/>
+<path d="M444 476h8v8h-8zm16 0h8v8h-8zm16 0h8v8h-8z" fill="#779fc6" shape-rendering="crispEdges"/>
+<g font-family="ui-monospace,SFMono-Regular,Consolas,'PingFang SC','Microsoft YaHei',monospace">
+  <text x="444" y="516" fill="#fff4df" font-size="18" font-weight="bold">CEP 桥接</text>
+  <text x="444" y="542" fill="#b4c0b8" font-size="12">宿主 / 源适配器</text>
+  <text x="444" y="560" fill="#b4c0b8" font-size="12">对齐 node-env 接口</text>
+  <text x="444" y="578" fill="#b4c0b8" font-size="12">exec · fs · path</text>
+</g>
+
+<!-- After Effects -->
+<path d="M824 460H1072V468H1080V588H1072V596H824V588H816V468H824Z" fill="#1c2428" stroke="#779fc6" stroke-width="2" shape-rendering="crispEdges"/>
+<path d="M832 476h8v8h-8zm16 0h8v8h-8zm16 0h8v8h-8z" fill="#779fc6" shape-rendering="crispEdges"/>
+<g font-family="ui-monospace,SFMono-Regular,Consolas,'PingFang SC','Microsoft YaHei',monospace">
+  <text x="832" y="516" fill="#fff4df" font-size="18" font-weight="bold">AFTER EFFECTS</text>
+  <text x="832" y="542" fill="#b4c0b8" font-size="12">选合成 → 渲 PNG 序列</text>
+  <text x="832" y="560" fill="#b4c0b8" font-size="12">同一转换核输出</text>
+  <text x="832" y="578" fill="#b4c0b8" font-size="12">APNG / WebP / GIF</text>
+</g>
+
+<!-- 底部标签 -->
+<g font-family="ui-monospace,SFMono-Regular,Consolas,'PingFang SC','Microsoft YaHei',monospace" font-size="11" fill="#8b9a92">
+  <text x="40" y="640">桌面 ELECTRON 28</text>
+  <text x="400" y="640">共享转换核</text>
+  <text x="800" y="640">双端一体 · AE CEP</text>
+</g>
+</svg>

@@ -323,6 +323,12 @@ iSparta-next/
 - **工程**：Vue CLI 4 · vue-cli-plugin-electron-builder · electron-builder
 - **转换引擎**：APNG Tools（`apngasm` / `apngdis` / `apngopt` / `apngquant` 等）、libwebp（`cwebp` / `dwebp` / `webpmux`）、`gif2apng` / `apng2gif`
 
+## 架构总览
+
+从渲染界面到原生 CLI，再到 AE 扩展双端——连线对应真实的 IPC / 桥 / 执行边界：
+
+<img src="public/architecture-zh.svg" alt="iSparta-next 架构图：Vue 界面经 preload IPC 白名单与 Electron 主进程通信，主进程驱动共享转换核并调用原生 CLI；同一套 Vue 界面与转换核经宿主/源适配器运行在 After Effects CEP 扩展中" width="880">
+
 ## 安全架构（iSparta-next 演进）
 
 本仓库在经典 iSparta 基础上完成了 Electron 现代化：
