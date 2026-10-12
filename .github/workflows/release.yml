@@ -143,10 +143,13 @@ jobs:
 
           collect_lines () {
             local pattern="$1"
+            # 路径排除：Release 面向安装包用户（桌面 + CEP），只收录影响产物的提交。
+            # landing/（GitHub Pages 落地页，独立部署）、docs/（仓库文档）改动静默跳过；
+            # 混合提交（同时改了 src/ 等与被排除路径）仍会收录。
             if [ -n "$RANGE" ]; then
-              git log $RANGE --pretty=format:'- %s' --no-merges --extended-regexp --regexp-ignore-case --grep="$pattern" || true
+              git log $RANGE --pretty=format:'- %s' --no-merges --extended-regexp --regexp-ignore-case --grep="$pattern" -- . ':(exclude)landing' ':(exclude)docs' || true
             else
-              git log --pretty=format:'- %s' --no-merges --extended-regexp --regexp-ignore-case --grep="$pattern" || true
+              git log --pretty=format:'- %s' --no-merges --extended-regexp --regexp-ignore-case --grep="$pattern" -- . ':(exclude)landing' ':(exclude)docs' || true
             fi
           }
 

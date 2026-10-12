@@ -95,13 +95,14 @@ CI 会额外写入**稳定别名**（无版本号），供落地页 `releases/la
 
 ### Release Notes 汇总规则
 
-工作流只汇总用户可见变更（便于应用内弹窗展示）：
+工作流只汇总**影响安装包产物（桌面 + CEP）**的用户可见变更（便于应用内弹窗展示），两个维度同时过滤：
 
-| 类型 | 是否写入 Notes |
+| 维度 | 规则 |
 | --- | --- |
-| `feat` / `fix` / `docs` | **是** |
-| `chore` / `ci` / `build` / `refactor` / `perf` / `test` 等 | **否**（工程项不进正文） |
-| 无前缀 commit | 默认不进主列表 |
+| 类型 | `feat` / `fix` / `docs` 前缀进汇总；`chore` / `ci` / `build` / `refactor` / `perf` / `test` 等工程项**否**；无前缀 commit 默认不进主列表 |
+| 路径 | 只统计影响安装包的提交：`landing/`（落地页，pages.yml 独立部署）与 `docs/`（仓库文档）的改动**不进**更新日志；同时改了 `src/` 等产物路径的混合提交仍收录 |
+
+> 落地页与发版**解耦**：push 命中 `landing/**` 由 pages.yml 自动部署 Pages，不出现在 Release 更新日志里——更新日志只面向桌面版/CEP 用户。
 
 仍会附安装包表与 changelog 链接。若某次要改文案，在 GitHub 上 Edit release 即可。
 
