@@ -1962,6 +1962,42 @@
     });
   }
 
+  /* 能力下拉：hover / :focus-within 已由CSS 负责，这里只补两件 CSS 做不到的事：
+     ① 触屏没有 hover —— 点一下按钮能开、合上，并同步 aria-expanded；
+     ② 点菜单项后立刻收起（否则触屏上菜单一直挂着挡住页面）。
+     纯 CSS 方案在桌面够用，但没有这两步触屏就是坏的。 */
+  function setupNavCap() {
+    var wrap = document.getElementById("nav-cap");
+    if (!wrap) { return; }
+    var btn = wrap.querySelector(".nav-cap__btn");
+    var menu = wrap.querySelector(".nav-cap__menu");
+    if (!btn || !menu) { return; }
+
+    function setOpen(open) {
+      wrap.classList.toggle("is-open", open);
+      btn.setAttribute("aria-expanded", open ? "true" : "false");
+    }
+
+    btn.addEventListener("click", function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      setOpen(!wrap.classList.contains("is-open"));
+    });
+
+    // 点菜单项：先收起（触屏上菜单是常驻的，会挡住目标区块），再让锚点正常跳转
+    menu.addEventListener("click", function (e) {
+      if (e.target.closest(".nav-cap__item")) { setOpen(false); }
+    });
+
+    // 点别处 / Esc 收起
+    document.addEventListener("click", function (e) {
+      if (!wrap.contains(e.target)) { setOpen(false); }
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") { setOpen(false); btn.focus(); }
+    });
+  }
+
   function setupMicro() {
     if (reduceMotion) return;
 
@@ -2037,36 +2073,41 @@
     });
   });
   /**
-   * Hero 主 CTA：默认显示短名，hover 换成全名，**按钮宽度跟着文案变化**。
+   * Hero 主 CTA：默认只显示基准名，hover 把后缀 -next **补全**出来，
+   * slot 宽度跟着文案从「基准宽」补到「全名宽」。
    *
-   * 为什么必须用 JS 改宽度：全名那段是绝对定位的（叠在短名上做交叉淡入），
-   * 绝对定位不参与布局，无法反过来撑开按钮；纯 CSS 做不到「宽度随文案」。
-   * 无 GSAP 时退化为只交叉淡入、宽度不变（此时默认宽度仍是短名那档）。
+   * 机制：基准与后缀都在 slot 的文档流里首尾相接，slot 定宽 + overflow:hidden。
+   * 默认宽 = 基准宽 → 后缀整体被裁在右缘外；宽度补到全名宽的过程中，
+   * 后缀从左往右逐字露出 —— 观感是补全，不是整句切换。
+   * 宽度必须用 JS 补间：纯 CSS 没有「hover 时宽度 = 某段文字宽度」这种能力。
+   * 无 GSAP / 减少动效时退化为瞬时改宽，露出逻辑不变。
    */
   function setupHeroCta() {
     var cta = document.querySelector(".hero-cta");
     if (!cta) return;
     var slot = cta.querySelector(".hero-cta__slot");
-    var shortEl = cta.querySelector(".hero-cta__t--short");
-    var fullEl = cta.querySelector(".hero-cta__t--full");
-    if (!slot || !shortEl || !fullEl) return;
+    var baseEl = cta.querySelector(".hero-cta__base");
+    var sfxEl = cta.querySelector(".hero-cta__sfx");
+    if (!slot || !baseEl || !sfxEl) return;
 
-    var wShort = 0;
+    var wBase = 0;
     var wFull = 0;
 
     function measure() {
-      // 两段都是绝对定位，但仍在布局树里，offsetWidth 有效
-      wShort = shortEl.offsetWidth;
-      wFull = fullEl.offsetWidth;
-      if (!wShort || !wFull) return false;
-      slot.style.width = wShort + "px";
+      // 先放开宽度量全名（两段都在流里，slot 自然宽 = 全名宽），
+      // 再量基准。inline 元素的 offsetWidth 不受父级裁切影响，始终有效。
+      slot.style.width = "";
+      wFull = slot.offsetWidth;
+      wBase = baseEl.offsetWidth;
+      if (!wBase || !wFull || wFull <= wBase) return false;
+      slot.style.width = wBase + "px";
       return true;
     }
 
     function setWidth(target, animate) {
       if (!target) return;
       if (animate && hasGsap && !reduceMotion) {
-        window.gsap.to(slot, { width: target, duration: 0.28, ease: "power3.out", overwrite: "auto" });
+        window.gsap.to(slot, { width: target, duration: 0.3, ease: "power3.out", overwrite: "auto" });
       } else {
         slot.style.width = target + "px";
       }
@@ -2075,14 +2116,14 @@
     if (!measure()) return;
 
     function wide() { return wFull; }
-    function narrow() { return wShort; }
+    function narrow() { return wBase; }
 
     cta.addEventListener("mouseenter", function () { setWidth(wide(), true); });
     cta.addEventListener("mouseleave", function () { setWidth(narrow(), true); });
     cta.addEventListener("focus", function () { setWidth(wide(), true); });
     cta.addEventListener("blur", function () { setWidth(narrow(), true); });
 
-    // 语言切换会改写两段文案 → 重新测量并回到短名宽度
+    // 语言切换会改写基准与后缀文案 → 重新测量并回到基准宽度
     document.addEventListener("is:lang-applied", function () {
       if (hasGsap && !reduceMotion) window.gsap.killTweensOf(slot);
       measure();
@@ -2455,15 +2496,20 @@
   setupHeroScramble();
   setupHeroCta();
 /**
- * 00 · ABOUT 的横向能力轨：纵向滚动驱动横移（scrub，不 pin）+ 鼠标滚轮直滚。
+ * 00 · ABOUT 的横向能力轨：滚轮直推横移（wheel 是横向位移的唯一写入方）。
  *
- * 最初用 pin + pinSpacing，试下来轨道下方会空出约 280px —— pin 期间该段是
- * fixed，pin 补出来的间距要等下一段滚上来才填上，中间就是一段空洞。
- * 改成不 pin：轨道随段落正常滚过视口，只在它可见的那段滚动区间里横向滑动。
- * 同样是「纵向滚动带出横向浏览」，但不冻结布局，也就不会和 sticky 顶栏打架。
+ * 交互模型（用户明确定义）：
+ *   · 组件内滚轮 → 只横移卡片，页面不动；到头也吸收（鼠标移出组件区域即可滚页面）；
+ *   · 组件外滚动 → 页面正常上下滚，组件纹丝不动。
+ *
+ * 演进教训：曾用「页面滚动 scrub 驱动横移」+「wheel 直推」并存 —— 两个写入方
+ * 互不知情，手推到头后页面一动，scrub 就按 progress 把轨道拽回，卡片乱跳 +
+ * 整页被带动（iframe 探针实测复现过）。后来改成纯 scrub 又矫枉过正：组件以外
+ * 滚动页面、组件也跟着横移，组件内滚轮反而在滚页面。两者都不对，最终收敛为
+ * 现在的单一写入方：没有 ScrollTrigger、没有 progress，页面滚动与横移彻底解耦。
  *
  * 四道闸，任一条不满足就退回原生横滚容器：
- *  1. 减少动效 —— scrub 是典型的晕动症来源，必须整个关掉。
+ *  1. 减少动效 —— 直推横移也一并关掉，退回可用的原生横滚。
  *  2. 无 GSAP / ScrollTrigger —— 自托管脚本没加载成功时不能留半截行为。
  *  3. 轨道没溢出 —— 视口比轨道还宽就没有横着看的必要。
  *  4. 窄屏 —— 卡片本来就排得下，强行横移反而更难读。
@@ -2501,11 +2547,11 @@ function setupRail() {
 
 rail.classList.add("rail--driven")
 
-  // 横向位移的**唯一真相源**。
-  // 之前 wheel 既写 viewport.scrollLeft 又写 transform，两个一起生效 ——
-  // overflow-x:hidden 只是不显示滚动条，并不阻止程序化 scrollLeft，
-  // 于是内容被多推了 scrollLeft 那么多一段，末卡对不齐右缘（右侧空一大片）。
-  // driven 形态下改用这个变量单点控制，scrollLeft 交给退化形态自己用。
+  // 横向位移的**唯一真相源 = offset 这个变量**，只有 wheel handler 会写它。
+  // 历史坑1：wheel 曾同时写 viewport.scrollLeft 和 transform —— overflow-x:hidden
+  // 只是不显示滚动条，并不阻止程序化 scrollLeft，内容被多推一段、末卡对不齐右缘。
+  // 历史坑2：scrub 的 onUpdate 也曾写 transform —— 与 wheel 互不知情，互相拽回。
+  // 现在 scrollLeft 归退化形态、progress 彻底不存在，paint() 只有 wheel 一个调用方。
   var offset = 0
   var FADE = 96 // 与 CSS 里的羽化宽度一致
 
@@ -2526,38 +2572,32 @@ rail.classList.add("rail--driven")
     syncFade(shift())
   }
 
-  window.ScrollTrigger.create({
-    trigger: rail,
-    // 起点用 top 78% 而不是 top bottom：轨道有三百多高，若一碰到视口下沿就开始推，
-    // 读者刚看到这一段时 [00]–[03] 就已经被推出屏幕了。
-    // 终点 bottom 22% 让轨道在离开视口前刚好推到底。
-    start: "top 78%",
-    end: "bottom 22%",
-    scrub: 0.6,
-    invalidateOnRefresh: true,
-    onUpdate: function (self) {
-      paint(shift() * self.progress)
-    },
-  })
-
   /**
-   * 鼠标滚轮直接横滚。
-   * 只在「还移得动」的方向上拦截；到头了就把控制权还给页面，
-   * 否则鼠标会被困在这条轨道里出不去 —— 横向滚动区最常见的坑。
+   * 组件内滚轮直推横移 —— 页面滚动与横移从此彻底解耦。
+   * 除浏览器缩放手势（ctrl+wheel）外全部拦截吸收，**到头也不把滚动交给页面**：
+   * 一旦到头放行，「滚到首/末卡再滚就带动整页」就会卷土重来（这正是最初报的病）。
+   * 需要继续滚页面时，把鼠标移出组件区域即可（组件只占视口中段，很容易）。
+   * 提示文案也同步改成「悬停滚动 · 横向浏览」。
    */
   viewport.addEventListener(
     "wheel",
     function (e) {
-      if (e.ctrlKey) return // 缩放手势别抢
+      if (e.ctrlKey) return // 缩放手势别抢，放行给浏览器
       var max = shift()
       if (max <= 0) return
-      var next = offset + e.deltaY
-      if ((offset <= 0 && e.deltaY < 0) || (offset >= max - 1 && e.deltaY > 0)) return
+      // 触控板横扫的 deltaX 和纵向滚的 deltaY 都当横向位移用
+      var delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY
+      if (e.deltaMode === 1) delta *= 16 // 行模式（Firefox 滚轮默认单位）
+      else if (e.deltaMode === 2) delta *= viewport.clientHeight // 页模式
       e.preventDefault()
-      paint(Math.max(0, Math.min(max, next)))
+      paint(Math.max(0, Math.min(max, offset + delta)))
     },
     { passive: false }
   )
+
+  // 初始位置：左侧无剩余内容，羽化从 0 开起
+  //（原ScrollTrigger refresh 时会调 onUpdate 写入，现在没有 ST 了，手动给一次）
+  paint(0)
 
   // 视口尺寸变了（旋转 / 改窗口 / 移动端地址栏收起）要重新判定能不能用
   var rt = 0
@@ -2568,6 +2608,8 @@ rail.classList.add("rail--driven")
         if (rail.classList.contains("rail--static")) {
           rail.classList.remove("rail--static")
           rail.classList.add("rail--driven")
+          // fallback 清掉了 transform，把 offset 重新落到轨道上（可能被窗口变窄截短过）
+          paint(Math.min(offset, shift()))
         }
       } else {
         fallback()
@@ -2622,6 +2664,7 @@ function setupLineageDots() {
     });
   }
 
+  setupNavCap();
   setupMicro();
   setupRail();
   setupLineageDots();

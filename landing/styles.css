@@ -92,6 +92,14 @@ html {
      用 clip 而非 hidden —— hidden 会把 html 变成滚动容器，
      顶栏的 position:sticky 会失效。 */
   overflow-x: clip;
+  /* 锚点跳转时给固定顶栏留出让位高度，否则目标区块的标题会被压在顶栏下面。
+     顶栏高 65 + 一点呼吸，取 88。scroll-padding 对所有锚点生效。 */
+  scroll-padding-top: 88px;
+}
+
+/* 同理兜住个别用 JS 滚动而非锚点的场景 */
+.section[id] {
+  scroll-margin-top: 88px;
 }
 
 body {
@@ -283,6 +291,167 @@ html[data-theme="dark"] .top::before {
 .nav-dl {
   position: relative;
 }
+
+/* ---------- 能力下拉菜单 ---------- */
+.nav-cap {
+  position: relative;
+}
+
+/* 触发器：外观对齐 .nav-links a（同 opacity / padding / 过渡），
+   但用 button 以便 aria-haspopup + 键盘可达。 */
+.nav-cap__btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  opacity: 0.72;
+  cursor: pointer;
+  transition: opacity 0.15s ease, color 0.15s ease;
+}
+
+.nav-cap__btn:hover,
+.nav-cap__btn:focus-visible,
+.nav-cap.is-open .nav-cap__btn { opacity: 1; }
+
+/* 下拉指示角标：展开时翻面，给出「打开了」的即时反馈 */
+.nav-cap__chev {
+  transition: transform 0.18s ease;
+  opacity: 0.6;
+}
+
+.nav-cap:hover .nav-cap__chev,
+.nav-cap.is-open .nav-cap__chev { transform: rotate(180deg); }
+
+.nav-cap__menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 50%;
+  transform: translate(-50%, -6px);
+  z-index: 40;
+  /* 只放能力条目：比下载菜单宽是因为文案是长句，268px 会折成两三行 */
+  width: 312px;
+  padding: 8px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  box-shadow: 0 18px 48px color-mix(in srgb, var(--ink) 16%, transparent);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.16s ease, transform 0.18s ease, visibility 0.16s;
+}
+
+.nav-cap:hover .nav-cap__menu,
+.nav-cap:focus-within .nav-cap__menu,
+.nav-cap.is-open .nav-cap__menu {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, 0);
+}
+
+/* 触发器与面板之间不留缝，否则指针移向面板时会收起 */
+.nav-cap::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  height: 10px;
+}
+
+/* 条目：编号 + 文案两列。编号用页面同一套 mono，和区块 eyebrow 的
+   01/02/03 对应，扫一眼就知道点进去是第几个区块。
+   注意条目是 .nav-links 的后代 <a>，会命中 .nav-links a（0,1,1）与
+   .nav-links a:hover（0,2,1），所以下面一律以 .nav-cap__menu 作前缀
+   提升特异性，否则 padding / 悬停文字色会被导航那套规则顶掉。 */
+.nav-cap__menu .nav-cap__item {
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  align-items: baseline;
+  gap: 8px;
+  padding: 9px 10px;
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink);
+  text-decoration: none;
+  /* 基础态也要带 opacity/transform 过渡：收起时条目才能随菜单一起淡出，
+     否则菜单还在渐隐、条目已瞬间消失。delay 只在展开态那组规则里给。 */
+  transition: background 0.14s ease, color 0.14s ease, opacity 0.16s ease,
+    transform 0.18s ease;
+}
+
+.nav-cap__no {
+  font-size: 11px;
+  color: var(--muted);
+  opacity: 0.7;
+  transition: color 0.14s ease, opacity 0.14s ease;
+}
+
+.nav-cap__t {
+  opacity: 0.88;
+  transition: opacity 0.14s ease, transform 0.16s ease;
+}
+
+.nav-cap__menu .nav-cap__item:hover,
+.nav-cap__menu .nav-cap__item:focus-visible {
+  /* 显式钉住 ink：.nav-links a:hover（0,2,1）会把整行文字染成 accent */
+  color: var(--ink);
+  background: var(--inset, color-mix(in srgb, var(--ink) 6%, transparent));
+}
+
+.nav-cap__item:hover .nav-cap__no,
+.nav-cap__item:focus-visible .nav-cap__no {
+  color: var(--accent);
+  opacity: 1;
+}
+
+.nav-cap__item:hover .nav-cap__t,
+.nav-cap__item:focus-visible .nav-cap__t {
+  opacity: 1;
+  transform: translateX(2px);
+}
+
+.nav-cap__menu .nav-cap__item:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+/* 相邻条目之间一条极淡分隔线：编号列已对齐，分隔线让「列表」感更清楚 */
+.nav-cap__menu .nav-cap__item + .nav-cap__item {
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--ink) 7%, transparent);
+}
+
+/* 展开时条目错峰入场（菜单本体已位移，这里只补条目自身的节奏） */
+.nav-cap__menu .nav-cap__item {
+  opacity: 0;
+  transform: translateY(4px);
+}
+
+.nav-cap:hover .nav-cap__menu .nav-cap__item,
+.nav-cap:focus-within .nav-cap__menu .nav-cap__item,
+.nav-cap.is-open .nav-cap__menu .nav-cap__item {
+  opacity: 1;
+  transform: none;
+  transition: background 0.14s ease, color 0.14s ease, opacity 0.18s ease,
+    transform 0.2s ease;
+}
+
+.nav-cap:hover .nav-cap__menu .nav-cap__item:nth-child(1),
+.nav-cap:focus-within .nav-cap__menu .nav-cap__item:nth-child(1),
+.nav-cap.is-open .nav-cap__menu .nav-cap__item:nth-child(1) { transition-delay: 0.03s; }
+
+.nav-cap:hover .nav-cap__menu .nav-cap__item:nth-child(2),
+.nav-cap:focus-within .nav-cap__menu .nav-cap__item:nth-child(2),
+.nav-cap.is-open .nav-cap__menu .nav-cap__item:nth-child(2) { transition-delay: 0.07s; }
+
+.nav-cap:hover .nav-cap__menu .nav-cap__item:nth-child(3),
+.nav-cap:focus-within .nav-cap__menu .nav-cap__item:nth-child(3),
+.nav-cap.is-open .nav-cap__menu .nav-cap__item:nth-child(3) { transition-delay: 0.11s; }
 
 .nav-dl__menu {
   position: absolute;
@@ -635,68 +804,29 @@ html[data-theme="dark"] .hero-actions .btn-primary {
   color: #0c0f0e;
 }
 
-/* 次级入口：纯文字链，不与主 CTA 抢眼 */
-.hero-alt {
-  color: var(--muted);
-  font-size: 14px;
-  text-decoration: none;
-  border-bottom: 1px solid transparent;
-  transition: color 0.15s ease, border-color 0.15s ease;
-}
-
-.hero-alt:hover,
-.hero-alt:focus-visible {
-  color: var(--ink);
-  border-bottom-color: var(--line);
-}
-
-/* CTA 双文案：默认短名，hover 交叉淡入全名，并让按钮**宽度跟着变**。
-   之前两段用 grid 叠在同一格，宽度恒等于较长那句 → 静止时也显得很长。
-   现在：短名在文档流里（撑出默认宽度），全名绝对定位居中覆盖，
-   hover 时由 JS（GSAP）把宽度补到全名那么宽 —— 纯 CSS 无法让绝对定位的
-   文字反过来撑开按钮，只能这么做。无 GSAP 时退化为「交叉淡入但宽度不变」，
-   仍比原先短。 */
+/* CTA 双文案：默认只显示基准名，hover 把后缀 -next **补全**出来（不是整句切换）。
+   基准与后缀都在文档流里首尾相接，slot 由 JS 定宽 + overflow:hidden 裁住后缀：
+   默认宽 = 基准宽 → 后缀整个在裁切区外；hover 时宽度补到全名宽 →
+   后缀从左往右逐字露出，观感就是「补全」。
+   宽度必须由 JS 补间（GSAP）—— 纯 CSS 没有「hover 时宽度等于某段文字宽度」
+   这种写法；无 GSAP 时退化为瞬时改宽，效果仍在，只是没有过渡。 */
 .hero-cta {
   position: relative;
-  transition: padding 0.25s ease;
 }
 
 .hero-cta__slot {
   position: relative;
   display: inline-block;
-  height: 1.45em;
-  /* 宽度由 JS 按当前文案测量后写在这里 */
-  overflow: hidden;
-  text-align: center;
-}
-
-.hero-cta__t {
+  /* 宽度由 JS 按当前文案测量后写在这里；nowrap 保证后缀不会被挤换行 */
   white-space: nowrap;
-  transition: opacity 0.16s ease;
+  overflow: hidden;
+  /* 后缀贴着基准右缘，裁切点才落在两段之间 */
+  text-align: left;
 }
 
-.hero-cta__t--short {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  top: 0;
-}
-
-.hero-cta__t--full {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  top: 0;
-  opacity: 0;
-}
-
-.hero-cta:hover .hero-cta__t--short,
-.hero-cta:focus-visible .hero-cta__t--short {
-  opacity: 0;
-}
-
-.hero-cta:hover .hero-cta__t--full,
-.hero-cta:focus-visible .hero-cta__t--full {
+/* 后缀：常态被 slot 裁掉，露出多少完全由 slot 宽度决定，自身不做透明度动画，
+   否则会和逐字露出的效果打架（半透明的半个字符很脏）。 */
+.hero-cta__sfx {
   opacity: 1;
 }
 
@@ -877,7 +1007,11 @@ html[data-theme="dark"] .hero-actions .btn-primary {
    眼睛没有东西可抓。这里让奇偶段的「眉标 + 大标题」交替靠边。
    只推这两样：正文说明（.section-sub）与下方内容区保持原位，
    三者一起推会让说明文字和它描述的内容脱节。
-   :nth-of-type 数的是 tag 顺序，hero 占第 1 个，about 起算第 2 个。 */
+
+   ⚠ 用显式类 .section-head--alt，不再用 :nth-of-type(odd/even)：
+     nth-of-type 数的是 tag 顺序，hero/新增/删除任何 section 都会让整页节奏错位，
+     且错位后极难察觉（代码看着没变，右边几段却莫名其妙缩进 404px）。
+     改用显式类后，「哪几段右对齐」直接写在 HTML 里，增删区块不会牵动别人。 */
 .section-head > .eyebrow,
 .section-head > h2,
 .section-head > .section-sub {
@@ -889,14 +1023,22 @@ html[data-theme="dark"] .hero-actions .btn-primary {
   margin-right: auto;
 }
 
-/* 下载区（.section-dl）是全页收尾的 CTA，整段保持左对齐不参与交替。
-   它的眉标是 .dl-tag 胶囊（inline-block），行内级盒子的 auto 外边距按规范算成 0，
-   转成块级 + fit-content 后又会顶到容器最右、与 640px 标题列对不齐 ——
-   与其为它单开一套规则，不如让这一段不交替。 */
-.section:not(.section-dl):nth-of-type(even) > .section-head > .eyebrow,
-.section:not(.section-dl):nth-of-type(even) > .section-head > h2 {
+/* 右对齐段：眉标 + 大标题**整列贴容器右边缘**。
+   之前这里只写 margin-left:auto，但 .section-head > h2 已被 max-width:40rem 限成
+   640px 宽，auto 只是「在 640px 盒子内靠右」，于是这列既没贴到容器右缘、
+   又跟左对齐段错开 404px，看上去像随手一歪。
+   这里改成让整列（eyebrow / h2）按自身内容宽度贴右：解除 max-width 的宽度上限，
+   改用 margin-left:auto + width:fit-content，文字仍受 40rem 上限约束
+   （由下面 .section-head--alt > * 的 max-width 保留），但盒子本身贴到右缘。 */
+.section-head--alt > .eyebrow,
+.section-head--alt > h2 {
+  /* 解除继承来的 width:auto（= 撑满），改成按内容宽度，再靠右 */
+  width: -moz-fit-content;
+  width: fit-content;
+  max-width: 40rem;
   margin-left: auto;
   margin-right: 0;
+  text-align: right;
 }
 
 /* 窄屏放不下右推（正文会被挤到没法读），窄屏一律回左 */
@@ -904,10 +1046,12 @@ html[data-theme="dark"] .hero-actions .btn-primary {
   .section-head > .eyebrow,
   .section-head > h2,
   .section-head > .section-sub,
-  .section:not(.section-dl):nth-of-type(even) > .section-head > .eyebrow,
-  .section:not(.section-dl):nth-of-type(even) > .section-head > h2 {
+  .section-head--alt > .eyebrow,
+  .section-head--alt > h2 {
     margin-left: 0;
     margin-right: auto;
+    width: auto;
+    text-align: left;
   }
 }
 
@@ -3163,17 +3307,6 @@ html[data-theme="dark"] .cmp-tab.is-on { color: #0c0f0e; }
    两种形态下内容都完整，只是驱动方式不同。 */
 .rail {
   position: relative;
-}
-
-/* 只有 JS 接管驱动时才提示；退化形态下这句提示是错的（本来就能直接横滚） */
-.rail__hint {
-  margin: 0 0 12px;
-  font-size: 11px;
-  color: var(--muted);
-}
-
-.rail--static .rail__hint {
-  display: none;
 }
 
 .rail__viewport {

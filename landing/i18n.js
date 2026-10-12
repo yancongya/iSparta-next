@@ -11,7 +11,6 @@
 
   var DICT = {
     "zh-CN": {
-      "about.railHint": "向下滚动 · 横向浏览",
       "about.h2a": "iSparta-next 是什么？",
       "about.h2b": "iSparta 停更后的现代替代",
       "about.sub1": "开源、跨平台的桌面动图转换工具，面向处理",
@@ -78,13 +77,15 @@
       "nav.shots": "界面",
       "nav.lineage": "来龙去脉",
       "nav.download": "下载",
+      "cap.iWork": "导入到出片，一张卡片配完",
+      "cap.iGate": "大小超标自动压到达标",
+      "cap.iName": "文件名拆词与路径积木",
       "nav.github": "GitHub",
       "hero.h1": "图片变动图",
       "hero.sub":
         "iSparta-next 是一款开源的动图转换工作台。PNG 序列、APNG、WebP、GIF 互转与压缩，桌面拖文件批量处理，AE 里直接导出合成。",
-      "hero.cta": "立即下载 iSparta-next",
       "hero.ctaShort": "立即下载 iSparta",
-      "hero.alt": "更多下载",
+      "hero.ctaSfx": "-next",
       "hero.cap": "iSparta-next 工作台 · 任务列表与输出设置",
       "hero.m1": "Win / macOS / Linux",
       "hero.m2": "Electron 28",
@@ -289,7 +290,6 @@
       "lang.toggle": "切换语言",
     },
     "en-US": {
-      "about.railHint": "Scroll down · browse sideways",
       "about.h2a": "What is iSparta-next?",
       "about.h2b": "A modern successor to iSparta",
       "about.sub1": "An open-source, cross-platform desktop converter for designers working with",
@@ -354,15 +354,17 @@
       "nav.compare": "Compare",
       "nav.ae": "AE extension",
       "nav.shots": "Interface",
+      "cap.iWork": "Import to export, one card",
+      "cap.iGate": "Auto-recompress oversized files",
+      "cap.iName": "Filename splitting & path variables",
       "nav.lineage": "Lineage",
       "nav.download": "Download",
       "nav.github": "GitHub",
       "hero.h1": "Turn images into motion",
       "hero.sub":
         "iSparta-next is an open-source workbench for converting and compressing PNG sequences, APNG, WebP and GIF. Drag files in on the desktop, or export compositions straight from After Effects.",
-      "hero.cta": "Download iSparta-next",
       "hero.ctaShort": "Download iSparta",
-      "hero.alt": "More downloads",
+      "hero.ctaSfx": "-next",
       "hero.cap": "iSparta-next workbench · task list and output settings",
       "hero.m1": "Win / macOS / Linux",
       "hero.m2": "Electron 28",
