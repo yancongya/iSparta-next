@@ -13,8 +13,21 @@
  *     一切由 state.open 驱动。
  * 统一入口是 open()/finish()，内部按 hostAdapter.kind 分流，调用方无需分支。
  *
- * 持久化：走 node-env 的 storage 桥，键 `onboardingState`，值 `{ version, done }`。
+ * 持久化：走 node-env 的 storage 桥，键 `onboardingState`，值 `{ version, done, appVersion }`。
  * 桌面与 CEP 各自独立判定（各自的 storage 文件）。
+ *
+ * 两个版本维度，别混：
+ *   · `version`（本文件的 VERSION）—— **引导内容改版**，自增即让所有人重看一遍；
+ *   · `appVersion` —— **应用版本**，升级后在**新版本上**再复播一次
+ *     （产品策略：升级后重看引导，见 autoUpdate.js 的 resetOnboardingForReplay）。
+ *
+ * ⚠ 为什么 appVersion 要写进记录、读的时候比，而不是只在 quitAndInstall 里重置：
+ *   「升级后复播」原先只挂在 electron-updater 的 quitAndInstall 上。但 Windows 上
+ *   升级不一定走那条路（直接跑官方安装向导时 %TEMP%/isparta-install.log 里
+ *   silent=0 updated=0），于是标记留在 done:true，装完新版反而直接跳过引导。
+ *   改成「记录里带上写标记时的 appVersion、读的时候和当前版本比」后，**任何**安装
+ *   路径（自动更新 / 向导 / 静默 / 覆盖安装）都能正确复播，不依赖谁去重置。
+ *   顺带：历史记录没有 appVersion 字段 → 视为「本版本没看过」，升级后复播一次。
  *
  * ⚠ 读取失败（桥未就绪 / CEP 端 storage 不可写）时**按「已完成」处理**，
  *   否则每次启动都会弹引导，属于最差降级。首次安装时键不存在 ≠ 读取失败，
@@ -24,6 +37,7 @@
 import Vue from 'vue'
 import { storage } from '../../util/node-env'
 import hostAdapter from '../../util/host-env'
+import { APP_VERSION } from '../../brand'
 
 /** 存储键 */
 export const KEY = 'onboardingState'
@@ -61,18 +75,22 @@ function readRecord () {
   }
 }
 
-/** 是否已完成当前版本的首启引导 */
+/** 是否已完成「当前引导版本 + 当前应用版本」的首启引导 */
 export function isDone () {
   const r = readRecord()
   if (!r.ok) { return true }
   if (!r.record) { return false }
-  return r.record.version === VERSION && r.record.done === true
+  const rec = r.record
+  if (rec.version !== VERSION || rec.done !== true) { return false }
+  // 缺 appVersion 的历史记录（本字段上线前写的）一律当作「本版本没看过」，
+  // 让升级后的第一次启动把引导补上一次。
+  return rec.appVersion === APP_VERSION
 }
 
-/** 写入完成标记 */
+/** 写入完成标记（带上写标记时的应用版本，供升级后比对） */
 export function markDone () {
   try {
-    storage.setItem(KEY, JSON.stringify({ version: VERSION, done: true }))
+    storage.setItem(KEY, JSON.stringify({ version: VERSION, done: true, appVersion: APP_VERSION }))
   } catch (e) { /* 写不进去也不阻断用户 */ }
 }
 

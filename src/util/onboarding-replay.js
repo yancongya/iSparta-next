@@ -19,6 +19,7 @@
 import fs from 'fs'
 import os from 'os'
 import path from 'path'
+import { APP_VERSION } from '../brand'
 
 /** 与 src/ui-next/onboarding/state.js 的 KEY 保持一致 */
 export const ONBOARDING_KEY = 'onboardingState'
@@ -69,11 +70,14 @@ export function resetOnboardingForReplay () {
 }
 
 /**
- * 标记引导已完成（当前版本），供主进程在「用户直接关掉引导窗」时补写。
+ * 标记引导已完成（当前引导版本 + 当前应用版本），供主进程在「用户直接关掉引导窗」时补写。
+ *
+ * ⚠ appVersion 必须一起写：渲染层 isDone() 会拿它和当前应用版本比，
+ *   判「这个版本上是不是看过了」。漏写会让下次启动又弹一遍。
  * @returns {{ ok: boolean, reason?: string }}
  */
 export function markOnboardingDone () {
-  return writeOnboardingState({ version: ONBOARDING_VERSION, done: true })
+  return writeOnboardingState({ version: ONBOARDING_VERSION, done: true, appVersion: APP_VERSION })
 }
 
 export default { ONBOARDING_KEY, ONBOARDING_VERSION, resetOnboardingForReplay, markOnboardingDone }
