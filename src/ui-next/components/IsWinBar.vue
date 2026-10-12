@@ -109,6 +109,9 @@ export default {
     },
     isMac () {
       if (typeof navigator === 'undefined') { return false }
+      // CEP（AE 面板）里没有系统红绿灯，mac 判定只服务于桌面窗口 chrome；
+      // 不排除的话 mac CEP 会给品牌区留 82px 避让位，品牌被无故推右
+      if (hostAdapter.supportsCompImport) { return false }
       return /mac|darwin/i.test(String(navigator.platform || navigator.userAgent || ''))
     },
     canControlWindow () {

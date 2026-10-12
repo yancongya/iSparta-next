@@ -10,8 +10,11 @@
     <globalsetting></globalsetting>
     <is-notice-host></is-notice-host>
 
-    <!-- 自绘顶栏（桌面 frameless）：品牌名 + 版本号 + 窗口按钮。空态/有任务共用。 -->
-    <is-win-bar>
+    <!-- 自绘顶栏（桌面 frameless）：品牌名 + 版本号 + 窗口按钮。
+         CEP 有任务态由 html.is-cep 的 .ib-rail 横排顶栏接管品牌与工具按钮，
+         再渲染这条会叠出第二条品牌顶栏（frameless 改动引入的回归）；
+         CEP 空态没有 .ib-rail，仍靠这条承载原 ib-import__top 移来的工具按钮。 -->
+    <is-win-bar v-if="showWinBar">
       <template #tools>
         <!--
           空态工具按钮：视图切换 / 帮助 / 设置 / 主题。
@@ -376,6 +379,17 @@ export default {
      */
     isEmpty () {
       return !this.items.length && !this.compTreeOpen
+    },
+    /**
+     * IsWinBar（自绘顶栏）渲染条件。
+     * 桌面：frameless 主窗永远需要它（品牌 + 窗口按钮）。
+     * CEP：有任务态 .ib-rail 已被 shell.scss 改成横排顶栏（品牌 + 全部按钮），
+     * 再叠 IsWinBar 就是两条品牌顶栏；空态没有 rail，这四个空态工具按钮
+     * 在它的 tools 插槽里，必须保留。与 isEmpty 共用同一判定，
+     * 保证 CEP 任一状态恒只有一条顶栏。
+     */
+    showWinBar () {
+      return !this.supportsCompImport || this.isEmpty
     },
     supportsFileImport () {
       return hostAdapter.supportsFileImport !== false
