@@ -30,6 +30,10 @@
 - Windows 免费开源签名申请步骤见 [docs/SIGNPATH.md](docs/SIGNPATH.md)。
 - **AE 扩展（一体安装）**：After Effects 内直接选合成 → 渲 PNG 序列 → APNG / WebP / GIF，与桌面同一套转换核。Windows 安装向导可同时装桌面 + AE 扩展；升级边界见 [`docs/CEP-UPGRADE-SCOPE.md`](docs/CEP-UPGRADE-SCOPE.md)、计划见 [`docs/PLAN-DUAL-TARGET.md`](docs/PLAN-DUAL-TARGET.md)。
 
+> **安装与更新流程（系统级单副本 · 双通道同包同 UAC）**：桌面自动更新与 CEP 面板热更都下载同一个 GitHub Release NSIS 包；安装器固定系统级 `perMachine=true`，**安装前自检清理用户级 + Common Files 双作用域冗余副本**，弹 UAC 后落盘 Common Files，**全机只留一份**；运行时桌面启动自检按作用域只维护单份，静默安装期间面板 loading 页是唯一进度反馈。流程图：
+
+<img src="docs/diagrams/install-flow-zh.svg" alt="iSparta-next 安装与更新流程：桌面自动更新与 CEP 面板热更都下载同一个 NSIS 包，安装器系统级 UAC、安装前自检清双作用域、装完全机单份，运行时桌面自检按作用域单副本、面板 loading 为唯一反馈" width="880">
+
 ### 近期体验更新
 
 - **AE 扩展**：合成树 / 任务列表双视图一键切换；右键打开合成位置 / 输出目录 / 终止任务；双击定位合成；过滤条钉顶

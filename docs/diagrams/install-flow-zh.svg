@@ -1,0 +1,106 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="700" viewBox="0 0 1120 700" role="img" aria-labelledby="title desc">
+<!-- [INPUT]: 双通道同包（桌面自动更 / CEP 面板热更）、系统级 UAC、安装前自检清双作用域、运行时单副本、面板 loading 反馈。 -->
+<!-- [OUTPUT]: iSparta-next 极客像素风安装/更新流程图（中文），供 README 使用。 -->
+<!-- [POS]: 自包含工程图；流向对应真实 electron-updater / launchInstaller / installer.nsh / cepSync 链路。 -->
+<title id="title">iSparta-next 安装与更新流程</title>
+<desc id="desc">桌面自动更新与 CEP 面板热更都下载同一个 GitHub Release NSIS 包。安装器固定系统级（perMachine=true）：安装前自检清理用户级与 Common Files 双作用域冗余副本，弹 UAC 授权后落盘 Common Files，全机只留一份 CEP。运行时桌面启动自检按作用域只维护单份，静默安装期间面板 loading 页是唯一进度反馈。</desc>
+<defs>
+  <pattern id="grid" width="16" height="16" patternUnits="userSpaceOnUse">
+    <rect width="2" height="2" fill="#222a2c"/>
+  </pattern>
+</defs>
+<rect width="1120" height="700" fill="#101518"/>
+<rect width="1120" height="700" fill="url(#grid)"/>
+
+<!-- 标题 -->
+<g fill="#fff4df" font-family="ui-monospace,SFMono-Regular,Consolas,'PingFang SC','Microsoft YaHei',monospace">
+  <text x="40" y="44" font-size="18" font-weight="bold">$ cat install-flow.map</text>
+</g>
+
+<!-- 连线（像素边） -->
+<g fill="none" stroke="#d76a3e" stroke-width="4" shape-rendering="crispEdges">
+  <path d="M560 148V174"/>
+  <path d="M305 174H815"/>
+  <path d="M305 174V200"/>
+  <path d="M815 174V200"/>
+  <path d="M305 320V365"/>
+  <path d="M815 320V365"/>
+  <path d="M560 528V548"/>
+  <path d="M305 548H815"/>
+  <path d="M305 548V560"/>
+  <path d="M815 548V560"/>
+</g>
+<!-- 箭头（向下） -->
+<g fill="#d76a3e" shape-rendering="crispEdges">
+  <path d="M298 191H312L305 203Z"/>
+  <path d="M808 191H822L815 203Z"/>
+  <path d="M298 356H312L305 368Z"/>
+  <path d="M808 356H822L815 368Z"/>
+  <path d="M298 551H312L305 563Z"/>
+  <path d="M808 551H822L815 563Z"/>
+</g>
+
+<!-- ========== 源：同一个 NSIS 包 ========== -->
+<path d="M428 80H692V88H700V140H692V148H428V140H420V88H428Z" fill="#1c2428" stroke="#dd8959" stroke-width="2" shape-rendering="crispEdges"/>
+<path d="M436 96h8v8h-8zm16 0h8v8h-8zm16 0h8v8h-8z" fill="#dd8959" shape-rendering="crispEdges"/>
+<g font-family="ui-monospace,SFMono-Regular,Consolas,'PingFang SC','Microsoft YaHei',monospace">
+  <text x="436" y="108" fill="#fff4df" font-size="16" font-weight="bold">GitHub Releases</text>
+  <text x="436" y="128" fill="#b4c0b8" font-size="11">同一个 NSIS 安装包</text>
+  <text x="436" y="144" fill="#b4c0b8" font-size="11">isparta-next-X-win-x64.exe</text>
+</g>
+
+<!-- ========== 通道 1：桌面自动更新 ========== -->
+<path d="M118 200H492V208H500V312H492V320H118V312H110V208H118Z" fill="#1c2428" stroke="#dd8959" stroke-width="2" shape-rendering="crispEdges"/>
+<path d="M126 216h8v8h-8zm16 0h8v8h-8zm16 0h8v8h-8z" fill="#dd8959" shape-rendering="crispEdges"/>
+<g font-family="ui-monospace,SFMono-Regular,Consolas,'PingFang SC','Microsoft YaHei',monospace">
+  <text x="126" y="244" fill="#fff4df" font-size="17" font-weight="bold">桌面自动更新</text>
+  <text x="126" y="272" fill="#b4c0b8" font-size="12">electron-updater quitAndInstall</text>
+  <text x="126" y="292" fill="#b4c0b8" font-size="12">(true,true) → 后台重启</text>
+  <text x="126" y="312" fill="#b4c0b8" font-size="12">/S --updated --force-run</text>
+</g>
+
+<!-- ========== 通道 2：CEP 面板热更 ========== -->
+<path d="M628 200H1002V208H1010V312H1002V320H628V312H620V208H628Z" fill="#1c2428" stroke="#779fc6" stroke-width="2" shape-rendering="crispEdges"/>
+<path d="M636 216h8v8h-8zm16 0h8v8h-8zm16 0h8v8h-8z" fill="#779fc6" shape-rendering="crispEdges"/>
+<g font-family="ui-monospace,SFMono-Regular,Consolas,'PingFang SC','Microsoft YaHei',monospace">
+  <text x="636" y="244" fill="#fff4df" font-size="17" font-weight="bold">CEP 面板热更</text>
+  <text x="636" y="272" fill="#b4c0b8" font-size="12">launchInstaller（永远 /S）</text>
+  <text x="636" y="292" fill="#b4c0b8" font-size="12">download latest.yml 同资产</text>
+  <text x="636" y="312" fill="#b4c0b8" font-size="12">manifest admin → 弹 UAC</text>
+</g>
+
+<!-- ========== 安装器：系统级单副本 ========== -->
+<path d="M308 365H812V373H820V520H812V528H308V520H300V373H308Z" fill="#1c2428" stroke="#7dba9f" stroke-width="2" shape-rendering="crispEdges"/>
+<path d="M316 381h8v8h-8zm16 0h8v8h-8zm16 0h8v8h-8z" fill="#7dba9f" shape-rendering="crispEdges"/>
+<g font-family="ui-monospace,SFMono-Regular,Consolas,'PingFang SC','Microsoft YaHei',monospace">
+  <text x="316" y="407" fill="#fff4df" font-size="16" font-weight="bold">安装器 NSIS · perMachine=true 系统级</text>
+  <text x="316" y="437" fill="#b4c0b8" font-size="12">① 安装前自检：清理双作用域冗余副本</text>
+  <text x="316" y="457" fill="#b4c0b8" font-size="12">   用户级 %APPDATA% + 系统级 Common Files</text>
+  <text x="316" y="481" fill="#b4c0b8" font-size="12">② 弹 UAC 授权（RequestExecutionLevel admin）</text>
+  <text x="316" y="505" fill="#b4c0b8" font-size="12">③ 落盘 Common Files\Adobe\CEP\extensions</text>
+  <text x="316" y="527" fill="#b4c0b8" font-size="12">④ 装完全机只留一份 CEP 副本</text>
+</g>
+
+<!-- ========== 运行时保证 1：桌面启动自检 ========== -->
+<path d="M118 560H492V568H500V644H492V652H118V644H110V568H118Z" fill="#1c2428" stroke="#dd8959" stroke-width="2" shape-rendering="crispEdges"/>
+<path d="M126 576h8v8h-8zm16 0h8v8h-8zm16 0h8v8h-8z" fill="#dd8959" shape-rendering="crispEdges"/>
+<g font-family="ui-monospace,SFMono-Regular,Consolas,'PingFang SC','Microsoft YaHei',monospace">
+  <text x="126" y="598" fill="#fff4df" font-size="16" font-weight="bold">桌面启动自检 · cepSync</text>
+  <text x="126" y="624" fill="#b4c0b8" font-size="12">resolveInstallScope：探测 Common Files</text>
+  <text x="126" y="644" fill="#b4c0b8" font-size="12">按作用域只维护一份，绝不重建另一份</text>
+</g>
+
+<!-- ========== 运行时保证 2：面板 loading 反馈 ========== -->
+<path d="M628 560H1002V568H1010V644H1002V652H628V644H620V568H628Z" fill="#1c2428" stroke="#779fc6" stroke-width="2" shape-rendering="crispEdges"/>
+<path d="M636 576h8v8h-8zm16 0h8v8h-8zm16 0h8v8h-8z" fill="#779fc6" shape-rendering="crispEdges"/>
+<g font-family="ui-monospace,SFMono-Regular,Consolas,'PingFang SC','Microsoft YaHei',monospace">
+  <text x="636" y="598" fill="#fff4df" font-size="16" font-weight="bold">面板 loading 页（唯一反馈）</text>
+  <text x="636" y="624" fill="#b4c0b8" font-size="12">静默安装无原生界面 → 显示『正在安装…』</text>
+  <text x="636" y="644" fill="#b4c0b8" font-size="12">装完 Onboarding 指导页复播</text>
+</g>
+
+<!-- 底部说明 -->
+<g font-family="ui-monospace,SFMono-Regular,Consolas,'PingFang SC','Microsoft YaHei',monospace" font-size="11" fill="#8b9a92">
+  <text x="40" y="684">安装器 + 运行时双层保证 · 全机单份 CEP · 双通道同包同 UAC</text>
+</g>
+</svg>

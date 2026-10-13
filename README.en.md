@@ -28,6 +28,10 @@ On startup the app checks GitHub Releases (version + OS type only; you can turn 
 - **macOS (unsigned zip):** manual download and replace; see Release notes for Gatekeeper
 - Architecture and limitations: **[docs/UPDATER.md](docs/UPDATER.md)**
 
+> **Install & update flow (machine-wide single copy · both channels same package, same UAC):** Desktop auto-update and CEP panel hot-update both download the same GitHub Release NSIS package. The installer is fixed machine-wide (`perMachine=true`); it **purges stale copies in both user `%APPDATA%` and system `Common Files` before installing**, prompts UAC, writes to Common Files, and **leaves exactly one CEP copy machine-wide**. At runtime the desktop startup self-check keeps one copy per scope, and the panel loading page is the only progress feedback during the silent install. Flow map:
+
+<img src="docs/diagrams/install-flow-en.svg" alt="iSparta-next install & update flow: desktop auto-update and CEP panel hot-update both download the same NSIS package; installer is machine-wide with UAC, pre-install self-check purges both scopes, one copy left machine-wide; runtime self-check keeps one per scope, panel loading is the sole feedback" width="880">
+
 ### Recent experience updates
 
 - **AE extension:** one-button switch between comp tree and task list; right-click to open comp location / output folder / stop task; double-click to jump to a comp; pinned filter bar (search / frame rate / frames); same-name comps disambiguated by folder

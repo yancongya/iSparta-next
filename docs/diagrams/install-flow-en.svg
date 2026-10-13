@@ -1,0 +1,106 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="700" viewBox="0 0 1120 700" role="img" aria-labelledby="title desc">
+<!-- [INPUT]: Both channels same package (desktop auto-update / CEP panel hot-update), machine-wide UAC, pre-install self-check purges both scopes, runtime single copy, panel loading feedback. -->
+<!-- [OUTPUT]: Geek pixel-style install/update flow map for iSparta-next README (English). -->
+<!-- [POS]: Self-contained diagram; edges map to real electron-updater / launchInstaller / installer.nsh / cepSync paths. -->
+<title id="title">iSparta-next install &amp; update flow</title>
+<desc id="desc">Desktop auto-update and CEP panel hot-update both download the same GitHub Release NSIS package. The installer is fixed machine-wide (perMachine=true): pre-install self-check purges stale copies in both user %APPDATA% and system Common Files, then prompts UAC and writes to Common Files, leaving exactly one CEP copy machine-wide. At runtime the desktop startup self-check keeps one copy per scope, and the panel loading page is the only progress feedback during the silent install.</desc>
+<defs>
+  <pattern id="grid" width="16" height="16" patternUnits="userSpaceOnUse">
+    <rect width="2" height="2" fill="#222a2c"/>
+  </pattern>
+</defs>
+<rect width="1120" height="700" fill="#101518"/>
+<rect width="1120" height="700" fill="url(#grid)"/>
+
+<!-- Title -->
+<g fill="#fff4df" font-family="ui-monospace,SFMono-Regular,Consolas,monospace">
+  <text x="40" y="44" font-size="18" font-weight="bold">$ cat install-flow.map</text>
+</g>
+
+<!-- Connection lines (crisp edges) -->
+<g fill="none" stroke="#d76a3e" stroke-width="4" shape-rendering="crispEdges">
+  <path d="M560 148V174"/>
+  <path d="M305 174H815"/>
+  <path d="M305 174V200"/>
+  <path d="M815 174V200"/>
+  <path d="M305 320V365"/>
+  <path d="M815 320V365"/>
+  <path d="M560 528V548"/>
+  <path d="M305 548H815"/>
+  <path d="M305 548V560"/>
+  <path d="M815 548V560"/>
+</g>
+<!-- Arrow heads (down) -->
+<g fill="#d76a3e" shape-rendering="crispEdges">
+  <path d="M298 191H312L305 203Z"/>
+  <path d="M808 191H822L815 203Z"/>
+  <path d="M298 356H312L305 368Z"/>
+  <path d="M808 356H822L815 368Z"/>
+  <path d="M298 551H312L305 563Z"/>
+  <path d="M808 551H822L815 563Z"/>
+</g>
+
+<!-- ========== Source: one NSIS package ========== -->
+<path d="M428 80H692V88H700V140H692V148H428V140H420V88H428Z" fill="#1c2428" stroke="#dd8959" stroke-width="2" shape-rendering="crispEdges"/>
+<path d="M436 96h8v8h-8zm16 0h8v8h-8zm16 0h8v8h-8z" fill="#dd8959" shape-rendering="crispEdges"/>
+<g font-family="ui-monospace,SFMono-Regular,Consolas,monospace">
+  <text x="436" y="108" fill="#fff4df" font-size="16" font-weight="bold">GitHub Releases</text>
+  <text x="436" y="128" fill="#b4c0b8" font-size="11">One NSIS package</text>
+  <text x="436" y="144" fill="#b4c0b8" font-size="11">isparta-next-X-win-x64.exe</text>
+</g>
+
+<!-- ========== Channel 1: desktop auto-update ========== -->
+<path d="M118 200H492V208H500V312H492V320H118V312H110V208H118Z" fill="#1c2428" stroke="#dd8959" stroke-width="2" shape-rendering="crispEdges"/>
+<path d="M126 216h8v8h-8zm16 0h8v8h-8zm16 0h8v8h-8z" fill="#dd8959" shape-rendering="crispEdges"/>
+<g font-family="ui-monospace,SFMono-Regular,Consolas,monospace">
+  <text x="126" y="244" fill="#fff4df" font-size="17" font-weight="bold">Desktop auto-update</text>
+  <text x="126" y="272" fill="#b4c0b8" font-size="12">electron-updater quitAndInstall</text>
+  <text x="126" y="292" fill="#b4c0b8" font-size="12">(true,true) → relaunch</text>
+  <text x="126" y="312" fill="#b4c0b8" font-size="12">/S --updated --force-run</text>
+</g>
+
+<!-- ========== Channel 2: CEP panel hot-update ========== -->
+<path d="M628 200H1002V208H1010V312H1002V320H628V312H620V208H628Z" fill="#1c2428" stroke="#779fc6" stroke-width="2" shape-rendering="crispEdges"/>
+<path d="M636 216h8v8h-8zm16 0h8v8h-8zm16 0h8v8h-8z" fill="#779fc6" shape-rendering="crispEdges"/>
+<g font-family="ui-monospace,SFMono-Regular,Consolas,monospace">
+  <text x="636" y="244" fill="#fff4df" font-size="17" font-weight="bold">CEP panel hot-update</text>
+  <text x="636" y="272" fill="#b4c0b8" font-size="12">launchInstaller (always /S)</text>
+  <text x="636" y="292" fill="#b4c0b8" font-size="12">download latest.yml same asset</text>
+  <text x="636" y="312" fill="#b4c0b8" font-size="12">manifest admin → UAC prompt</text>
+</g>
+
+<!-- ========== Installer: machine-wide single copy ========== -->
+<path d="M308 365H812V373H820V520H812V528H308V520H300V373H308Z" fill="#1c2428" stroke="#7dba9f" stroke-width="2" shape-rendering="crispEdges"/>
+<path d="M316 381h8v8h-8zm16 0h8v8h-8zm16 0h8v8h-8z" fill="#7dba9f" shape-rendering="crispEdges"/>
+<g font-family="ui-monospace,SFMono-Regular,Consolas,monospace">
+  <text x="316" y="407" fill="#fff4df" font-size="16" font-weight="bold">Installer NSIS · perMachine=true machine-wide</text>
+  <text x="316" y="437" fill="#b4c0b8" font-size="12">① Pre-install self-check: purge both-scope stale copies</text>
+  <text x="316" y="457" fill="#b4c0b8" font-size="12">   user %APPDATA% + system Common Files</text>
+  <text x="316" y="481" fill="#b4c0b8" font-size="12">② UAC prompt (RequestExecutionLevel admin)</text>
+  <text x="316" y="505" fill="#b4c0b8" font-size="12">③ Write to Common Files\Adobe\CEP\extensions</text>
+  <text x="316" y="527" fill="#b4c0b8" font-size="12">④ One CEP copy left machine-wide</text>
+</g>
+
+<!-- ========== Runtime guarantee 1: desktop startup self-check ========== -->
+<path d="M118 560H492V568H500V644H492V652H118V644H110V568H118Z" fill="#1c2428" stroke="#dd8959" stroke-width="2" shape-rendering="crispEdges"/>
+<path d="M126 576h8v8h-8zm16 0h8v8h-8zm16 0h8v8h-8z" fill="#dd8959" shape-rendering="crispEdges"/>
+<g font-family="ui-monospace,SFMono-Regular,Consolas,monospace">
+  <text x="126" y="598" fill="#fff4df" font-size="16" font-weight="bold">Desktop startup self-check · cepSync</text>
+  <text x="126" y="624" fill="#b4c0b8" font-size="12">resolveInstallScope: probe Common Files</text>
+  <text x="126" y="644" fill="#b4c0b8" font-size="12">keep one copy per scope, never reseed other</text>
+</g>
+
+<!-- ========== Runtime guarantee 2: panel loading feedback ========== -->
+<path d="M628 560H1002V568H1010V644H1002V652H628V644H620V568H628Z" fill="#1c2428" stroke="#779fc6" stroke-width="2" shape-rendering="crispEdges"/>
+<path d="M636 576h8v8h-8zm16 0h8v8h-8zm16 0h8v8h-8z" fill="#779fc6" shape-rendering="crispEdges"/>
+<g font-family="ui-monospace,SFMono-Regular,Consolas,monospace">
+  <text x="636" y="598" fill="#fff4df" font-size="16" font-weight="bold">Panel loading page (sole feedback)</text>
+  <text x="636" y="624" fill="#b4c0b8" font-size="12">silent install has no native UI → 'Installing…'</text>
+  <text x="636" y="644" fill="#b4c0b8" font-size="12">Onboarding guide replays when done</text>
+</g>
+
+<!-- Footer -->
+<g font-family="ui-monospace,SFMono-Regular,Consolas,monospace" font-size="11" fill="#8b9a92">
+  <text x="40" y="684">Installer + runtime dual-layer guarantee · one CEP copy machine-wide · both channels same package, same UAC</text>
+</g>
+</svg>
