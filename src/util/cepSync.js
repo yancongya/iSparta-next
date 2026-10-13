@@ -4,7 +4,7 @@
  *
  * 单副本策略（与 NSIS installer.nsh 对齐，§9）：
  *   - 安装作用域由「Common Files 副本是否存在且认领」判定（win32），
- *     mac / 无 Common Files 一律用户级 —— 与安装器 customInit 的探测口径一致。
+ *     mac 由 .pkg 管理系统级目录；应用启动仅核对，不写入。
  *   - 系统级（Common Files 副本存在）：只维护 Common Files，绝不在用户级重新播种，
  *     并兜底删除可能残留的用户级副本（避免双副本 + AE 用户级优先级遮挡系统级）。
  *   - 用户级（无 Common Files 副本）：仅维护 %APPDATA% 用户级，并尽力清掉残留的系统级副本。
@@ -113,6 +113,23 @@ function ensureCepExtension (opts) {
   const appVersion = o.appVersion || ''
   const payloadDir = resolvePayloadDir(o.resourcesPath, o.appPath)
   const targets = []
+
+  // macOS .pkg owns the system CEP directory. An unprivileged app launch may
+  // inspect it, but must never create a second user copy or rewrite /Library.
+  if (process.platform === 'darwin') {
+    const dest = path.join('/Library/Application Support/Adobe/CEP/extensions', EXT_ID)
+    const installed = readVersionJson(dest)
+    return {
+      checked: true,
+      refreshed: false,
+      reason: !fs.existsSync(dest) ? 'not-installed' :
+        installed && installed.version === appVersion ? 'in-sync' : 'version-mismatch',
+      dest: dest,
+      version: installed && installed.version || '',
+      payloadDir: payloadDir,
+      targets: ['system']
+    }
+  }
 
   const userParent = resolveUserExtParent(o.env, o.home)
   const commonParent = resolveCommonExtParent(o.env, o.commonFiles)

@@ -210,12 +210,12 @@
       "dl.sub":
         "所有链接永远指向最新版。macOS 未签名，第一次打开被拦请看 Release 说明。",
       "dl.gDesktop": "桌面端",
-      "dl.gDesktopDesc": "Windows 安装向导一次装全桌面与 AE 扩展；macOS 解压后启动一次桌面应用即完成扩展安装。",
+      "dl.gDesktopDesc": "Windows 与 macOS 安装包均会检测 After Effects，并同步部署桌面与扩展。",
       "dl.gAe": "AE 扩展",
       "dl.gAeDesc": "仅扩展主体，不含桌面应用。",
       "dl.thisDevice": "当前设备",
       "dl.note":
-        "Windows / Linux 安装版支持应用内自动更新。AE 扩展始终与桌面应用同版本：Windows 由安装向导装完，macOS 在首次启动桌面应用时自动落盘；装完重启 After Effects 生效。",
+        "Windows / Linux 安装版支持应用内自动更新。AE 扩展始终与桌面应用同版本：安装时检测 After Effects 并同步部署；装完重启 After Effects 生效。",
       "dl.winSub": "x64 · 含 AE 扩展",
       "why.eb": "09 \u00b7 WHY NEXT",
       "why.h2": "不是缝缝补补，是整台重做",
@@ -490,12 +490,12 @@
       "dl.sub":
         "Every link always points at the latest release. macOS is unsigned — if Gatekeeper grumbles, see the Release notes.",
       "dl.gDesktop": "Desktop",
-      "dl.gDesktopDesc": "The Windows wizard installs the app and the AE extension together; on macOS, launching the app once installs the extension.",
+      "dl.gDesktopDesc": "Windows and macOS installers deploy the desktop app and, when After Effects is present, the matching extension.",
       "dl.gAe": "AE extension",
       "dl.gAeDesc": "Extension body only, no desktop app.",
       "dl.thisDevice": "This device",
       "dl.note":
-        "Windows and Linux installers update in-app. The AE extension always matches the app: the wizard places it on Windows, the app places it on first launch on macOS — restart After Effects once it lands.",
+        "Windows, macOS, and Linux desktop builds update in-app. Windows and macOS installers deploy the matching AE extension when After Effects is present. Restart After Effects after installing.",
       "dl.winSub": "x64 · with AE extension",
       "why.eb": "09 \u00b7 WHY NEXT",
       "why.h2": "Not a patch — a rebuilt workbench",

@@ -39,7 +39,11 @@
 
       <!-- 安装中：不能再显示「已下载 100%」——那是上一步的结论，
            这里换成进行中的进度 + 说明（走静默安装，界面是唯一的反馈） -->
-      <div v-if="autoInstalling" class="upd__progress-block">
+      <div v-if="autoCompleted" class="upd__progress-block">
+        <is-progress :percent="100" :done="true" :label="$t('updateInstallComplete')" />
+        <p class="upd__footnote">{{ $t('updateRestartAe') }}</p>
+      </div>
+      <div v-else-if="autoInstalling" class="upd__progress-block">
         <!-- 不确定进度：显式关掉百分比，否则会写死成「100%」，看着像已完成 -->
         <is-progress
           :percent="100"
@@ -76,7 +80,12 @@
         <div class="upd__acts-right">
           <is-button @click="onLater">{{ $t('updateLater') }}</is-button>
           <is-button
-            v-if="autoInstalling"
+            v-if="autoCompleted"
+            type="primary"
+            :disabled="true"
+          >{{ $t('updateInstallComplete') }}</is-button>
+          <is-button
+            v-else-if="autoInstalling"
             type="primary"
             :disabled="true"
           >{{ $t('updateInstalling') }}</is-button>
@@ -153,6 +162,9 @@ export default {
     autoInstalling () {
       return !!(this.auto && (this.auto.installing || this.auto.launched))
     },
+    autoCompleted () {
+      return !!(this.auto && this.auto.completed)
+    },
     autoProgress () {
       return (this.auto && this.auto.progress) || 0
     },
@@ -161,6 +173,7 @@ export default {
     },
     /** 头部标题：安装中必须换掉「已就绪」，否则和下面的「正在安装」自相矛盾 */
     heroHead () {
+      if (this.autoCompleted) return this.$t('updateInstallComplete')
       return this.autoInstalling ? this.$t('updateInstallingApp') : this.readyHead
     },
     /** 头部副标题：安装中不再说「发现新版本」，改为版本对照 */
@@ -181,6 +194,7 @@ export default {
       }).filter(Boolean)
     },
     installFootnote () {
+      if (this.autoCompleted) return this.$t('updateRestartAe')
       if (this.autoInstalling) {
         return this.isCepInstaller ? this.$t('updateInstallingCep') : this.$t('updateInstallingBody')
       }

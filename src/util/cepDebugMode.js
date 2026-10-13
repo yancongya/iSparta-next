@@ -11,7 +11,7 @@
  * 为什么只在 mac 生效
  * ------------------
  * Windows 由 NSIS 组件页写注册表（build/installer.nsh 的 installSection），
- * 应用再写一遍是重复劳动；macOS 产物是 zip，没有安装向导可挂，
+ * 应用再写一遍是重复劳动；macOS pkg 在安装时部署系统级扩展，
  * 而桌面应用每次启动都会自检并刷新扩展目录（util/cepSync），这里正好接上。
  *
  * 何时跑
@@ -37,6 +37,14 @@ const MARKER_NAME = '.player-debug-mode'
 const SCRIPT_TIMEOUT_MS = 20000
 
 function markerPath (destDir) {
+  // The pkg installs CEP in /Library, which the desktop app cannot write.
+  // Keep the per-user debug-mode marker outside the system extension.
+  if (process.platform === 'darwin') {
+    const version = (() => {
+      try { return JSON.parse(fs.readFileSync(path.join(destDir, 'version.json'), 'utf8')).version || '' } catch (e) { return '' }
+    })()
+    return path.join(require('os').homedir(), 'Library', 'Application Support', 'iSparta-next', `${MARKER_NAME}-${version}`)
+  }
   return path.join(destDir, MARKER_NAME)
 }
 
@@ -98,6 +106,7 @@ function ensurePlayerDebugMode (opts) {
   }
 
   try {
+    fs.mkdirSync(path.dirname(markerPath(dest)), { recursive: true })
     fs.writeFileSync(markerPath(dest), new Date().toISOString() + '\n', 'utf8')
   } catch (e) {
     // 脚本已生效，只是下次会多跑一遍 —— 不当失败处理

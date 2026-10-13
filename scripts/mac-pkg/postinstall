@@ -1,0 +1,62 @@
+#!/bin/bash
+# Runs as root after the application payload has been installed by Installer.app.
+set -euo pipefail
+
+volume="${3:-/}"
+app="$volume/Applications/iSparta-next.app"
+source="$app/Contents/Resources/cep/io.github.isparta-next"
+parent="$volume/Library/Application Support/Adobe/CEP/extensions"
+target="$parent/io.github.isparta-next"
+
+owned() {
+  local dir="$1"
+  [ -f "$dir/CSXS/manifest.xml" ] &&
+    /usr/bin/grep -q 'io.github.isparta-next' "$dir/CSXS/manifest.xml"
+}
+
+ae_found=0
+for candidate in "$volume"/Applications/Adobe\ After\ Effects* "$volume"/Applications/Adobe\ After\ Effects*/Adobe\ After\ Effects*.app; do
+  if [ -e "$candidate" ]; then ae_found=1; break; fi
+done
+if [ "$ae_found" -eq 0 ]; then
+  echo 'iSparta-next: After Effects not found; CEP installation skipped'
+  exit 0
+fi
+
+if ! owned "$source" || [ ! -f "$source/version.json" ]; then
+  echo 'iSparta-next: packaged CEP payload is incomplete' >&2
+  exit 1
+fi
+if [ -e "$target" ] && ! owned "$target"; then
+  echo 'iSparta-next: CEP destination exists but is not owned by this product' >&2
+  exit 1
+fi
+
+/bin/mkdir -p "$parent"
+stage="$parent/.io.github.isparta-next.new.$$"
+backup="$parent/.io.github.isparta-next.old.$$"
+trap '/bin/rm -rf "$stage"' EXIT
+/bin/cp -R "$source" "$stage"
+if ! owned "$stage" || ! /usr/bin/cmp -s "$source/version.json" "$stage/version.json"; then
+  echo 'iSparta-next: staged CEP payload verification failed' >&2
+  exit 1
+fi
+
+if [ -e "$target" ]; then /bin/mv "$target" "$backup"; fi
+if ! /bin/mv "$stage" "$target"; then
+  if [ -e "$backup" ]; then /bin/mv "$backup" "$target"; fi
+  echo 'iSparta-next: failed to activate CEP payload' >&2
+  exit 1
+fi
+
+# The new system copy is active. Remove only this product's prior copy.
+if [ -e "$backup" ] && owned "$backup"; then /bin/rm -rf "$backup" || echo 'iSparta-next: old CEP backup cleanup deferred' >&2; fi
+console_user="$(/usr/bin/stat -f %Su /dev/console 2>/dev/null || true)"
+if [ -n "$console_user" ] && [ "$console_user" != root ]; then
+  user_home="$(/usr/bin/dscl . -read "/Users/$console_user" NFSHomeDirectory 2>/dev/null | /usr/bin/sed 's/^NFSHomeDirectory: //' || true)"
+  user_copy="$user_home/Library/Application Support/Adobe/CEP/extensions/io.github.isparta-next"
+  if [ -n "$user_home" ] && [ -e "$user_copy" ] && owned "$user_copy"; then
+    /bin/rm -rf "$user_copy" || echo 'iSparta-next: old user CEP cleanup deferred' >&2
+  fi
+fi
+echo 'iSparta-next: desktop and CEP payload installed'

@@ -571,6 +571,20 @@
   var dlReq = null
   var dlStream = null
   var dlHash = null
+  var installState = { status: 'idle', detail: '', version: '', cep: '', error: '' }
+  var installResultPath = ''
+
+  function installSnapshot () {
+    if (installResultPath && nodeFs) {
+      try {
+        var result = JSON.parse(nodeFs.readFileSync(installResultPath, 'utf8'))
+        if (result && /^(installing|success|failed)$/.test(result.status)) {
+          installState = Object.assign({}, installState, result)
+        }
+      } catch (e) { /* installer may not have written its receipt yet */ }
+    }
+    return Object.assign({}, installState)
+  }
 
   function dlSnapshot () {
     return {
@@ -597,6 +611,9 @@
     }
     try { if (dlStream && dlStream.close) { dlStream.close() } } catch (e) { /* ignore */ }
     try { if (dlReq && dlReq.destroy) { dlReq.destroy() } } catch (e2) { /* ignore */ }
+    if (err && dl.file) {
+      try { nodeFs.unlinkSync(dl.file + '.part') } catch (ePart) { /* ignore */ }
+    }
     dlStream = null
     dlReq = null
   }
@@ -731,21 +748,40 @@
     var file = String(o.file || dl.file || '')
     if (!file) { return Promise.resolve({ ok: false, reason: 'no-file' }) }
     if (!existsSync(file)) { return Promise.resolve({ ok: false, reason: 'missing-file', file: file }) }
+    if (!dl.downloaded || !dl.verified || file !== dl.file) {
+      return Promise.resolve({ ok: false, reason: 'installer-not-verified' })
+    }
     try {
+      installState = { status: 'installing', detail: 'starting', version: String(o.version || ''), cep: '', error: '' }
+      installResultPath = ''
       // 自更新哨兵：在 exe 同目录写一个 `<exe>.self-update`。即使渲染层忘了传 /S
       // （旧面板跑新安装包），installer.nsh 也能靠它自感知「这是面板起的更新」并强制
       // 静默（对齐 ZCode：静默由安装器自身保证，不依赖调用方参数）。安装器装完会删掉
       // 这个哨兵，避免后续手动重跑同一个 exe 也变成静默。
-      try { nodeFs.writeFileSync(file + '.self-update', '') } catch (eMarker) { /* 写不进去就退化成纯 /S 静默 */ }
+      if (process.platform === 'win32') {
+        try { nodeFs.writeFileSync(file + '.self-update', '') } catch (eMarker) { /* 写不进去就退化成纯 /S 静默 */ }
+      }
       // ---- 跨平台分派：一律交给 OS 的「打开/提权」动词，绝不 CreateProcess 直起安装包 ----
       var platform = hasNode ? process.platform : ''
       if (platform === 'darwin') {
-        // macOS：无 NSIS 等价物、无 /S 静默概念。交给系统 `open` 唤起 .dmg / Installer.app，
-        // 用户在原生安装器里手动完成（需写系统目录时 macOS 弹管理员密码）。面板 loading
-        // 保持「正在安装」直到用户重启 AE 加载新面板——与 Win 静默装完语义不同，属预期。
-        var macChild = nodeCp.spawn('open', [file], { detached: true, stdio: 'ignore' })
-        macChild.unref()
-        return Promise.resolve({ ok: true, pid: macChild.pid, file: file, elevated: false, platform: 'darwin' })
+        // 由系统授权对话框申请管理员权限；osascript 等待 installer 的真实退出码。
+        var shFile = "'" + file.replace(/'/g, "'\\''") + "'"
+        var appleCmd = 'do shell script ' + JSON.stringify('/usr/sbin/installer -pkg ' + shFile + ' -target /') + ' with administrator privileges'
+        var macChild = nodeCp.spawn('/usr/bin/osascript', ['-e', appleCmd], { stdio: 'ignore' })
+        macChild.on('error', function (err) {
+          installState = { status: 'failed', detail: 'launch-failed', version: String(o.version || ''), cep: '', error: String(err && err.message || err) }
+        })
+        macChild.on('close', function (code) {
+          installState = {
+            status: code === 0 ? 'success' : 'failed',
+            detail: code === 0 ? 'complete' : 'installer-failed-or-cancelled',
+            version: String(o.version || ''), cep: '', error: code === 0 ? '' : 'installer exit ' + code
+          }
+          if (code === 0) {
+            try { nodeFs.unlinkSync(file) } catch (eCleanup) { /* best effort */ }
+          }
+        })
+        return Promise.resolve({ ok: true, pid: macChild.pid, file: file, elevated: true, platform: 'darwin' })
       }
       // Windows：perMachine 安装器带 RequestExecutionLevel admin，直接 spawn（CreateProcess）
       //   在非提权父进程下会报 ELEVATION_REQUIRED 而无法自提权。故改用 ShellExecute 的
@@ -754,12 +790,30 @@
       // PowerShell 单引号串内 ' 需写成 ''；不要 JSON.stringify（会把 \ 转义成 \\，
       // 单引号串里被当字面双反斜杠而找不到文件）。
       var psFile = "'" + String(file).replace(/'/g, "''") + "'"
-      var psArgs = "'" + ((o.args || []).join(' ')).replace(/'/g, "''") + "'"
-      var psCmd = 'Start-Process -FilePath ' + psFile + ' -Verb RunAs -ArgumentList ' + psArgs
-      var child = nodeCp.spawn('powershell.exe', ['-NoProfile', '-Command', psCmd], {
-        detached: true, stdio: 'ignore', windowsHide: true
+      installResultPath = nodePath.join((process.env.ProgramData || 'C:\\ProgramData'), 'iSparta', 'update', 'install-result-' + Date.now() + '.json')
+      var psArgs = "'/S /RESULTFILE=\"" + installResultPath.replace(/'/g, "''") + "\"'"
+      var psCmd = '$ErrorActionPreference = \'Stop\'; $p = Start-Process -FilePath ' + psFile + ' -Verb RunAs -ArgumentList ' + psArgs + ' -Wait -PassThru; exit $p.ExitCode'
+      var encoded = Buffer.from(psCmd, 'utf16le').toString('base64')
+      var child = nodeCp.spawn('powershell.exe', ['-NoProfile', '-EncodedCommand', encoded], {
+        stdio: 'ignore', windowsHide: true
       })
-      child.unref()
+      child.on('error', function (err) {
+        installState = { status: 'failed', detail: 'launch-failed', version: String(o.version || ''), cep: '', error: String(err && err.message || err) }
+      })
+      child.on('close', function (code) {
+        var receipt = installSnapshot()
+        if (receipt.status === 'installing') {
+          installState = {
+            status: 'failed', detail: code === 0 ? 'missing-result' : 'installer-failed-or-cancelled',
+            version: String(o.version || ''), cep: '', error: 'installer exit ' + code
+          }
+        }
+        installResultPath = ''
+        try { nodeFs.unlinkSync(file + '.self-update') } catch (eMarker) { /* installer may have removed it */ }
+        if (installState.status === 'success') {
+          try { nodeFs.unlinkSync(file) } catch (eCleanup) { /* best effort */ }
+        }
+      })
       return Promise.resolve({ ok: true, pid: child.pid, file: file, elevated: true })
     } catch (e) {
       return Promise.resolve({ ok: false, reason: String(e && e.message || e), file: file })
@@ -798,6 +852,9 @@
       }
       if (channel === 'updater:runInstaller') {
         return runInstaller(rest[0])
+      }
+      if (channel === 'updater:installState') {
+        return Promise.resolve(installSnapshot())
       }
       if (channel === 'shell:openExternal') {
         return openExternal(rest[0])

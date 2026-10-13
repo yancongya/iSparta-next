@@ -23,6 +23,7 @@ import {
   cepCheckUpdate,
   cepInstallerCapable,
   launchInstaller,
+  queryInstallState,
   queryDownloadState,
   startInstallerDownload,
   toAutoState
@@ -97,7 +98,8 @@ const state = Vue.observable({
     error: null,
     version: null,
     file: '',
-    launched: false
+    launched: false,
+    completed: false
   }
 })
 
@@ -319,12 +321,47 @@ function browserCheck (payload) {
 
 /** CEP：桥下载是异步单任务，面板轮询拿进度；结束（完成/失败）自动停表 */
 var cepPollTimer = null
+var cepInstallPollTimer = null
 
 function stopCepPolling () {
   if (cepPollTimer) {
     clearInterval(cepPollTimer)
     cepPollTimer = null
   }
+}
+
+function stopCepInstallPolling () {
+  if (cepInstallPollTimer) {
+    clearInterval(cepInstallPollTimer)
+    cepInstallPollTimer = null
+  }
+}
+
+async function pollCepInstall () {
+  var snap = await queryInstallState()
+  if (!snap) { return }
+  if (snap.status === 'success') {
+    stopCepInstallPolling()
+    state.auto = Object.assign({}, state.auto, {
+      installing: false, launched: false, completed: true, error: null,
+      downloaded: false
+    })
+    state.dockVisible = true
+  } else if (snap.status === 'failed') {
+    stopCepInstallPolling()
+    state.auto = Object.assign({}, state.auto, {
+      installing: false, launched: false, completed: false, downloaded: false,
+      error: snap.detail || snap.error || 'install-failed'
+    })
+    state.dockVisible = true
+  }
+}
+
+function startCepInstallPolling () {
+  if (cepInstallPollTimer) { return }
+  cepInstallPollTimer = setInterval(function () {
+    pollCepInstall().catch(function () { /* next poll */ })
+  }, POLL_MS)
 }
 
 async function pollCepDownload () {
@@ -382,7 +419,7 @@ async function maybeStartAutoDownload (result) {
     var snap = await readHostAutoState()
     applyAutoState(snap)
     if (!snap || !snap.supported) { return null }
-    var dl2 = await ipc.invoke('updater:autoDownload')
+    var dl2 = await ipc.invoke('updater:autoDownload', result || state.lastResult)
     if (dl2 && dl2.state) { applyAutoState(dl2.state) }
     return dl2
   } catch (e) {
@@ -448,11 +485,14 @@ export async function restartToUpdate () {
     state.auto = Object.assign({}, state.auto, { installing: true })
     state.dockVisible = true
     // 静默：launchInstaller 内部固定带 `/S`（旧面板忘了传时，安装器也会靠哨兵自重启静默）
-    var r = await launchInstaller(state.auto.file)
+    var r = await launchInstaller(state.auto.file, {
+      version: state.lastResult && state.lastResult.latest
+    })
     if (r && r.ok) {
-      // 保持 installing（dock 进入「已启动安装，请重启 AE」的终态），并标记 launched
-      state.auto = Object.assign({}, state.auto, { launched: true })
-      appLog.info('已启动静默安装，安装完成后请重启 After Effects')
+      // 安装器启动不等于成功，继续轮询安装结果。
+      state.auto = Object.assign({}, state.auto, { launched: true, completed: false })
+      startCepInstallPolling()
+      appLog.info('已启动安装，等待结果')
     } else {
       state.auto = Object.assign({}, state.auto, { installing: false, launched: false })
       appLog.warn('启动安装失败', (r && r.reason) || 'unknown')

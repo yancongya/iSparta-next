@@ -139,7 +139,7 @@ function buildVersionDoc (opts) {
       },
       commonCep: {
         win32: '%CommonProgramFiles%\\Adobe\\CEP\\extensions\\' + EXT_ID,
-        darwin: null // 本项目不向 macOS 系统级 CEP 目录安装
+        darwin: '/Library/Application Support/Adobe/CEP/extensions/' + EXT_ID
       },
       playerDebugMode: {
         win32: 'NSIS 组件页写 HKCU\\Software\\Adobe\\CSXS.6-14\\PlayerDebugMode=1',

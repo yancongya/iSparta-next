@@ -190,7 +190,7 @@ function latestYmlCandidates (env, platform, arch) {
   var base = cfg.baseUrl.replace(/\/+$/, '') + '/' + cfg.repo + '/releases/latest/download/'
   var names = ['latest.yml']
   if (arch === 'arm64') { names.unshift('latest-arm64.yml') }
-  if (platform === 'darwin') { names = ['latest-mac.yml'] }
+  if (platform === 'darwin') { names = ['latest-mac-pkg.yml'] }
   if (platform === 'linux') { names = ['latest-linux.yml'] }
   return names.map(function (n) { return base + n })
 }
@@ -212,6 +212,9 @@ export function startInstallerDownload (result, deps) {
   var arch = cepArch() || 'x64'
   var urls = latestYmlCandidates({}, platform, arch)
   var artifact = result.artifactName
+  var versionedArtifact = result.latest
+    ? artifact.replace(/-(win|mac|linux)-/, '-' + result.latest + '-$1-')
+    : artifact
   var sha512 = ''
   var total = 0
 
@@ -219,15 +222,16 @@ export function startInstallerDownload (result, deps) {
     if (i >= urls.length) { return Promise.resolve(null) }
     return bridgeFetchText(urls[i], DEFAULT_TIMEOUT_MS).then(function (r) {
       if (!r || r.status < 200 || r.status >= 300 || !r.text) { return tryYml(i + 1) }
-      return parseLatestYml(r.text, artifact)
+      return parseLatestYml(r.text, versionedArtifact) || parseLatestYml(r.text, artifact)
     })
   }
 
   return tryYml(0).then(function (yml) {
-    if (yml) {
+    if (yml && yml.sha512 && (!result.latest || yml.version === result.latest)) {
       sha512 = yml.sha512 || ''
       total = yml.size || 0
     }
+    if (!sha512) { return { ok: false, reason: 'missing-checksum' } }
     var file
     try {
       file = pathMod.join(installerDir(osMod, pathMod), artifact)
@@ -254,6 +258,10 @@ export function queryDownloadState () {
   return ipc.invoke('updater:downloadState').catch(function () { return null })
 }
 
+export function queryInstallState () {
+  return ipc.invoke('updater:installState').catch(function () { return null })
+}
+
 export function cancelInstallerDownload () {
   return ipc.invoke('updater:cancelDownload').catch(function () { return null })
 }
@@ -273,6 +281,7 @@ export function cancelInstallerDownload () {
 export function launchInstaller (file, opts) {
   var o = opts || {}
   var payload = file ? { file: file } : {}
+  if (o.version) { payload.version = o.version }
   // Windows 传 /S 静默；macOS 无 NSIS、无 /S 概念，open 唤起后由用户手动完成，不传参。
   var p = cepPlatform()
   if (p === 'win32' && o.silent !== false) { payload.args = ['/S'] }
@@ -307,6 +316,7 @@ export default {
   installerDir,
   startInstallerDownload,
   queryDownloadState,
+  queryInstallState,
   cancelInstallerDownload,
   launchInstaller,
   toAutoState,

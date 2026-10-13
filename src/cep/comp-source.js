@@ -145,13 +145,7 @@ export function toCompItem (comp, optionsOverride) {
   if (temp.basic.compFps > 0) {
     temp.options.frameRate = Math.round(temp.basic.compFps * 100) / 100
   }
-  // CEP 默认输出 = 项目旁「合成名」子目录（对应桌面输出到文件夹）
-  if (!temp.options.outputTo || !temp.options.outputTo.template) {
-    temp.options.outputTo = Object.assign({}, temp.options.outputTo, {
-      mode: 'custom',
-      template: '{srcPath}/{srcName}'
-    })
-  }
+  // 桌面与 CEP 共用 outputTo；空模板的历史配置由 resolveOutputPath 回退源目录。
   // 输出路径与 tokenizeName / outputPath 同函数展开
   temp.basic.outputPath = resolveOutputPath(temp, temp.options)
   return temp

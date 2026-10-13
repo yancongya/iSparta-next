@@ -33,8 +33,8 @@ win:
         - x64
   icon: ./public/icons/icon.ico
 nsis:
-  # 完整安装向导（组件页：桌面版 / AE 扩展仍可分开勾选）
-  # oneClick:false 保留向导；perMachine:true = 安装范围固定「所有用户」：
+  # 固定全机安装桌面版；仅在检测到 AE 时同步安装 CEP。
+  # oneClick:true 直接安装；perMachine:true = 安装范围固定「所有用户」：
   #  · 模板自动下发 RequestExecutionLevel admin —— 安装器一启动就弹 UAC，
   #    用户授权后进程持有管理员令牌，才能写 Program Files / Common Files
   #  · initMultiUser 无条件置 $installMode="all"（/S 静默也一样，先于 customInit）
@@ -46,12 +46,12 @@ nsis:
   #    旧 per-user 副本（%LOCALAPPDATA%\Programs + HKCU 登记）被自动清除，
   #    全机只保留一份安装目录
   # 代价：每次安装/更新都会弹一次 UAC 授权（预期行为）。
-  oneClick: false
+  oneClick: true
   perMachine: true
   # NSIS 6010「函数未引用」是宏内 Call 的误报，会零化代码；关掉 warning-as-error
   warningsAsErrors: false
-  allowToChangeInstallationDirectory: true
-  # 完成页「运行 iSparta-next」勾选
+  allowToChangeInstallationDirectory: false
+  # 首次安装完成后启动应用
   runAfterFinish: true
   # 开始菜单 / 卸载项显示名；安装目录随 package.json name= isparta-next
   shortcutName: iSparta-next
@@ -60,12 +60,13 @@ nsis:
   installerSidebar: ./build/installerSidebar.bmp
   uninstallerSidebar: ./build/installerSidebar.bmp
   installerHeader: ./build/installerHeader.bmp
-  # W3 一体安装：组件页（桌面 / AE 扩展）+ 安装复制 CEP + 卸载清理
+  # 一体安装：自动检测 AE，安装复制 CEP，并在卸载时清理
   include: ./build/installer.nsh
   # SignPath Foundation 免费签名（审核通过后在 CI 注入，勿把密钥写进仓库）：
   # win.sign: SignPath
 mac:
-  # CI 无证书环境：不签名、不公证；mac 不走 electron-updater
+  # CI 无证书环境：不签名、不公证。macOS 一体 pkg 由 scripts/build-mac-pkg.js
+  # 从此处生成的 .app 组装；zip 保留给现有便携分发。
   identity: null
   target:
     - target: zip

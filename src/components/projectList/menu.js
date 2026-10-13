@@ -1,8 +1,9 @@
 /**
  * 右键菜单：Electron 走主进程 popup；CEP / 浏览器走 DOM 菜单。
- * 打开目录：Windows execFile('explorer.exe')，mac execFile('open')。
+ * 打开目录：Electron 走 shell IPC；CEP 走 file URL，宿主不可用时回退 Folder.execute。
  */
 import { ipc } from '../../util/node-env'
+import notice from '../../ui-next/notice'
 
 let storeRef = null
 let bound = false
@@ -38,66 +39,68 @@ function onMenuKey (ev) {
   if (ev && ev.key === 'Escape') { closeDomMenu() }
 }
 
-/** Windows: explorer.exe；mac/linux: open / xdg-open。参数数组，禁止拼 shell 串 */
-function openOsDir (dir) {
-  if (!dir) { return }
-  var target = String(dir)
-  // 桌面 Electron：优先 shell IPC（showItemInFolder / openPath），不经子进程
+/** Encode each path segment; encodeURI leaves # and ? unescaped and truncates file URLs. */
+function fileUrlOf (dir) {
+  var p = String(dir || '').replace(/\\/g, '/')
+  if (/^[A-Za-z]:\//.test(p)) {
+    return 'file:///' + p.slice(0, 3) + p.slice(3).split('/').map(encodeURIComponent).join('/')
+  }
+  if (p.slice(0, 2) === '//') {
+    var unc = p.slice(2).split('/')
+    return 'file://' + unc.shift() + '/' + unc.map(encodeURIComponent).join('/')
+  }
+  if (p.charAt(0) === '/') {
+    return 'file://' + p.split('/').map(encodeURIComponent).join('/')
+  }
+  return ''
+}
+
+function reportOpenFailure (error, title) {
+  var detail = error && error.message ? error.message : String(error || '')
+  console.error('打开目录失败：' + detail)
+  notice.error(title || '打开目录失败', detail)
+}
+
+/** Open a real directory; CEP never falls through to an elevated child explorer. */
+function openOsDir (dir, title) {
+  var target = String(dir || '')
+  if (!target) { return }
   if (isElectronHost()) {
     try {
-      ipc.invoke('shell:showItemInFolder', target)
-      return
-    } catch (e0) { /* fall through */ }
+      ipc.invoke('shell:showItemInFolder', target).catch(function (e) { reportOpenFailure(e, title) })
+    } catch (e) { reportOpenFailure(e, title) }
+    return
   }
-  // CEP：经系统浏览器桥打开 file://（cep-playground：cep.util.openURLInDefaultBrowser）。
-  // 禁止走 execFile('explorer.exe')——AE 以管理员运行时 explorer 继承提权会落到用户目录，
-  // 表现即「只能打开用户目录 / 点了没反应」。file:// 由 CEP 非提权会话 launch，能正确打开任意目录。
   if (isCepLike()) {
+    var fileUrl = fileUrlOf(target)
+    if (!fileUrl) { reportOpenFailure('输出目录不是绝对路径：' + target, title); return }
     try {
-      var fileUrl = 'file:///' + encodeURI(String(target).replace(/\\/g, '/'))
-      if (typeof window !== 'undefined') {
-        if (window.ispartaCS && typeof window.ispartaCS.openURLInDefaultBrowser === 'function') {
-          window.ispartaCS.openURLInDefaultBrowser(fileUrl)
-          return
-        }
-        if (window.cep && window.cep.util && typeof window.cep.util.openURLInDefaultBrowser === 'function') {
-          window.cep.util.openURLInDefaultBrowser(fileUrl)
-          return
-        }
-        // 回退：ExtendScript Folder.execute 在本进程打开（仍可能受提权影响，优先上面的桥）
-        if (window.ispartaCS && typeof window.ispartaCS.evalScript === 'function') {
-          try {
-            window.ispartaCS.evalScript('Folder(' + JSON.stringify(String(target)) + ').execute()')
-            return
-          } catch (eEs) { /* fall through */ }
-        }
+      if (window.ispartaCS && typeof window.ispartaCS.openURLInDefaultBrowser === 'function') {
+        if (window.ispartaCS.openURLInDefaultBrowser(fileUrl)) { return }
+      } else if (window.cep && window.cep.util && typeof window.cep.util.openURLInDefaultBrowser === 'function') {
+        window.cep.util.openURLInDefaultBrowser(fileUrl)
+        return
       }
-    } catch (eCep) { /* fall through to execFile */ }
+      // Browser bridge unavailable: ask AE to open the directory itself.
+      if (window.ispartaCS && typeof window.ispartaCS.evalScript === 'function') {
+        window.ispartaCS.evalScript('Folder(' + JSON.stringify(target) + ').execute()', function (result) {
+          if (String(result).toLowerCase() !== 'true') reportOpenFailure('AE 未能打开：' + target, title)
+        })
+        return
+      }
+    } catch (e) { reportOpenFailure(e, title); return }
+    reportOpenFailure('CEP 没有可用的目录打开接口', title)
+    return
   }
   try {
     var cp = require('../../util/node-env').getChildProcess()
     var os = require('../../util/node-env').os
     var pf = ''
-    try {
-      pf = (os && os.platform && os.platform()) || ''
-    } catch (eOs) { /* fall through */ }
-    if (!pf && typeof navigator !== 'undefined') {
-      pf = String(navigator.platform || navigator.userAgent || '').toLowerCase()
-    }
-    if (/win/i.test(pf)) {
-      cp.execFile('explorer.exe', [target], function () { /* 打开失败不打断 */ })
-      return
-    }
-    if (/mac|darwin/i.test(pf)) {
-      cp.execFile('open', [target], function () { /* ignore */ })
-      return
-    }
-    cp.execFile('xdg-open', [target], function () { /* ignore */ })
-    return
-  } catch (e) { /* fall through */ }
-  try {
-    ipc.invoke('shell:showItemInFolder', target)
-  } catch (e2) { /* ignore */ }
+    try { pf = (os && os.platform && os.platform()) || '' } catch (eOs) { /* fallback */ }
+    if (!pf && typeof navigator !== 'undefined') pf = String(navigator.platform || navigator.userAgent || '').toLowerCase()
+    var command = /win/i.test(pf) ? 'explorer.exe' : (/mac|darwin/i.test(pf) ? 'open' : 'xdg-open')
+    cp.execFile(command, [target], function (error) { if (error) reportOpenFailure(error, title) })
+  } catch (e) { reportOpenFailure(e, title) }
 }
 
 function dirnameOf (p) {
@@ -107,15 +110,11 @@ function dirnameOf (p) {
   return i > 0 ? s.slice(0, i) : ''
 }
 
-/** 合成节点没有现成 outputPath 时，按默认模板 {srcPath}/{srcName} 推导 */
+/** Legacy comp without outputPath: show its real project directory, never invent a comp-named folder. */
 function resolveOutDir (payload) {
   if (!payload) { return '' }
   if (payload.outputPath) { return String(payload.outputPath) }
   var srcDir = dirnameOf(payload.projectPath) || dirnameOf(payload.inputPath)
-  var name = payload.compName || payload.name || ''
-  if (srcDir && name) {
-    return srcDir.replace(/[\\/]+$/, '') + '/' + name
-  }
   return srcDir
 }
 
@@ -206,7 +205,7 @@ function bindMenuClicked () {
       case 'openCompLoc': {
         // 打开合成位置：工程文件所在目录
         const dir = dirnameOf(payload.projectPath) || dirnameOf(payload.inputPath)
-        if (dir) { openOsDir(dir) }
+        if (dir) { openOsDir(dir, payload.locale && payload.locale.noticeOpenFailed) }
         break
       }
       case 'openOriginal': {
@@ -228,12 +227,12 @@ function bindMenuClicked () {
           } catch (e) { /* fall through */ }
         }
         const srcPath = dirnameOf(payload.inputPath)
-        if (srcPath) { openOsDir(srcPath) }
+        if (srcPath) { openOsDir(srcPath, payload.locale && payload.locale.noticeOpenFailed) }
         break
       }
       case 'openDist': {
         var outDir = resolveOutDir(payload)
-        if (outDir) { openOsDir(outDir) }
+        if (outDir) { openOsDir(outDir, payload.locale && payload.locale.noticeOpenFailed) }
         break
       }
       case 'changeDist':
@@ -309,6 +308,7 @@ class rightMenu {
         openCompLoc: locale && locale.openCompLoc,
         openOriginal: locale && locale.openOriginal,
         openDist: locale && locale.openDist,
+        noticeOpenFailed: locale && locale.noticeOpenFailed,
         changeDist: locale && locale.changeDist,
         delItem: locale && locale.delItem,
         stopItem: locale && locale.stopItem

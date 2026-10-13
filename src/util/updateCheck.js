@@ -60,12 +60,12 @@ export function archSlug (platform, arch) {
   return arch === 'arm64' ? 'arm64' : 'x64'
 }
 
-/** electron-builder 的 ${ext}：win=NSIS exe、linux=AppImage、mac=zip（与 electron-builder.yml 一致） */
+/** 安装更新使用的发行资产：Win NSIS、macOS 一体 pkg、Linux AppImage。 */
 export function extOf (platform) {
   var os = osSlug(platform)
   if (os === 'win') { return 'exe' }
   if (os === 'linux') { return 'AppImage' }
-  return 'zip'
+  return 'pkg'
 }
 
 /** 与 electron-builder.yml 的 artifactName / CI 稳定别名一致：isparta-next-<os>-<arch>.<ext> */

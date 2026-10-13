@@ -12,10 +12,10 @@
 | --- | --- |
 | 启动应用 | 约 8 秒后检查一次 GitHub Releases；失败**静默**（仅运行日志） |
 | 有新版 | 非阻断弹窗：版本对比 + **更新说明**（Release body，滤掉 chore/ci） |
-| Win NSIS / Linux AppImage（桌面） | 支持后台自动下载 → 提示 **「重启以更新」** |
-| **AE 面板（CEP，Windows）** | 面板内后台下**同一个官方安装包** → 主按钮 **「运行安装包」** → 起 NSIS 向导，桌面与 AE 扩展一次更完；装完**需重启 After Effects** |
-| macOS zip / `npm run dev` | **不**自动更新；弹窗提供「前往下载」 |
-| **AE 面板（CEP，macOS）** | 无 NSIS，仅「前往下载」 |
+| Win NSIS / macOS pkg / Linux AppImage（桌面） | 支持后台自动下载 → 提示 **「重启以更新」** |
+| **AE 面板（CEP，Windows）** | 面板内后台下**同一个官方安装包** → 主按钮 **「运行安装包」** → 系统提权并静默安装，桌面与 AE 扩展一次更完；装完**需重启 After Effects** |
+| `npm run dev` | 不自动更新；弹窗提供「前往下载」 |
+| **AE 面板（CEP，macOS）** | 下载同版 pkg，申请管理员权限并安装；完成后提示重启 After Effects |
 | 默认设置 | 当前版本、手动「检查更新」、自动检查开关 |
 
 ---
@@ -28,16 +28,16 @@
     ├─ 桌面（policy = full）
     │     └─► 主进程 background.js
     │           ├─ updater:meta / updater:check（Node HEAD 取 302 tag）
-    │           ├─ src/util/autoUpdate.js  electron-updater（Dev 与 mac 不启用）
+    │           ├─ src/util/autoUpdate.js：Windows/Linux electron-updater；macOS pkg 更新
     │           └─ shell:openExternal      白名单（仅本仓库 Release/下载 URL）
     │
-    └─ CEP（policy = cep-installer；仅 Windows + --enable-nodejs）
+    └─ CEP（policy = cep-installer；Windows/macOS + --enable-nodejs）
           └─► targets/cep/lib/cep-bridge.js 的 updater:* 通道
                 ├─ updater:meta         读扩展目录 version.json（回 cep: true）
                 ├─ updater:http         Node https，302 主路径不跟随重定向
                 ├─ updater:download     流式整包 + 边写边算 sha512（约 100MB）
                 ├─ updater:cancelDownload / updater:downloadState
-                ├─ updater:runInstaller detached + unref 起 NSIS 向导
+                ├─ updater:runInstaller / installState 提权安装并读取完成状态
                 └─ shell:openExternal   转 cep.util.openURLInDefaultBrowser
     ▼
 GitHub Releases（latest*.yml + 安装包）
@@ -49,7 +49,7 @@ GitHub Releases（latest*.yml + 安装包）
 | `src/util/updatePrefs.js` | 更新偏好存储：**按宿主分键** `updateCheck.app` / `updateCheck.cep`（桌面与 CEP 共用同一份 `localstorage.json`，必须分键） |
 | `src/util/updateService.js` | 渲染层编排：选路（IPC / 桥）、何时弹窗、红点、自动下载、重启或起安装包 |
 | `src/util/autoUpdate.js` | 桌面：`supportsAutoUpdate()` + `updater:autoState` / `autoDownload` / `quitAndInstall` |
-| `src/util/cepUpdater.js` | CEP：把桥的 `updater:*` 接成 `checkUpdate` 的 `fetchHead/fetchJson/fetchText`，解析 `latest.yml` 拿 sha512，映射下载态 |
+| `src/util/cepUpdater.js` | CEP：把桥的 `updater:*` 接成 `checkUpdate` 的 `fetchHead/fetchJson/fetchText`，解析 `latest.yml` / `latest-mac-pkg.yml` 拿 sha512，映射下载态 |
 | `targets/cep/lib/cep-bridge.js` | CEP 桥：`updater:*` 六个通道 + `shell:openExternal`；网络与落盘全在 Node，判定仍在渲染层 |
 | `src/ui-next/components/IsUpdateDialog.vue` / `IsUpdateDock.vue` | 更新对话框 / 右下角非阻断卡片（按 `auto.mode === 'installer'` 切 CEP 终态文案） |
 | `electron-updater@4.6.5` | 与 electron-builder 22 + GitHub provider 匹配 |
@@ -64,13 +64,13 @@ GitHub Releases（latest*.yml + 安装包）
 | --- | --- | --- |
 | Windows | NSIS `.exe` | 是（`latest.yml`） |
 | Linux | AppImage | 是（`latest-linux.yml`） |
-| macOS | zip（未签名） | 否（手动解压 + Gatekeeper 放行） |
+| macOS | pkg（未签名） | 是（`latest-mac-pkg.yml`，系统提权安装） |
 
 - `artifactName`: `isparta-next-${version}-${os}-${arch}.${ext}`  
 - `package.json` **`name` / `productName`**: `isparta-next`（安装目录与显示名对齐）  
 - CI 上传 `latest*.yml` + 版本化安装包 + 稳定别名（落地页 `latest/download/...`）
 
-用户路径：已安装正式包 → 检测到新版 → 下载 → **重启以更新**；安装目录在同路径覆盖，**不会**自动改文件夹名。
+用户路径：已安装正式包 → 检测到新版 → 用户确认下载 → 校验 → 安装进度与结果 → 重启桌面或 After Effects。Windows/macOS 安装器检测到 After Effects 时同步安装同版 CEP；未安装则跳过。
 
 ---
 
@@ -104,18 +104,20 @@ node scripts/fixture-github.js     # FIXTURE_MODE=available|latest|offline|...
 
 | 项 | 说明 |
 | --- | --- |
-| macOS | 无付费证书则永远手动更新 |
-| macOS 上的 CEP | 无 NSIS，AE 面板只能「前往下载」 |
+| macOS 签名 | CI pkg 尚未签名，系统可能拦截；正式分发仍需 Developer ID Installer 签名与公证 |
+| macOS 上的 CEP | 可从面板下载安装同版 pkg；需系统管理员授权，完成后重启 After Effects |
 | CEP 侧整包下载 | AE 面板内下的是完整安装包（约 100MB），没有桌面 electron-updater 的 blockmap 差量；网络差时体验不如桌面 |
 | AE 不随安装包重启 | 向导装完扩展目录已是新版，但面板内存里仍是旧代码 → 必须重启 After Effects（文案已含此提示） |
 | Windows SmartScreen | 未签名 NSIS 仍可能拦截；签名见 [SIGNPATH.md](./SIGNPATH.md) |
 | 匿名 GitHub API | 落地页约 60 次/小时/IP；应用侧主路径用 302，API 仅用于 notes |
-| 安装目录更名 | 自动更新不搬家；需卸载后重装才会改变路径 |
+| 安装目录 | Windows 固定 Program Files / Common Files，macOS 固定 /Applications / 系统级 CEP；旧用户级 CEP 仅清理本扩展 |
 | SignPath | 申请未完成前，SmartScreen 问题会存在 |
 
 ---
 
 ## 7. 文档索引
+
+Adobe 已公布 AE 的 UXP 公开测试计划与 CEP 退出时间表。当前安装器只检测并安装 CEP；未来 AE 不再提供 CEP 运行时后，需要独立的 UXP 宿主适配与安装包，不能把现有 CEP 压缩包改名使用。转换核与宿主桥的分层应继续保留。参见 [Adobe 官方路线图](https://blog.developer.adobe.com/en/publish/2026/09/investing-in-the-future-of-creative-cloud-extensibility-uxp-comes-to-our-flagship-applications) 与 [CEP 到 UXP 迁移指南](https://github.com/Adobe-CEP/CEP-Resources/blob/master/UXP-Migration-Guide/README.md)。
 
 | 文档 | 用途 |
 | --- | --- |

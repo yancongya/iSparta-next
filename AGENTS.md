@@ -23,13 +23,14 @@
 | 入口 | 子命令 / 目标 | 用途 |
 |------|---------------|------|
 | `scripts\dev\preview.js`<br>`scripts\dev\run-preview.cmd` | `guide` :8090 · `landing` :8080 · `web` :8081 · `desktop` :8081 · `cep` :8082 | 起服务 → **按页面独有标记确认「应答方确实是我们」** → 打开默认浏览器。`--port N` 指定端口，`--no-open` 只起服务 |
-| `scripts\dev\build.js`<br>`scripts\dev\run-build-win.cmd`<br>`scripts\dev\run-build-cep.cmd` | `win` · `cep`；`--backup` · `--dry`(`-n`) | 构建入口。见下方「两种模式的差异」 |
+| `scripts\dev\build.js`<br>`scripts\dev\run-build-win.cmd`<br>`scripts\dev\run-build-cep.cmd` | `win` · `cep` · `mac-pkg`；`--backup` · `--dry`(`-n`) | 构建入口。mac-pkg 从已构建 `.app` 生成系统级安装包。 |
 | `scripts\dev\check.js`<br>`scripts\dev\run-check.cmd` | `lint` · `pack` · `ports` · `all` | 体检：lint / `doctor:pack` 出包自检 / 8080–8099 端口占用与**归属识别**（附可复制 `taskkill`） |
 
 ```powershell
 node scripts\dev\preview.js guide            # 引导页原型台
 node scripts\dev\build.js win                # 本机打 Windows 安装包
 node scripts\dev\build.js cep                # 改了 src/ 就重建 targets/cep/ui
+node scripts/dev/build.js mac-pkg             # macOS 从已构建 .app 打 pkg
 node scripts\dev\check.js all                # lint + pack + ports
 ```
 
@@ -37,7 +38,7 @@ node scripts\dev\check.js all                # lint + pack + ports
 
 **`build.js` 两种模式的差异**
 
-- `win` → `npm run build:windows`（完整向导含 NSIS）。三件事自动化：① **注入 `CODEBUDDY_SAFE_DELETE_ENABLED=0`** —— `vue.config.js` 把 CEP 的 `outputDir` 指到 `targets/cep/ui`，构建会清空重建该目录，不豁免必撞安全删除守卫；② 构建前报告该目录的受控 / 未跟踪文件数（受控的可 git 恢复，未跟踪的一清就没，有未跟踪却没加 `--backup` 会提示）；③ 构建后直接给出最新 exe 的**绝对路径 / 体积 / 时间 / sha256**，失败则回显末尾日志。`--backup` 备份到 `.bak/`（已 gitignore），`--dry` 只打印将要执行的命令。
+- `win` → `npm run build:windows`（NSIS 一键安装）。三件事自动化：① **注入 `CODEBUDDY_SAFE_DELETE_ENABLED=0`** —— `vue.config.js` 把 CEP 的 `outputDir` 指到 `targets/cep/ui`，构建会清空重建该目录，不豁免必撞安全删除守卫；② 构建前报告该目录的受控 / 未跟踪文件数（受控的可 git 恢复，未跟踪的一清就没，有未跟踪却没加 `--backup` 会提示）；③ 构建后直接给出最新 exe 的**绝对路径 / 体积 / 时间 / sha256**，失败则回显末尾日志。`--backup` 备份到 `.bak/`（已 gitignore），`--dry` 只打印将要执行的命令。
 - `cep` → `npm run build:cep`，只重建 `targets/cep/ui`（没有安装包，秒级）。**改了 `src/` 或 `shared/` 就要跑**，否则提交进去的产物会与源码悄悄脱节；脚本会打印与 HEAD 的漂移项。
 
 **两条刻意的设计**（改脚本时别退回旧写法）：① `preview.js` 的就绪判定以**子进程自己打印的地址**为准 —— vue-cli 端口被占会自动顺延，盲目扫端口会把邻近残留实例当成本次成果；② 只有能证明是自己的实例（页面标记命中）才复用，否则一律自己起。
@@ -130,8 +131,8 @@ CI：`release.yml` 负责 bump、打包、挂 Release（notes 模板见该 workf
 - 启动自动检查 → **应用内** Dock（右下角），**不**用系统通知（「有新版」提示）
 - **检查更新不自动下载**；UI 出「立即更新」，用户确认后再拉包；完成后「重启以更新」
 - **安装阶段**可使用系统 Toast（Windows）：文案 `updateInstallingApp` / `updateInstallingBody`
-- Windows NSIS 为**完整向导**（`oneClick: false` + `perMachine: false`）：自带「安装选项」页；侧栏图 `build/installerSidebar.bmp`（164×314）、页眉 `build/installerHeader.bmp`（150×57）
-- 设置面板与 Dialog 与 Dock 状态一致；mac/Dev 显示「前往下载」
+- Windows NSIS 固定系统级安装（`perMachine: true`）：启动时申请 UAC；检测到 After Effects 才部署 CEP，更新使用静默安装与结果回执。
+- 设置面板与 Dialog 与 Dock 状态一致；macOS 正式包使用 pkg 更新，Dev 显示「前往下载」
 - 文案键见 `src/locales/*`，新增 UI 必须三语齐全
 
 ## 4. 任务列表交互（产品约定）
@@ -181,16 +182,11 @@ CI：`release.yml` 负责 bump、打包、挂 Release（notes 模板见该 workf
 - **Web 框架双端共用 Vue 2**；**压缩/合成只用 `src/util/processor/*`**，禁止在 CEP 另写编码链。AE 侧 jsx 负责选合成与渲序列，编码仍进 processor。
 - **禁止简化版 UI**：扩展完整复用桌面工作台（列表/设置/命名/路径）；AE 特殊化仅通过 **注入/适配层**（jsx 宿主、合成输入源、host adapter），不得维护平行精简面板。
 - **双端一起更**：同一 NSIS/Release 更新桌面与 AE 扩展；扩展不单独热更。桌面 electron-updater 完成后由应用自检并刷新 CEP 目录；CEP 内不跑 electron-updater。
-- **CEP 的更新路径（Windows）**：AE 面板不再只做「前往下载」——面板后台下**同一个官方安装包**（`src/util/cepUpdater.js` + 桥的 `updater:*` 通道），下载完成后主按钮是「**运行安装包**」（起 NSIS 向导，`detached + unref` 不阻塞面板），桌面与 AE 扩展由向导的组件页一次更完。**AE 不会被安装包重启**，装完必须引导用户重启 After Effects（文案 `updateCepDownloaded` / `updateCepInstallerBody`）。mac 无 NSIS，CEP 侧仍只能「前往下载」。
+- **CEP 的更新路径（Windows/macOS）**：AE 面板下载与桌面同版的官方安装包，校验后启动系统提权安装；Windows 为 NSIS，macOS 为 pkg。安装结果通过桥的状态通道反馈；完成后提示重启 After Effects。
 - **更新偏好双端分键**：桌面与 AE 面板共用 `%TEMP%/iSparta/localstorage.json`（`os.tmpdir()`），更新节流相关键按宿主分开（`updateCheck.app` / `updateCheck.cep`，见 `src/util/updatePrefs.js`）——否则一端点过「稍后」会吃掉另一端的更新提示。主题、语言等其余偏好仍双端共享。
-- **不用** Bolt/Nx；一体安装走现有 NSIS 组件页；发版仍须用户点名（§2.2）。
-- **macOS 没有安装向导，靠桌面应用自检补齐**（`mac.target` 只有 `zip`，electron-builder 无 mac 版 NSIS `include`）：
-  - **落盘**：桌面应用每次启动调 `ensureCepExtension`（`src/util/cepSync.js`），darwin 分支把 payload 拷到 `~/Library/Application Support/Adobe/CEP/extensions/`。所以 mac 用户只要「启动一次桌面应用」，扩展即到位，热更后也自动刷新。
-  - **PlayerDebugMode**：`src/util/cepDebugMode.js` 在落盘后执行 payload 自带的 `install/install-as-admin`（`public/install/` 是唯一真相源，随 payload 分发）。**不要在 JS 里再抄一份 CSXS 版本区间** —— Adobe 加版本时只改脚本，抄一份必然漂移。
-  - **只跑一次**：标记 `.player-debug-mode` 写在扩展目录内，刷新扩展会重建该目录、标记随之消失，语义即「这一份扩展已应用过」。避免每次启动都 `killall cfprefsd`。
-  - `public/install/安装方法-macOS.txt` 的「方式一」必须写「启动一次桌面应用」，**不得**沿用 Windows 的「组件页勾选」说法（mac 上不存在）；该文件原写的 `install-as-admin.zip` 也是错的 —— zip 里是裸脚本。
-  - payload 的 `version.json` 由 `extraResources` **一次打进所有平台**，`install.*` 字段必须按 `win32` / `darwin` 分列，写死 `%APPDATA%`/`HKCU` 会把错路径带进 mac 包。
-- **安装范围固定系统级（v3.6.9 起）**：`perMachine: true` → 安装器 manifest 自动 `RequestExecutionLevel admin`（每次安装弹一次 UAC），`initMultiUser` 在 `customInit` 前无条件置 `$installMode="all"`（`/S` 静默也一样）→ 主程序进 `$PROGRAMFILES64`、CEP 进 `Common Files\Adobe\CEP\extensions`。桌面自动更与 CEP 面板热更下载**同一个** Release NSIS 包，两条通道都走 UAC、同包同作用域；installSection 对 `installMode=all` 自动 `uninstallOldVersion HKCU`，旧 per-user 副本（`%LOCALAPPDATA%\Programs` + HKCU 登记）自动清除，**全机只保留一份安装目录**。组件页只只读展示落盘位置（`build/installer.nsh` 的 `ispartaResolveScope`）；无管理员令牌时 `customInstall` 兜底落用户级并清另一作用域（禁双写）。详见 [`docs/PLAN-DUAL-TARGET.md`](docs/PLAN-DUAL-TARGET.md) §9。
+- **不用** Bolt/Nx；复用现有构建、CEP 载荷和发布流程；发版仍须用户点名（§2.2）。
+- **macOS 系统级安装**：`scripts/build-mac-pkg.js` 生成 pkg，`scripts/mac-pkg/postinstall` 检测 After Effects 并部署系统级 CEP。桌面启动的 `cepSync.js` 只做检查，避免无权限时改写系统目录。
+- **Windows 系统级安装**：NSIS 固定 `perMachine: true`，主程序落 Program Files，CEP 落 Common Files；检测到 After Effects 才部署扩展；清理本产品旧的用户级副本，安装状态写入结果文件。
 - 实现阶段同步更新本节与 `docs/PLAN-DUAL-TARGET.md` 勾选状态。
 
 ## 8.2 视口断点统一约束（强制）

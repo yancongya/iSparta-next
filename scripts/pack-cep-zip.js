@@ -22,7 +22,6 @@ const { execFileSync } = require('child_process')
 const JSZip = require('jszip')
 const {
   EXT_ID,
-  copyTree,
   SKIP_COPY
 } = require('../src/util/cep-payload-common')
 
@@ -116,10 +115,12 @@ function listZip (zipPath) {
 async function main () {
   const platform = parsePlatform(process.argv)
 
-  execFileSync(process.execPath, [path.join(__dirname, 'prepare-cep-payload.js')], {
-    cwd: root,
-    stdio: 'inherit'
-  })
+  if (!process.argv.includes('--prepared')) {
+    execFileSync(process.execPath, [path.join(__dirname, 'prepare-cep-payload.js')], {
+      cwd: root,
+      stdio: 'inherit'
+    })
+  }
   if (!fs.existsSync(path.join(payloadExt, 'CSXS', 'manifest.xml'))) {
     console.error('pack-cep-zip FAIL payload 不完整：', payloadExt)
     process.exit(1)
@@ -132,7 +133,7 @@ async function main () {
   if (fs.existsSync(zipPath)) fs.rmSync(zipPath)
 
   // 按平台裁剪一份临时扩展目录，安装辅助平铺 stage 顶层（= zip 顶层）
-  const stageRoot = path.join(os.tmpdir(), 'isparta-pack-cep', platform)
+  const stageRoot = fs.mkdtempSync(path.join(os.tmpdir(), `isparta-pack-cep-${platform}-`))
   stagePlatformExt(path.join(stageRoot, EXT_ID))
 
   const topFiles = PLATFORM_INSTALL_FILES[platform]
@@ -160,7 +161,8 @@ async function main () {
         zip.file(`${r}/`, Buffer.alloc(0), { unixPermissions: 0o40775, dir: true })
         addTree(abs, r)
       } else {
-        zip.file(r, fs.readFileSync(abs), { unixPermissions: 0o100644 })
+        const executable = platform === 'mac' && r.startsWith(`${EXT_ID}/bin/mac/`)
+        zip.file(r, fs.readFileSync(abs), { unixPermissions: executable ? 0o100755 : 0o100644 })
       }
     }
   }
@@ -177,6 +179,24 @@ async function main () {
     platform: 'UNIX',
     compression: 'DEFLATE'
   })
+  // Verify every packaged extension file against the prepared payload copy.
+  // This catches missing or altered entries after platform trimming and compression.
+  const packed = await JSZip.loadAsync(buf)
+  const verifyTree = async (dir, rel = '') => {
+    for (const name of fs.readdirSync(dir)) {
+      const abs = path.join(dir, name)
+      const entry = rel ? `${rel}/${name}` : name
+      if (fs.statSync(abs).isDirectory()) {
+        await verifyTree(abs, entry)
+      } else {
+        const zipped = packed.file(entry)
+        if (!zipped) throw new Error(`CEP zip missing prepared payload file: ${entry}`)
+        const data = await zipped.async('nodebuffer')
+        if (!data.equals(fs.readFileSync(abs))) throw new Error(`CEP zip payload mismatch: ${entry}`)
+      }
+    }
+  }
+  await verifyTree(path.join(stageRoot, EXT_ID), EXT_ID)
   fs.writeFileSync(zipPath, buf)
   fs.rmSync(stageRoot, { recursive: true, force: true })
 

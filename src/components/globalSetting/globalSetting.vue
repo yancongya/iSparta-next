@@ -287,11 +287,11 @@ import { MODE_SYSTEM, resolveLocale } from '../../util/system-locale'
 import { APP_NAME, LANDING_URL } from '../../brand'
 
 const DEFAULT_SIZE_LIMIT = {
-  enabled: false,
-  maxMB: 1,
-  maxBytes: 1048576,
-  unit: 'MB',
-  autoDelete: false,
+  enabled: true,
+  maxMB: 0.78125,
+  maxBytes: 819200,
+  unit: 'KB',
+  autoDelete: true,
   autoQuality: true,
   step: 5,
   maxTries: 10
@@ -300,7 +300,7 @@ const DEFAULT_SIZE_LIMIT = {
 const DEFAULT_OUTPUT_TO = {
   mode: 'output',
   customPath: '',
-  template: ''
+  template: '{srcPath}'
 }
 
 export default {

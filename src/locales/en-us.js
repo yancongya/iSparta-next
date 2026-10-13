@@ -246,6 +246,8 @@ module.exports = {
     "updateInstallingApp":"iSparta-next is installing an update",
     "updateInstallingBody":"The app will close to finish installing. It will reopen automatically when setup completes — this may take a few minutes.",
     "updateInstalling":"Installing…",
+    "updateInstallComplete":"Update installed",
+    "updateRestartAe":"Restart After Effects to load the updated panel.",
     "updateCepInstallStarted":"Install started",
     "updateInstallingCep":"Installing silently (no setup wizard), nothing else to do. Restart After Effects when it finishes.",
     "updateDownloading":"Downloading update in the background…",

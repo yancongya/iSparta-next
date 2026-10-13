@@ -1,37 +1,32 @@
 ; iSparta-next — electron-builder NSIS 自定义（一体安装）
 ; 由 nsis.include 引入；宏在 assistedInstaller / installSection / uninstaller 正确位置展开。
-; 组件页：☑ 桌面版  ☑ AE 扩展（至少选其一；可只装桌面）
-; 安装范围（§9）：perMachine:true → 安装器固定「所有用户」+ manifest RequestExecutionLevel admin
-;   （UAC 授权后恒定写系统级 Common Files）；用户级 %APPDATA% 仅作无管理员令牌时的兜底分支，
-;   且装一类必清另一类，禁双写。桌面自动更与 CEP 面板热更共用同一个包，两条通道都走 UAC。
-;   安装前自检：customInstall 在写目标作用域前，先把用户级与 Common Files 两个作用域里的
-;   本扩展旧副本全部清掉（只认领 EXT_ID、AE 占用则落日志），保证装完全机只留一份。
-; AE 探测：注册表 + 全盘枚举（不只 C 盘）；识别失败仍可装 / 手动选目录
+; 桌面固定全机安装；AE 探测命中时同步装 CEP，不显示组件选择。
+; 桌面自动更与 CEP 面板热更共用同一个 NSIS 包、系统级 CEP 目录和 UAC。
+; CEP 先暂存并验证，再切换；切换失败恢复旧版，成功后清当前用户的旧副本。
+; AE 探测：注册表 + 全盘枚举（不只 C 盘）；未命中则跳过本次 CEP。
 ; 写 version.json；按 CSXS 主版本写 PlayerDebugMode
 ; 卸载：清理 CEP 落盘（以 version.json/manifest 认领）；保留 PlayerDebugMode（其他未签名扩展可能仍需要）
 
 !define ISPARTA_CEP_ID "io.github.isparta-next"
 !define ISPARTA_CEP_REL "resources\cep\io.github.isparta-next"
+!include "FileFunc.nsh"
 
 Var ispartaInstallDesktop
 Var ispartaInstallAe
-Var ispartaChkDesktop
-Var ispartaChkAe
 Var ispartaCepSrc
 Var ispartaCepUserParent
 Var ispartaCepUserDest
 Var ispartaCepCommonParent
 Var ispartaCepCommonDest
+Var ispartaCepStage
+Var ispartaCepBackup
+Var ispartaResultPath
+Var ispartaResultStatus
+Var ispartaResultDetail
+Var ispartaResultCep
 Var ispartaCopyOk
-Var ispartaCepScope
 Var ispartaAeDetectLabel
 Var ispartaAeFound
-; 组件页控件句柄：范围小标题 / 范围路径说明 / AE 检测行（供勾选联动时整体禁用）
-Var ispartaAeScopeLabel
-Var ispartaAeScopeTip
-Var ispartaAeLabel
-; 范围路径文案（由 $installMode 推导，见 ispartaResolveScope）
-Var ispartaAeScopeText
 ; 静默安装日志文件（$TEMP\isparta-install.log）；静默失败无处弹窗，只能落盘
 Var ispartaLogPath
 ; 静默/升级标记的文本形式（仅用于日志，LogicLib 宏不能直接拼进字符串）
@@ -65,9 +60,24 @@ Function ispartaFail
   Pop $0
   Push "FAIL: $0 | $1"
   Call ispartaLog
+  SetErrorLevel 1
   ${IfNot} ${Silent}
     MessageBox MB_OK|MB_ICONEXCLAMATION "$0$\r$\n$\r$\n$1"
   ${EndIf}
+FunctionEnd
+Function ispartaWriteResult
+  ; RESULTFILE 由启动更新的进程指定，避开 UAC 切换账户后的 TEMP 差异。
+  ; detail 只用固定英文代码，确保 JSON 不受路径和本地化转义影响。
+  ${GetParent} "$ispartaResultPath" $2
+  CreateDirectory "$2"
+  FileOpen $0 "$ispartaResultPath" w
+  ${If} ${errors}
+    Push "无法写入安装结果：$ispartaResultPath"
+    Call ispartaLog
+    Return
+  ${EndIf}
+  FileWrite $0 "{$\"status$\":$\"$ispartaResultStatus$\",$\"version$\":$\"${VERSION}$\",$\"cep$\":$\"$ispartaResultCep$\",$\"detail$\":$\"$ispartaResultDetail$\"}"
+  FileClose $0
 FunctionEnd
 ; ---------- 函数定义（顶层：NSIS 才能解析 Call 引用，避免 6010 清零代码） ----------
   Function ispartaCopyCepToParent
@@ -78,25 +88,84 @@ FunctionEnd
       Return
     ${endIf}
 
-    RMDir /r "$1\${ISPARTA_CEP_ID}"
     CreateDirectory "$1"
-    ClearErrors
-    ; CopyFiles 目录 → 递归整树，落到父目录下同名子目录
-    CopyFiles /SILENT "$ispartaCepSrc" "$1"
-    ${if} ${errors}
-      Push "复制失败：$ispartaCepSrc → $1\${ISPARTA_CEP_ID}"
+    StrCpy $ispartaCepStage "$1\${ISPARTA_CEP_ID}.isparta-new"
+    StrCpy $ispartaCepBackup "$1\${ISPARTA_CEP_ID}.isparta-old"
+    RMDir /r "$ispartaCepStage"
+    ${If} ${FileExists} "$ispartaCepStage"
+      Push "无法清理 CEP 暂存目录：$ispartaCepStage"
       Call ispartaLog
+      Return
+    ${EndIf}
+    CreateDirectory "$ispartaCepStage"
+    ClearErrors
+    CopyFiles /SILENT "$ispartaCepSrc\*.*" "$ispartaCepStage"
+    ${if} ${errors}
+      Push "CEP 暂存复制失败：$ispartaCepSrc → $ispartaCepStage"
+      Call ispartaLog
+      RMDir /r "$ispartaCepStage"
+      Return
+    ${endIf}
+    ${ifNot} ${FileExists} "$ispartaCepStage\CSXS\manifest.xml"
+      Push "CEP 暂存清单缺失：$ispartaCepStage"
+      Call ispartaLog
+      RMDir /r "$ispartaCepStage"
       Return
     ${endIf}
 
     ; 版本清单（覆盖 payload 自带，补充安装时间；字段与 cep-payload-common / prepare-cep 对齐）
     ClearErrors
-    FileOpen $0 "$1\${ISPARTA_CEP_ID}\version.json" w
-    ${ifNot} ${errors}
-      FileWrite $0 "{$\"id$\":$\"${ISPARTA_CEP_ID}$\",$\"name$\":$\"iSparta$\",$\"displayName$\":$\"iSparta-next AE$\",$\"version$\":$\"${VERSION}$\",$\"installedAt$\":$\"${__DATE__} ${__TIME__}$\",$\"payload$\":$\"${ISPARTA_CEP_REL}$\",$\"source$\":$\"nsis$\"}"
-      FileClose $0
+    FileOpen $0 "$ispartaCepStage\version.json" w
+    ${if} ${errors}
+      Push "CEP 暂存版本文件写入失败：$ispartaCepStage"
+      Call ispartaLog
+      RMDir /r "$ispartaCepStage"
+      Return
     ${endIf}
+    FileWrite $0 "{$\"id$\":$\"${ISPARTA_CEP_ID}$\",$\"name$\":$\"iSparta$\",$\"displayName$\":$\"iSparta-next AE$\",$\"version$\":$\"${VERSION}$\",$\"installedAt$\":$\"${__DATE__} ${__TIME__}$\",$\"payload$\":$\"${ISPARTA_CEP_REL}$\",$\"source$\":$\"nsis$\"}"
+    FileClose $0
+    ${If} ${FileExists} "$ispartaCepBackup"
+      ${IfNot} ${FileExists} "$ispartaCepCommonDest"
+        Rename "$ispartaCepBackup" "$ispartaCepCommonDest"
+      ${EndIf}
+    ${EndIf}
+    ${If} ${FileExists} "$ispartaCepBackup"
+      StrCpy $1 "$ispartaCepBackup"
+      Call ispartaRemoveCepDir
+      ${If} ${FileExists} "$ispartaCepBackup"
+        RMDir /r "$ispartaCepStage"
+        Return
+      ${EndIf}
+    ${EndIf}
+    ${If} ${FileExists} "$ispartaCepCommonDest"
+      ${IfNot} ${FileExists} "$ispartaCepCommonDest\CSXS\manifest.xml"
+      ${AndIfNot} ${FileExists} "$ispartaCepCommonDest\version.json"
+        Push "目标目录归属无法确认，保留原目录：$ispartaCepCommonDest"
+        Call ispartaLog
+        RMDir /r "$ispartaCepStage"
+        Return
+      ${EndIf}
+      ClearErrors
+      Rename "$ispartaCepCommonDest" "$ispartaCepBackup"
+      ${If} ${errors}
+        Push "CEP 旧版移至备份失败：$ispartaCepCommonDest"
+        Call ispartaLog
+        RMDir /r "$ispartaCepStage"
+        Return
+      ${EndIf}
+    ${EndIf}
+    ClearErrors
+    Rename "$ispartaCepStage" "$ispartaCepCommonDest"
+    ${If} ${errors}
+      Push "CEP 新版切换失败，正在恢复旧版：$ispartaCepCommonDest"
+      Call ispartaLog
+      Rename "$ispartaCepBackup" "$ispartaCepCommonDest"
+      RMDir /r "$ispartaCepStage"
+      Return
+    ${EndIf}
     StrCpy $ispartaCopyOk "1"
+    StrCpy $1 "$ispartaCepBackup"
+    Call ispartaRemoveCepDir
   FunctionEnd
 
   Function ispartaRemoveCepDir
@@ -200,162 +269,21 @@ FunctionEnd
   ; 结果：$ispartaAeFound="1" 且 $ispartaAeDetectLabel 含检测到的版本列表
 !macroend
 
-; ---------- 组件页（在「选择安装位置」之后、「正在安装」之前） ----------
-; 版式：左右两张等宽卡片（桌面版 / After Effects 扩展）。
-; **安装范围不再提问**：perMachine:true 固定「所有用户」（安装器 manifest 已负责 UAC 提权），
-; 组件页不再放 radio 重复提问，只把落盘结果只读展示出来（见 ispartaResolveScope）。
-; 整页高度控制在 ~102u（MUI 页面区约 300u × 140u）。
+; 安装时不再询问组件；桌面固定安装，CEP 由 AE 检测结果决定。
 !macro customPageAfterChangeDir
-  ; AE 复选框 ↔ 范围说明联动：没勾 AE 就把位置说明灰掉
-  Function ispartaSyncAeScope
-    ${NSD_GetState} $ispartaChkAe $0
-    ${If} $0 == ${BST_CHECKED}
-      StrCpy $1 "1"
-    ${Else}
-      StrCpy $1 "0"
-    ${EndIf}
-    EnableWindow $ispartaAeScopeLabel $1
-    EnableWindow $ispartaAeScopeTip $1
-  FunctionEnd
-
-  ; 安装范围的**唯一真相源**：electron-builder 的 $installMode（"all" / "CurrentUser"）。
-  ; perMachine:true 时 initMultiUser（先于 customInit）无条件置 "all"，且安装器 manifest
-  ; 已是的 RequestExecutionLevel admin（UAC 授权后必有管理员令牌），这里只做映射 + 展示文案。
-  ; customInstall（含 silent 升级）也会 Call 它，保证无人值守路径同样正确。
-  Function ispartaResolveScope
-    ${if} $installMode == "all"
-      StrCpy $ispartaCepScope "all"
-      StrCpy $ispartaAeScopeText "Common Files（所有用户共用）"
-    ${elseIf} $installMode == "CurrentUser"
-      StrCpy $ispartaCepScope "user"
-      StrCpy $ispartaAeScopeText "%APPDATA%（仅当前用户）"
-    ${else}
-      ; 兜底：拿不到安装模式时按当前进程权限推断
-      ${if} ${UAC_IsAdmin}
-        StrCpy $ispartaCepScope "all"
-        StrCpy $ispartaAeScopeText "Common Files（所有用户共用）"
-      ${else}
-        StrCpy $ispartaCepScope "user"
-        StrCpy $ispartaAeScopeText "%APPDATA%（仅当前用户）"
-      ${endIf}
-    ${endIf}
-  FunctionEnd
-
-  Function ispartaAeToggle
-    ; nsDialogs 回调会压控件 HWND（有的版本再压一个通知码）；栈空时 Pop 返回空串，多弹一次是安全的
-    Pop $0
-    Pop $0
-    Call ispartaSyncAeScope
-  FunctionEnd
-
-  Function ispartaComponentsPre
-    ${if} ${Silent}
-      Abort
-    ${endIf}
-    !insertmacro MUI_HEADER_TEXT "选择组件" "勾选要安装的桌面版与 After Effects 扩展"
-
-    nsDialogs::Create 1018
-    Pop $0
-    ${if} $0 == "error"
-      Abort
-    ${endIf}
-
-    ; ---- 左卡：桌面版 ----
-    ${NSD_CreateGroupBox} 0% 2u 48% 68u "桌面版"
-    Pop $0
-
-    ${NSD_CreateCheckbox} 3% 14u 42% 10u "iSparta-next 主程序"
-    Pop $ispartaChkDesktop
-    ${if} $ispartaInstallDesktop == "1"
-      ${NSD_Check} $ispartaChkDesktop
-    ${endIf}
-
-    ${NSD_CreateLabel} 6% 26u 39% 9u "创建开始菜单与桌面快捷方式"
-    Pop $0
-
-    ${NSD_CreateLabel} 6% 36u 39% 9u "APNG / WebP / GIF 序列转换"
-    Pop $0
-
-    ${NSD_CreateLabel} 6% 46u 39% 9u "可与 AE 扩展分开勾选"
-    Pop $0
-
-    ; ---- 右卡：AE 扩展 ----
-    ${NSD_CreateGroupBox} 52% 2u 48% 68u "After Effects 扩展"
-    Pop $0
-
-    ${NSD_CreateCheckbox} 55% 14u 42% 10u "iSparta CEP 面板"
-    Pop $ispartaChkAe
-    ${if} $ispartaInstallAe == "1"
-      ${NSD_Check} $ispartaChkAe
-    ${endIf}
-
-    ; 安装范围不再重复提问：perMachine:true 固定「所有用户」，跟随 $installMode
-    Call ispartaResolveScope
-
-    ${NSD_CreateLabel} 58% 26u 39% 9u "安装位置（跟随安装模式）"
-    Pop $ispartaAeScopeLabel
-
-    ${NSD_CreateLabel} 58% 37u 39% 10u "$ispartaAeScopeText"
-    Pop $ispartaAeScopeTip
-
-    ${NSD_CreateLabel} 58% 49u 39% 14u "与主程序保持同一安装范围"
-    Pop $0
-
-    ; ---- 状态行：AE 探测结果（只读展示，不占用卡片宽度） ----
-    Call ispartaDetectAe
-    ${NSD_CreateLabel} 0% 74u 100% 10u "AE 检测：$ispartaAeDetectLabel"
-    Pop $ispartaAeLabel
-
-    ${NSD_CreateLabel} 0% 86u 100% 18u "装后请重启 After Effects；未签名扩展会自动开启 PlayerDebugMode。"
-    Pop $0
-
-    ; 勾选联动（先按当前状态同步一次，覆盖「升级时继承上次选择」的情况）
-    GetFunctionAddress $0 ispartaAeToggle
-    nsDialogs::OnClick $ispartaChkAe $0
-    Call ispartaSyncAeScope
-
-    nsDialogs::Show
-  FunctionEnd
-
-  Function ispartaComponentsLeave
-    StrCpy $ispartaInstallDesktop "0"
-    StrCpy $ispartaInstallAe "0"
-    ${NSD_GetState} $ispartaChkDesktop $0
-    ${if} $0 == ${BST_CHECKED}
-      StrCpy $ispartaInstallDesktop "1"
-    ${endIf}
-    ${NSD_GetState} $ispartaChkAe $0
-    ${if} $0 == ${BST_CHECKED}
-      StrCpy $ispartaInstallAe "1"
-    ${endIf}
-
-    ; 安装范围由 perMachine:true 固定（安装器启动时已 UAC 提权），
-    ; 组件页只负责勾选组件，不再重复提问，也不在这里申请提权。
-
-    ${if} $ispartaInstallDesktop == "0"
-    ${andIf} $ispartaInstallAe == "0"
-      MessageBox MB_OK|MB_ICONEXCLAMATION "请至少选择一个组件：桌面版或 After Effects 扩展。"
-      Abort
-    ${endIf}
-  FunctionEnd
-
-  PageEx custom
-    PageCallbacks ispartaComponentsPre ispartaComponentsLeave
-    Caption " "
-  PageExEnd
 !macroend
 
-; ---------- 安装初始化：默认组件 / 升级保留上次选择 ----------
+; ---------- 安装初始化：所有安装路径统一探测 AE ----------
 !macro customInit
   ; ---------- 自更新静默保证（对齐 ZCode：静默由安装器自身保证，不依赖调用方参数） ----------
   ; 面板起安装包前会在 exe 同目录写一个 `<exe>.self-update` 哨兵（见 cep-bridge.js 的
   ; runInstaller）。若带哨兵却没带 /S（旧面板忘了传 /S，或用户手动双击了自动下载的包），
   ; 这里自重启为一个静默实例；静默实例会清掉哨兵，避免后续手动重跑也静默。
-  ; ⚠ 任何自定义页（ispartaComponentsPre 等）遇 ${Silent} 必须 Abort，否则静默下仍会弹页。
   ${If} ${FileExists} "$EXEPATH.self-update"
     ${IfNot} ${Silent}
       ; 自重启静默：原实例退出，新 /S 实例无人值守装完。
-      Exec '"$EXEPATH" /S'
+      GetParameters $0
+      Exec '"$EXEPATH" /S $0'
       Abort
     ${EndIf}
     ; 静默实例：清掉哨兵（必须早于真实安装逻辑，避免手动重跑也静默）
@@ -372,38 +300,26 @@ FunctionEnd
   ${if} ${isUpdated}
     StrCpy $ispartaIsUpdatedText "1"
   ${endIf}
+  GetParameters $0
+  ClearErrors
+  ${GetOptions} $0 "/RESULTFILE=" $ispartaResultPath
+  ${If} $ispartaResultPath == ""
+    StrCpy $ispartaResultPath "$COMMONAPPDATA\iSparta\update\install-result.json"
+  ${EndIf}
+  StrCpy $ispartaResultStatus "installing"
+  StrCpy $ispartaResultDetail "started"
+  StrCpy $ispartaResultCep "skipped"
+  Call ispartaWriteResult
 
-  ; 组件选择：silent 路径（electron-updater 的 `--updated /S`、CEP 面板起的 `/S`）都不经
-  ; 组件页（ispartaComponentsPre 遇 ${Silent} 直接 Abort），不推导就会一律回到默认
-  ; desktop=1 —— 会把「仅装扩展」的用户静默塞上桌面版，并把 CepOnly 标记写坏。
-  ; 只在 Silent 分支回填，交互式安装仍由组件页的勾选决定。
-  ${if} ${Silent}
-    ReadRegStr $1 SHELL_CONTEXT "${INSTALL_REGISTRY_KEY}" CepOnly
-    ${if} $1 == "1"
-      StrCpy $ispartaInstallDesktop "0"
-      StrCpy $ispartaInstallAe "1"
-    ${endIf}
-  ${endIf}
-
-  ; 安装范围不在这里定：perMachine:true 时 initMultiUser（先于本宏）已置 $installMode=all，
-  ; 由 ispartaResolveScope 推导
-
-  ReadRegStr $0 SHELL_CONTEXT "${INSTALL_REGISTRY_KEY}" CepInstalled
-  ${if} ${isUpdated}
-    ${if} $0 == "0"
-      StrCpy $ispartaInstallAe "0"
-    ${elseif} $0 == "1"
-      StrCpy $ispartaInstallAe "1"
-    ${else}
-      ${if} ${FileExists} "$APPDATA\Adobe\CEP\extensions\${ISPARTA_CEP_ID}\CSXS\manifest.xml"
-        StrCpy $ispartaInstallAe "1"
-      ${elseif} ${FileExists} "$COMMONFILES\Adobe\CEP\extensions\${ISPARTA_CEP_ID}\CSXS\manifest.xml"
-        StrCpy $ispartaInstallAe "1"
-      ${else}
-        StrCpy $ispartaInstallAe "0"
-      ${endIf}
-    ${endIf}
-  ${endIf}
+  ; 每次安装都重新检测 AE；不沿用旧版的 CepOnly / CepInstalled。
+  ; 这样静默更新与首次安装采用同一组件规则。
+  Call ispartaDetectAe
+  StrCpy $ispartaInstallAe $ispartaAeFound
+  ${If} $ispartaInstallAe == "1"
+    StrCpy $ispartaResultCep "installed"
+  ${EndIf}
+  Push "AE detection: $ispartaAeDetectLabel"
+  Call ispartaLog
 
   StrCpy $ispartaCepSrc "$INSTDIR\${ISPARTA_CEP_REL}"
   StrCpy $ispartaCepUserParent "$APPDATA\Adobe\CEP\extensions"
@@ -417,9 +333,10 @@ FunctionEnd
   ; 开场留一行：静默/交互 + 是否升级 + 组件选择，排查静默失败时第一行就能定位
   Push "install start: updated=$ispartaIsUpdatedText silent=$ispartaSilentText desktop=$ispartaInstallDesktop ae=$ispartaInstallAe"
   Call ispartaLog
+  StrCpy $ispartaResultStatus "success"
+  StrCpy $ispartaResultDetail "complete"
 
-  ; 安装范围：与主程序安装模式一致（silent 升级不经组件页，这里兜底重推一次）
-  Call ispartaResolveScope
+  ; 安装范围由 perMachine:true 固定。
 
   StrCpy $ispartaCepSrc "$INSTDIR\${ISPARTA_CEP_REL}"
   StrCpy $ispartaCepUserParent "$APPDATA\Adobe\CEP\extensions"
@@ -428,91 +345,48 @@ FunctionEnd
   StrCpy $ispartaCepCommonDest "$ispartaCepCommonParent\${ISPARTA_CEP_ID}"
 
   ; 落盘目标写进日志：双副本 / 作用域排查时一眼看到最终装了哪、清了哪
-  Push "cep scope=$ispartaCepScope user=$ispartaCepUserDest common=$ispartaCepCommonDest"
+  Push "cep scope=all user=$ispartaCepUserDest common=$ispartaCepCommonDest"
   Call ispartaLog
 
-  ${if} $ispartaInstallAe == "1"
-    ; 安装前自检：清掉两个作用域里所有本扩展旧副本（冗余重复 / 双写残留），
-    ; 只认领 EXT_ID 目录，best-effort（AE 运行中占用则落日志、下次再清）。
-    ; 清完再写目标作用域 → 无论机器此前处于什么乱状态，装完都只剩一份。
-    Push "cep self-check: 清理冗余副本 user=$ispartaCepUserDest common=$ispartaCepCommonDest"
-    Call ispartaLog
-    StrCpy $1 $ispartaCepUserDest
-    Call ispartaRemoveCepDir
-    StrCpy $1 $ispartaCepCommonDest
-    Call ispartaRemoveCepDir
-
-    ; 安装范围互斥（§9）：只落一处，禁止 APPDATA 与 Common Files 双写
-    ${if} $ispartaCepScope == "all"
-    ${andIf} ${UAC_IsAdmin}
-      ; 系统级：统一 Common Files（所有用户 × 所有 AE 版本）
-      StrCpy $1 $ispartaCepCommonParent
-      Call ispartaCopyCepToParent
-      ${if} $ispartaCopyOk != "1"
-        Push "After Effects 扩展复制到统一 CEP 目录失败。$\r$\n可手动复制到 $ispartaCepCommonDest$\r$\n或改用「仅当前用户」重新安装。"
-        Push "isparta: CEP system-scope copy failed"
-        Call ispartaFail
-      ${else}
-        WriteRegStr HKCU "Software\Adobe\CSXS.6" "PlayerDebugMode" "1"
-        WriteRegStr HKCU "Software\Adobe\CSXS.7" "PlayerDebugMode" "1"
-        WriteRegStr HKCU "Software\Adobe\CSXS.8" "PlayerDebugMode" "1"
-        WriteRegStr HKCU "Software\Adobe\CSXS.9" "PlayerDebugMode" "1"
-        WriteRegStr HKCU "Software\Adobe\CSXS.10" "PlayerDebugMode" "1"
-        WriteRegStr HKCU "Software\Adobe\CSXS.11" "PlayerDebugMode" "1"
-        WriteRegStr HKCU "Software\Adobe\CSXS.12" "PlayerDebugMode" "1"
-        WriteRegStr HKCU "Software\Adobe\CSXS.13" "PlayerDebugMode" "1"
-        WriteRegStr HKCU "Software\Adobe\CSXS.14" "PlayerDebugMode" "1"
-        WriteRegStr SHELL_CONTEXT "${INSTALL_REGISTRY_KEY}" CepInstalled "1"
-        WriteRegStr SHELL_CONTEXT "${INSTALL_REGISTRY_KEY}" CepScope "all"
-        WriteRegStr SHELL_CONTEXT "${INSTALL_REGISTRY_KEY}" CepCommonPath "$ispartaCepCommonDest"
-        ; 清旧的用户级残留，避免双份加载
-        StrCpy $1 $ispartaCepUserDest
-        Call ispartaRemoveCepDir
-      ${endIf}
-    ${else}
-      ; 用户级：仅当前用户（免管理员）
-      StrCpy $1 $ispartaCepUserParent
-      Call ispartaCopyCepToParent
-      ${if} $ispartaCopyOk != "1"
-        Push "After Effects 扩展复制失败。$\r$\n可手动将 $ispartaCepSrc 复制到 $APPDATA\Adobe\CEP\extensions\${ISPARTA_CEP_ID}$\r$\n或使用已签名 ZXP / ExManCmd 安装后重试。"
-        Push "isparta: CEP user-scope copy failed"
-        Call ispartaFail
-      ${else}
-        WriteRegStr HKCU "Software\Adobe\CSXS.6" "PlayerDebugMode" "1"
-        WriteRegStr HKCU "Software\Adobe\CSXS.7" "PlayerDebugMode" "1"
-        WriteRegStr HKCU "Software\Adobe\CSXS.8" "PlayerDebugMode" "1"
-        WriteRegStr HKCU "Software\Adobe\CSXS.9" "PlayerDebugMode" "1"
-        WriteRegStr HKCU "Software\Adobe\CSXS.10" "PlayerDebugMode" "1"
-        WriteRegStr HKCU "Software\Adobe\CSXS.11" "PlayerDebugMode" "1"
-        WriteRegStr HKCU "Software\Adobe\CSXS.12" "PlayerDebugMode" "1"
-        WriteRegStr HKCU "Software\Adobe\CSXS.13" "PlayerDebugMode" "1"
-        WriteRegStr HKCU "Software\Adobe\CSXS.14" "PlayerDebugMode" "1"
-        WriteRegStr SHELL_CONTEXT "${INSTALL_REGISTRY_KEY}" CepInstalled "1"
-        WriteRegStr SHELL_CONTEXT "${INSTALL_REGISTRY_KEY}" CepScope "user"
-        WriteRegStr SHELL_CONTEXT "${INSTALL_REGISTRY_KEY}" CepUserPath "$ispartaCepUserDest"
-        ; 清旧的系统级残留，避免双份加载
-        StrCpy $1 $ispartaCepCommonDest
-        Call ispartaRemoveCepDir
-      ${endIf}
-    ${endIf}
-  ${else}
-    StrCpy $1 $ispartaCepUserDest
-    Call ispartaRemoveCepDir
-    StrCpy $1 $ispartaCepCommonDest
-    Call ispartaRemoveCepDir
+  ${IfNot} ${UAC_IsAdmin}
+    StrCpy $ispartaResultStatus "failed"
+    StrCpy $ispartaResultDetail "admin-required"
+    Push "需要管理员权限才能安装系统级 CEP。"
+    Push "isparta: admin required"
+    Call ispartaFail
+  ${ElseIf} $ispartaInstallAe == "1"
+    StrCpy $1 $ispartaCepCommonParent
+    Call ispartaCopyCepToParent
+    ${If} $ispartaCopyOk != "1"
+      StrCpy $ispartaResultStatus "failed"
+      StrCpy $ispartaResultDetail "cep-replace-failed"
+      Push "After Effects 扩展更新失败；已尝试保留原有版本。"
+      Push "isparta: CEP system-scope replacement failed"
+      Call ispartaFail
+    ${Else}
+      WriteRegStr HKCU "Software\Adobe\CSXS.6" "PlayerDebugMode" "1"
+      WriteRegStr HKCU "Software\Adobe\CSXS.7" "PlayerDebugMode" "1"
+      WriteRegStr HKCU "Software\Adobe\CSXS.8" "PlayerDebugMode" "1"
+      WriteRegStr HKCU "Software\Adobe\CSXS.9" "PlayerDebugMode" "1"
+      WriteRegStr HKCU "Software\Adobe\CSXS.10" "PlayerDebugMode" "1"
+      WriteRegStr HKCU "Software\Adobe\CSXS.11" "PlayerDebugMode" "1"
+      WriteRegStr HKCU "Software\Adobe\CSXS.12" "PlayerDebugMode" "1"
+      WriteRegStr HKCU "Software\Adobe\CSXS.13" "PlayerDebugMode" "1"
+      WriteRegStr HKCU "Software\Adobe\CSXS.14" "PlayerDebugMode" "1"
+      WriteRegStr SHELL_CONTEXT "${INSTALL_REGISTRY_KEY}" CepInstalled "1"
+      WriteRegStr SHELL_CONTEXT "${INSTALL_REGISTRY_KEY}" CepScope "all"
+      WriteRegStr SHELL_CONTEXT "${INSTALL_REGISTRY_KEY}" CepCommonPath "$ispartaCepCommonDest"
+      ; 新版落盘后，才清理当前账户过去的用户级副本。
+      StrCpy $1 $ispartaCepUserDest
+      Call ispartaRemoveCepDir
+    ${EndIf}
+  ${Else}
+    ; 没有 AE 时不触碰现有扩展，避免误删日后仍要使用的版本。
     WriteRegStr SHELL_CONTEXT "${INSTALL_REGISTRY_KEY}" CepInstalled "0"
-  ${endIf}
+  ${EndIf}
 
-  ${if} $ispartaInstallDesktop != "1"
-    ; 仅扩展：去掉快捷方式（应用文件仍安装，供 payload 与更新）
-    Delete "$newDesktopLink"
-    Delete "$newStartMenuLink"
-    Delete "$oldDesktopLink"
-    Delete "$oldStartMenuLink"
-    WriteRegStr SHELL_CONTEXT "${INSTALL_REGISTRY_KEY}" CepOnly "1"
-  ${else}
-    WriteRegStr SHELL_CONTEXT "${INSTALL_REGISTRY_KEY}" CepOnly "0"
-  ${endIf}
+  WriteRegStr SHELL_CONTEXT "${INSTALL_REGISTRY_KEY}" CepOnly "0"
+  Call ispartaWriteResult
 !macroend
 
 ; ---------- 卸载：清理 CEP 落盘（替换默认 RMDir /r $INSTDIR） ----------

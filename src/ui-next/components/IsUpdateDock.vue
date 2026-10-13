@@ -11,7 +11,7 @@
         <is-icon
           class="is-update-dock__icon"
           :name="headIcon"
-          :spin="phase === 'downloading' || (phase === 'installing' && !isCepInstalling)"
+          :spin="phase === 'downloading' || phase === 'installing'"
           size="lg"
         />
         <div class="is-update-dock__head-text">
@@ -27,10 +27,10 @@
       </div>
 
       <is-progress
-        v-if="phase === 'downloading' || phase === 'downloaded' || (phase === 'installing' && !isCepInstalling)"
+        v-if="phase === 'downloading' || phase === 'downloaded' || phase === 'installing'"
         class="is-update-dock__progress"
         :percent="autoProgress"
-        :active="phase === 'downloading' || (phase === 'installing' && !isCepInstalling)"
+        :active="phase === 'downloading' || phase === 'installing'"
         :done="phase === 'downloaded'"
         :show-percent="phase !== 'installing'"
         :label="phase === 'installing' ? $t('updateInstalling') : $t('updateDownloading')"
@@ -43,7 +43,7 @@
         <template v-if="phase === 'installing'">
           <div class="is-update-dock__spacer" />
           <is-button size="sm" type="primary" :disabled="true">
-            {{ isCepInstalling ? $t('updateCepInstallStarted') : $t('updateInstalling') }}
+            {{ $t('updateInstalling') }}
           </is-button>
         </template>
         <template v-else>
@@ -116,6 +116,9 @@ export default {
     autoDownloaded () {
       return !!(this.auto && this.auto.downloaded)
     },
+    autoCompleted () {
+      return !!(this.auto && this.auto.completed)
+    },
     autoError () {
       return !!(this.auto && this.auto.error)
     },
@@ -140,6 +143,7 @@ export default {
       return (this.auto && this.auto.progress) || 0
     },
     phase () {
+      if (this.autoCompleted) return 'completed'
       if (this.autoInstalling) return 'installing'
       if (this.autoDownloaded) return 'downloaded'
       if (this.autoDownloading) return 'downloading'
@@ -150,13 +154,15 @@ export default {
       return this.autoSupported ? this.$t('updateDockUpdate') : this.$t('updateGoDownload')
     },
     headIcon () {
-      if (this.phase === 'installing') return this.isCepInstalling ? 'check-circle' : 'loader'
+      if (this.phase === 'completed') return 'check-circle'
+      if (this.phase === 'installing') return 'loader'
       if (this.phase === 'downloaded') return 'check-circle'
       if (this.phase === 'error') return 'alert'
       if (this.phase === 'downloading') return 'download'
       return 'sparkles'
     },
     headTitle () {
+      if (this.phase === 'completed') return this.$t('updateInstallComplete')
       if (this.phase === 'installing') return this.$t('updateInstallingApp')
       if (this.phase === 'downloaded') return this.$t('updateReadyTitle')
       if (this.phase === 'error') return this.$t('updateDownloadFailed')
@@ -165,6 +171,7 @@ export default {
     },
     headSub () {
       var pair = 'v' + this.latest + ' ← v' + this.current
+      if (this.phase === 'completed') return this.$t('updateRestartAe')
       if (this.phase === 'installing') {
         // CEP 装完 AE 不会自重启，必须明确让用户重启面板宿主
         return this.isCepInstaller ? this.$t('updateInstallingCep') : this.$t('updateInstallingBody')

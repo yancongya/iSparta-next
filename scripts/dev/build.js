@@ -2,7 +2,8 @@
  * 构建入口：把「每次都要手敲 + 手记」的几件事固化下来。
  *
  * 用法：
- *   node scripts/dev/build.js win                 # Windows 安装包（完整向导）
+ *   node scripts/dev/build.js win                 # Windows 系统级安装包
+ *   node scripts/dev/build.js mac-pkg             # 从已构建 .app 制作 macOS 安装包
  *   node scripts/dev/build.js win --backup        # 构建前额外备份 targets/cep/ui
  *   node scripts/dev/build.js cep                 # 只重建 CEP 面板产物
  *   node scripts/dev/build.js win --dry           # 只打印环境与将要执行的命令
@@ -45,10 +46,11 @@ function usage () {
   console.log('')
   console.log('  iSparta-next · 构建入口')
   console.log('')
-  console.log('  用法：node scripts/dev/build.js <win|cep> [--backup] [--dry]')
+  console.log('  用法：node scripts/dev/build.js <win|cep|mac-pkg> [--backup] [--dry]')
   console.log('')
   console.log('    win        Windows 安装包（npm run build:windows，会自动豁免删除守卫）')
   console.log('    cep        只重建 CEP 面板产物（npm run build:cep → targets/cep/ui）')
+  console.log('    mac-pkg    从 dist_electron 已构建的 .app 制作系统级 pkg（仅 macOS）')
   console.log('    --backup   win 模式构建前把 targets/cep/ui 备份到 .bak/（默认只报告不备份）')
   console.log('    --dry      只打印环境与命令，不真的执行')
   console.log('')
@@ -192,7 +194,7 @@ function reportArtifact () {
   console.log('  版本    ' + (git(['describe', '--tags', '--abbrev=0']) || '').trim())
   console.log('  sha256  ' + sha256(exe.full))
   console.log('')
-  console.log('  双击即可测试安装：向导应出现「安装模式」页与只含桌面版 / AE 扩展两张卡片的组件页。')
+  console.log('  安装时应请求管理员权限；检测到 After Effects 时同步安装 CEP。')
 }
 
 function reportFail (res) {
@@ -280,18 +282,32 @@ async function buildCep (opt) {
   return 0
 }
 
+async function buildMacPkg (opt) {
+  if (process.platform !== 'darwin') {
+    console.error('  mac-pkg 仅支持 macOS。')
+    return 1
+  }
+  if (opt.dry) {
+    console.log('  将执行：' + npmCmd + ' run pack:mac:pkg -- --arch ' + process.arch)
+    return 0
+  }
+  const res = await run(npmCmd, ['run', 'pack:mac:pkg', '--', '--arch', process.arch], buildEnv())
+  if (res.code !== 0) { reportFail(res) }
+  return res.code
+}
+
 async function main () {
   const opt = parseArgv(process.argv.slice(2))
   if (opt.help || !opt.mode) {
     usage()
     process.exit(opt.help ? 0 : 1)
   }
-  if (opt.mode !== 'win' && opt.mode !== 'cep') {
+  if (!['win', 'cep', 'mac-pkg'].includes(opt.mode)) {
     console.log('  未知目标：' + opt.mode)
     usage()
     process.exit(1)
   }
-  const code = opt.mode === 'win' ? await buildWin(opt) : await buildCep(opt)
+  const code = opt.mode === 'win' ? await buildWin(opt) : opt.mode === 'cep' ? await buildCep(opt) : await buildMacPkg(opt)
   console.log('')
   process.exit(code)
 }

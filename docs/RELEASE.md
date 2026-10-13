@@ -11,7 +11,7 @@
 GitHub Actions  Release 工作流
         │  bump 版本 → commit + tag
         │  → 汇总 feat / fix / docs 生成 Release Notes
-        │  → Win NSIS / Linux AppImage / macOS zip → 挂 Release
+        │  → Win NSIS / Linux AppImage / macOS pkg（兼容 zip） → 挂 Release
         │  → 上传 latest*.yml（electron-updater）
         ▼
 https://github.com/yancongya/iSparta-next/releases
@@ -78,8 +78,8 @@ Actions → **Release** → Run workflow → 选 bump / prerelease / dry_run。
 | --- | --- | --- |
 | Windows x64 | `isparta-next-<ver>-win-x64.exe`（NSIS） | `latest.yml` |
 | Linux x64 | `isparta-next-<ver>-linux-x64.AppImage` | `latest-linux.yml` |
-| macOS arm64 | `isparta-next-<ver>-mac-arm64.zip` | `latest-mac.yml`（不自动更新） |
-| macOS x64 | `isparta-next-<ver>-mac-x64.zip` | 同上 |
+| macOS arm64 | `isparta-next-<ver>-mac-arm64.pkg`（一体安装）；另有 zip | `latest-mac-pkg.yml`（pkg 校验）；`latest-mac.yml`（zip） |
+| macOS x64 | `isparta-next-<ver>-mac-x64.pkg`（一体安装）；另有 zip | 同上 |
 | AE CEP Windows | `isparta-next-<ver>-cep-win.zip` | 无（手动解压安装） |
 | AE CEP macOS | `isparta-next-<ver>-cep-mac.zip` | 无（手动解压安装） |
 
@@ -88,10 +88,10 @@ CI 会额外写入**稳定别名**（无版本号），供落地页 `releases/la
 - `isparta-next-win-x64.exe`
 - `isparta-next-linux-x64.AppImage`
 - `isparta-next-cep-win.zip` / `isparta-next-cep-mac.zip`
-- 以及 mac zip 别名等  
+- 以及 mac pkg / zip 别名等
 
 > `latest*.yml` 的 `path` 必须与 **版本化** 资产名一致，供 electron-updater 定位安装包；**不要**改名或删除这些 yml。  
-> macOS 仍为 CI **未签名** zip，不走应用内自动更新。
+> macOS pkg 由同一份已构建 CEP payload 与桌面应用组装；当前 CI 无 Developer ID 签名/公证。`latest-mac-pkg.yml` 独立记录 pkg 的 URL、SHA-512 和大小，不覆盖 electron-builder 的 zip 更新清单。
 
 ### Release Notes 汇总规则
 
@@ -155,4 +155,4 @@ git tag -d vX.Y.Z
 向用户报告：版本号、Release 链接、关键资产（exe / AppImage / latest.yml）
 ```
 
-发版后：用户可用已安装的 **NSIS/AppImage** 做「应用内热更新」验收；macOS 仍手动下载 zip。
+发版后：用户可用已安装的 **NSIS/AppImage** 做「应用内热更新」验收；macOS 通过同版 pkg 更新，需管理员授权；首次安装与 CEP 生效仍需真机验收。

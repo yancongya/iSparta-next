@@ -1225,8 +1225,8 @@
       notes: typeof rel.body === "string" ? rel.body : "",
       assets: {
         win: pick([/win-x64\.exe$/i, /win-x64\.zip$/i]),
-        macArm: pick([/mac-arm64\.zip$/i, /arm64.*\.dmg$/i]),
-        macX64: pick([/mac-x64\.zip$/i]),
+        macArm: pick([/mac-arm64\.pkg$/i, /arm64.*\.dmg$/i]),
+        macX64: pick([/mac-x64\.pkg$/i]),
         linux: pick([/linux-x64\.AppImage$/i, /linux-x64\.tar\.gz$/i])
       },
       htmlUrl: rel.html_url || ""

@@ -1,12 +1,13 @@
 /**
- * electron-updater 封装（仅主进程）。
+ * 主进程更新器：Windows/Linux 用 electron-updater，macOS 用一体 pkg。
  * - 检查/弹窗仍由 util/updateCheck + 渲染层负责
  * - 这里只负责：是否支持自动更新、下载进度、下载完成后 quitAndInstall
- * - Dev 与 mac / 非 AppImage / 非 NSIS 一律不启用
+ * - Dev / 非 AppImage / 非 NSIS 一律不启用
  */
 
 import { app, ipcMain } from 'electron'
 import { resetOnboardingForReplay } from './onboarding-replay'
+import macPkg from './macPkgUpdate'
 
 let updater = null
 let state = {
@@ -16,7 +17,10 @@ let state = {
   downloaded: false,
   progress: 0,
   error: null,
-  version: null
+  version: null,
+  file: '',
+  installing: false,
+  completed: false
 }
 
 function isDev () {
@@ -26,7 +30,7 @@ function isDev () {
 /** 不支持原因：便于 UI 区分「开发态」和「正式包形态不对」 */
 export function autoUpdateSupportReason () {
   if (isDev()) { return 'dev' }
-  if (process.platform === 'darwin') { return 'mac' }
+  if (process.platform === 'darwin') { return 'ok' }
   if (process.platform === 'linux') {
     return process.env.APPIMAGE ? 'ok' : 'not-appimage'
   }
@@ -113,9 +117,34 @@ function loadUpdater () {
 }
 
 /** 主动触发下载（检查已有新版时调用） */
-export async function startAutoDownload () {
+export async function startAutoDownload (result) {
   if (!supportsAutoUpdate()) {
     return { ok: false, reason: 'unsupported', state: snapshot() }
+  }
+  if (process.platform === 'darwin') {
+    const version = result && result.latest
+    if (!version || result.state !== 'available') return { ok: false, reason: 'no-update', state: snapshot() }
+    try {
+      state.downloading = true
+      state.downloaded = false
+      state.progress = 0
+      state.version = version
+      state.error = null
+      broadcast()
+      state.file = await macPkg.download(version, process.arch === 'arm64' ? 'arm64' : 'x64', (progress) => {
+        state.progress = progress
+        broadcast()
+      })
+      state.downloading = false
+      state.downloaded = true
+      broadcast()
+      return { ok: true, state: snapshot() }
+    } catch (e) {
+      state.downloading = false
+      state.error = String((e && e.message) || e)
+      broadcast()
+      return { ok: false, reason: state.error, state: snapshot() }
+    }
   }
   const u = loadUpdater()
   if (!u) {
@@ -148,7 +177,38 @@ export async function startAutoDownload () {
   }
 }
 
-export function quitAndInstall (opts) {
+export async function quitAndInstall (opts) {
+  if (process.platform === 'darwin') {
+    if (!state.downloaded || !state.file) return { ok: false, reason: 'not-downloaded' }
+    state.installing = true
+    state.error = null
+    broadcast()
+    try {
+      await macPkg.install(state.file)
+      const { execFileSync } = require('child_process')
+      const installedVersion = execFileSync('/usr/libexec/PlistBuddy', [
+        '-c', 'Print :CFBundleShortVersionString', '/Applications/iSparta-next.app/Contents/Info.plist'
+      ], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim()
+      if (installedVersion !== state.version) throw new Error('installed-version-mismatch')
+      try { require('fs').unlinkSync(state.file) } catch (e) { /* cache cleanup is best effort */ }
+      state.file = ''
+      state.installing = false
+      state.downloaded = false
+      state.completed = true
+      broadcast()
+      try { resetOnboardingForReplay() } catch (e) { /* ignore */ }
+      setTimeout(() => {
+        app.relaunch({ execPath: '/Applications/iSparta-next.app/Contents/MacOS/isparta-next' })
+        app.quit()
+      }, 500)
+      return { ok: true, state: snapshot() }
+    } catch (e) {
+      state.installing = false
+      state.error = String((e && e.message) || e)
+      broadcast()
+      return { ok: false, reason: state.error, state: snapshot() }
+    }
+  }
   const u = loadUpdater()
   if (!u || !state.downloaded) { return { ok: false, reason: 'not-downloaded' } }
   try {
@@ -194,7 +254,7 @@ export function getAutoUpdateState () {
 
 export function registerAutoUpdateIpc () {
   ipcMain.handle('updater:autoState', async () => snapshot())
-  ipcMain.handle('updater:autoDownload', async () => startAutoDownload())
+  ipcMain.handle('updater:autoDownload', async (event, result) => startAutoDownload(result))
   ipcMain.handle('updater:quitAndInstall', async (event, opts) => quitAndInstall(opts))
 }
 

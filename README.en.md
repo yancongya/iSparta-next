@@ -22,20 +22,18 @@
 On startup the app checks GitHub Releases (version + OS type only; you can turn this off in **Settings → Automatic update check**). A non-blocking in-app corner toast (dock) appears when an update exists; click **Update now** to download, then **Restart to update**. Manual **Check for updates** opens a full notes dialog.
 
 - **Windows (NSIS installer) / Linux (AppImage):** in-app auto-update channel after you confirm download
-- **macOS:** unsigned zip — extract over the app; if macOS blocks it, **System Settings → Privacy & Security → Open Anyway**
-- **AE extension (bundled install):** pick a composition in After Effects → render PNG sequence → APNG / WebP / GIF, on the same conversion engine as the desktop app. The Windows installer can set up desktop + AE extension together.
+- **macOS:** unsigned pkg installer; installation requests administrator permission. If macOS blocks it, use **System Settings → Privacy & Security → Open Anyway**
+- **AE extension (bundled install):** pick a composition in After Effects → render PNG sequence → APNG / WebP / GIF, on the same conversion engine as the desktop app. Windows and macOS installers deploy the matching AE extension when After Effects is present.
 - Docs: [UPDATER.md](docs/UPDATER.md) · [RELEASE.md](docs/RELEASE.md) · [CHANGELOG.md](docs/CHANGELOG.md)
-- **macOS (unsigned zip):** manual download and replace; see Release notes for Gatekeeper
+- **macOS (unsigned pkg):** in-app update with administrator approval; see Release notes for Gatekeeper
 - Architecture and limitations: **[docs/UPDATER.md](docs/UPDATER.md)**
 
-> **Install & update flow (machine-wide single copy · both channels same package, same UAC):** Desktop auto-update and CEP panel hot-update both download the same GitHub Release NSIS package. The installer is fixed machine-wide (`perMachine=true`); it **purges stale copies in both user `%APPDATA%` and system `Common Files` before installing**, prompts UAC, writes to Common Files, and **leaves exactly one CEP copy machine-wide**. At runtime the desktop startup self-check keeps one copy per scope, and the panel loading page is the only progress feedback during the silent install. Flow map:
-
-<img src="docs/diagrams/install-flow-en.svg" alt="iSparta-next install & update flow: desktop auto-update and CEP panel hot-update both download the same NSIS package; installer is machine-wide with UAC, pre-install self-check purges both scopes, one copy left machine-wide; runtime self-check keeps one per scope, panel loading is the sole feedback" width="880">
+> **Install and update:** Windows and macOS installers deploy the matching CEP extension when After Effects is present. Desktop and CEP updates use the official installer; restart the app or After Effects when prompted. See [updater details](docs/UPDATER.md).
 
 ### Recent experience updates
 
 - **AE extension:** one-button switch between comp tree and task list; right-click to open comp location / output folder / stop task; double-click to jump to a comp; pinned filter bar (search / frame rate / frames); same-name comps disambiguated by folder
-- **Bundled install:** "All users (recommended) / Current user" on the components page, never both; AE installs auto-detected (registry + multi-drive); version shown in the desktop title bar and the AE extension menu
+- **Bundled install:** system-wide desktop installation, with the matching AE extension when After Effects is detected; version shown in the desktop title bar and the AE extension menu
 - Empty-state import panel: folder open/close animation, 3D keycap paste hint; click / drag / Ctrl+V to import
 
 ### Good for
@@ -125,11 +123,11 @@ Get the latest installers from **[Releases](https://github.com/yancongya/iSparta
 
 | Platform | Artifact | Arch |
 | --- | --- | --- |
-| Windows | `.zip` | x64 |
-| macOS | `.zip` (contains `.app`) | x64 / arm64 |
-| Linux | `.tar.gz` | x64 |
+| Windows | `.exe` (desktop + optional AE extension) | x64 |
+| macOS | `.pkg` (desktop + optional AE extension) | x64 / arm64 |
+| Linux | `.AppImage` | x64 |
 
-All three platforms are built by GitHub Actions. **macOS packages are unsigned** — unzip and, if Gatekeeper blocks the app, allow it in System Settings → Privacy & Security, or run `xattr -dr com.apple.quarantine` on the `.app`.
+All three platforms are built by GitHub Actions. **macOS packages are unsigned** — if Gatekeeper blocks the installer, allow it in System Settings → Privacy & Security.
 
 ## Features
 

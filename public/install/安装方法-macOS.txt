@@ -2,6 +2,8 @@ iSparta-next · AE 扩展安装方法（macOS）
 
 官网 / 下载 / 更新：https://yancongya.github.io/iSparta-next/
 
+推荐：运行官网下载的 macOS .pkg；安装时会申请管理员权限，检测到 After Effects 后自动部署桌面版与本扩展。以下步骤仅供单独下载 CEP 压缩包时手动安装。
+
 
 1.拷贝 io.github.isparta-next 文件夹到以下位置:
 ~/Library/Application Support/Adobe/CEP/extensions/

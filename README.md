@@ -25,14 +25,12 @@
 
 - 应用启动后会向 **GitHub Releases** 发起一次版本检查（仅携带版本号与系统类型，不上传个人数据）；可在 **默认设置 → 自动检查更新** 中关闭。
 - 发现新版本时在**应用内右下角**弹出非阻断提示（Dock）：可查看详情说明，点 **立即更新** 后再下载；下载完成后提示 **重启以更新**。手动「检查更新」会打开完整说明对话框。
-- **Windows（NSIS 安装版）/ Linux（AppImage）** 支持应用内自动更新通道；**macOS** 未签名，下载 zip 后解压覆盖（系统设置 → 隐私与安全性 → 仍要打开）。
+- **Windows（NSIS 安装版）/ Linux（AppImage）** 支持应用内自动更新通道；**macOS** 使用 `.pkg` 安装与应用内更新，安装时请求管理员权限；CI 包未签名，系统可能要求手动允许打开。
 - 架构、限制与测试入口：[`docs/UPDATER.md`](docs/UPDATER.md)；发版步骤：[`docs/RELEASE.md`](docs/RELEASE.md)；版本摘要：[`docs/CHANGELOG.md`](docs/CHANGELOG.md)。
 - Windows 免费开源签名申请步骤见 [docs/SIGNPATH.md](docs/SIGNPATH.md)。
-- **AE 扩展（一体安装）**：After Effects 内直接选合成 → 渲 PNG 序列 → APNG / WebP / GIF，与桌面同一套转换核。Windows 安装向导可同时装桌面 + AE 扩展；升级边界见 [`docs/CEP-UPGRADE-SCOPE.md`](docs/CEP-UPGRADE-SCOPE.md)、计划见 [`docs/PLAN-DUAL-TARGET.md`](docs/PLAN-DUAL-TARGET.md)。
+- **AE 扩展（一体安装）**：After Effects 内直接选合成 → 渲 PNG 序列 → APNG / WebP / GIF，与桌面同一套转换核。Windows 与 macOS 安装包检测到 AE 时同步安装桌面 + AE 扩展；升级边界见 [`docs/CEP-UPGRADE-SCOPE.md`](docs/CEP-UPGRADE-SCOPE.md)、计划见 [`docs/PLAN-DUAL-TARGET.md`](docs/PLAN-DUAL-TARGET.md)。
 
-> **安装与更新流程（系统级单副本 · 双通道同包同 UAC）**：桌面自动更新与 CEP 面板热更都下载同一个 GitHub Release NSIS 包；安装器固定系统级 `perMachine=true`，**安装前自检清理用户级 + Common Files 双作用域冗余副本**，弹 UAC 后落盘 Common Files，**全机只留一份**；运行时桌面启动自检按作用域只维护单份，静默安装期间面板 loading 页是唯一进度反馈。流程图：
-
-<img src="docs/diagrams/install-flow-zh.svg" alt="iSparta-next 安装与更新流程：桌面自动更新与 CEP 面板热更都下载同一个 NSIS 包，安装器系统级 UAC、安装前自检清双作用域、装完全机单份，运行时桌面自检按作用域单副本、面板 loading 为唯一反馈" width="880">
+> **安装与更新**：Windows 与 macOS 安装包固定系统级；检测到 After Effects 时同步部署同版本 CEP。桌面版和 AE 面板共用官方安装包更新，完成后按提示重启桌面版或 After Effects。详见 [更新说明](docs/UPDATER.md)。
 
 ### 近期体验更新
 
@@ -47,7 +45,7 @@
 - 落地页导航 **logo** 与应用图标统一；右侧面板窄窗下单列排布、不再横向溢出。
 - 列表：空白拖拽**框选**、双击全选、Delete 删除所选；运行中右键可终止/删除。
 - 多选时右侧仍显示**完整共享输出设置**，输出名可逐项**拆词**。
-- Windows：更新安装时系统提示「正在安装更新…」；安装为**完整向导**。
+- Windows：更新安装时系统提示「正在安装更新…」；安装为**一键全机安装**，系统会申请管理员权限。
 - 详细版本摘要见 [`docs/CHANGELOG.md`](docs/CHANGELOG.md)。
 
 ### 适合这些场景
@@ -150,11 +148,11 @@
 
 | 平台      | 产物                | 架构          |
 | ------- | ----------------- | ----------- |
-| Windows | `.zip`            | x64         |
-| macOS   | `.zip`（内含 `.app`） | x64 / arm64 |
-| Linux   | `.tar.gz`         | x64         |
+| Windows | `.exe`（桌面与按需 AE 扩展） | x64 |
+| macOS   | `.pkg`（桌面与 AE 扩展） | x64 / arm64 |
+| Linux   | `.AppImage` | x64 |
 
-三端均由 GitHub Actions 构建。macOS 包为 **未签名** 构建：解压后若系统拦截，可在「系统设置 → 隐私与安全性」中允许打开，或对 App 执行 `xattr -dr com.apple.quarantine`。
+三端均由 GitHub Actions 构建。macOS 包目前未签名；若系统拦截，请在「系统设置 → 隐私与安全性」中允许打开。
 
 > 需要自己编译或参与开发，请往下看「快速开始」。
 
@@ -268,8 +266,8 @@ gh workflow run release.yml -R yancongya/iSparta-next -f bump=patch -f prereleas
 - 用该版本号在 GitHub runner 上构建 Win / Linux / macOS，资产命名为：
   - `isparta-next-<ver>-win-x64.zip`
   - `isparta-next-<ver>-linux-x64.tar.gz`
-  - `isparta-next-<ver>-mac-arm64.zip`
-  - `isparta-next-<ver>-mac-x64.zip`
+  - `isparta-next-<ver>-mac-arm64.pkg`
+  - `isparta-next-<ver>-mac-x64.pkg`
 
 > 说明：发版提交带 `[skip ci]`，避免和日常 CI 重复构建。  
 > 三端（Win / Linux / macOS x64+arm64）均由 Release 工作流在云端打包并挂到同一 Release。  

@@ -21,20 +21,20 @@ const defaultItem = () => ({
     loop: 0,
     outputSuffix: '',
     outputName: '',
-    outputFormat: ['APNG'],
+    outputFormat: ['APNG', 'GIF', 'WEBP'],
     floyd: { checked: true, value: 0.35 },
     quality: { checked: true, value: 80 },
     sizeLimit: {
-      enabled: false,
-      maxMB: 1,
-      maxBytes: 1048576,
-      unit: 'MB',
-      autoDelete: false,
+      enabled: true,
+      maxMB: 0.78125,
+      maxBytes: 819200,
+      unit: 'KB',
+      autoDelete: true,
       autoQuality: true,
       step: 5,
       maxTries: 10
     },
-    outputTo: { mode: 'custom', customPath: '', template: '' }
+    outputTo: { mode: 'output', customPath: '', template: '{srcPath}' }
   },
   process: { text: '', schedule: 0 },
   isSelected: true

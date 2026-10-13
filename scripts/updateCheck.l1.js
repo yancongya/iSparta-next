@@ -45,7 +45,7 @@ async function main () {
 
   // artifact names
   ok('win artifact', buildArtifactName('win32', 'x64') === 'isparta-next-win-x64.exe')
-  ok('mac arm', buildArtifactName('darwin', 'arm64') === 'isparta-next-mac-arm64.zip')
+  ok('mac arm installer', buildArtifactName('darwin', 'arm64') === 'isparta-next-mac-arm64.pkg')
   ok('linux appimage', buildArtifactName('linux', 'x64') === 'isparta-next-linux-x64.AppImage')
 
   // urls
@@ -178,7 +178,7 @@ async function main () {
       }
     })
     const r = await checkUpdate(s.deps)
-    ok('case8 mac', r.needsGatekeeperHint === true && /mac-arm64\.zip$/.test(r.downloadUrl), r)
+    ok('case8 mac', r.needsGatekeeperHint === true && /mac-arm64\.pkg$/.test(r.downloadUrl), r)
   }
 
   // 4 offline

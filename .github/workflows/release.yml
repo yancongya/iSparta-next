@@ -204,11 +204,13 @@ jobs:
             echo "| Linux x64 (AppImage) | \`isparta-next-${VERSION}-linux-x64.AppImage\` |"
             echo "| macOS arm64 (zip) | \`isparta-next-${VERSION}-mac-arm64.zip\` |"
             echo "| macOS x64 (zip) | \`isparta-next-${VERSION}-mac-x64.zip\` |"
+            echo "| macOS arm64 (pkg) | \`isparta-next-${VERSION}-mac-arm64.pkg\` |"
+            echo "| macOS x64 (pkg) | \`isparta-next-${VERSION}-mac-x64.pkg\` |"
             echo "| AE CEP Windows | \`isparta-next-${VERSION}-cep-win.zip\` |"
             echo "| AE CEP macOS | \`isparta-next-${VERSION}-cep-mac.zip\` |"
             echo ""
             echo "- Windows / Linux 安装版支持应用内自动更新（下载完成后提示重启）。"
-            echo "- macOS 为 CI 未签名构建，不支持自动更新：下载 zip 后解压覆盖；若提示已损坏，到「系统设置 → 隐私与安全性」选择「仍要打开」。"
+            echo "- macOS 主安装包为 pkg：安装时申请管理员权限，并在检测到 After Effects 时同步安装 CEP。CI 构建尚未签名，首次安装可能需要在「系统设置 → 隐私与安全性」允许打开。"
             echo "- AE CEP 扩展 zip 解压后：\`安装方法-*.txt\` 与 PlayerDebugMode 脚本就在压缩包**顶层**（win: Add Keys.reg，mac: 安装扩展.command），按说明把 \`io.github.isparta-next\` 文件夹拷到 Adobe CEP extensions 目录即可。"
             echo ""
             if [ -n "$PREV_TAG" ]; then
@@ -231,9 +233,41 @@ jobs:
           retention-days: 7
           path: release-notes.md
 
-  build:
-    name: Build (${{ matrix.platform }})
+  cep-payload:
+    name: Build shared CEP payload
     needs: version
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.version.outputs.published == 'true' && needs.version.outputs.tag || github.sha }}
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Install electron binary
+        run: node node_modules/electron/install.js
+      - name: Build CEP UI and payload
+        run: |
+          npm run build:cep
+          npm run prepare:cep
+      - name: Archive shared CEP payload
+        run: tar -czf shared-cep-payload.tar.gz -C . build/cep-payload
+      - name: Upload shared CEP payload
+        uses: actions/upload-artifact@v4
+        with:
+          name: shared-cep-payload
+          path: shared-cep-payload.tar.gz
+          if-no-files-found: error
+          retention-days: 14
+
+  build:
+    needs: [version, cep-payload]
+    name: Build (${{ matrix.platform }})
     strategy:
       fail-fast: false
       matrix:
@@ -263,21 +297,33 @@ jobs:
       - name: Install dependencies
         run: npm ci --ignore-scripts --no-audit --no-fund
 
-      - name: Prepare CEP payload
-        # NSIS 一体安装把 CEP payload 打进安装包；doctor 也校验它必须已暂存
-        run: node scripts/prepare-cep-payload.js
+      - name: Install electron binary
+        run: node node_modules/electron/install.js
+
+      - name: Download shared CEP payload
+        uses: actions/download-artifact@v5
+        with:
+          name: shared-cep-payload
+          path: .
+
+      - name: Extract shared CEP payload
+        run: tar -xzf shared-cep-payload.tar.gz
 
       - name: Doctor packaging assets
         run: node scripts/doctor-packaging.js
-
-      - name: Install electron binary
-        run: node node_modules/electron/install.js
 
       - name: Build ${{ matrix.platform }}
         run: npx vue-cli-service electron:build ${{ matrix.flag }} --publish never
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build macOS unified installer
+        if: matrix.platform == 'mac'
+        shell: bash
+        run: |
+          node scripts/build-mac-pkg.js --arch x64
+          node scripts/build-mac-pkg.js --arch arm64
 
       - name: Collect & rename assets
         shell: bash
@@ -292,6 +338,7 @@ jobs:
           # 注意：nullglob 只对通配符生效，不要写死 latest-linux.yml 等具体路径
           for f in \
             dist_electron/*.dmg \
+            dist_electron/*.pkg \
             dist_electron/*.zip \
             dist_electron/*.tar.gz \
             dist_electron/*.exe \
@@ -341,6 +388,10 @@ jobs:
           done
           ls -lh release
 
+      - name: Write macOS pkg update manifest
+        if: matrix.platform == 'mac'
+        run: node scripts/write-mac-pkg-manifest.js
+
       - name: Audit bundle size
         run: node scripts/audit-bundle-size.js --dir release
 
@@ -359,7 +410,7 @@ jobs:
   #   资产名  isparta-next-${version}-cep-${platform}.zip
   build-cep:
     name: Pack CEP (${{ matrix.platform }})
-    needs: version
+    needs: [version, cep-payload]
     strategy:
       fail-fast: false
       matrix:
@@ -392,104 +443,25 @@ jobs:
         # 插件时 require('electron') 需要二进制已就位（与上方 Build 任务一致）
         run: node node_modules/electron/install.js
 
-      - name: Build CEP UI (fresh)
-        shell: bash
-        run: |
-          set -euo pipefail
-          # 必须先构建 UI：targets/cep/ui/js 入库产物可能过时，zip 内不许带旧包
-          npm run build:cep
+      - name: Download shared CEP payload
+        uses: actions/download-artifact@v5
+        with:
+          name: shared-cep-payload
+          path: .
+
+      - name: Extract shared CEP payload
+        run: tar -xzf shared-cep-payload.tar.gz
+
       - name: Pack CEP extension zip
         shell: bash
         env:
-          VERSION: ${{ needs.version.outputs.version }}
           PLATFORM: ${{ matrix.platform }}
-          BIN_PLATS: ${{ matrix.bin_plats }}
         run: |
           set -euo pipefail
-          STAGE_ID='io.github.isparta-next'
-          STAGE=".cep-stage/${STAGE_ID}"
-
-          if [ ! -d targets/cep ]; then
-            echo "targets/cep missing — CEP sources not present" >&2
-            exit 1
-          fi
-
-          rm -rf .cep-stage
-          mkdir -p "${STAGE}"
-
-          # 可分发文件：整棵 targets/cep，排除开发垃圾
-          # ui/install/ 是 vue-cli 把 public/install 复制进 outputDir 的污染产物，必须排除
-          # /README.md 是 targets/cep 开发文档（junction/npm 路径），不进发行包（bin/README.md 保留）
-          rsync -a \
-            --exclude '.DS_Store' \
-            --exclude 'Thumbs.db' \
-            --exclude 'desktop.ini' \
-            --exclude '*.log' \
-            --exclude '*.tmp' \
-            --exclude 'node_modules/' \
-            --exclude '.git/' \
-            --exclude '.gitignore' \
-            --exclude '.vscode/' \
-            --exclude '.idea/' \
-            --exclude 'ui/install/' \
-            --exclude '/install/' \
-            --exclude '/README.md' \
-            targets/cep/ "${STAGE}/"
-
-          # 安装辅助按平台播种，**平铺 zip 顶层**（BG Renderer 式，与扩展文件夹同级，
-          # 解压即见；不藏进 io.github.isparta-next/install/）
-          # 与 scripts/pack-cep-zip.js PLATFORM_INSTALL_FILES 对齐
-          if [ "${PLATFORM}" = 'win' ]; then
-            INSTALL_FILES=('Add Keys.reg' '安装方法-Windows.txt')
-          else
-            INSTALL_FILES=('install-as-admin' '安装扩展.command' '安装方法-macOS.txt')
-          fi
-          for f in "${INSTALL_FILES[@]}"; do
-            if [ ! -f "public/install/${f}" ]; then
-              echo "public/install/${f} missing" >&2
-              exit 1
-            fi
-            cp -f "public/install/${f}" ".cep-stage/"
-          done
-          # mac：zip 条目权限取自文件系统，缺 +x 则解压后双击 .command / 跑脚本会失败
-          if [ "${PLATFORM}" = 'mac' ]; then
-            chmod +x ".cep-stage/install-as-admin" ".cep-stage/安装扩展.command"
-          fi
-
-          # 扩展显示名带版本号（AE 窗口→扩展菜单可见）
-          sed -i "s|<Menu>[^<]*</Menu>|<Menu>iSparta-next ${VERSION}</Menu>|" "${STAGE}/CSXS/manifest.xml"
-                    # 编码器小工具子集（见 targets/cep/bin/README.md）
-          rm -rf "${STAGE}/bin"
-          for bp in ${BIN_PLATS}; do
-            mkdir -p "${STAGE}/bin/${bp}"
-            for tool in apngasm apngquant apngopt cwebp webpmux; do
-              for cand in "public/bin/${bp}/${tool}" "public/bin/${bp}/${tool}.exe"; do
-                if [ -f "${cand}" ]; then
-                  cp -f "${cand}" "${STAGE}/bin/${bp}/"
-                fi
-              done
-            done
-            if [ "${PLATFORM}" = 'mac' ]; then
-              chmod +x "${STAGE}/bin/${bp}/"* 2>/dev/null || true
-            fi
-          done
-
-          # version.json 版本清单：targets/cep 源码树没有它（本地 pack 走
-          # prepare-cep-payload 自带），CI 必须补播，否则与本地包不一致 ——
-          # 桌面自检判 not-installed 每次启动全量重拷、面板 updater:meta 只能回退
-          # brand 静态版本。字段对齐见 cep-payload-common.buildVersionDoc。
-          node scripts/seed-cep-zip-version.js "${STAGE}"
-          if [ ! -f "${STAGE}/version.json" ]; then
-            echo "version.json missing in stage" >&2
-            exit 1
-          fi
-
+          node scripts/pack-cep-zip.js --platform "$PLATFORM" --prepared
           mkdir -p release
-          DEST="isparta-next-${VERSION}-cep-${PLATFORM}.zip"
-          # zip 根 = 安装辅助（顶层平铺）+ 扩展文件夹
-          (cd .cep-stage && zip -r -q "../release/${DEST}" "${STAGE_ID}" "${INSTALL_FILES[@]}")
-          ls -lh release
-          echo "Packed ${DEST} (version=${VERSION})"
+          VERSION=$(node -p "require('./package.json').version")
+          cp "dist/isparta-next-cep-${VERSION}-${PLATFORM}-x64.zip" "release/isparta-next-${VERSION}-cep-${PLATFORM}.zip"
 
       - name: Upload CEP artifacts
         uses: actions/upload-artifact@v4
@@ -552,6 +524,8 @@ jobs:
           copy_stable "isparta-next-${VER}-linux-x64.tar.gz" "isparta-next-linux-x64.tar.gz"
           copy_stable "isparta-next-${VER}-mac-arm64.zip" "isparta-next-mac-arm64.zip"
           copy_stable "isparta-next-${VER}-mac-x64.zip" "isparta-next-mac-x64.zip"
+          copy_stable "isparta-next-${VER}-mac-arm64.pkg" "isparta-next-mac-arm64.pkg"
+          copy_stable "isparta-next-${VER}-mac-x64.pkg" "isparta-next-mac-x64.pkg"
           # AE CEP 扩展包（解压到 CEP extensions；桌面 NSIS 内嵌由 W3 extraResources 负责）
           copy_stable "isparta-next-${VER}-cep-win.zip" "isparta-next-cep-win.zip"
           copy_stable "isparta-next-${VER}-cep-mac.zip" "isparta-next-cep-mac.zip"
