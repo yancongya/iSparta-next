@@ -385,6 +385,14 @@ export default {
       // 该合成若已加入任务，就带上它的真实下标与运行态：
       // 否则「终止任务」永远不出现（原先写死 false / -1），长转换在合成树视图下无法中止
       var taskIndex = this.taskIndexOf(node)
+      // 右键「打开输出目录」必须拿到与任务列表相同的解析结果；未加入任务时
+      // 通过共享 sourceAdapter 构造临时任务，沿用当前默认 outputTo，不猜工程目录。
+      var task = taskIndex >= 0 ? this.storeItems()[taskIndex] : null
+      var outputPath = task && task.basic && task.basic.outputPath
+      if (!outputPath && sourceAdapter && typeof sourceAdapter.createItem === 'function') {
+        var previewItem = sourceAdapter.createItem(node)
+        outputPath = previewItem && previewItem.basic && previewItem.basic.outputPath
+      }
       rightMenu.init(
         this.$store,
         {
@@ -393,6 +401,7 @@ export default {
           compName: node.name,
           projectPath: node.projectPath,
           inputPath: node.projectPath,
+          outputPath: outputPath,
           isRunning: this.taskStoppable(node),
           index: taskIndex,
           storeIndex: taskIndex

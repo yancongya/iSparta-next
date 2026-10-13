@@ -1,6 +1,6 @@
 /**
  * 右键菜单：Electron 走主进程 popup；CEP / 浏览器走 DOM 菜单。
- * 打开目录：Electron 走 shell IPC；CEP 走 file URL，宿主不可用时回退 Folder.execute。
+ * 打开目录：Electron 用 shell.openPath 打开目标目录；CEP 由 AE Folder.execute 跨平台打开。
  */
 import { ipc } from '../../util/node-env'
 import notice from '../../ui-next/notice'
@@ -39,22 +39,6 @@ function onMenuKey (ev) {
   if (ev && ev.key === 'Escape') { closeDomMenu() }
 }
 
-/** Encode each path segment; encodeURI leaves # and ? unescaped and truncates file URLs. */
-function fileUrlOf (dir) {
-  var p = String(dir || '').replace(/\\/g, '/')
-  if (/^[A-Za-z]:\//.test(p)) {
-    return 'file:///' + p.slice(0, 3) + p.slice(3).split('/').map(encodeURIComponent).join('/')
-  }
-  if (p.slice(0, 2) === '//') {
-    var unc = p.slice(2).split('/')
-    return 'file://' + unc.shift() + '/' + unc.map(encodeURIComponent).join('/')
-  }
-  if (p.charAt(0) === '/') {
-    return 'file://' + p.split('/').map(encodeURIComponent).join('/')
-  }
-  return ''
-}
-
 function reportOpenFailure (error, title) {
   var detail = error && error.message ? error.message : String(error || '')
   console.error('打开目录失败：' + detail)
@@ -67,29 +51,36 @@ function openOsDir (dir, title) {
   if (!target) { return }
   if (isElectronHost()) {
     try {
-      ipc.invoke('shell:showItemInFolder', target).catch(function (e) { reportOpenFailure(e, title) })
+      ipc.invoke('shell:openPath', target).then(function (error) {
+        if (error) { reportOpenFailure(error, title) }
+      }).catch(function (e) { reportOpenFailure(e, title) })
     } catch (e) { reportOpenFailure(e, title) }
     return
   }
   if (isCepLike()) {
-    var fileUrl = fileUrlOf(target)
-    if (!fileUrl) { reportOpenFailure('输出目录不是绝对路径：' + target, title); return }
+    var script = 'new Folder(' + JSON.stringify(target) + ').execute()'
     try {
-      if (window.ispartaCS && typeof window.ispartaCS.openURLInDefaultBrowser === 'function') {
-        if (window.ispartaCS.openURLInDefaultBrowser(fileUrl)) { return }
-      } else if (window.cep && window.cep.util && typeof window.cep.util.openURLInDefaultBrowser === 'function') {
-        window.cep.util.openURLInDefaultBrowser(fileUrl)
+      if (window.ispartaCS && typeof window.ispartaCS.evalScript === 'function') {
+        var result = window.ispartaCS.evalScript(script)
+        if (result && typeof result.then === 'function') {
+          result.then(function (value) {
+            if (String(value).toLowerCase() !== 'true') reportOpenFailure('AE 未能打开：' + target, title)
+          }).catch(function (e) { reportOpenFailure(e, title) })
+        } else if (result !== 'true' && result !== true) {
+          reportOpenFailure('AE 未能打开：' + target, title)
+        }
         return
       }
-      // Browser bridge unavailable: ask AE to open the directory itself.
-      if (window.ispartaCS && typeof window.ispartaCS.evalScript === 'function') {
-        window.ispartaCS.evalScript('Folder(' + JSON.stringify(target) + ').execute()', function (result) {
-          if (String(result).toLowerCase() !== 'true') reportOpenFailure('AE 未能打开：' + target, title)
+      // 兼容未加载项目 CS 封装的 CEP 面板，直接使用 CEP 原生宿主回调。
+      var cepHost = window.__adobe_cep__ || (window.cep && window.cep)
+      if (cepHost && typeof cepHost.evalScript === 'function') {
+        cepHost.evalScript(script, function (value) {
+          if (String(value).toLowerCase() !== 'true') reportOpenFailure('AE 未能打开：' + target, title)
         })
         return
       }
+      reportOpenFailure('CEP 没有可用的 AE 脚本接口', title)
     } catch (e) { reportOpenFailure(e, title); return }
-    reportOpenFailure('CEP 没有可用的目录打开接口', title)
     return
   }
   try {
@@ -144,7 +135,7 @@ function showDomMenu (payload, x, y) {
   } else {
     items.push({ id: 'openOriginal', label: locale.openOriginal || '打开文件目录' })
   }
-  // 合成树节点没有现成 outputPath，也按默认模板推导，与桌面任务列表保持两项
+  // 输出目录由调用方按当前任务设置 / 默认模板解析后传入，避免误开工程目录。
   if (payload && (payload.outputPath || isComp)) {
     items.push({ id: 'openDist', label: locale.openDist || '打开输出目录' })
   }

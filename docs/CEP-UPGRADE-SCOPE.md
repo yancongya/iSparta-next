@@ -57,7 +57,7 @@
 ## 4. 桌面回归检查点（改 CEP 后必过）
 
 1. 右键任务 → 系统/Electron 原生菜单，不是 DOM 菜单
-2. 「打开文件目录 / 打开输出目录」走 `shell.showItemInFolder`，不是 `explorer.exe` 子进程
+2. 「打开文件目录 / 打开输出目录」走 `shell.openPath` 打开目标目录本身，不是打开父目录选中目标
 3. 窗口拖窄（≥820 minWidth）→ 列表/底栏**不**触发 CEP 降档
 4. 文件任务导入、删除、逐帧设置正常
 5. 日志面板、更新弹窗等共有 UI 正常
@@ -65,7 +65,7 @@
 ## 5. 实现要点备忘
 
 - 桌面宿主判定用 `navigator.userAgent` 含 `Electron`（`contextIsolation` 下无 `window.process`）
-- `openOsDir`：桌面先走 `shell:showItemInFolder`；CEP 走 `execFile('explorer.exe'|'open', [path])`
+- `openOsDir`：桌面走 `shell:openPath`；CEP 由 AE JSX `new Folder(path).execute()` 调系统文件管理器，Windows/macOS 共用宿主接口
 - 断点样式包 `body.is-cep`；JS 断点加 `hostAdapter.supportsCompImport`
 
 
@@ -85,7 +85,7 @@
 | `isElectronHost` 误判（contextIsolation 无 `window.process`） | **已修**：`userAgent` 含 Electron |
 | `menu.js` 重写丢失 `changeDist` / `delItem` handler | **已补**：桌面原生菜单五项（打开/改路径/删除/终止）齐全 |
 | `stopItem` 单选覆盖多选批量终止 | **已收**：仅当前项未选中时才 singleSelect，桌面多选仍批量停 |
-| 打开目录误走 explorer 子进程 | **已修**：Electron 优先 `shell.showItemInFolder` |
+| 打开目录语义与跨平台调用 | **已统一**：Electron `shell.openPath` 打开目标本身；CEP 用 AE `Folder.execute()` 跨 Windows/macOS 打开 |
 | 视口断点误伤桌面收窄 | **已修**：`body.is-cep` + `supportsCompImport` 门控 |
 | 过滤条 / 底栏选中总数 / 双击定位 | 门控 `isCepHost` / type=Comp，桌面文件任务不触发 |
 | 合成缩略图删除 | 桌面文件缩略图（`fileList` 首帧）路径不受影响 |

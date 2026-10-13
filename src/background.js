@@ -529,6 +529,14 @@ ipcMain.handle('shell:showItemInFolder', async (event, fullPath) => {
   }
 })
 
+ipcMain.handle('shell:openPath', async (event, fullPath) => {
+  if (typeof fullPath !== 'string' || !fullPath) {
+    return '目录路径无效'
+  }
+  // shell.openPath 打开目标目录本身；showItemInFolder 则会打开其父目录并选中目标。
+  return shell.openPath(fullPath)
+})
+
 // --- 更新检查：主进程注入层 ---
 // 渲染层保持离线，外部请求只发生在这里；判定逻辑全在 util/updateCheck.js（可脱离 Electron 测试）
 const UPDATE_UA = 'isparta-next-updater'

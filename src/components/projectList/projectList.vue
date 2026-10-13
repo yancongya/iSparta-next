@@ -842,7 +842,12 @@ export default {
         var bb = t + r.height
         if (rr >= boxL && l <= boxR && bb >= boxT && t <= boxB) {
           var idx = Number(el.getAttribute('data-index'))
-          if (isFinite(idx)) indexes.push(idx)
+          // data-index 是过滤/排序后的渲染序；store 选择器使用原始任务序。
+          // 必须按行对象回查，不能直接把渲染序传给 setMultiSelected。
+          if (isFinite(idx) && this.projectList[idx]) {
+            var storeIndex = this.storeIndexOf(this.projectList[idx])
+            if (storeIndex >= 0) indexes.push(storeIndex)
+          }
         }
       }
       this.$store.dispatch('setMultiSelected', indexes)
