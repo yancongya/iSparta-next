@@ -169,29 +169,39 @@
 **互斥规则**：二选一，**禁止双写**（Common Files 与 APPDATA 并存会引发 CEP 加载优先级歧义 / 重复加载）。
 当前 `installer.nsh` 的 `UAC_IsAdmin` 顺带双写行为**须改**。
 
-**选择口径（已实现）**：范围**不再由组件页询问**，唯一真相源是 electron-builder 自带的「安装模式」页
-（`$installMode` = `all` / `CurrentUser`）—— 它同时决定主程序目录与 CEP 落盘位置，避免同一个问题问两遍。
+**选择口径（v3.6.9 起固定系统级）**：`perMachine: true` → 安装范围**不再询问**，唯一真相源是
+electron-builder 的 `$installMode`（`initMultiUser` 在 `customInit` 前无条件置 `"all"`）；
+安装器 manifest 自动 `RequestExecutionLevel admin`，每次安装弹一次 UAC（`/S` 静默同样弹，
+静默只跳页面、不提权）。主程序目录与 CEP 落盘位置都由它推导，避免同一个问题问两遍。
 组件页只**只读展示**落盘位置（`build/installer.nsh` 的 `ispartaResolveScope`）。
 
 ### 9.3 UAC 流程
 
 ```
-「安装模式」页（electron-builder 自带，欢迎页之后）
-    ↓ 用户选「所有用户 / 仅当前用户」；选前者时该页立即 UAC 提权
-    ↓ 结果写入 $installMode（"all" | "CurrentUser"）
+安装器启动（manifest: RequestExecutionLevel admin）
+    ↓ 弹一次 UAC；授权后进程持管理员令牌（/S 静默同样弹，静默只跳页面不提权）
+initMultiUser（.onInit，先于 customInit）
+    ↓ perMachine:true → 无条件 $installMode="all" + SetShellVarContext all
 ispartaResolveScope（唯一推导点）
-├─ all（已是管理员）
+├─ all（必有管理员令牌）
 │     → 主程序 $PROGRAMFILES64\isparta-next
 │     → 写 Common Files\Adobe\CEP\extensions\<EXT_ID>
+│     → 清用户级 %APPDATA% 残留（互斥禁双写；AE 占用删不掉则落 isparta-install.log）
 │     → 所有用户 × 所有 AE 版本
-└─ CurrentUser（免管理员）
+└─ （兜底）无管理员令牌
       → 主程序 $LOCALAPPDATA\Programs\isparta-next
       → 写 %APPDATA%\Adobe\CEP\extensions\<EXT_ID>
-      → 仅当前用户（AE 全版本仍可用）
+      → 清 Common Files 残留
 
 组件页（目录页之后）
-    → 只勾选「桌面版 / AE 扩展」，安装范围只读展示，不再提问、不再申请提权
+    → 只勾选「桌面版 / AE 扩展」，安装范围只读展示，不再提问、不在这里申请提权
     → silent(/S) 升级不经组件页 → 由 customInstall 再 Call 一次 ispartaResolveScope 兜底
+
+双通道同包（桌面自动更 / CEP 面板热更）
+    → 下载同一个 Release NSIS 包，都走 UAC → 同包同作用域
+    → installSection 对 installMode=all 自动 uninstallOldVersion HKCU：
+      旧 per-user 副本（%LOCALAPPDATA%\Programs + HKCU 登记）自动清除，
+      全机只保留一份安装目录
 ```
 
 ### 9.4 识别失败回退链
@@ -209,7 +219,7 @@ ispartaResolveScope（唯一推导点）
 ### 9.5 升级测试关注点
 
 1. 多盘 AE 探测展示正确
-2. 管理员 → Common Files 单份；user-only → APPDATA 单份；**不双写**
+2. UAC 授权 → Common Files 单份（自动清 %APPDATA% 残留）；无令牌兜底 → APPDATA 单份；**不双写**
 3. 热更 `cepSync.js` 目标目录与安装级别对齐（Common Files 需提权/提示）
 4. PlayerDebugMode 按探测到的 CSXS 主版本写（现 6–14；AE2025 若 CSXS 15 需补）
 5. CI/CD：`build.yml`/`release.yml` 的 cep job **须先 `npm run build:cep`**（当前只 rsync `targets/cep/`，会打进过时 UI）
@@ -220,6 +230,6 @@ ispartaResolveScope（唯一推导点）
 | --- | --- | --- |
 | AE 多盘探测 | 无 | 注册表 + 全盘枚举 |
 | 安装互斥 | UAC_IsAdmin 顺带双写 | 二选一，禁双写 |
-| UAC 推荐流 | 无 | 组件页区分「推荐管理员 / 仅当前用户」 |
+| UAC 授权流 | 无（旧：组件页选范围） | perMachine:true 固定系统级，manifest 每次安装提权（v3.6.9 已落地） |
 | 手动选目录 | 无 | 识别失败时 Browse 兜底 |
 | CI 构建 CEP UI | 只 rsync 旧产物 | 打 zip 前 `build:cep` |

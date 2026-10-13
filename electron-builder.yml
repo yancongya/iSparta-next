@@ -33,10 +33,21 @@ win:
         - x64
   icon: ./public/icons/icon.ico
 nsis:
-  # 完整安装向导（含「安装选项」：所有用户 / 仅当前用户）
-  # oneClick:false + perMachine:false → electron-builder 自带 install mode 页（zh_CN）
+  # 完整安装向导（组件页：桌面版 / AE 扩展仍可分开勾选）
+  # oneClick:false 保留向导；perMachine:true = 安装范围固定「所有用户」：
+  #  · 模板自动下发 RequestExecutionLevel admin —— 安装器一启动就弹 UAC，
+  #    用户授权后进程持有管理员令牌，才能写 Program Files / Common Files
+  #  · initMultiUser 无条件置 $installMode="all"（/S 静默也一样，先于 customInit）
+  #    → CEP 扩展恒定落系统级 Common Files，不再分叉到 %APPDATA% 用户级
+  #  · 桌面自动更（electron-updater quitAndInstall）与 CEP 面板热更
+  #    （launchInstaller）下载的是同一个 Release NSIS 包：两条通道都走 UAC、
+  #    同包同作用域，不会一机器两份安装
+  #  · installSection 对 installMode=all 自动 uninstallOldVersion HKCU：
+  #    旧 per-user 副本（%LOCALAPPDATA%\Programs + HKCU 登记）被自动清除，
+  #    全机只保留一份安装目录
+  # 代价：每次安装/更新都会弹一次 UAC 授权（预期行为）。
   oneClick: false
-  perMachine: false
+  perMachine: true
   # NSIS 6010「函数未引用」是宏内 Call 的误报，会零化代码；关掉 warning-as-error
   warningsAsErrors: false
   allowToChangeInstallationDirectory: true

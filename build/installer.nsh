@@ -1,7 +1,9 @@
 ; iSparta-next — electron-builder NSIS 自定义（一体安装）
 ; 由 nsis.include 引入；宏在 assistedInstaller / installSection / uninstaller 正确位置展开。
 ; 组件页：☑ 桌面版  ☑ AE 扩展（至少选其一；可只装桌面）
-; 安装范围互斥（§9）：系统级 Common Files（推荐，需管理员）或用户级 %APPDATA%，二选一禁双写
+; 安装范围（§9）：perMachine:true → 安装器固定「所有用户」+ manifest RequestExecutionLevel admin
+;   （UAC 授权后恒定写系统级 Common Files）；用户级 %APPDATA% 仅作无管理员令牌时的兜底分支，
+;   且装一类必清另一类，禁双写。桌面自动更与 CEP 面板热更共用同一个包，两条通道都走 UAC。
 ; AE 探测：注册表 + 全盘枚举（不只 C 盘）；识别失败仍可装 / 手动选目录
 ; 写 version.json；按 CSXS 主版本写 PlayerDebugMode
 ; 卸载：清理 CEP 落盘（以 version.json/manifest 认领）；保留 PlayerDebugMode（其他未签名扩展可能仍需要）
@@ -98,7 +100,13 @@ FunctionEnd
   Function ispartaRemoveCepDir
     ${if} ${FileExists} "$1\CSXS\manifest.xml"
     ${orIf} ${FileExists} "$1\version.json"
+      ClearErrors
       RMDir /r "$1"
+      ${if} ${errors}
+        ; 多为运行中的 AE 占用文件删不掉；静默安装无处弹窗，只能落日志供排查
+        Push "清理另一作用域副本失败（AE 运行中占用？）：$1"
+        Call ispartaLog
+      ${endIf}
     ${endIf}
   FunctionEnd
 
@@ -192,8 +200,8 @@ FunctionEnd
 
 ; ---------- 组件页（在「选择安装位置」之后、「正在安装」之前） ----------
 ; 版式：左右两张等宽卡片（桌面版 / After Effects 扩展）。
-; **安装范围只问一次**：由 electron-builder 自带的「安装模式」页决定（所有用户 / 仅当前用户），
-; 组件页不再放 radio 重复提问，只把结果只读展示出来（见 ispartaResolveScope）。
+; **安装范围不再提问**：perMachine:true 固定「所有用户」（安装器 manifest 已负责 UAC 提权），
+; 组件页不再放 radio 重复提问，只把落盘结果只读展示出来（见 ispartaResolveScope）。
 ; 整页高度控制在 ~102u（MUI 页面区约 300u × 140u）。
 !macro customPageAfterChangeDir
   ; AE 复选框 ↔ 范围说明联动：没勾 AE 就把位置说明灰掉
@@ -209,7 +217,8 @@ FunctionEnd
   FunctionEnd
 
   ; 安装范围的**唯一真相源**：electron-builder 的 $installMode（"all" / "CurrentUser"）。
-  ; 该页在选「所有用户」时已负责 UAC 提权，这里只做映射 + 生成展示文案。
+  ; perMachine:true 时 initMultiUser（先于 customInit）无条件置 "all"，且安装器 manifest
+  ; 已是的 RequestExecutionLevel admin（UAC 授权后必有管理员令牌），这里只做映射 + 展示文案。
   ; customInstall（含 silent 升级）也会 Call 它，保证无人值守路径同样正确。
   Function ispartaResolveScope
     ${if} $installMode == "all"
@@ -278,7 +287,7 @@ FunctionEnd
       ${NSD_Check} $ispartaChkAe
     ${endIf}
 
-    ; 安装范围不再重复提问：直接跟随「安装模式」页的选择
+    ; 安装范围不再重复提问：perMachine:true 固定「所有用户」，跟随 $installMode
     Call ispartaResolveScope
 
     ${NSD_CreateLabel} 58% 26u 39% 9u "安装位置（跟随安装模式）"
@@ -318,7 +327,7 @@ FunctionEnd
       StrCpy $ispartaInstallAe "1"
     ${endIf}
 
-    ; 安装范围已由「安装模式」页决定（选「所有用户」时该页已完成 UAC 提权），
+    ; 安装范围由 perMachine:true 固定（安装器启动时已 UAC 提权），
     ; 组件页只负责勾选组件，不再重复提问，也不在这里申请提权。
 
     ${if} $ispartaInstallDesktop == "0"
@@ -374,7 +383,8 @@ FunctionEnd
     ${endIf}
   ${endIf}
 
-  ; 安装范围不在这里定：由「安装模式」页 → $installMode → ispartaResolveScope 推导
+  ; 安装范围不在这里定：perMachine:true 时 initMultiUser（先于本宏）已置 $installMode=all，
+  ; 由 ispartaResolveScope 推导
 
   ReadRegStr $0 SHELL_CONTEXT "${INSTALL_REGISTRY_KEY}" CepInstalled
   ${if} ${isUpdated}
@@ -414,6 +424,10 @@ FunctionEnd
   StrCpy $ispartaCepUserDest "$ispartaCepUserParent\${ISPARTA_CEP_ID}"
   StrCpy $ispartaCepCommonParent "$COMMONFILES\Adobe\CEP\extensions"
   StrCpy $ispartaCepCommonDest "$ispartaCepCommonParent\${ISPARTA_CEP_ID}"
+
+  ; 落盘目标写进日志：双副本 / 作用域排查时一眼看到最终装了哪、清了哪
+  Push "cep scope=$ispartaCepScope user=$ispartaCepUserDest common=$ispartaCepCommonDest"
+  Call ispartaLog
 
   ${if} $ispartaInstallAe == "1"
     ; 安装范围互斥（§9）：只落一处，禁止 APPDATA 与 Common Files 双写
