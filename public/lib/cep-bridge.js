@@ -718,6 +718,12 @@
    *   用户会把向导当成「没做静默安装」。args 由调用方给，这里只负责透传。
    * 注意：本文件是构建用源（copy-webpack-plugin 由 public/ 拷进 targets/cep/ui/lib），
    *   targets/cep/lib/ 是 dev HMR 的另一份拷贝，两处必须手工保持一致。
+   *
+   * 提权：perMachine 安装器带 RequestExecutionLevel admin，直接 spawn（CreateProcess）
+   *   在非提权父进程下会报 ELEVATION_REQUIRED 而无法自提权——表现为「点安装卡在正在
+   *   安装、无 UAC、无安装」（安装器根本没跑进 customInit）。故改用 ShellExecute 的
+   *   runas 动词（Start-Process -Verb RunAs）正确触发 UAC 提权，与桌面端
+   *   electron-updater 的 elevate.exe 同效；提权后安装器独立运行（detached）。
    */
   function runInstaller (opts) {
     var o = opts || {}
@@ -731,9 +737,18 @@
       // 静默（对齐 ZCode：静默由安装器自身保证，不依赖调用方参数）。安装器装完会删掉
       // 这个哨兵，避免后续手动重跑同一个 exe 也变成静默。
       try { nodeFs.writeFileSync(file + '.self-update', '') } catch (eMarker) { /* 写不进去就退化成纯 /S 静默 */ }
-      var child = nodeCp.spawn(file, o.args || [], { detached: true, stdio: 'ignore' })
+      // 提权启动：用 Start-Process -Verb RunAs（ShellExecute runas）触发 UAC。
+      // 非提权父进程下弹 UAC 由用户授权；已提权（AE 以管理员运行）则直接跑。
+      // PowerShell 单引号串内 ' 需写成 ''；不要 JSON.stringify（会把 \ 转义成 \\，
+      // 单引号串里被当字面双反斜杠而找不到文件）。
+      var psFile = "'" + String(file).replace(/'/g, "''") + "'"
+      var psArgs = "'" + ((o.args || []).join(' ')).replace(/'/g, "''") + "'"
+      var psCmd = 'Start-Process -FilePath ' + psFile + ' -Verb RunAs -ArgumentList ' + psArgs
+      var child = nodeCp.spawn('powershell.exe', ['-NoProfile', '-Command', psCmd], {
+        detached: true, stdio: 'ignore', windowsHide: true
+      })
       child.unref()
-      return Promise.resolve({ ok: true, pid: child.pid, file: file })
+      return Promise.resolve({ ok: true, pid: child.pid, file: file, elevated: true })
     } catch (e) {
       return Promise.resolve({ ok: false, reason: String(e && e.message || e), file: file })
     }
