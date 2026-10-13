@@ -59,6 +59,9 @@ export default {
 </script>
 
 <style scoped lang="scss">
+// 断点变量来自 styles/_bp.scss（$bp-compact 等）；漏 import 会让 SCSS 报 Undefined variable
+@import "../styles/bp";
+
 .own {
   position: fixed;
   inset: 0;
