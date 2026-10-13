@@ -145,7 +145,8 @@ export default class Action {
         console.warn('stderr:', result && result.stderr)
         console.warn(result && result.error)
         // silent：探测性命令（如 webpmux 取帧到末尾）的预期失败，不写 convertFail、不解锁
-        if (!(options && options.silent)) {
+        // markFail:false：网关阈值重压的子步骤失败由调用方吞掉并重试，不把任务标红「生成失败」
+        if (!(options && options.silent) && !(options && options.markFail === false)) {
           store.dispatch('editProcess', {
             index: item.index,
             text: result && result.cancelled

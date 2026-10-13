@@ -63,7 +63,7 @@ function restoreMasterApng (item) {
   }
 }
 
-function reExportFormat (item, format, store, locale) {
+function reExportFormat (item, format, store, locale, opts) {
   if (format === TYPE.APNG) {
     return fs.copy(
       tmpPathFor(item, TYPE.APNG),
@@ -71,12 +71,12 @@ function reExportFormat (item, format, store, locale) {
     )
   }
   if (format === TYPE.GIF) {
-    return apng2gif(item, store, locale).then(() => {
+    return apng2gif(item, store, locale, opts).then(() => {
       return fs.copy(tmpPathFor(item, TYPE.GIF), outputPathFor(item, TYPE.GIF))
     })
   }
   if (format === TYPE.WEBP) {
-    return apng2webp(item, store, locale).then(() => {
+    return apng2webp(item, store, locale, opts).then(() => {
       return fs.copy(tmpPathFor(item, TYPE.WEBP), outputPathFor(item, TYPE.WEBP))
     })
   }
@@ -182,14 +182,29 @@ export function enforceSizeLimit (item, store, locale) {
         schedule: 0.85
       })
 
-      restoreMasterApng(item)
-      return apngCompress(item, 0, store, locale)
-        .then(() => reExportFormat(item, format, store, locale))
-        .then(() => retry(tries + 1))
-        .catch((err) => {
-          warned.push({ format, size, error: String(err && err.err || err) })
-          return { format, size, action: 'warn-error' }
-        })
+      // WEBP 体积由 cwebp -q 直接控制，无需再重量化整段 APNG 母版（apngquant 对大动画既慢
+      // 又易触顶内存/资源，且 cwebp 本就重编码母版帧）；只重跑最终编码器、降 cwebp -q 即可。
+      // PNG/APNG/GIF 的「质量」即母版量化/颜色数，必须重新量化母版（apngquant）。
+      // markFail:false —— 子步骤失败由下方 .catch 吞掉并重试，不把任务标红「生成失败」。
+      let reEncode
+      try {
+        if (format === TYPE.WEBP) {
+          reEncode = reExportFormat(item, format, store, locale, { markFail: false })
+        } else {
+          restoreMasterApng(item)
+          reEncode = apngCompress(item, 0, store, locale, { markFail: false })
+            .then(() => reExportFormat(item, format, store, locale, { markFail: false }))
+        }
+      } catch (syncErr) {
+        appLog.error('size-gate retry sync error', String(syncErr && syncErr.stack || syncErr))
+        warned.push({ format, size, error: String(syncErr) })
+        return Promise.resolve({ format, size, action: 'warn-error' })
+      }
+      return reEncode.then(() => retry(tries + 1)).catch((err) => {
+        appLog.error('size-gate retry failed', String(err && err.err || err))
+        warned.push({ format, size, error: String(err && err.err || err) })
+        return { format, size, action: 'warn-error' }
+      })
     }
 
     return retry(0)

@@ -1,7 +1,7 @@
 import { path, fs } from '../node-env'
 import action from './action'
 
-export default function (item, store, locale) {
+export default function (item, store, locale, opts) {
   store.dispatch('editProcess', {
     index: item.index,
     text: locale.outputing+' GIF...',
@@ -21,8 +21,9 @@ export default function (item, store, locale) {
   item.basic.fileList[0] = tmpFile
 
   var fileName = path.basename(item.basic.fileList[0])
+  var gateOpts = opts && opts.markFail === false ? { markFail: false } : undefined
   return action.exec(action.bin('apng2gif'), [
     fileName,
     'out.gif'
-  ], item, store, locale, { cwd: path.dirname(item.basic.fileList[0]) })
+  ], item, store, locale, Object.assign({ cwd: path.dirname(item.basic.fileList[0]) }, gateOpts || {}))
 }

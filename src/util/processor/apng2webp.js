@@ -1,7 +1,7 @@
 import { fs, path } from '../node-env'
 import action from './action'
 
-export default function (item, store, locale) {
+export default function (item, store, locale, opts) {
   store.dispatch('editProcess', {
     index: item.index,
     text: locale.outputing+' WEBP...',
@@ -9,9 +9,10 @@ export default function (item, store, locale) {
   })
 
   var tmpDir = item.basic.tmpDir
+  var gateOpts = opts && opts.markFail === false ? { markFail: false } : undefined
   return action.exec(action.bin('apngdis'), [
     item.basic.fileList[0]
-  ], item, store, locale).then(() => {
+  ], item, store, locale, gateOpts).then(() => {
     var data = fs.readFileSync(path.join(tmpDir, 'apngframe_metadata.json'), {encoding: 'utf-8'})
     var animation = JSON.parse(data)
     var frames = animation['frames']
@@ -23,7 +24,7 @@ export default function (item, store, locale) {
         cwebpArgs.push('-q', String(item.options.quality.value))
       }
       cwebpArgs.push(png_frame_file, '-o', webp_frame_file)
-      return action.exec(action.bin('cwebp'), cwebpArgs, item, store, locale).then(() => {
+      return action.exec(action.bin('cwebp'), cwebpArgs, item, store, locale, gateOpts).then(() => {
         var delay = Math.round((frame['delay_num']) / (frame['delay_den']) * 1000)
         if (delay === 0) { // The specs say zero is allowed, but should be treated as 10 ms.
           delay = 10
@@ -54,7 +55,7 @@ export default function (item, store, locale) {
       ...frameArgs,
       '-loop', String(item.options.loop),
       '-o', path.join(item.basic.tmpOutputDir, 'out.webp')
-    ], item, store, locale, { cwd: tmpDir })
+    ], item, store, locale, Object.assign({ cwd: tmpDir }, gateOpts || {}))
   })
 }
 

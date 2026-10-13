@@ -1,7 +1,7 @@
 import { path, fs } from '../node-env'
 import action from './action'
 
-export default function (item, isLossless, store, locale) {
+export default function (item, isLossless, store, locale, opts) {
   store.dispatch('editProcess', {
     index: item.index,
     text: locale.compressing + '...',
@@ -18,9 +18,11 @@ export default function (item, isLossless, store, locale) {
 
   item.basic.fileList[0] = tmpFile
 
+  var gateOpts = opts && opts.markFail ? { markFail: true } : (opts && opts.markFail === false ? { markFail: false } : undefined)
+
 	// apngquant
   if (!item.options.quality.checked) {
-    return apngopt(item, store, locale)
+    return apngopt(item, store, locale, gateOpts)
   } else {
     return action.exec(action.bin('apngquant'), [
       item.basic.fileList[0],
@@ -29,16 +31,21 @@ export default function (item, isLossless, store, locale) {
       '--force',
       item.options.floyd.checked ? ('--floyd=' + item.options.floyd.value) : '',
       item.options.quality.checked ? ('--quality=0-' + item.options.quality.value) : ''
-    ], item, store, locale).then(() => {
-      item.basic.fileList[0] = path.join(item.basic.tmpOutputDir, 'out-quant.png')
-      return apngopt(item, store, locale)
+    ], item, store, locale, gateOpts).then(() => {
+      return apngopt(item, store, locale, gateOpts)
+    }).then(() => {
+      // 收尾把 fileList[0] 指向规范化主文件 out.png（apngopt 的输出），而非 out-quant.png：
+      // 否则下游 reExportFormat / 重压复检会读到重量化中间产物，且和首轮一致（首轮由
+      // apng2other 重置为 out.png），消除 sizeGate 重压时的不变式隐患
+      item.basic.fileList[0] = path.join(item.basic.tmpOutputDir, 'out.png')
+      return item
     })
   }
 }
-function apngopt (item, store, locale) {
+function apngopt (item, store, locale, opts) {
   return action.exec(action.bin('apngopt'), [
     item.basic.fileList[0],
     path.join(item.basic.tmpOutputDir, 'out.png'),
     '-z2'
-  ], item, store, locale)
+  ], item, store, locale, opts)
 }
