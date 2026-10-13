@@ -355,10 +355,12 @@ jobs:
             ls -la dist_electron || true
             exit 1
           fi
+          appimage_old=""
+          appimage_new=""
           for f in release/*; do
             base="$(basename "$f")"
             lower="$(echo "$base" | tr '[:upper:]' '[:lower:]')"
-            # latest*.yml / blockmap：保持 electron-builder 原名，供 electron-updater 使用
+            # latest*.yml / blockmap 自身不改名；下方会同步修正 Linux 清单中的资产名。
             if [[ "$base" == latest*.yml || "$lower" == *.blockmap ]]; then
               continue
             fi
@@ -383,9 +385,16 @@ jobs:
               dest="isparta-next-${VERSION}-linux-x64.${ext}"
             fi
             if [[ "$base" != "$dest" ]]; then
+              if [[ "$PLATFORM" == "linux" && "$ext" == "AppImage" ]]; then
+                appimage_old="$base"
+                appimage_new="$dest"
+              fi
               mv "$f" "release/$dest"
             fi
           done
+          if [[ -n "$appimage_old" && -f release/latest-linux.yml ]]; then
+            sed -i "s|${appimage_old}|${appimage_new}|g" release/latest-linux.yml
+          fi
           ls -lh release
 
       - name: Write macOS pkg update manifest
@@ -487,6 +496,10 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p notes
+          # 共用 CEP 载荷只在工作流任务间传递，不作为用户下载资产。
+          if [ -f dist/shared-cep-payload.tar.gz ]; then
+            rm dist/shared-cep-payload.tar.gz
+          fi
           if [ -f dist/release-notes.md ]; then
             mv dist/release-notes.md notes/release-notes.md
           else
