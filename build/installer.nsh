@@ -4,6 +4,8 @@
 ; 安装范围（§9）：perMachine:true → 安装器固定「所有用户」+ manifest RequestExecutionLevel admin
 ;   （UAC 授权后恒定写系统级 Common Files）；用户级 %APPDATA% 仅作无管理员令牌时的兜底分支，
 ;   且装一类必清另一类，禁双写。桌面自动更与 CEP 面板热更共用同一个包，两条通道都走 UAC。
+;   安装前自检：customInstall 在写目标作用域前，先把用户级与 Common Files 两个作用域里的
+;   本扩展旧副本全部清掉（只认领 EXT_ID、AE 占用则落日志），保证装完全机只留一份。
 ; AE 探测：注册表 + 全盘枚举（不只 C 盘）；识别失败仍可装 / 手动选目录
 ; 写 version.json；按 CSXS 主版本写 PlayerDebugMode
 ; 卸载：清理 CEP 落盘（以 version.json/manifest 认领）；保留 PlayerDebugMode（其他未签名扩展可能仍需要）
@@ -430,6 +432,16 @@ FunctionEnd
   Call ispartaLog
 
   ${if} $ispartaInstallAe == "1"
+    ; 安装前自检：清掉两个作用域里所有本扩展旧副本（冗余重复 / 双写残留），
+    ; 只认领 EXT_ID 目录，best-effort（AE 运行中占用则落日志、下次再清）。
+    ; 清完再写目标作用域 → 无论机器此前处于什么乱状态，装完都只剩一份。
+    Push "cep self-check: 清理冗余副本 user=$ispartaCepUserDest common=$ispartaCepCommonDest"
+    Call ispartaLog
+    StrCpy $1 $ispartaCepUserDest
+    Call ispartaRemoveCepDir
+    StrCpy $1 $ispartaCepCommonDest
+    Call ispartaRemoveCepDir
+
     ; 安装范围互斥（§9）：只落一处，禁止 APPDATA 与 Common Files 双写
     ${if} $ispartaCepScope == "all"
     ${andIf} ${UAC_IsAdmin}
