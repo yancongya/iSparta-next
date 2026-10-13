@@ -11,7 +11,7 @@
         <is-icon
           class="is-update-dock__icon"
           :name="headIcon"
-          :spin="phase === 'downloading' || phase === 'installing'"
+          :spin="phase === 'downloading' || (phase === 'installing' && !isCepInstalling)"
           size="lg"
         />
         <div class="is-update-dock__head-text">
@@ -27,21 +27,24 @@
       </div>
 
       <is-progress
-        v-if="phase === 'downloading' || phase === 'downloaded' || phase === 'installing'"
+        v-if="phase === 'downloading' || phase === 'downloaded' || (phase === 'installing' && !isCepInstalling)"
         class="is-update-dock__progress"
         :percent="autoProgress"
-        :active="phase === 'downloading' || phase === 'installing'"
+        :active="phase === 'downloading' || (phase === 'installing' && !isCepInstalling)"
         :done="phase === 'downloaded'"
         :show-percent="phase !== 'installing'"
         :label="phase === 'installing' ? $t('updateInstalling') : $t('updateDownloading')"
       />
 
       <div class="is-update-dock__acts">
-        <!-- 安装进行中：面板必须给反馈（静默安装期间没有任何原生界面），
-             此时只留一个不可点的状态按钮，避免用户重复触发安装 -->
+        <!-- 安装进行中：面板必须给反馈（静默安装期间没有任何原生界面）。
+             CEP 已 detached 起安装包后进入「已启动」终态：不再无限转圈，
+             只留一个不可点的状态按钮，避免用户重复触发安装。 -->
         <template v-if="phase === 'installing'">
           <div class="is-update-dock__spacer" />
-          <is-button size="sm" type="primary" :disabled="true">{{ $t('updateInstalling') }}</is-button>
+          <is-button size="sm" type="primary" :disabled="true">
+            {{ isCepInstalling ? $t('updateCepInstallStarted') : $t('updateInstalling') }}
+          </is-button>
         </template>
         <template v-else>
           <is-button
@@ -126,6 +129,13 @@ export default {
     autoInstalling () {
       return !!(this.auto && (this.auto.installing || this.auto.launched))
     },
+    /**
+     * CEP 已 detached 起静默安装包：进入「已启动」终态（check 图标 + 无转圈），
+     * 而不是像桌面 quitAndInstall 那样仍在「安装中」（loader 转圈）。
+     */
+    isCepInstalling () {
+      return this.isCepInstaller && this.autoInstalling
+    },
     autoProgress () {
       return (this.auto && this.auto.progress) || 0
     },
@@ -140,7 +150,7 @@ export default {
       return this.autoSupported ? this.$t('updateDockUpdate') : this.$t('updateGoDownload')
     },
     headIcon () {
-      if (this.phase === 'installing') return 'loader'
+      if (this.phase === 'installing') return this.isCepInstalling ? 'check-circle' : 'loader'
       if (this.phase === 'downloaded') return 'check-circle'
       if (this.phase === 'error') return 'alert'
       if (this.phase === 'downloading') return 'download'

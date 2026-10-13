@@ -726,6 +726,11 @@
     if (!file) { return Promise.resolve({ ok: false, reason: 'no-file' }) }
     if (!existsSync(file)) { return Promise.resolve({ ok: false, reason: 'missing-file', file: file }) }
     try {
+      // 自更新哨兵：在 exe 同目录写一个 `<exe>.self-update`。即使渲染层忘了传 /S
+      // （旧面板跑新安装包），installer.nsh 也能靠它自感知「这是面板起的更新」并强制
+      // 静默（对齐 ZCode：静默由安装器自身保证，不依赖调用方参数）。安装器装完会删掉
+      // 这个哨兵，避免后续手动重跑同一个 exe 也变成静默。
+      try { nodeFs.writeFileSync(file + '.self-update', '') } catch (eMarker) { /* 写不进去就退化成纯 /S 静默 */ }
       var child = nodeCp.spawn(file, o.args || [], { detached: true, stdio: 'ignore' })
       child.unref()
       return Promise.resolve({ ok: true, pid: child.pid, file: file })

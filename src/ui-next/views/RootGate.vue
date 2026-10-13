@@ -4,7 +4,11 @@
     <home />
 
     <transition name="rg-fade">
-      <onboarding v-if="overlay" />
+      <onboarding v-if="overlay && !showWhatsNew" />
+    </transition>
+
+    <transition name="rg-fade">
+      <onboarding-whats-new v-if="overlay && showWhatsNew" />
     </transition>
   </div>
 </template>
@@ -35,16 +39,19 @@
  */
 import Home from './Home.vue'
 import Onboarding from '../onboarding/Onboarding.vue'
-import { state, shouldAutoOpen, open as openOnboarding } from '../onboarding/state'
+import OnboardingWhatsNew from '../onboarding/OnboardingWhatsNew.vue'
+import { state, shouldAutoOpen, open as openOnboarding, isUpgradeReplay } from '../onboarding/state'
 import hostAdapter from '../../util/host-env'
 
 export default {
   name: 'RootGate',
-  components: { Home, Onboarding },
+  components: { Home, Onboarding, OnboardingWhatsNew },
   computed: {
     isStandalone () { return hostAdapter.kind === 'electron' },
     // state 是 Vue.observable 单例，引导内部的 close/finish 会直接驱动这里
-    overlay () { return !this.isStandalone && state.open }
+    overlay () { return !this.isStandalone && state.open },
+    // CEP 升级复播：用轻量「更新说明」单屏替代完整 7 步引导，避免装完一关 loading 就弹长引导
+    showWhatsNew () { return !this.isStandalone && state.open && state.mode === 'upgrade' }
   },
   created () {
     // 挂载前判定：main.js 已完成 ThemeManager.init() / syncLocaleFromStorage()，

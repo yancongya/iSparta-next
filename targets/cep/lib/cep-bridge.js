@@ -716,8 +716,8 @@
    * ⚠ 渲染层固定传 `/S`（见 src/util/cepUpdater.js 的 launchInstaller）：
    *   不带参数会弹 NSIS **原生安装向导**，与「静默安装 + 面板内 loading」相悖，
    *   用户会把向导当成「没做静默安装」。args 由调用方给，这里只负责透传。
-   * 注意：public/lib/cep-bridge.js 是构建用源（copy-webpack-plugin 拷进
-   *   targets/cep/ui/lib），本文件是 dev HMR 的另一份拷贝，两处必须手工保持一致。
+   * 注意：本文件是构建用源（copy-webpack-plugin 由 public/ 拷进 targets/cep/ui/lib），
+   *   targets/cep/lib/ 是 dev HMR 的另一份拷贝，两处必须手工保持一致。
    */
   function runInstaller (opts) {
     var o = opts || {}
@@ -726,6 +726,11 @@
     if (!file) { return Promise.resolve({ ok: false, reason: 'no-file' }) }
     if (!existsSync(file)) { return Promise.resolve({ ok: false, reason: 'missing-file', file: file }) }
     try {
+      // 自更新哨兵：在 exe 同目录写一个 `<exe>.self-update`。即使渲染层忘了传 /S
+      // （旧面板跑新安装包），installer.nsh 也能靠它自感知「这是面板起的更新」并强制
+      // 静默（对齐 ZCode：静默由安装器自身保证，不依赖调用方参数）。安装器装完会删掉
+      // 这个哨兵，避免后续手动重跑同一个 exe 也变成静默。
+      try { nodeFs.writeFileSync(file + '.self-update', '') } catch (eMarker) { /* 写不进去就退化成纯 /S 静默 */ }
       var child = nodeCp.spawn(file, o.args || [], { detached: true, stdio: 'ignore' })
       child.unref()
       return Promise.resolve({ ok: true, pid: child.pid, file: file })

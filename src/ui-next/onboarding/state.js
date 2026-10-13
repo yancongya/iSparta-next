@@ -45,7 +45,7 @@ export const KEY = 'onboardingState'
 export const VERSION = 1
 
 /** 引导是否正在展示（跨组件共享的 observable 单例；桌面独立窗下恒 false） */
-export const state = Vue.observable({ open: false })
+export const state = Vue.observable({ open: false, mode: '' })
 
 /**
  * 桌面独立窗的宿主 ipc 桥；CEP / browser-mock 下为 null。
@@ -87,6 +87,18 @@ export function isDone () {
   return rec.appVersion === APP_VERSION
 }
 
+/**
+ * 是否「升级后复播」：已有完成标记（引导版本吻合、done=true），但 appVersion 不是
+ * 当前版本。与 isDone() 互补——isDone 决定要不要弹，这里决定弹「完整引导」还是
+ * 「轻量更新说明」。首装（无记录）不算升级复播。
+ */
+export function isUpgradeReplay () {
+  const r = readRecord()
+  if (!r.ok || !r.record) { return false }
+  const rec = r.record
+  return rec.version === VERSION && rec.done === true && rec.appVersion !== APP_VERSION
+}
+
 /** 写入完成标记（带上写标记时的应用版本，供升级后比对） */
 export function markDone () {
   try {
@@ -105,6 +117,8 @@ export function shouldAutoOpen () {
  */
 export function open () {
   const ipc = hostIpc()
+  // 升级复播 → 轻量「更新说明」；首装 → 完整引导。桌面独立窗也带上 mode 便于后续分流。
+  state.mode = isUpgradeReplay() ? 'upgrade' : 'first'
   if (hostAdapter.kind === 'electron' && ipc && typeof ipc.send === 'function') {
     try {
       ipc.send('onboarding:open')

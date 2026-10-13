@@ -336,6 +336,21 @@ FunctionEnd
 
 ; ---------- 安装初始化：默认组件 / 升级保留上次选择 ----------
 !macro customInit
+  ; ---------- 自更新静默保证（对齐 ZCode：静默由安装器自身保证，不依赖调用方参数） ----------
+  ; 面板起安装包前会在 exe 同目录写一个 `<exe>.self-update` 哨兵（见 cep-bridge.js 的
+  ; runInstaller）。若带哨兵却没带 /S（旧面板忘了传 /S，或用户手动双击了自动下载的包），
+  ; 这里自重启为一个静默实例；静默实例会清掉哨兵，避免后续手动重跑也静默。
+  ; ⚠ 任何自定义页（ispartaComponentsPre 等）遇 ${Silent} 必须 Abort，否则静默下仍会弹页。
+  ${If} ${FileExists} "$EXEPATH.self-update"
+    ${IfNot} ${Silent}
+      ; 自重启静默：原实例退出，新 /S 实例无人值守装完。
+      Exec '"$EXEPATH" /S'
+      Abort
+    ${EndIf}
+    ; 静默实例：清掉哨兵（必须早于真实安装逻辑，避免手动重跑也静默）
+    Delete "$EXEPATH.self-update"
+  ${EndIf}
+
   StrCpy $ispartaInstallDesktop "1"
   StrCpy $ispartaInstallAe "1"
   StrCpy $ispartaSilentText "0"

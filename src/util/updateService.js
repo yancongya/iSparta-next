@@ -443,14 +443,18 @@ export async function refreshAutoUpdateState () {
  */
 export async function restartToUpdate () {
   if (isCep()) {
-    // 静默：launchInstaller 内部固定带 `/S`，不再弹 NSIS 原生向导
+    // 点击即切到 installing 态：静默安装期间没有任何原生界面，必须先给反馈，
+    // 否则用户感觉「点了没反应」；旧逻辑（spawn 返回后才设态）会让 loading 在装完才出现。
+    state.auto = Object.assign({}, state.auto, { installing: true })
+    state.dockVisible = true
+    // 静默：launchInstaller 内部固定带 `/S`（旧面板忘了传时，安装器也会靠哨兵自重启静默）
     var r = await launchInstaller(state.auto.file)
     if (r && r.ok) {
-      state.auto = Object.assign({}, state.auto, { launched: true, installing: true })
-      state.dockVisible = true
+      // 保持 installing（dock 进入「已启动安装，请重启 AE」的终态），并标记 launched
+      state.auto = Object.assign({}, state.auto, { launched: true })
       appLog.info('已启动静默安装，安装完成后请重启 After Effects')
     } else {
-      state.auto = Object.assign({}, state.auto, { installing: false })
+      state.auto = Object.assign({}, state.auto, { installing: false, launched: false })
       appLog.warn('启动安装失败', (r && r.reason) || 'unknown')
     }
     return r

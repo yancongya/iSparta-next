@@ -24,6 +24,7 @@
     "build:windows": "node scripts/cep-manifest-dev.js off && vue-cli-service build --mode cep && node scripts/prepare-cep-payload.js && vue-cli-service electron:build --windows",
     "build:cep": "vue-cli-service build --mode cep",
     "build:cep:watch": "vue-cli-service build --mode cep --watch",
+    "sync:cep": "node scripts/sync-cep.mjs",
     "serve:cep": "vue-cli-service serve --mode cep --port 8082",
     "dev:cep": "node scripts/cep-manifest-dev.js on && vue-cli-service serve --mode cep --port 8082",
     "dev:cep:off": "node scripts/cep-manifest-dev.js off",
