@@ -245,6 +245,8 @@ module.exports = {
     "updateRestartNow":"重启以更新",
     "updateInstallingApp":"iSparta-next 正在安装更新",
     "updateInstallingBody":"应用将关闭以完成安装。安装结束后会自动重新打开，可能需要几分钟。",
+    "updateInstalling":"正在安装…",
+    "updateInstallingCep":"正在静默安装（不会再弹安装向导），无需其他操作；安装完成后请重启 After Effects 生效。",
     "updateDownloading":"正在后台下载更新…",
     "updateDownloaded":"更新包已下载完成，重启后即可生效。",
     "updateAutoUnsupported":"当前安装形态不支持自动更新，请使用「前往下载」。",

@@ -11,7 +11,7 @@
         <is-icon
           class="is-update-dock__icon"
           :name="headIcon"
-          :spin="phase === 'downloading'"
+          :spin="phase === 'downloading' || phase === 'installing'"
           size="lg"
         />
         <div class="is-update-dock__head-text">
@@ -27,43 +27,51 @@
       </div>
 
       <is-progress
-        v-if="phase === 'downloading' || phase === 'downloaded'"
+        v-if="phase === 'downloading' || phase === 'downloaded' || phase === 'installing'"
         class="is-update-dock__progress"
         :percent="autoProgress"
-        :active="phase === 'downloading'"
+        :active="phase === 'downloading' || phase === 'installing'"
         :done="phase === 'downloaded'"
-        :show-percent="true"
-        :label="$t('updateDownloading')"
+        :show-percent="phase !== 'installing'"
+        :label="phase === 'installing' ? $t('updateInstalling') : $t('updateDownloading')"
       />
 
       <div class="is-update-dock__acts">
-        <is-button
-          v-if="phase !== 'downloading'"
-          size="sm"
-          type="text"
-          @click="$emit('details')"
-        >{{ $t('updateDockDetails') }}</is-button>
-        <is-button
-          v-if="phase === 'available' || phase === 'error'"
-          size="sm"
-          type="text"
-          @click="$emit('later')"
-        >{{ $t('updateLater') }}</is-button>
+        <!-- 安装进行中：面板必须给反馈（静默安装期间没有任何原生界面），
+             此时只留一个不可点的状态按钮，避免用户重复触发安装 -->
+        <template v-if="phase === 'installing'">
+          <div class="is-update-dock__spacer" />
+          <is-button size="sm" type="primary" :disabled="true">{{ $t('updateInstalling') }}</is-button>
+        </template>
+        <template v-else>
+          <is-button
+            v-if="phase !== 'downloading'"
+            size="sm"
+            type="text"
+            @click="$emit('details')"
+          >{{ $t('updateDockDetails') }}</is-button>
+          <is-button
+            v-if="phase === 'available' || phase === 'error'"
+            size="sm"
+            type="text"
+            @click="$emit('later')"
+          >{{ $t('updateLater') }}</is-button>
 
-        <div class="is-update-dock__spacer" />
+          <div class="is-update-dock__spacer" />
 
-        <is-button
-          v-if="phase === 'downloaded'"
-          size="sm"
-          type="primary"
-          @click="$emit('restart')"
-        >{{ isCepInstaller ? $t('updateRunInstaller') : $t('updateRestartNow') }}</is-button>
-        <is-button
-          v-else-if="phase === 'available' || phase === 'error'"
-          size="sm"
-          type="primary"
-          @click="$emit('update')"
-        >{{ primaryLabel }}</is-button>
+          <is-button
+            v-if="phase === 'downloaded'"
+            size="sm"
+            type="primary"
+            @click="$emit('restart')"
+          >{{ isCepInstaller ? $t('updateRunInstaller') : $t('updateRestartNow') }}</is-button>
+          <is-button
+            v-else-if="phase === 'available' || phase === 'error'"
+            size="sm"
+            type="primary"
+            @click="$emit('update')"
+          >{{ primaryLabel }}</is-button>
+        </template>
       </div>
     </div>
   </transition>
@@ -108,10 +116,21 @@ export default {
     autoError () {
       return !!(this.auto && this.auto.error)
     },
+    /**
+     * 安装进行中。两个来源：
+     *   · installing —— 桌面：已请求主进程延迟关闭应用进安装（见 updateService）
+     *   · launched   —— CEP：已 detached 起静默安装包，等用户重启 AE 生效
+     * 两者都必须让面板停在 loading 态：静默安装期间没有任何原生界面，
+     * 不显示就等于「点了没反应」。
+     */
+    autoInstalling () {
+      return !!(this.auto && (this.auto.installing || this.auto.launched))
+    },
     autoProgress () {
       return (this.auto && this.auto.progress) || 0
     },
     phase () {
+      if (this.autoInstalling) return 'installing'
       if (this.autoDownloaded) return 'downloaded'
       if (this.autoDownloading) return 'downloading'
       if (this.autoError && this.autoSupported) return 'error'
@@ -121,12 +140,14 @@ export default {
       return this.autoSupported ? this.$t('updateDockUpdate') : this.$t('updateGoDownload')
     },
     headIcon () {
+      if (this.phase === 'installing') return 'loader'
       if (this.phase === 'downloaded') return 'check-circle'
       if (this.phase === 'error') return 'alert'
       if (this.phase === 'downloading') return 'download'
       return 'sparkles'
     },
     headTitle () {
+      if (this.phase === 'installing') return this.$t('updateInstallingApp')
       if (this.phase === 'downloaded') return this.$t('updateReadyTitle')
       if (this.phase === 'error') return this.$t('updateDownloadFailed')
       if (this.phase === 'downloading') return this.$t('updateDownloading')
@@ -134,6 +155,10 @@ export default {
     },
     headSub () {
       var pair = 'v' + this.latest + ' ← v' + this.current
+      if (this.phase === 'installing') {
+        // CEP 装完 AE 不会自重启，必须明确让用户重启面板宿主
+        return this.isCepInstaller ? this.$t('updateInstallingCep') : this.$t('updateInstallingBody')
+      }
       if (this.phase === 'downloaded') {
         return this.isCepInstaller ? this.$t('updateCepDownloaded') : this.$t('updateDownloaded')
       }

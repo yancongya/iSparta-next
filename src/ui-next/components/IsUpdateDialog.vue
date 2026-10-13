@@ -5,7 +5,7 @@
     :show-close="false"
     panel-class="upd-panel"
     width="440px"
-    :title="readyHead"
+    :title="heroHead"
     @update:visible="onVisible"
   >
     <div class="upd">
@@ -18,9 +18,9 @@
             </g>
           </svg>
         </span>
-        <h2 class="upd__title">{{ readyHead }}</h2>
+        <h2 class="upd__title">{{ heroHead }}</h2>
         <p class="upd__sub">
-          {{ $t('updateAvailable', { latest: 'v' + (latest || ''), current: 'v' + (current || '') }) }}
+          {{ heroSub }}
         </p>
       </div>
 
@@ -37,7 +37,19 @@
       </is-scroll-fade>
       <p v-else class="upd__notes-empty">{{ $t('updateNotesEmpty') }}</p>
 
-      <div v-if="autoSupported && autoDownloading" class="upd__progress-block">
+      <!-- 安装中：不能再显示「已下载 100%」——那是上一步的结论，
+           这里换成进行中的进度 + 说明（走静默安装，界面是唯一的反馈） -->
+      <div v-if="autoInstalling" class="upd__progress-block">
+        <!-- 不确定进度：显式关掉百分比，否则会写死成「100%」，看着像已完成 -->
+        <is-progress
+          :percent="100"
+          :active="true"
+          :show-percent="false"
+          :label="$t('updateInstalling')"
+        />
+        <p class="upd__footnote">{{ installFootnote }}</p>
+      </div>
+      <div v-else-if="autoSupported && autoDownloading" class="upd__progress-block">
         <is-progress
           :percent="autoProgress"
           :active="true"
@@ -64,7 +76,12 @@
         <div class="upd__acts-right">
           <is-button @click="onLater">{{ $t('updateLater') }}</is-button>
           <is-button
-            v-if="autoSupported && autoDownloaded"
+            v-if="autoInstalling"
+            type="primary"
+            :disabled="true"
+          >{{ $t('updateInstalling') }}</is-button>
+          <is-button
+            v-else-if="autoSupported && autoDownloaded"
             type="primary"
             @click="onRestart"
           >{{ isCepInstaller ? $t('updateRunInstaller') : $t('updateRestartNow') }}</is-button>
@@ -132,11 +149,26 @@ export default {
     autoDownloaded () {
       return !!(this.auto && this.auto.downloaded)
     },
+    /** 安装进行中（桌面：已请求关闭应用进安装；CEP：已 detached 起静默安装包） */
+    autoInstalling () {
+      return !!(this.auto && (this.auto.installing || this.auto.launched))
+    },
     autoProgress () {
       return (this.auto && this.auto.progress) || 0
     },
     readyHead () {
       return this.$t('updateReadyHead', { ver: 'v' + (this.latest || '') })
+    },
+    /** 头部标题：安装中必须换掉「已就绪」，否则和下面的「正在安装」自相矛盾 */
+    heroHead () {
+      return this.autoInstalling ? this.$t('updateInstallingApp') : this.readyHead
+    },
+    /** 头部副标题：安装中不再说「发现新版本」，改为版本对照 */
+    heroSub () {
+      if (this.autoInstalling) {
+        return 'v' + (this.latest || '') + ' ← v' + (this.current || '')
+      }
+      return this.$t('updateAvailable', { latest: 'v' + (this.latest || ''), current: 'v' + (this.current || '') })
     },
     noteItems () {
       var raw = this.notes
@@ -149,6 +181,9 @@ export default {
       }).filter(Boolean)
     },
     installFootnote () {
+      if (this.autoInstalling) {
+        return this.isCepInstaller ? this.$t('updateInstallingCep') : this.$t('updateInstallingBody')
+      }
       if (this.autoSupported && this.autoDownloaded) {
         return this.isCepInstaller ? this.$t('updateCepDownloaded') : this.$t('updateInstallingBody')
       }

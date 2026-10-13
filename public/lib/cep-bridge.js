@@ -711,7 +711,14 @@
     return Promise.resolve({ ok: true, state: dlSnapshot() })
   }
 
-  /** updater:runInstaller —— 起 NSIS 向导后立即撒手（detached + unref），不阻塞面板 */
+  /**
+   * updater:runInstaller —— 起安装包后立即撒手（detached + unref），不阻塞面板。
+   * ⚠ 渲染层固定传 `/S`（见 src/util/cepUpdater.js 的 launchInstaller）：
+   *   不带参数会弹 NSIS **原生安装向导**，与「静默安装 + 面板内 loading」相悖，
+   *   用户会把向导当成「没做静默安装」。args 由调用方给，这里只负责透传。
+   * 注意：本文件是构建用源（copy-webpack-plugin 由 public/ 拷进 targets/cep/ui/lib），
+   *   targets/cep/lib/ 是 dev HMR 的另一份拷贝，两处必须手工保持一致。
+   */
   function runInstaller (opts) {
     var o = opts || {}
     if (!hasNode || !nodeCp) { return Promise.resolve({ ok: false, reason: 'no-node' }) }

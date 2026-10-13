@@ -435,33 +435,47 @@ export async function refreshAutoUpdateState () {
 }
 
 /**
- * 桌面：quitAndInstall（electron-updater 已下好的包）。
- * CEP：起官方安装向导（AE 无法自重启，装完由用户重启 After Effects 生效）。
+ * 桌面：quitAndInstall（electron-updater 已下好的包，静默 `/S --updated`）。
+ * CEP：起官方安装包**静默**安装（AE 无法自重启，装完由用户重启 After Effects 生效）。
+ *
+ * 两端都先把界面切到 installing 态再动手：静默安装期间没有任何原生界面
+ * （这正是用户报的「点完没反应 / 还弹原生向导」），不给 loading 反馈就等于没响应。
  */
 export async function restartToUpdate () {
   if (isCep()) {
+    // 静默：launchInstaller 内部固定带 `/S`，不再弹 NSIS 原生向导
     var r = await launchInstaller(state.auto.file)
     if (r && r.ok) {
-      state.auto = Object.assign({}, state.auto, { launched: true })
+      state.auto = Object.assign({}, state.auto, { launched: true, installing: true })
       state.dockVisible = true
-      appLog.info('已启动安装向导，安装完成后请重启 After Effects')
+      appLog.info('已启动静默安装，安装完成后请重启 After Effects')
     } else {
-      appLog.warn('启动安装向导失败', (r && r.reason) || 'unknown')
+      state.auto = Object.assign({}, state.auto, { installing: false })
+      appLog.warn('启动安装失败', (r && r.reason) || 'unknown')
     }
     return r
   }
+  state.auto = Object.assign({}, state.auto, { installing: true })
   try {
     // 文案走渲染层 i18n，主进程 Toast 用这份文案
     var i18nMod = null
     try { i18nMod = require('../i18n').default } catch (e) { i18nMod = null }
     var title = (i18nMod && i18nMod.t('updateInstallingApp')) || 'iSparta-next'
     var body = (i18nMod && i18nMod.t('updateInstallingBody')) || '正在安装更新…'
-    return await ipc.invoke('updater:quitAndInstall', {
+    // delayMs 是留给用户看到 installing 这一屏的时间；安装完成后由 `--force-run`
+    // 自动启动，新进程交给启动进度窗 BootSplash，视觉上是一段连续的 loading。
+    var res = await ipc.invoke('updater:quitAndInstall', {
       title: title,
       body: body,
-      delayMs: 500
+      delayMs: 1600
     })
+    // 没真的进安装（如 not-downloaded）必须把 loading 态收掉，否则卡在「正在安装」
+    if (!res || res.ok === false) {
+      state.auto = Object.assign({}, state.auto, { installing: false })
+    }
+    return res
   } catch (e) {
+    state.auto = Object.assign({}, state.auto, { installing: false })
     return { ok: false, reason: String(e && e.message || e) }
   }
 }

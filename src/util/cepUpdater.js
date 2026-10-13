@@ -257,9 +257,23 @@ export function cancelInstallerDownload () {
   return ipc.invoke('updater:cancelDownload').catch(function () { return null })
 }
 
-/** 起安装向导：detached，面板不阻塞；装完由用户重启 AE 生效 */
-export function launchInstaller (file) {
-  return ipc.invoke('updater:runInstaller', file ? { file: file } : {})
+/**
+ * 起安装包：detached，面板不阻塞；装完由用户重启 AE 生效。
+ *
+ * ⚠ 必须带 `/S`（静默）。不带参数时 NSIS 会弹**原生安装向导**（组件页 / 目录页 /
+ *   进度页），与产品形态相悖：安装过程里我们自己没有任何反馈，用户看到的是
+ *   一个原生向导，既不是「静默安装」也没有「应用内 loading 页」。
+ *   （本机实测过：%TEMP%/isparta-install.log 里 `silent=0 updated=0` 就是不带
+ *   参数起的向导；electron-updater 走的是 `--updated /S`，两者可据此区分。）
+ *   `/S` 下 installer.nsh 组件页的 `${Silent} Abort` 生效，组件改由 customInit
+ *   按上次的 CepOnly 回填：常规装法（桌面 + 扩展）保持默认 "1"/"1" 一起刷新；
+ *   「仅装扩展」的机器 desktop=0，不会被静默塞上桌面版。
+ */
+export function launchInstaller (file, opts) {
+  var o = opts || {}
+  var payload = file ? { file: file } : {}
+  if (o.silent !== false) { payload.args = ['/S'] }
+  return ipc.invoke('updater:runInstaller', payload)
     .catch(function (e) { return { ok: false, reason: String((e && e.message) || e) } })
 }
 

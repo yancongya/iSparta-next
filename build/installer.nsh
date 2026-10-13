@@ -346,6 +346,19 @@ FunctionEnd
   ${if} ${isUpdated}
     StrCpy $ispartaIsUpdatedText "1"
   ${endIf}
+
+  ; 组件选择：silent 路径（electron-updater 的 `--updated /S`、CEP 面板起的 `/S`）都不经
+  ; 组件页（ispartaComponentsPre 遇 ${Silent} 直接 Abort），不推导就会一律回到默认
+  ; desktop=1 —— 会把「仅装扩展」的用户静默塞上桌面版，并把 CepOnly 标记写坏。
+  ; 只在 Silent 分支回填，交互式安装仍由组件页的勾选决定。
+  ${if} ${Silent}
+    ReadRegStr $1 SHELL_CONTEXT "${INSTALL_REGISTRY_KEY}" CepOnly
+    ${if} $1 == "1"
+      StrCpy $ispartaInstallDesktop "0"
+      StrCpy $ispartaInstallAe "1"
+    ${endIf}
+  ${endIf}
+
   ; 安装范围不在这里定：由「安装模式」页 → $installMode → ispartaResolveScope 推导
 
   ReadRegStr $0 SHELL_CONTEXT "${INSTALL_REGISTRY_KEY}" CepInstalled
