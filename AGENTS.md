@@ -207,6 +207,24 @@ CI：`release.yml` 负责 bump、打包、挂 Release（notes 模板见该 workf
 - **条目 `@container` 340/480** 是组件内部几何断点，与视口断点分层，不共用 token，但需注释标明。
 - 改断点值必须同时改 `_bp.scss` 与 `breakpoints.js`，并在本表更新。
 
+### 8.2.1 小屏 CEP 适配（强制）
+
+AE 面板是**用户可自由拖拽**的窄容器，典型尺寸约 **380–480 宽 × 400–560 高**——比任何桌面窗口都小得多。
+在这个尺寸下做界面，**先守住断点规范，再谈版式**：
+
+- **只准用上表三档 token**（`$bp-narrow` 360 / `$bp-compact` 480 / `$bp-wide` 820）。
+  禁止新造 400 / 520 / 600 / 720 这类「看起来更合适」的值——AE 面板默认宽度就已命中 `$bp-compact`，
+  窄屏适配统一落在该档及以下。
+- **纵向比横向更稀缺**。面板高度常只有 400 出头，「一屏内容」放不下的直接观感就是**必须滚动**。
+  窄屏降档要同时压三处：① 字号降一档（`--is-fs-*`）② 内容块间距收紧（`--is-s-*`）
+  ③ **优先把纵向排列改成横向多列**（3 个条目从「1 列 3 行」改成「3 列 1 行」，
+  比反复调间距有效得多）。
+- **别把「窄 → 单列」当默认降档方向**。单列会让内容凭空长高（实测首启引导的三枚能力卡由 1 行变成
+  3 行、312px），与「一屏看完」正好相反；窄屏更该保住横向密度。
+- 内容区保留 `overflow-y: auto` 兜底（面板可能被拖得极矮），但**不要把「需要滚动」当正常态**。
+- **改完必须实测**：在 CEP 载荷（8082）里量 `内容 scrollHeight` 与 `容器 clientHeight`，确认溢出为 0；
+  不能只看截图「感觉差不多」。量测工装的两个硬性前提见 §8.5 末段。
+
 ## 8.3 CEP 弹窗铺满（强制）
 
 CEP 下弹窗要铺满时必须三件套同时做，缺一就会被内联样式 / 外层 padding 卡住：
@@ -231,6 +249,31 @@ CEP 下弹窗要铺满时必须三件套同时做，缺一就会被内联样式 
 
 - 反例（真实回归，v3.5.0 起双端同源）：`apng2gif` / `apng2webp` 曾写 `<outputName>.gif/.webp`，而 `apng2other` 按「ASCII 中间名」去找 `out.gif` / `out.webp` → 导出 GIF / WebP **必失败**，日志为 `转换中断 — ENOENT: copyfile '…\out.webp' -> '…\名称.webp'`（不是 CEP 独有 bug）。
 - `apng2gif` 的输入为什么叫 `out-gif.png`：sizeGate 重压时 `fileList[0]` 是 `out-quant.png`，若拷进 `out.png` 会把最终 APNG 产物覆盖掉。
+
+## 8.5 自绘组件库的类名与选择器（强制）
+
+自绘库（`src/ui-next/components/ui/*`）的样式由 `ui.scss` **全局**引入，组件只写「类名 + 自己那层布局」。
+下面两条都是**读代码看不出来、只在真机表现**的坑（v3.6.6 → 3.6.7 实测踩到）：
+
+- **禁止用通用 `is-` 前缀动态拼修饰类**。`is-info` / `is-ok` 这些名字与库里的全局类**共用同一命名空间**：
+  `<p class="gs-update-status is-info">` 会撞上 `ui.scss` 那个 16px ⓘ 圆钮的 `.is-info`
+  （`display:inline-flex` + `width/height:16px` + `border-radius:50%`），整行被压成 16×16，
+  文字只能**一字一行竖排**。`tone` 之类的取值空间是开放集合，随时可能撞上新的全局类。
+  → 修饰类一律带组件前缀（`gs-update-status--info`）或用 BEM 块名。
+  （`is-alert--` / `is-tag--` / `is-update-dock--` 这类带前缀的写法是安全的，照抄它们。）
+- **选组件根元素时用它的真实类名**。`IsButton` 的根是 `.is-btn`；写成 `.gs-about > .is-button`
+  是条**死规则**（不存在的类），`flex: none` 从未生效 → 按钮以默认 `flex: 0 1 auto` 参与布局，
+  而 `.is-btn` 自带 `overflow: hidden`（flex 子项的 `min-width:auto` 在 overflow 非 `visible` 时会退化成 0），
+  于是按钮被压到内容宽以下、再用自己的 `overflow:hidden` **裁掉自己的文字**（表现为「按钮被切一半」）。
+  → 根类名以各组件 `<template>` 第一行为准，别按组件名猜；改完 `grep` 一遍选择器确认能命中。
+
+**CEP 窄屏量测工装的两个硬性前提**（否则量到的 / 看到的都是假的，本轮的坑）：
+
+1. `webPreferences.nodeIntegration: true` —— 否则渲染层 storage 走 `fs` 失败
+   （`require is not defined`），`<is-form v-if="setting">` 的 `setting` 为 `null`，**整个表单不渲染**，什么都量不到。
+2. 截图必须 `new BrowserWindow({ show: true })` —— `capturePage()` 对隐藏窗口返回**旧帧**
+   （新图层不重绘），截出来是一张「没有弹窗」的假图。离屏 + `backgroundThrottling:false` 也不行。
+3. 页内若有会被离屏冻结的过渡（如 dialog 的 enter），截图前先把 `opacity` / `transition` 内联中性化。
 
 ## 9. 文档索引
 

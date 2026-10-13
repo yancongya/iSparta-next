@@ -208,7 +208,7 @@
             </div>
           </div>
         </div>
-        <p class="gs-update-status" :class="'is-' + updateStatus.tone">{{ updateStatus.text }}</p>
+        <p class="gs-update-status" :class="'gs-update-status--' + updateStatus.tone">{{ updateStatus.text }}</p>
         <is-form-item :label="$t('updateAutoCheck')">
           <is-switch v-model="updateEnabled" />
           <em class="hint">{{ $t('updatePrivacyTip') }}</em>

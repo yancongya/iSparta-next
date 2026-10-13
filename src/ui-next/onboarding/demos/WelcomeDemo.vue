@@ -34,7 +34,10 @@
 export default { name: 'WelcomeDemo' }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+// 断点统一取 styles/_bp.scss
+@import "../../styles/bp";
+
 .brand {
   display: flex;
   flex-direction: column;
@@ -98,6 +101,19 @@ export default { name: 'WelcomeDemo' }
 @keyframes wd-rise {
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: none; }
+}
+
+/* 窄屏降档（含 CEP 面板）：品牌标整体缩一档，把纵向空间让给正文。
+   132px 的 hero 在 400 高的 AE 面板里就是「必须滚动」的第一贡献者。 */
+@media (max-width: $bp-compact) {
+  .brand { gap: var(--is-s-2); }
+
+  .brand__svg {
+    width: 84px;
+    height: 84px;
+  }
+
+  .brand__name { font-size: var(--is-fs-xl); }
 }
 
 @media (prefers-reduced-motion: reduce) {

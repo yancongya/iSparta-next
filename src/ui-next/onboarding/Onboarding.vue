@@ -301,7 +301,10 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+// 断点统一取 styles/_bp.scss（禁止在本文件手写 360/480/820 等字面值）
+@import "../styles/bp";
+
 .ob {
   position: fixed;
   inset: 0;
@@ -566,11 +569,20 @@ export default {
   font-variant-numeric: tabular-nums;
 }
 
-/* CEP 极窄：页脚降档，避免按钮换行 */
-@media (max-width: 480px) {
-  .ob-dots { padding: var(--is-s-4) 0 var(--is-s-2); }
-  .ob-foot { padding: 0 var(--is-s-3); }
+/* 窄屏降档（含 CEP 面板）。
+   AE 面板常见 380–480 宽、高度只有 400 上下；引导一屏放不下的直接观感就是
+   「内容偏高、得上下滚动」——而这里本该是「一眼看完、点下一步」。
+   故在 $bp-compact 及以下把外壳的纵向留白整体收紧：
+   进度点、内容区上下内距、页脚高度各让出一档。 */
+@media (max-width: $bp-compact) {
+  .ob-dots { padding: var(--is-s-2) 0 var(--is-s-1); }
+  .ob-foot { flex: 0 0 48px; padding: 0 var(--is-s-3); }
   .ob-count { display: none; }
+
+  // 注意 `.ob--cep .ob-step` 的 CEP 覆盖规则比裸 `.ob-step` 权重高，
+  // 两条都要写，否则 CEP 下这条不生效。
+  .ob-step { padding: var(--is-s-1) var(--is-s-3) var(--is-s-3); }
+  .ob--cep .ob-step { padding: var(--is-s-1) var(--is-s-3) var(--is-s-3); }
 }
 
 /* 窗口被拖窄到放不下两列时，卡片降为单列（先横排后滚动，而不是全程竖排） */
@@ -591,11 +603,13 @@ export default {
 }
 </style>
 
-<style>
+<style lang="scss">
 /* ==========================================================================
    步骤页共享版式（**非 scoped**：供 steps/* 与 demos/* 复用）
    统一 ob- 前缀，避免与工作台样式冲突。
+   断点统一取 styles/_bp.scss，禁止手写 360/480/820 等字面值。
    ========================================================================== */
+@import "../styles/bp";
 
 .ob-pane {
   display: flex;
@@ -765,10 +779,18 @@ export default {
   padding-top: var(--is-s-2);
 }
 
-/* CEP 窄宽：卡片单列 */
-@media (max-width: 480px) {
+/* 窄屏降档（含 CEP 面板）：标题各降一档，内容块之间的间距收紧。
+   目标是把「一屏内容」压进 AE 面板的可视高度，而不是让用户滚动看引导。 */
+@media (max-width: $bp-compact) {
   .ob-h1 { font-size: var(--is-fs-xl); }
   .ob-h2 { font-size: var(--is-fs-lg); }
+  .ob-pane { gap: var(--is-s-2); }
+  .ob-pane--center { gap: var(--is-s-2); padding-top: var(--is-s-2); }
+  .ob-sub { font-size: var(--is-fs-sm); }
+  .ob-lines { gap: var(--is-s-2); }
+  .ob-line { padding: var(--is-s-2) var(--is-s-3); }
+  .ob-card { padding: var(--is-s-3); }
+  .ob-cta { padding-top: 0; }
 }
 
 /* 降低动效：卡片只留描边/底色变化，不位移 */

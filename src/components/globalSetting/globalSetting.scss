@@ -74,7 +74,12 @@
     line-height: 1.5;
   }
 
-  .gs-about > .is-button {
+  // ⚠ 这里必须写 `.is-btn` —— IsButton.vue 的根元素类就叫 is-btn。
+  //   原写成 `.is-button`（不存在的类），是条**死规则**，`flex: none` 从未生效过；
+  //   于是按钮以默认 `flex: 0 1 auto` 参与布局，而 `.is-btn` 自带 `overflow: hidden`
+  //   （flex 子项的 min-width:auto 在 overflow 非 visible 时会退化成 0），
+  //   结果按钮能被压到内容宽以下，再用自己的 overflow:hidden 把「前往官网」裁掉。
+  .gs-about > .is-btn {
     flex: none;
   }
 
@@ -85,10 +90,15 @@
     font-size: var(--is-fs-sm);
     line-height: 1.5;
 
-    &.is-ok { color: var(--is-ok-fg, var(--is-ok)); }
-    &.is-info { color: var(--is-text-3); }
-    &.is-warn { color: var(--is-warn-fg, var(--is-warn)); }
-    &.is-bad { color: var(--is-bad-fg, var(--is-bad)); }
+    // ⚠ 状态修饰类必须带组件前缀。原先是 `is-{tone}`，而 tone='info' 时生成的
+    //   `.is-info` 正好撞上 UI 组件库那个 16px ⓘ 圆钮
+    //   （ui.scss: display:inline-flex + width/height 16px + border-radius 50%），
+    //   本行于是被压成 16×16，「检查中…」只能一字一行竖排。
+    //   tone 的取值空间是开放集合，用通用 `is-` 前缀迟早还会再撞一次。
+    &--ok { color: var(--is-ok-fg, var(--is-ok)); }
+    &--info { color: var(--is-text-3); }
+    &--warn { color: var(--is-warn-fg, var(--is-warn)); }
+    &--bad { color: var(--is-bad-fg, var(--is-bad)); }
   }
 
   .w-80 {

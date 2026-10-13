@@ -35,7 +35,10 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+// 断点统一取 styles/_bp.scss
+@import "../../styles/bp";
+
 .ob-tagline {
   margin: 0;
   max-width: 34ch;
@@ -98,8 +101,26 @@ export default {
   overflow-wrap: anywhere;
 }
 
-@media (max-width: 480px) {
-  .ob-mini { grid-template-columns: 1fr; }
+/* 窄屏降档（含 CEP 面板）：**不再把三枚能力卡改成单列**。
+   单列会让这一屏凭空长高约 200px（卡片从 1 行变 3 行），正是「引导内容偏高、
+   得上下滚动」的主因。这里改成三列紧凑版：卡片内距收紧、字号降一档，
+   实测 429×411 面板下该块由 312px 降到 96px。 */
+@media (max-width: $bp-compact) {
+  .ob-tagline { font-size: var(--is-fs-md); max-width: none; }
+
+  .ob-mini {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--is-s-2);
+    margin-top: var(--is-s-2);
+  }
+
+  .ob-mini__item { padding: var(--is-s-3) var(--is-s-2); }
+
+  .ob-mini__ico { margin-bottom: 0; }
+
+  .ob-mini__t { font-size: var(--is-fs-sm); }
+
+  .ob-mini__d { font-size: var(--is-fs-xs); line-height: 1.35; }
 }
 
 @media (prefers-reduced-motion: reduce) {
