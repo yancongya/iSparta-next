@@ -1,7 +1,13 @@
 /**
  * 桌面启动 / 热更完成后：CEP 扩展落盘自检与刷新。
- * 比较 app 版本 vs %APPDATA%\Adobe\CEP\extensions\io.github.isparta-next
- * 与 resources/cep payload（version.json）；不一致则重拷刷新。
+ * 比较 app 版本 vs 已安装 CEP 副本（version.json）；不一致则重拷刷新。
+ *
+ * 单副本策略（与 NSIS installer.nsh 对齐，§9）：
+ *   - 安装作用域由「Common Files 副本是否存在且认领」判定（win32），
+ *     mac / 无 Common Files 一律用户级 —— 与安装器 customInit 的探测口径一致。
+ *   - 系统级（Common Files 副本存在）：只维护 Common Files，绝不在用户级重新播种，
+ *     并兜底删除可能残留的用户级副本（避免双副本 + AE 用户级优先级遮挡系统级）。
+ *   - 用户级（无 Common Files 副本）：仅维护 %APPDATA% 用户级，并尽力清掉残留的系统级副本。
  * 只动 EXT_ID 子目录，不误删用户其它扩展。
  */
 
@@ -12,7 +18,8 @@ const {
   compareVersions,
   refreshExtFromPayload,
   readVersionJson,
-  isOwnedExtDir
+  isOwnedExtDir,
+  removeOwnedExtDir
 } = require('./cep-payload-common')
 
 /** payload 源目录：打包后 resources/cep/EXT_ID；开发态回退 build/cep-payload/EXT_ID */
@@ -57,6 +64,39 @@ function resolveCommonExtParent (env, commonFiles) {
 }
 
 /**
+ * 判定当前安装作用域：系统级（Common Files 副本存在且认领）或用户级。
+ * 与 NSIS installer.nsh::ispartaResolveScope / customInit 的探测口径一致：
+ * mac / 无 CommonProgramFiles 环境无系统级概念，一律用户级。
+ * @returns {'all'|'user'}
+ */
+function resolveInstallScope (opts) {
+  const o = opts || {}
+  const e = o.env || process.env
+  if (process.platform !== 'win32') return 'user'
+  const commonParent = resolveCommonExtParent(e, o.commonFiles)
+  if (commonParent) {
+    const commonDest = path.join(commonParent, EXT_ID)
+    try {
+      if (fs.existsSync(commonDest) && isOwnedExtDir(commonDest)) {
+        return 'all'
+      }
+    } catch (e) { /* 探测失败按用户级兜底 */ }
+  }
+  return 'user'
+}
+
+/** 仅当目录属本扩展时删除（best-effort，AE 占用等失败静默跳过） */
+function tryRemoveOwnedExtDir (dir) {
+  if (!dir) return false
+  try {
+    if (fs.existsSync(dir) && isOwnedExtDir(dir)) {
+      return removeOwnedExtDir(dir)
+    }
+  } catch (e) { /* best-effort */ }
+  return false
+}
+
+/**
  * 自检入口。
  * @param {object} opts
  *   appVersion {string}
@@ -75,17 +115,30 @@ function ensureCepExtension (opts) {
   const targets = []
 
   const userParent = resolveUserExtParent(o.env, o.home)
-  if (userParent) targets.push({ parent: userParent, kind: 'user' })
-
   const commonParent = resolveCommonExtParent(o.env, o.commonFiles)
-  if (commonParent) {
-    const commonDest = path.join(commonParent, EXT_ID)
-    // 仅当已安装过本扩展时才动 Common Files，避免无中生有
-    try {
-      if (fs.existsSync(commonDest) && isOwnedExtDir(commonDest)) {
-        targets.push({ parent: commonParent, kind: 'common' })
-      }
-    } catch (e) { /* skip */ }
+
+  // 单副本：作用域只取其一，并清理另一作用域可能残留的旧副本
+  const scope = resolveInstallScope(o)
+  if (scope === 'all') {
+    // 系统级：只维护 Common Files，绝不在用户级重新播种（防 AE 用户级遮挡 + 双副本）
+    if (commonParent) {
+      const commonDest = path.join(commonParent, EXT_ID)
+      try {
+        if (fs.existsSync(commonDest) && isOwnedExtDir(commonDest)) {
+          targets.push({ parent: commonParent, kind: 'common' })
+        }
+      } catch (e) { /* skip */ }
+    }
+    // 兜底清掉残留的用户级副本（安装器已清，这里防其它路径重生）
+    if (userParent) {
+      tryRemoveOwnedExtDir(path.join(userParent, EXT_ID))
+    }
+  } else {
+    // 用户级：仅维护当前用户，并尽力清掉残留的系统级副本（需管理员令牌，否则跳过）
+    if (userParent) targets.push({ parent: userParent, kind: 'user' })
+    if (commonParent) {
+      tryRemoveOwnedExtDir(path.join(commonParent, EXT_ID))
+    }
   }
 
   if (!payloadDir) {
