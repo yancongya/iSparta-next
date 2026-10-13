@@ -175,6 +175,10 @@ electron-builder 的 `$installMode`（`initMultiUser` 在 `customInit` 前无条
 静默只跳页面、不提权）。主程序目录与 CEP 落盘位置都由它推导，避免同一个问题问两遍。
 组件页只**只读展示**落盘位置（`build/installer.nsh` 的 `ispartaResolveScope`）。
 
+> **单副本由两层共同保证（v3.6.9 起）**：安装器 `customInstall` 在写目标作用域前先清双作用域旧副本；
+> 桌面 app 启动自检 `cepSync.ensureCepExtension` 按 `resolveInstallScope` 探测到的安装作用域只维护对应一份，
+> 绝不在另一作用域重新播种——根治「安装器删用户级 → 自检又建回 → 双副本 + AE 用户级遮挡系统级」。
+
 ### 9.3 UAC 流程
 
 ```
@@ -202,6 +206,19 @@ ispartaResolveScope（唯一推导点）
     → installSection 对 installMode=all 自动 uninstallOldVersion HKCU：
       旧 per-user 副本（%LOCALAPPDATA%\Programs + HKCU 登记）自动清除，
       全机只保留一份安装目录
+
+双层单副本（安装器 + 运行时）
+    → 安装器 customInstall：写目标作用域前先 ispartaRemoveCepDir 清掉「用户级 + Common Files」双作用域旧副本
+      （只认领 EXT_ID；AE 占用删不掉则落 isparta-install.log）→ 无论机器此前多乱，装完强制单份
+    → 桌面 app 启动自检 cepSync.ensureCepExtension：按 resolveInstallScope 探测到的安装作用域只维护对应一份
+      （系统级只维护 Common Files、绝不在用户级重新播种；用户级只维护 APPDATA、best-effort 清系统级残留）
+      → 与安装器同构，运行时也不产生双副本
+
+面板 loading 为静默安装唯一反馈（双通道均 /S 静默，NSIS 不弹原生向导）
+    → 进度全靠面板 installing 态（IsUpdateDock「正在安装…」）；不给反馈用户就感觉「点了没反应」
+    → 桌面自动更：装完由 --force-run 重启，新进程续 BootSplash loading，视觉连续
+    → CEP 热更：launchInstaller 静默起包后 dock 进入「已启动安装，请重启 AE」终态（AE 无法自重启，by design）
+    → 新版本启动后 RootGate 复播 OnboardingWhatsNew 轻量更新说明单屏（替代完整 7 步引导，避免割裂）
 ```
 
 ### 9.4 识别失败回退链
@@ -223,13 +240,18 @@ ispartaResolveScope（唯一推导点）
 3. 热更 `cepSync.js` 目标目录与安装级别对齐（Common Files 需提权/提示）
 4. PlayerDebugMode 按探测到的 CSXS 主版本写（现 6–14；AE2025 若 CSXS 15 需补）
 5. CI/CD：`build.yml`/`release.yml` 的 cep job **须先 `npm run build:cep`**（当前只 rsync `targets/cep/`，会打进过时 UI）
+6. 面板 loading 终态正确收尾 + Onboarding 复播：关 AE → 启桌面 app（刷新/重建用户级为系统级）→ 重开 AE
+   → 点更新见 loading、装完弹 Onboarding；CEP 热更需手动重开 AE 才加载新面板（AE 无法自重启，by design）
+7. 单副本真机验证：装完查 `%APPDATA%\Adobe\CEP\extensions\io.github.isparta-next` 是否被重建
+   （系统级安装下应消失/不出现；若出现即桌面自检仍播种用户级，需回查 resolveInstallScope）
 
 ### 9.6 现状缺口（实现前必改）
 
 | 项 | 现状 | 目标 |
 | --- | --- | --- |
 | AE 多盘探测 | 无 | 注册表 + 全盘枚举 |
-| 安装互斥 | UAC_IsAdmin 顺带双写 | 二选一，禁双写 |
-| UAC 授权流 | 无（旧：组件页选范围） | perMachine:true 固定系统级，manifest 每次安装提权（v3.6.9 已落地） |
+| 安装互斥 | 旧：UAC_IsAdmin 顺带双写 | **已落地（v3.6.9）**：perMachine 固定系统级 + 安装前自检清双作用域 + 桌面自检单副本，禁双写 |
+| UAC 授权流 | 无（旧：组件页选范围） | perMachine:true 固定系统级，manifest 每次安装提权；单副本双层保证（v3.6.9 已落地） |
+| 运行时单副本 | 桌面自检无作用域判断、会重建用户级 | **已落地（v3.6.9）**：cepSync.resolveInstallScope + ensureCepExtension 按作用域只维护一份 |
 | 手动选目录 | 无 | 识别失败时 Browse 兜底 |
 | CI 构建 CEP UI | 只 rsync 旧产物 | 打 zip 前 `build:cep` |
