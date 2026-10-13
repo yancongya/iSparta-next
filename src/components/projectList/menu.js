@@ -49,6 +49,31 @@ function openOsDir (dir) {
       return
     } catch (e0) { /* fall through */ }
   }
+  // CEP：经系统浏览器桥打开 file://（cep-playground：cep.util.openURLInDefaultBrowser）。
+  // 禁止走 execFile('explorer.exe')——AE 以管理员运行时 explorer 继承提权会落到用户目录，
+  // 表现即「只能打开用户目录 / 点了没反应」。file:// 由 CEP 非提权会话 launch，能正确打开任意目录。
+  if (isCepLike()) {
+    try {
+      var fileUrl = 'file:///' + encodeURI(String(target).replace(/\\/g, '/'))
+      if (typeof window !== 'undefined') {
+        if (window.ispartaCS && typeof window.ispartaCS.openURLInDefaultBrowser === 'function') {
+          window.ispartaCS.openURLInDefaultBrowser(fileUrl)
+          return
+        }
+        if (window.cep && window.cep.util && typeof window.cep.util.openURLInDefaultBrowser === 'function') {
+          window.cep.util.openURLInDefaultBrowser(fileUrl)
+          return
+        }
+        // 回退：ExtendScript Folder.execute 在本进程打开（仍可能受提权影响，优先上面的桥）
+        if (window.ispartaCS && typeof window.ispartaCS.evalScript === 'function') {
+          try {
+            window.ispartaCS.evalScript('Folder(' + JSON.stringify(String(target)) + ').execute()')
+            return
+          } catch (eEs) { /* fall through */ }
+        }
+      }
+    } catch (eCep) { /* fall through to execFile */ }
+  }
   try {
     var cp = require('../../util/node-env').getChildProcess()
     var os = require('../../util/node-env').os

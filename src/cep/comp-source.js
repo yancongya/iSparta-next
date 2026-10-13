@@ -49,6 +49,26 @@ function readGlobalSetting () {
   }
 }
 
+/**
+ * 转码前把「当前」全局设置（质量 / 输出大小阈值）重新合并进合成 item。
+ * toCompItem 在「加入列表」时已快照过一次 globalSetting；若用户在加入合成后才到
+ * 设置里开启「输出大小阈值 / 改质量」，旧快照会让 sizeLimit.enabled 仍为 false →
+ * enforceSizeLimit 直接短路、从不重试压缩（表现即「设了 800kb 却没按设置压缩」）。
+ * 此处于转换时刻再读一次 globalSetting，保证全局设置对本次转换生效。
+ */
+function applyGlobalSizeAndQuality (item) {
+  try {
+    const gs = readGlobalSetting()
+    const opts = (gs && gs.options) || {}
+    if (opts.sizeLimit) {
+      item.options.sizeLimit = _.cloneDeep(opts.sizeLimit)
+    }
+    if (opts.quality) {
+      item.options.quality = _.cloneDeep(opts.quality)
+    }
+  } catch (e) { /* 读不到就用加入时的快照，不挡转换 */ }
+}
+
 /** jsx 合成节点 → list() 的 ItemSource（扁平，parent 预留嵌套/文件夹） */
 export function normalizeCompNode (c) {
   const folderPath = (c && c.folderPath) || ''
@@ -216,6 +236,8 @@ export function prepareCompSequence (item, opts) {
   if (basic.type !== 'Comp') {
     return Promise.resolve(item)
   }
+  // 转码时刻重新套用当前全局设置（质量 / 输出大小阈值），避免「加入合成后改设置」不生效
+  applyGlobalSizeAndQuality(item)
   if (basic.fileList && basic.fileList.length) {
     return Promise.resolve(item)
   }
