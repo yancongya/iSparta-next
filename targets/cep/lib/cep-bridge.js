@@ -737,8 +737,20 @@
       // 静默（对齐 ZCode：静默由安装器自身保证，不依赖调用方参数）。安装器装完会删掉
       // 这个哨兵，避免后续手动重跑同一个 exe 也变成静默。
       try { nodeFs.writeFileSync(file + '.self-update', '') } catch (eMarker) { /* 写不进去就退化成纯 /S 静默 */ }
-      // 提权启动：用 Start-Process -Verb RunAs（ShellExecute runas）触发 UAC。
-      // 非提权父进程下弹 UAC 由用户授权；已提权（AE 以管理员运行）则直接跑。
+      // ---- 跨平台分派：一律交给 OS 的「打开/提权」动词，绝不 CreateProcess 直起安装包 ----
+      var platform = hasNode ? process.platform : ''
+      if (platform === 'darwin') {
+        // macOS：无 NSIS 等价物、无 /S 静默概念。交给系统 `open` 唤起 .dmg / Installer.app，
+        // 用户在原生安装器里手动完成（需写系统目录时 macOS 弹管理员密码）。面板 loading
+        // 保持「正在安装」直到用户重启 AE 加载新面板——与 Win 静默装完语义不同，属预期。
+        var macChild = nodeCp.spawn('open', [file], { detached: true, stdio: 'ignore' })
+        macChild.unref()
+        return Promise.resolve({ ok: true, pid: macChild.pid, file: file, elevated: false, platform: 'darwin' })
+      }
+      // Windows：perMachine 安装器带 RequestExecutionLevel admin，直接 spawn（CreateProcess）
+      //   在非提权父进程下会报 ELEVATION_REQUIRED 而无法自提权。故改用 ShellExecute 的
+      //   runas 动词（Start-Process -Verb RunAs）正确触发 UAC 提权，与桌面端
+      //   electron-updater 的 elevate.exe 同效；提权后安装器独立运行（detached）。
       // PowerShell 单引号串内 ' 需写成 ''；不要 JSON.stringify（会把 \ 转义成 \\，
       // 单引号串里被当字面双反斜杠而找不到文件）。
       var psFile = "'" + String(file).replace(/'/g, "''") + "'"

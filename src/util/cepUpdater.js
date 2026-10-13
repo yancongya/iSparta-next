@@ -45,11 +45,12 @@ export function cepArch () {
   return (proc && proc.arch) || ''
 }
 
-/** CEP 能否走「面板内下载安装包 + 起向导」：需 Node 且 Windows（NSIS） */
+/** CEP 能否走「面板内下载安装包 + 起安装器」：需 Node，且 Windows（NSIS 静默）或 macOS（open 唤起，手动完成） */
 export function cepInstallerCapable () {
   var u = bridgeUpdater()
   if (!u || !u.hasNode) { return false }
-  return cepPlatform() === 'win32'
+  var p = cepPlatform()
+  return p === 'win32' || p === 'darwin'
 }
 
 /** 桥已就绪（能查、能开外链），但形态不支持自动安装包 */
@@ -272,7 +273,9 @@ export function cancelInstallerDownload () {
 export function launchInstaller (file, opts) {
   var o = opts || {}
   var payload = file ? { file: file } : {}
-  if (o.silent !== false) { payload.args = ['/S'] }
+  // Windows 传 /S 静默；macOS 无 NSIS、无 /S 概念，open 唤起后由用户手动完成，不传参。
+  var p = cepPlatform()
+  if (p === 'win32' && o.silent !== false) { payload.args = ['/S'] }
   return ipc.invoke('updater:runInstaller', payload)
     .catch(function (e) { return { ok: false, reason: String((e && e.message) || e) } })
 }
