@@ -6,7 +6,7 @@
 
 ---
 
-## v3.6.10（2026-10-13）
+## v3.6.11（2026-10-13）
 
 - Windows 和 macOS 安装包统一安装桌面版；检测到 After Effects 时同步部署同版本 CEP 扩展。Windows 固定全机安装并申请 UAC，macOS pkg 安装时申请管理员权限。
 - 桌面版与 AE 面板更新时显示下载、安装和完成状态；AE 面板安装完成后提示重启 After Effects。

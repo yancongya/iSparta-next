@@ -282,7 +282,7 @@ FunctionEnd
   ${If} ${FileExists} "$EXEPATH.self-update"
     ${IfNot} ${Silent}
       ; 自重启静默：原实例退出，新 /S 实例无人值守装完。
-      GetParameters $0
+      ${GetParameters} $0
       Exec '"$EXEPATH" /S $0'
       Abort
     ${EndIf}
@@ -300,7 +300,7 @@ FunctionEnd
   ${if} ${isUpdated}
     StrCpy $ispartaIsUpdatedText "1"
   ${endIf}
-  GetParameters $0
+  ${GetParameters} $0
   ClearErrors
   ${GetOptions} $0 "/RESULTFILE=" $ispartaResultPath
   ${If} $ispartaResultPath == ""
