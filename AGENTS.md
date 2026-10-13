@@ -68,6 +68,7 @@ node scripts\dev\check.js all                # lint + pack + ports
 - 业务改动与发版 bump（`chore(release): vX.Y.Z [skip ci]`）分开：bump 由 CI 生成，本地只提交功能 commit
 - 提交前跑 `npm run lint`；不要 commit 本地日志（`dev.log`、`.g*-run.log` 等）
 - 文案只写本仓库自身的改动与用户收益；**不要**在 commit / Release / 文档里点名外部项目或写「参考了…」
+- **不要**在 commit 主题里写裸 `@word`（如 `@import`）：Release 笔记由 commit 主题生成，GitHub 会把它渲染成用户提及、并在 Release 页生成假的 Contributors 段（v3.6.8 曾因此多出一个不存在的 "import" 贡献者）。`release.yml` 的 notes 生成器有零宽空格兜底，但提交时就该避开
 
 示例：
 
@@ -189,7 +190,7 @@ CI：`release.yml` 负责 bump、打包、挂 Release（notes 模板见该 workf
   - **只跑一次**：标记 `.player-debug-mode` 写在扩展目录内，刷新扩展会重建该目录、标记随之消失，语义即「这一份扩展已应用过」。避免每次启动都 `killall cfprefsd`。
   - `public/install/安装方法-macOS.txt` 的「方式一」必须写「启动一次桌面应用」，**不得**沿用 Windows 的「组件页勾选」说法（mac 上不存在）；该文件原写的 `install-as-admin.zip` 也是错的 —— zip 里是裸脚本。
   - payload 的 `version.json` 由 `extraResources` **一次打进所有平台**，`install.*` 字段必须按 `win32` / `darwin` 分列，写死 `%APPDATA%`/`HKCU` 会把错路径带进 mac 包。
-- **安装范围只问一次**：唯一真相源是 electron-builder 自带的「安装模式」页（`$installMode` = `all` / `CurrentUser`，选「所有用户」时该页已完成 UAC 提权）。它的结果同时决定**主程序**目录与 **CEP 落盘位置**（Common Files ↔ `%APPDATA%`，互斥禁双写）；NSIS 组件页**不再放安装范围 radio**，只只读显示落盘位置（`build/installer.nsh` 的 `ispartaResolveScope`）。AE 版本用注册表+多盘枚举探测，仅用于校验/展示/PlayerDebugMode，不装多份。详见 [`docs/PLAN-DUAL-TARGET.md`](docs/PLAN-DUAL-TARGET.md) §9。
+- **安装范围固定系统级（v3.6.9 起）**：`perMachine: true` → 安装器 manifest 自动 `RequestExecutionLevel admin`（每次安装弹一次 UAC），`initMultiUser` 在 `customInit` 前无条件置 `$installMode="all"`（`/S` 静默也一样）→ 主程序进 `$PROGRAMFILES64`、CEP 进 `Common Files\Adobe\CEP\extensions`。桌面自动更与 CEP 面板热更下载**同一个** Release NSIS 包，两条通道都走 UAC、同包同作用域；installSection 对 `installMode=all` 自动 `uninstallOldVersion HKCU`，旧 per-user 副本（`%LOCALAPPDATA%\Programs` + HKCU 登记）自动清除，**全机只保留一份安装目录**。组件页只只读展示落盘位置（`build/installer.nsh` 的 `ispartaResolveScope`）；无管理员令牌时 `customInstall` 兜底落用户级并清另一作用域（禁双写）。详见 [`docs/PLAN-DUAL-TARGET.md`](docs/PLAN-DUAL-TARGET.md) §9。
 - 实现阶段同步更新本节与 `docs/PLAN-DUAL-TARGET.md` 勾选状态。
 
 ## 8.2 视口断点统一约束（强制）

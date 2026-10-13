@@ -146,11 +146,16 @@ jobs:
             # 路径排除：Release 面向安装包用户（桌面 + CEP），只收录影响产物的提交。
             # landing/（GitHub Pages 落地页，独立部署）、docs/（仓库文档）改动静默跳过；
             # 混合提交（同时改了 src/ 等与被排除路径）仍会收录。
+            local out=""
             if [ -n "$RANGE" ]; then
-              git log $RANGE --pretty=format:'- %s' --no-merges --extended-regexp --regexp-ignore-case --grep="$pattern" -- . ':(exclude)landing' ':(exclude)docs' || true
+              out=$(git log $RANGE --pretty=format:'- %s' --no-merges --extended-regexp --regexp-ignore-case --grep="$pattern" -- . ':(exclude)landing' ':(exclude)docs' || true)
             else
-              git log --pretty=format:'- %s' --no-merges --extended-regexp --regexp-ignore-case --grep="$pattern" -- . ':(exclude)landing' ':(exclude)docs' || true
+              out=$(git log --pretty=format:'- %s' --no-merges --extended-regexp --regexp-ignore-case --grep="$pattern" -- . ':(exclude)landing' ':(exclude)docs' || true)
             fi
+            # GitHub 会把正文里的 @word 渲染成用户提及、并在 Release 页生成 Contributors 段：
+            # 提交主题中的裸 @（如 "@import"）会误造出不存在的贡献者（v3.6.8 事故）。
+            # 在 @ 后插零宽空格（U+200B）打断提及匹配，视觉无变化。
+            printf '%s\n' "$out" | sed -E 's/@([A-Za-z0-9])/&\xe2\x80\x8b\1/g'
           }
 
           FEAT=$(collect_lines '^feat(\([^)]+\))?:')
