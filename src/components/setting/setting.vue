@@ -1,6 +1,6 @@
 <template>
   <section class="mod-setting">
-    <h3 class="mod-setting__title">{{ $t("outputConfig") }}</h3>
+    <h3 v-if="!hideTitle" class="mod-setting__title">{{ $t("outputConfig") }}</h3>
 
     <!-- 未选中任何项目 -->
     <section v-if="!curtSetting" class="mod-empty">
@@ -329,6 +329,9 @@ import IsPresetBar from '../../ui-next/components/IsPresetBar.vue'
 import notice from '../../ui-next/notice'
 
 export default {
+  props: {
+    hideTitle: { type: Boolean, default: false }
+  },
   components: { PathVars, IsPresetBar },
   data () {
     return {

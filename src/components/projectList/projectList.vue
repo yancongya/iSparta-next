@@ -749,6 +749,10 @@ export default {
       } catch (e) { /* 定位失败不打断 */ }
     },
     onItemClick (index) {
+      if (this.suppressBlankClick) {
+        this.suppressBlankClick = false
+        return
+      }
       if (this.isLocked) return
       var project = this.projectList[index]
       if (!project) return
@@ -767,8 +771,8 @@ export default {
       if (this.isLocked || !this.projectList.length) return
       var t = e.target
       if (!t || !t.closest) return
-      // 条目、底部按钮、过滤条有自己的交互，不算空白
-      if (t.closest('.item') || t.closest('.open-folder') || t.closest('.mod-list__filter')) return
+      // 只排除真实交互控件；工具条上的空白也应能取消/全选。
+      if (t.closest('.item, .open-folder, input, button, .check, .is-check')) return
       this.$store.dispatch('noneSelect')
     },
     // 双击列表空白处 = 全选（dblclick 前会有两次 click，最终状态以全选为准）
@@ -776,7 +780,7 @@ export default {
       if (this.isLocked || !this.projectList.length) return
       var t = e.target
       if (!t || !t.closest) return
-      if (t.closest('.item') || t.closest('.open-folder') || t.closest('.mod-list__filter')) return
+      if (t.closest('.item, .open-folder, input, button, .check, .is-check')) return
       this.$store.dispatch('allSelect')
     },
     // 空白处按下 → 拖拽框选
@@ -785,7 +789,8 @@ export default {
       if (e.button !== 0) return
       var t = e.target
       if (!t || !t.closest) return
-      if (t.closest('.item') || t.closest('.open-folder') || t.closest('.mod-list__marquee') || t.closest('.mod-list__filter')) return
+      // 卡片文字区也可作为框选起点；保留复选框、缩略图、按钮和输入框自己的交互。
+      if (t.closest('.check, .thumb, button, input, a, .open-folder, .mod-list__marquee, .is-check')) return
       // 立刻抑制原生文字/图片拖选
       e.preventDefault()
       var rect = this.$el.getBoundingClientRect()

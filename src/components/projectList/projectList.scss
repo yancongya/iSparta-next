@@ -105,6 +105,8 @@
     font: inherit;
     font-weight: 400;
     outline: none;
+    user-select: text;
+    -webkit-user-select: text;
 
     &:focus {
       border-color: var(--is-accent);

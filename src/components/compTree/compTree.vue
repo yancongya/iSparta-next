@@ -9,6 +9,7 @@
     :aria-label="$t('compTree')"
     @click="onBlankClick"
     @dblclick="onBlankDblclick"
+    @mousedown="onTreeMouseDown"
     @contextmenu.prevent
   >
     <div class="mod-ct__head">
@@ -72,6 +73,12 @@
         </span>
       </li>
     </ul>
+    <div
+      v-if="marquee.active && marquee.moved"
+      class="mod-ct__marquee"
+      :style="marqueeStyle"
+      aria-hidden="true"
+    ></div>
   </section>
 </template>
 
@@ -99,10 +106,20 @@ export default {
       keyword: '',
       sortKey: '',
       sortDir: 1,
+      marquee: { active: false, moved: false, x: 0, y: 0, w: 0, h: 0, startX: 0, startY: 0 },
+      suppressBlankClick: false,
       compIcon: (http ? '/icons/' : './icons/') + 'pag-comp.png',
     }
   },
   computed: {
+    marqueeStyle () {
+      return {
+        left: this.marquee.x + 'px',
+        top: this.marquee.y + 'px',
+        width: this.marquee.w + 'px',
+        height: this.marquee.h + 'px'
+      }
+    },
     rows () {
       const kw = String(this.keyword || '').toLowerCase()
       let list = this.nodes.filter(function (n) {
@@ -174,6 +191,7 @@ export default {
     }
   },
   beforeDestroy () {
+    this.unbindMarquee()
     if (this.$root && this.$root.eventBus) {
       this.$root.eventBus.$off('comp-tree-refresh', this.refresh)
       this.$root.eventBus.$off('comp-tree-add-selected', this.emitAdd)
@@ -264,14 +282,91 @@ export default {
       this.emitSelection()
     },
     onBlankClick (ev) {
-      if (ev.target && ev.target.closest && ev.target.closest('.mod-ct__row, .mod-ct__head, input, button')) return
+      if (this.suppressBlankClick) {
+        this.suppressBlankClick = false
+        return
+      }
+      if (ev.target && ev.target.closest && ev.target.closest('.mod-ct__row, input, button, .mod-ct__cb')) return
       // 点击空白 = 取消选择（对齐桌面）
       this.clearSelection()
     },
     onBlankDblclick (ev) {
-      if (ev.target && ev.target.closest && ev.target.closest('.mod-ct__row, .mod-ct__head, input, button')) return
+      if (ev.target && ev.target.closest && ev.target.closest('.mod-ct__row, input, button, .mod-ct__cb')) return
       // 双击空白 = 全选（对齐桌面）
       this.selectAll()
+    },
+    onTreeMouseDown (e) {
+      if (e.button !== 0 || !this.rows.length) return
+      const t = e.target
+      if (!t || !t.closest || t.closest('.mod-ct__row, input, button, .mod-ct__cb, .mod-ct__marquee')) return
+      e.preventDefault()
+      const rect = this.$el.getBoundingClientRect()
+      this.marquee = {
+        active: true,
+        moved: false,
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top,
+        w: 0,
+        h: 0,
+        startX: e.clientX,
+        startY: e.clientY
+      }
+      this._onMarqueeMove = (ev) => this.onMarqueeMove(ev)
+      this._onMarqueeUp = () => this.onMarqueeUp()
+      window.addEventListener('mousemove', this._onMarqueeMove)
+      window.addEventListener('mouseup', this._onMarqueeUp)
+    },
+    onMarqueeMove (e) {
+      if (!this.marquee.active) return
+      if (e.preventDefault) e.preventDefault()
+      const rect = this.$el.getBoundingClientRect()
+      const sx = this.marquee.startX - rect.left
+      const sy = this.marquee.startY - rect.top
+      const ex = e.clientX - rect.left
+      const ey = e.clientY - rect.top
+      if (Math.abs(e.clientX - this.marquee.startX) > 4 || Math.abs(e.clientY - this.marquee.startY) > 4) {
+        this.marquee.moved = true
+      }
+      this.marquee.x = Math.min(sx, ex)
+      this.marquee.y = Math.min(sy, ey)
+      this.marquee.w = Math.abs(ex - sx)
+      this.marquee.h = Math.abs(ey - sy)
+      if (!this.marquee.moved) return
+
+      const boxL = this.marquee.x
+      const boxT = this.marquee.y
+      const boxR = boxL + this.marquee.w
+      const boxB = boxT + this.marquee.h
+      const hostRect = this.$el.getBoundingClientRect()
+      const next = {}
+      const rows = this.$el.querySelectorAll('.mod-ct__row')
+      for (let i = 0; i < rows.length; i++) {
+        const r = rows[i].getBoundingClientRect()
+        const l = r.left - hostRect.left
+        const top = r.top - hostRect.top
+        if (l + r.width >= boxL && l <= boxR && top + r.height >= boxT && top <= boxB) {
+          const id = rows[i].getAttribute('data-id')
+          if (id) next[id] = true
+        }
+      }
+      this.selectedMap = next
+      this.emitSelection()
+    },
+    onMarqueeUp () {
+      const moved = this.marquee.moved
+      this.unbindMarquee()
+      this.marquee = { active: false, moved: false, x: 0, y: 0, w: 0, h: 0, startX: 0, startY: 0 }
+      if (moved) this.suppressBlankClick = true
+    },
+    unbindMarquee () {
+      if (this._onMarqueeMove) {
+        window.removeEventListener('mousemove', this._onMarqueeMove)
+        this._onMarqueeMove = null
+      }
+      if (this._onMarqueeUp) {
+        window.removeEventListener('mouseup', this._onMarqueeUp)
+        this._onMarqueeUp = null
+      }
     },
     sizeText (n) {
       return (n.width || 0) + '×' + (n.height || 0)
@@ -423,11 +518,14 @@ export default {
 
 <style lang="scss" scoped>
 .mod-ct {
+  position: relative;
   display: flex;
   flex-direction: column;
   height: 100%;
   min-height: 0;
   font-size: 12px;
+  user-select: none;
+  -webkit-user-select: none;
 }
 .mod-ct__head,
 .mod-ct__row {
@@ -545,10 +643,19 @@ export default {
   padding: 0 8px;
   font: inherit;
   outline: none;
+  user-select: text;
+  -webkit-user-select: text;
 }
 .mod-ct__cb {
   display: inline-flex;
   cursor: pointer;
+}
+.mod-ct__marquee {
+  position: absolute;
+  z-index: 3;
+  pointer-events: none;
+  border: 1px solid var(--is-accent, #c8f542);
+  background: rgba(var(--is-accent-rgb, 200, 245, 66), 0.16);
 }
 .mod-ct__list {
   list-style: none;

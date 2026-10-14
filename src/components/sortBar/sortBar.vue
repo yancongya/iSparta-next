@@ -153,16 +153,18 @@ export default {
       })
       return n
     },
-    // 已完成条目按 1 计，进行中按实际 schedule 计，得到整体完成度
+    // 底栏进度对应本次勾选任务；未勾选时回退到全部任务，避免分母包含未运行项。
     totalPercent () {
-      if (!this.itemCount) return 0
+      var selected = this.$store.getters.getterSelected || []
+      var items = selected.length ? selected : this.items
+      if (!items.length) return 0
       var sum = 0
-      this.items.forEach(function (it) {
+      items.forEach(function (it) {
         var s = it.process && it.process.schedule
         if (s === 1 || s === -1) sum += 1
         else if (s > 0 && s < 1) sum += s
       })
-      return Math.round((sum / this.itemCount) * 100)
+      return Math.round((sum / items.length) * 100)
     }
   },
   mounted () {

@@ -254,7 +254,7 @@
         </button>
       </div>
       <div class="ib-set-overlay__body">
-        <setting></setting>
+        <setting :hide-title="true"></setting>
       </div>
     </div>
     <is-update-dock
@@ -1021,6 +1021,7 @@ export default {
   padding: 8px 12px;
   border-bottom: 1px solid var(--is-line, rgba(128, 128, 128, 0.25));
   font-weight: 600;
+  color: var(--is-text, inherit);
 }
 .ib-set-overlay__body {
   flex: 1;

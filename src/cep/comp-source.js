@@ -50,23 +50,35 @@ function readGlobalSetting () {
 }
 
 /**
- * 转码前把「当前」全局设置（质量 / 输出大小阈值）重新合并进合成 item。
- * toCompItem 在「加入列表」时已快照过一次 globalSetting；若用户在加入合成后才到
- * 设置里开启「输出大小阈值 / 改质量」，旧快照会让 sizeLimit.enabled 仍为 false →
- * enforceSizeLimit 直接短路、从不重试压缩（表现即「设了 800kb 却没按设置压缩」）。
- * 此处于转换时刻再读一次 globalSetting，保证全局设置对本次转换生效。
+ * 把尚未被任务单独修改的设置同步到最新全局默认值，并补齐旧任务缺失项。
+ * 任务设置与创建时的全局快照不同时视为用户覆盖，不能被全局值覆盖；否则
+ * autoDelete 会在用户关掉后重新开启。
  */
-function applyGlobalSizeAndQuality (item) {
+function fillMissingGlobalSizeAndQuality (item) {
   try {
     const gs = readGlobalSetting()
     const opts = (gs && gs.options) || {}
-    if (opts.sizeLimit) {
-      item.options.sizeLimit = _.cloneDeep(opts.sizeLimit)
-    }
-    if (opts.quality) {
-      item.options.quality = _.cloneDeep(opts.quality)
-    }
-  } catch (e) { /* 读不到就用加入时的快照，不挡转换 */ }
+    item.options = item.options || {}
+    item.basic = item.basic || {}
+    const snapshot = item.basic.globalSettingsSnapshot || (item.basic.globalSettingsSnapshot = {})
+    ;['sizeLimit', 'quality'].forEach(function (key) {
+      if (!opts[key]) return
+      const current = item.options[key]
+      const previousDefault = snapshot[key]
+      if (!current || typeof current !== 'object') {
+        item.options[key] = _.cloneDeep(opts[key])
+      } else {
+        Object.keys(opts[key]).forEach(function (field) {
+          if (current[field] === undefined ||
+              (previousDefault && previousDefault[field] !== undefined &&
+                _.isEqual(current[field], previousDefault[field]))) {
+            current[field] = _.cloneDeep(opts[key][field])
+          }
+        })
+      }
+      snapshot[key] = _.cloneDeep(opts[key])
+    })
+  } catch (e) { /* 补齐失败不挡转换 */ }
 }
 
 /** jsx 合成节点 → list() 的 ItemSource（扁平，parent 预留嵌套/文件夹） */
@@ -107,6 +119,10 @@ export function toCompItem (comp, optionsOverride) {
   const temp = {}
   temp.basic = {}
   temp.options = _.cloneDeep(globalSetting.options || {})
+  const globalSettingsSnapshot = {
+    sizeLimit: _.cloneDeep(temp.options.sizeLimit),
+    quality: _.cloneDeep(temp.options.quality)
+  }
   if (optionsOverride && typeof optionsOverride === 'object') {
     // 只覆盖传入键，避免把整个 options 引用共享出去
     _.each(optionsOverride, function (v, k) {
@@ -118,6 +134,7 @@ export function toCompItem (comp, optionsOverride) {
   temp.basic.compName = String(node.name || '').replace(/^[\s\u3000]+|[\s\u3000]+$/g, '')
   temp.basic.fileList = []
   temp.basic.thumbPath = ''
+  temp.basic.globalSettingsSnapshot = globalSettingsSnapshot
   temp.basic.compFps = Number(node.fps) || 0
   temp.basic.folderPath = String(node.folderPath || '').replace(/^\/+|\/+$/g, '')
 
@@ -301,8 +318,7 @@ export function prepareCompSequence (item, opts) {
   if (basic.type !== 'Comp') {
     return Promise.resolve(item)
   }
-  // 转码时刻重新套用当前全局设置（质量 / 输出大小阈值），避免「加入合成后改设置」不生效
-  applyGlobalSizeAndQuality(item)
+  fillMissingGlobalSizeAndQuality(item)
   if (basic.fileList && basic.fileList.length) {
     return Promise.resolve(item)
   }
