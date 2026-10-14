@@ -1,261 +1,52 @@
-# 双端一体 Plan：桌面 + AE CEP（iSparta-next）
+# 双端实现状态：桌面 + AE CEP
 
-> 状态：**实现已落地（W1–W4 / W2u / W5 文档）**；AE 真机选合成冒烟待人工。  
-> 约束：先读 `AGENTS.md`；用现成 skills / `scripts\` / `npm run *`；升级时同步文档、脚本、`AGENTS.md`。  
-> 参考只读：`.worktrees/*`、本机 PAG/SVGA 安装形态——**不改造参考仓库**。
+> **状态：双端代码与构建流程已落地；Windows/macOS 与 After Effects 的实机安装、更新和转换验收由用户设备完成并记录。**
+> 验收步骤见 [`ACCEPTANCE-RUNBOOK.md`](ACCEPTANCE-RUNBOOK.md)。本文记录当前结构与行为，不再保留过期实施方案。
 
-> 验收表见 [ACCEPTANCE-DUAL-TARGET.md](ACCEPTANCE-DUAL-TARGET.md)。实现主干已落地；**暂缓 commit**（用户要求）。  
-> **UI/功能与桌面对齐差距**见 [CEP-ALIGNMENT.md](CEP-ALIGNMENT.md)（命名拆词、路径、任务列表合成树/拖粘贴等）。  
-> **下一波多 Agent 执行简报**见 [EXEC-WAVE2.md](EXEC-WAVE2.md)（完整工作台 + hostAdapter/sourceAdapter + 双端一起更）。
+## 1. 目标与边界
 
-## 1. Goal（完成定义）
+- 桌面版与 CEP 面板共用 Vue 2 工作台和 `src/util/processor/*` 转换核。
+- Electron 主进程与 CEP Node/JSX 分别提供宿主桥；AE 的合成列表和渲染能力只放在宿主适配层。
+- 同一任务模型和处理器负责压缩、格式转换、大小阈值与输出命名；CEP 不维护独立编码链。
+- 桌面与 CEP 通过同一版本安装包更新；CEP 不单独启动 Electron 更新器。
 
-1. **一仓双目标**：同一仓库可开发、测试、出包  
-   - 桌面：现有 Electron 工作台（APNG/WebP/GIF/PNG 序列）  
-   - 扩展：AE CEP 面板（**可选合成** → 渲染序列 → 动图），能力对齐桌面  
-2. **Web 框架双端共用（强制）**：桌面与 CEP 共用 **Vue 2** 及**完整同一套** UI/业务（`Home`/`projectList`/`setting`/命名/路径等）；**禁止简化版/平行精简面板**。AE 特殊化只用 **注入/适配**（jsx、合成输入、host adapter）。**仅打包方式与后端桥不同**。  
-3. **共享转换核（强制）**：压缩 / 合成 / 降质 **必须同一套** `src/util/processor/*`（经桥 `exec/fs/path/storage`）；CEP 不得另写编码流水线。桌面与 CEP 只各一 adapter。  
-4. **AE 注入/宿主能力**：jsx 提供合成列表与**多选/单选合成**，按工作区/合成渲 PNG 序列后**进入同一 processor** 出 WebP / APNG / GIF。  
-5. **一体安装 + 双端一起更**：同一 NSIS/Release 更新桌面与 AE 扩展；扩展不单独热更。electron-updater 热更桌面后应用自检并刷新 CEP 落盘（对齐 payload 版本清单）。**W9-update 已落地**：`src/util/cepSync.js` 启动自检重拷；`updatePolicy`（cep→none/notify-only）；`version.json` 与 prepare-cep/NSIS 对齐；卸载/刷新只动 `EXT_ID`。  
-6. **发布**：`build.yml` 日常双产物 Artifact；`release.yml` 发版时桌面安装包内嵌扩展 + Release 附扩展包。  
-7. **文档同步**：每阶段结束更新 `docs/*` 与 `AGENTS.md` 中相关约定。
+## 2. 目录职责
 
-**非目标（本 Plan 不做）**：Bolt/Vite 新脚手架；Nx/Turbo；UXP；改造参考项目；自动 release（仍须用户点名）。
+| 路径 | 当前职责 |
+| --- | --- |
+| `src/ui-next/`、`src/components/` | 桌面与 CEP 共用工作台和业务组件 |
+| `src/util/processor/` | 共用转换处理器 |
+| `src/util/host-env.js`、`src/cep/` | 宿主能力与 AE 合成输入适配 |
+| `src/cep/`、`targets/cep/jsx/` | CEP 入口、桥接和 AE JSX 脚本 |
+| `targets/cep/ui/` | 受控 CEP UI 构建产物；源码变化后需同步构建 |
+| `public/bin/` | 开发态工具，以及 CEP payload 的默认工具来源 |
+| `static/bin/` | 转换器运行时搜索的 Electron 备用路径 |
+| `scripts/dev/` | 统一预览、构建、体检入口及其 Windows 包装 |
 
-## 2. 现状锚点（已核实）
+不要因为 `public/bin/` 与 `static/bin/` 都有工具文件就直接删一份：运行时代码会搜索这两处，部分二进制版本也不同。若要调整，先变更并验证实际打包/查找策略。
 
-| 项 | 位置 |
-|----|------|
-| 桌面壳 | `src/background.js` + `src/preload.js` + `vue.config.js` |
-| 转换核 | `src/util/processor/*`（`action.js` 走 `job:execFile`） |
-| 桥接口 | `src/util/node-env.js`（`ispartaAPI`） |
-| CLI | `public/bin/{win32,win64,mac,linux}/` |
-| 打包 | `electron-builder.yml`（NSIS 完整向导） |
-| CI | `.github/workflows/{build,release,pages}.yml` |
-| 约定 | `AGENTS.md`、`docs/CHANGELOG.md`、`docs/RELEASE.md` |
+## 3. CEP 合成输入现状
 
-## 3. 工作流拆分（可多 Agent 并行）
+- CEP 启动或刷新任务视图时，会读取当前 AE 工程的合成列表并同步到任务列表；未保存工程无法提供可靠的合成目录，应先在 AE 保存工程。
+- 合成树是现有合成的浏览和选择视图。空任务态点击面板会重新读取当前工程合成列表。
+- 空任务态目前没有“勾选合成后加入任务”的可用入口；合成名粘贴、读取 AE 当前选中合成的输入适配函数也没有接入主界面事件。不要在 UI 文案或文档中把这些路径描述为可用功能。
+- 改动这些输入能力时，先检查 `Home.vue`、`compTree.vue` 与 `src/cep/comp-source.js` 的实际事件调用关系，避免只存在适配函数却没有 UI 入口。
 
-| 流 | 代号 | 产出 | 依赖 |
-|----|------|------|------|
-| 共享核与桥 | **W1-core** | processor 只认桥；`bridge` 接口文档化；桌面行为不回归 | 无（可先动） |
-| CEP 扩展 | **W2-cep** | `targets/cep/`：manifest、精简 UI、`jsx` 导出、Node CLI 封装 | W1 接口定稿即可并行 |
-| 安装与打包 | **W3-pack** | NSIS 组件页 + extraResources + 安装/卸载钩子；扩展 zip 产物 | W2 目录结构稳定后 |
-| CI/CD | **W4-ci** | build/release 扩展 job；Artifact 命名 | W3 产物路径定稿 |
-| 文档与约定 | **W5-docs** | `docs/*`、`AGENTS.md`、CHANGELOG 条目；skills 使用说明 | 各流出口各同步一次 |
+## 4. 安装与更新边界
 
-多 Agent 时：**W1 ∥ W2** 为主并行；**W3 → W4**；**W5** 跟随各流出口，不单独堵路。
+- Windows 安装固定为系统级并请求 UAC；只有检测到 After Effects 才部署 CEP 到系统扩展目录，并清理本产品旧副本。
+- macOS 使用 pkg 安装流程部署桌面与 CEP；桌面热更新完成后由安装/同步流程处理扩展。
+- CEP 面板内更新使用同版官方桌面安装包；安装完成后按提示重启 After Effects。
+- 当前实现细节以 [`AGENTS.md` §8.1](../AGENTS.md)、[`docs/CHANGELOG.md`](CHANGELOG.md)、`build/installer.nsh` 与 `scripts/mac-pkg/postinstall` 为准。
 
-## 4. 阶段与验收
+## 5. 现成命令
 
-### P0 基线（0.5d）
-- [x] 本 Plan 入库；`AGENTS.md` 增加「双端目标」指针一小节  
-- [x] 扩展 ID / 目录名定稿：**`io.github.isparta-next`**（与 `appId` 一致；Extension Id / BundleId / CEP 目录名同此）  
-- [x] 扩展编码定稿：**方案 A 小工具子集**（apngasm / apngquant / cwebp·dwebp 等，对齐 `processor/*`；暂不收成单 ffmpeg）  
-- **出口**：ID、目录名、编码方案已定（2026-07 用户确认）
+| 任务 | 命令 |
+| --- | --- |
+| CEP 面板预览 | `node scripts/dev/preview.js cep` |
+| CEP 源码变更后构建 | `node scripts/dev/build.js cep` |
+| 打包前检查 | `node scripts/dev/check.js pack` |
+| 完整体检 | `node scripts/dev/check.js all` |
+| 双端实机验收 | 按 [`ACCEPTANCE-RUNBOOK.md`](ACCEPTANCE-RUNBOOK.md) 操作并记录 |
 
-### P1 共享核（W1，1–2d）
-- [x] 梳理 `processor/*` 对 `node-env` 的全部依赖  
-- [x] 桥接口冻结：`execFile` / `fs` 子集 / `path` / `storage`（与现 preload 对齐）→ [`docs/BRIDGE.md`](BRIDGE.md)  
-- [x] 桌面冒烟：`npm run lint` + 转换一条 PNG 序列→APNG  
-- **出口**：接口说明进 `docs/`；无行为回归
-
-### P2b 双端共用 UI + 同一转换核（W2u，新增）
-- [x] CEP 面板改为 **Vue 2** 构建入口，复用 `src/ui-next` / `src/util`（或抽共享包路径），与桌面同框架  
-- [x] 去掉 `targets/cep/lib/cli.js` 旁路编码，**统一走 `src/util/processor/*`**（挂 `cep-bridge`）  
-- [x] jsx：**合成列表 + 选择**（单/多），所选合成渲序列 → processor  
-- [x] 输出格式与桌面一致：WebP / APNG / GIF（及序列）  
-- [x] 浏览器可预览面板（dev：`npm run serve` 或 CEP 静态入口；有 `index.html` 入口）  
-- **出口**：同一 processor 为唯一编码路径；`npm run lint` / `build:cep` 通过；manifest MainPath=`./ui/index.html`；AE 真机选合成冒烟待做
-
-### P2 CEP 扩展（W2，2–4d）
-- [x] `targets/cep/` 传统结构（对齐 webp_apng / pagconfig 体量，不抄业务）  
-- [x] manifest：AEFT `[15.0,99.9]`、`--enable-nodejs`、Panel 520×560  
-- [x] `jsx`：`ispartaExportPngSequence` + 渲染队列备份恢复（ES3）  
-- [x] `lib/`：`cep-bridge` / `cli`（含 mac chmod + 清 quarantine）  
-- [x] 编码器：小工具子集（apngasm/apngquant/apngopt/cwebp/webpmux；见 `targets/cep/bin/README.md`）  
-- [x] 开发态说明：junction + PlayerDebugMode（`targets/cep/README.md`）  
-- [ ] **AE 真机冒烟**（导出序列→APNG/WebP；待人工）  
-- **出口**：结构与桥校验已过；真机冒烟待做
-
-### P3 一体安装（W3，1–2d）
-- [x] `extraResources` 携带 CEP 产物（`build/cep-payload` → `resources/cep/io.github.isparta-next`）
-- [x] `nsis.include`（`build/installer.nsh`）：组件页 ☑ 桌面 / ☑ AE 扩展（至少其一；可只装桌面）
-- [x] 安装复制到 CEP 目录（优先 `%APPDATA%\Adobe\CEP\extensions\io.github.isparta-next`；管理员可同时 Common Files）；卸载清理；失败路径提示（可选 ExMan/ZXP 兜底）
-- [x] `version.json` 版本清单（暂存时写入 + 安装时覆盖安装信息）
-- [x] 未签名扩展：安装时写 CSXS PlayerDebugMode（HKCU 6–14）
-- **出口**：本地 `npm run build:windows` 安装包勾选扩展后 AE 可见面板（待真机）
-
-### P4 CI/CD（W4，1d）
-- [x] `build.yml`：+ CEP 产物 job（win/mac）  
-- [x] `release.yml`：挂扩展包（`isparta-next-${version}-cep-{win,mac}.zip` + 稳定别名）  
-- [x] NSIS 包内已含扩展（W3 extraResources / 组件页，见 P3）  
-- [x] 仍遵守：**仅用户点名才 release**  
-- **出口**：CI Artifact 可下载；release dry_run 通过  
-- **产物约定**（W3/W4 共用）：源 `targets/cep/` + `public/bin` 小工具子集 → zip 根 `io.github.isparta-next/`；文件名 `isparta-next-${version}-cep-${platform}.zip`；稳定别名 `isparta-next-cep-{win,mac}.zip`
-
-### P5 收尾（W5，0.5–1d）
-- [x] `AGENTS.md`：双端目录、开发/打包命令、扩展约定  
-- [x] `docs/`：双端开发简记；CHANGELOG 仅在用户可见变化时  
-- [x] 任务列表与 Plan 勾选对齐  
-- **出口**：文档与仓库一致
-
-## 5. 复用清单（避免造轮子）
-
-| 复用 | 来源 | 用途 |
-|------|------|------|
-| processor + sizeGate + 输出路径 | 本仓库 | 双端转换 |
-| `node-env` 接口形状 | 本仓库 | CEP adapter 对齐 |
-| 渲序列 + 调 CLI | webp_apng 方法 | `targets/cep/jsx` |
-| Node spawn + 扩展内二进制 | SVGAConverter / ffmpeg-runner | CEP 执行层 |
-| 多落盘 + 版本清单 | PAG | W3 安装 |
-| ExManCmd 装 ZXP | ZXPInstaller | 兜底 |
-| 规范 / 检查 | `cep-playground` skill、`jsx-modular-refactor` | W2 写码与检查 |
-| 发版脚本 | `scripts/release.ps1`、`doctor-packaging.js` | W4 |
-
-**禁止**：临时 `.bat` 执行链；Bolt；改参考仓；无 AGENTS/文档同步的落地。
-
-## 6. 多 Agent 协作约定
-
-1. 每个 Agent 领一条 **W\***，只改本流路径；跨流变更先改本 Plan 再动。  
-2. 动手前读 `AGENTS.md` + 本 Plan；完成后勾选阶段项，并更新本流相关文档。  
-3. 共享文件（`node-env`、`processor/*`、`electron-builder.yml`、`AGENTS.md`）**串行修改**，避免并行写冲突。  
-4. 验收以阶段「出口」为准；lint / 冒烟不过不标 done。  
-5. 发版动作仍由主会话/用户点名，子 Agent 不跑 `release.ps1`。
-
-## 7. 风险与待决
-
-| 项 | 说明 | 倾向 |
-|----|------|------|
-| 扩展编码核心 | 小工具链 vs 单 ffmpeg | **已定：小工具子集（A）** |
-| 扩展 ID / 面板名 | 影响 manifest 与安装目录 | **已定：`io.github.isparta-next`** |
-| 未签名 CEP | 需 PlayerDebugMode 或签名 ZXP | P3 二选一或主备 |
-| AE 版本矩阵 | AEFT 版本范围 | manifest 先 `[15.0,99.9]` 再收紧 |
-| CI Artifact 命名 | `build.yml` 桌面曾用 `isparta-*`，与 release / electron-builder `isparta-next-*` 不一致 | **已消：统一为 `isparta-next-*`**（updater 资产名不变） |
-
-## 8. 任务 ID 映射（task 工具）
-
-- T5 总计划：双端一体 Plan 推进  
-  - T5.1 P0 基线与 ID 定稿  
-  - T5.2 P1 共享核与桥（W1）  
-  - T5.3 P2 CEP 扩展（W2）  
-  - T5.4 P3 一体安装（W3）  
-  - T5.5 P4 CI/CD（W4）  
-  - T5.6 P5 文档与 AGENTS 同步（W5）
-
-## 9. 安装范围 / AE 版本探测 / 回退链（设计说明，待实现）
-
-> 2026-10-13 升级实现：此节保留历史设计与回归背景。当前安装契约以 `AGENTS.md` §8.1、`docs/CHANGELOG.md`（更新机制）、`build/installer.nsh` 和 `scripts/mac-pkg/postinstall` 为准：固定系统级、先检测 AE、按需部署 CEP、安装结果反馈、只清理本产品旧副本。下文关于组件勾选、无 AE 仍装 CEP、macOS 首启用户级补装的描述不再适用；跨平台真机验收仍待完成。
-
-
-
-> 调研结论：CEP 扩展目录**不分 AE 版本**，一份拷贝通吃 2023/2024/2025。
-> 「选版本」的正确语义 = 校验兼容 + 展示 + 写对应 CSXS 的 PlayerDebugMode，**不是装多份**。
-
-### 9.1 AE 版本探测（多盘，不只 C 盘）
-
-| 手段 | 说明 | 优先级 |
-| --- | --- | --- |
-| 注册表 | `HKLM\\SOFTWARE\\Adobe\\After Effects\\<ver>`（含 WOW6432Node），取 InstallPath | ★★★ 首选，与盘符无关 |
-| 全盘枚举 | `DriveGet` 取固定盘符 → `\\Program Files\\Adobe\\Adobe After Effects *\\Support Files`（含 x86） | ★★ 兜底，覆盖手动挪盘/绿色安装 |
-| 安装清单 | `%ProgramData%\\Adobe\\Install\\` | ★ 偶发补充 |
-| 运行时 | jsx `app.path` | 仅 AE 内，不用于安装器 |
-
-用途：展示「检测到 AE 2023 / 2024 / 2025」、校验 manifest `[15.0,99.9]` 兼容、按 CSXS 主版本写 PlayerDebugMode。
-
-### 9.2 安装目标（两候选，**互斥**）
-
-| 级别 | 路径 | 权限 | 覆盖 |
-| --- | --- | --- | --- |
-| **系统级（推荐）** | `C:\\Program Files (x86)\\Common Files\\Adobe\\CEP\\extensions` | 需管理员（UAC 提权） | 所有用户 × 所有 AE 版本 |
-| 用户级 | `%APPDATA%\\Adobe\\CEP\\extensions` | 免管理员 | 当前用户 × 所有 AE 版本 |
-
-**互斥规则**：二选一，**禁止双写**（Common Files 与 APPDATA 并存会引发 CEP 加载优先级歧义 / 重复加载）。
-当前 `installer.nsh` 的 `UAC_IsAdmin` 顺带双写行为**须改**。
-
-**选择口径（v3.6.9 起固定系统级）**：`perMachine: true` → 安装范围**不再询问**，唯一真相源是
-electron-builder 的 `$installMode`（`initMultiUser` 在 `customInit` 前无条件置 `"all"`）；
-安装器 manifest 自动 `RequestExecutionLevel admin`，每次安装弹一次 UAC（`/S` 静默同样弹，
-静默只跳页面、不提权）。主程序目录与 CEP 落盘位置都由它推导，避免同一个问题问两遍。
-组件页只**只读展示**落盘位置（`build/installer.nsh` 的 `ispartaResolveScope`）。
-
-> **单副本由两层共同保证（v3.6.9 起）**：安装器 `customInstall` 在写目标作用域前先清双作用域旧副本；
-> 桌面 app 启动自检 `cepSync.ensureCepExtension` 按 `resolveInstallScope` 探测到的安装作用域只维护对应一份，
-> 绝不在另一作用域重新播种——根治「安装器删用户级 → 自检又建回 → 双副本 + AE 用户级遮挡系统级」。
-
-### 9.3 UAC 流程
-
-```
-安装器启动（manifest: RequestExecutionLevel admin）
-    ↓ 弹一次 UAC；授权后进程持管理员令牌（/S 静默同样弹，静默只跳页面不提权）
-initMultiUser（.onInit，先于 customInit）
-    ↓ perMachine:true → 无条件 $installMode="all" + SetShellVarContext all
-ispartaResolveScope（唯一推导点）
-├─ all（必有管理员令牌）
-│     → 主程序 $PROGRAMFILES64\isparta-next
-│     → 写 Common Files\Adobe\CEP\extensions\<EXT_ID>
-│     → 清用户级 %APPDATA% 残留（互斥禁双写；AE 占用删不掉则落 isparta-install.log）
-│     → 所有用户 × 所有 AE 版本
-└─ （兜底）无管理员令牌
-      → 主程序 $LOCALAPPDATA\Programs\isparta-next
-      → 写 %APPDATA%\Adobe\CEP\extensions\<EXT_ID>
-      → 清 Common Files 残留
-
-组件页（目录页之后）
-    → 只勾选「桌面版 / AE 扩展」，安装范围只读展示，不再提问、不在这里申请提权
-    → silent(/S) 升级不经组件页 → 由 customInstall 再 Call 一次 ispartaResolveScope 兜底
-
-双通道同包（桌面自动更 / CEP 面板热更）
-    → 下载同一个 Release NSIS 包，都走 UAC → 同包同作用域
-    → installSection 对 installMode=all 自动 uninstallOldVersion HKCU：
-      旧 per-user 副本（%LOCALAPPDATA%\Programs + HKCU 登记）自动清除，
-      全机只保留一份安装目录
-
-双层单副本（安装器 + 运行时）
-    → 安装器 customInstall：写目标作用域前先 ispartaRemoveCepDir 清掉「用户级 + Common Files」双作用域旧副本
-      （只认领 EXT_ID；AE 占用删不掉则落 isparta-install.log）→ 无论机器此前多乱，装完强制单份
-    → 桌面 app 启动自检 cepSync.ensureCepExtension：按 resolveInstallScope 探测到的安装作用域只维护对应一份
-      （系统级只维护 Common Files、绝不在用户级重新播种；用户级只维护 APPDATA、best-effort 清系统级残留）
-      → 与安装器同构，运行时也不产生双副本
-
-面板 loading 为静默安装唯一反馈（双通道均 /S 静默，NSIS 不弹原生向导）
-    → 进度全靠面板 installing 态（IsUpdateDock「正在安装…」）；不给反馈用户就感觉「点了没反应」
-    → 桌面自动更：装完由 --force-run 重启，新进程续 BootSplash loading，视觉连续
-    → CEP 热更：launchInstaller 静默起包后 dock 进入「已启动安装，请重启 AE」终态（AE 无法自重启，by design）
-    → 新版本启动后 RootGate 复播 OnboardingWhatsNew 轻量更新说明单屏（替代完整 7 步引导，避免割裂）
-```
-
-### 9.4 识别失败回退链
-
-```
-1. 注册表扫到 AE 安装路径 → 校验目标盘可写
-2. 全盘目录枚举（D/E/F…）→ 找 *After Effects *\\Support Files
-3. 都识别不到 → 提示「未检测到 AE」
-   ├─ 仍可按默认 CEP 目录安装（后续装 AE 也能加载）
-   └─ 或用户手动 Browse / 自填目录
-```
-
-> 一个 AE 都没扫到时仍可装：CEP 扩展不绑定 AE 安装路径，装 AE 后自然加载。
-
-### 9.5 升级测试关注点
-
-1. 多盘 AE 探测展示正确
-2. UAC 授权 → Common Files 单份（自动清 %APPDATA% 残留）；无令牌兜底 → APPDATA 单份；**不双写**
-3. 热更 `cepSync.js` 目标目录与安装级别对齐（Common Files 需提权/提示）
-4. PlayerDebugMode 按探测到的 CSXS 主版本写（现 6–14；AE2025 若 CSXS 15 需补）
-5. CI/CD：`build.yml`/`release.yml` 的 cep job **须先 `npm run build:cep`**（当前只 rsync `targets/cep/`，会打进过时 UI）
-6. 面板 loading 终态正确收尾 + Onboarding 复播：关 AE → 启桌面 app（刷新/重建用户级为系统级）→ 重开 AE
-   → 点更新见 loading、装完弹 Onboarding；CEP 热更需手动重开 AE 才加载新面板（AE 无法自重启，by design）
-7. 单副本真机验证：装完查 `%APPDATA%\Adobe\CEP\extensions\io.github.isparta-next` 是否被重建
-   （系统级安装下应消失/不出现；若出现即桌面自检仍播种用户级，需回查 resolveInstallScope）
-
-### 9.6 现状缺口（实现前必改）
-
-| 项 | 现状 | 目标 |
-| --- | --- | --- |
-| AE 多盘探测 | 无 | 注册表 + 全盘枚举 |
-| 安装互斥 | 旧：UAC_IsAdmin 顺带双写 | **已落地（v3.6.9）**：perMachine 固定系统级 + 安装前自检清双作用域 + 桌面自检单副本，禁双写 |
-| UAC 授权流 | 无（旧：组件页选范围） | perMachine:true 固定系统级，manifest 每次安装提权；单副本双层保证（v3.6.9 已落地） |
-| 运行时单副本 | 桌面自检无作用域判断、会重建用户级 | **已落地（v3.6.9）**：cepSync.resolveInstallScope + ensureCepExtension 按作用域只维护一份 |
-| 手动选目录 | 无 | 识别失败时 Browse 兜底 |
-| CI 构建 CEP UI | 只 rsync 旧产物 | 打 zip 前 `build:cep` |
+静态构建、lint 和 CI 只能证明代码/产物通过相应检查，不能替代 Windows/macOS 安装以及 AE 内加载和渲染验收。

@@ -6,7 +6,7 @@ module.exports = {
     "projectNoOpen": "未打开 AE 工程",
     "projectUnsaved": "工程未保存，请先在 AE 里保存工程",
     "compScanFailed": "读取合成失败",
-    "uploadCompRule": "AE 不支持把合成拖进面板；用合成树勾选，或粘贴合成名 / 读取 AE 选中合成",
+    "uploadCompRule": "AE 合成列表为空时，点击此处重新读取当前工程的合成",
     "pickComps": "选择合成…",
     "compImportPending": "合成导入即将接入",
     //function

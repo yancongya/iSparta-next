@@ -638,6 +638,11 @@
 // 严格 CEP 注入，不作用于桌面收窄
 @media (max-width: $bp-wide) {
   html.is-cep .mod-list {
+    // 合成树根节点显式 height:100%，任务列表原先只有 min-height:100%。
+    // 因此短列表下的空白实际命中外层 .ib-main__list，空白点击/双击和框选
+    // 事件不会冒泡到 .mod-list；CEP 任务视图也必须占满同一可视区域。
+    height: 100%;
+    box-sizing: border-box;
     .meta { gap: var(--is-s-2); }
     .status { min-width: 0; }
     .progress { width: 64px; }

@@ -1,5 +1,7 @@
 # 桌面 ↔ AE 扩展 对齐清单
 
+> **历史差距快照（已归档）**：下表记录早期规划，不能作为当前功能状态或待办依据。当前双端边界见 [`CEP-UPGRADE-SCOPE.md`](CEP-UPGRADE-SCOPE.md)，当前操作与验收步骤见 [`ACCEPTANCE-RUNBOOK.md`](ACCEPTANCE-RUNBOOK.md)。
+
 > 原则（强制）：**完整共用一套 UI/功能，禁止简化版**；AE 特殊化只能 **注入/适配**（jsx 宿主、合成输入源、host adapter），**不得**另维护平行精简面板。  
 > 压缩/合成 **必须** 同一 `src/util/processor/*` + `tokenizeName` / `outputPath`。  
 > 配套：`docs/PLAN-DUAL-TARGET.md`、`docs/BRIDGE.md`。

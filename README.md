@@ -172,7 +172,7 @@
 
 ## 环境要求
 
-- [Node.js](https://nodejs.org/)（建议 16+，与 CI 一致）
+- [Node.js](https://nodejs.org/)（建议使用仓库 `.nvmrc` 指定的 20，与 CI 一致）
 - npm
 - Linux 额外依赖（部分原生二进制需要）：
 
@@ -280,11 +280,11 @@ iSparta-next/
 │   ├── store/                 # Vuex
 │   ├── locales/               # i18n 文案
 │   └── router.js
-├── static/bin/                # 各平台原生转换二进制
-│   ├── win32/  win64/  mac/
-├── public/                    # 静态资源、图标、截图
-├── test/                      # 测试样例（PNG / GIF / APNG / WebP）
-├── docs/                      # 升级路线与规格说明
+├── public/                    # Web 静态资源；bin/ 是开发态与 CEP payload 的转换工具来源
+├── static/bin/                # Electron 运行时回退查找的各平台转换工具
+├── targets/cep/               # CEP 壳、JSX 宿主脚本与受控 UI 构建产物
+├── scripts/                   # 构建、预览、发版与校验入口
+├── docs/                      # 现状说明、手册、验收步骤与历史规格
 ├── electron-builder.yml
 └── vue.config.js
 ```
@@ -302,7 +302,7 @@ iSparta-next/
 | `node scripts/dev/build.js cep` | 只重建 AE / CEP 面板产物 `targets/cep/ui` |
 | `node scripts/dev/check.js lint\|pack\|ports\|all` | 体检：lint / 出包自检 / 端口占用与归属识别 |
 
-`scripts/dev/` 下另有等价的双击友好包装：`run-preview` / `run-build-win` / `run-build-cep` / `run-check`。开发约定、行尾策略与完整脚本索引见 [`AGENTS.md`](AGENTS.md)。
+`scripts/dev/` 下另有双击友好包装：`run-all-dev` / `run-dev-cep` / `run-landing` / `run-preview` / `run-build-win` / `run-build-cep` / `run-check`。开发约定与完整脚本索引见 [`AGENTS.md`](AGENTS.md)。
 
 ## 文档导航
 
@@ -317,13 +317,14 @@ iSparta-next/
 | [`docs/SIGNPATH.md`](docs/SIGNPATH.md) | 手册 | Windows 免费代码签名申请 |
 | [`docs/SEO_SUBMIT.md`](docs/SEO_SUBMIT.md) | 手册 | 落地页搜索收录提交 |
 | [`docs/ACCEPTANCE-RUNBOOK.md`](docs/ACCEPTANCE-RUNBOOK.md) | 手册 | 双端真机验收步骤 |
-| [`docs/PLAN-DUAL-TARGET.md`](docs/PLAN-DUAL-TARGET.md) | 进行中 | 双端（桌面 + CEP）计划与分工 |
+| [`docs/PLAN-DUAL-TARGET.md`](docs/PLAN-DUAL-TARGET.md) | 进行中（实机验收） | 双端实现记录；跨平台 AE / 安装验收状态见验收手册 |
 | [`AGENTS.md`](AGENTS.md) | 约定 | 开发 / commit / release 约定（人与 Agent 共用） |
 | [`docs/PLAN-GUIDE-PAGES.md`](docs/PLAN-GUIDE-PAGES.md) | 归档 | 引导页规格依据（已上线；源码注释按 §锚点引用，勿删） |
 | [`docs/CEP-ALIGNMENT.md`](docs/CEP-ALIGNMENT.md) | 归档 | 桌面 ↔ AE 扩展对齐清单（历史差距分析） |
 | [`docs/EXEC-WAVE2.md`](docs/EXEC-WAVE2.md) | 归档 | Wave 2 多 Agent 执行简报（已完成） |
 | [`docs/ACCEPTANCE-DUAL-TARGET.md`](docs/ACCEPTANCE-DUAL-TARGET.md) | 归档 | 双端一体验收清单（勾选记录） |
 | [`docs/compose/ROADMAP-isparta-next.md`](docs/compose/ROADMAP-isparta-next.md) | 归档 | 六阶段升级总目标 |
+| [`docs/compose/spec/`](docs/compose/spec/) | 归档 | Electron、前端、交互与输出阈值的历史规格 |
 
 **要做什么 → 看哪份**
 

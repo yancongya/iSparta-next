@@ -43,7 +43,7 @@ node scripts\dev\check.js all                # lint + pack + ports
 
 **两条刻意的设计**（改脚本时别退回旧写法）：① `preview.js` 的就绪判定以**子进程自己打印的地址**为准 —— vue-cli 端口被占会自动顺延，盲目扫端口会把邻近残留实例当成本次成果；② 只有能证明是自己的实例（页面标记命中）才复用，否则一律自己起。
 
-**`scripts/dev/` 里的 `.cmd` 包装**（双击友好，等价于对应 node/npm 命令）：`run-dev` · `run-dev-cep` · `run-all-dev` · `run-landing` · `run-preview` · `run-build-win` · `run-build-cep` · `run-check` · `run-npm-install` / `run-clean-install` / `run-electron-install`。新脚本沿用同样风格，并写 `*.status` / `*.log` / `*.err` 三件套（均已在 `.gitignore` 内）。
+**`scripts/dev/` 里当前跟踪的 `.cmd` 包装**（双击友好）：`run-all-dev` · `run-dev-cep` · `run-landing` · `run-preview` · `run-build-win` · `run-build-cep` · `run-check`。依赖安装直接使用 `npm install`；不要依赖仓库里未跟踪的本地包装脚本。
 
 环境：Node 经 `MIMO_NODE` / `MIMO_NPM` 时用 `& $env:MIMO_NODE $env:MIMO_NPM run <script>`。Windows 上不要用 Unix 登录 shell。
 
@@ -275,14 +275,4 @@ CEP 下弹窗要铺满时必须三件套同时做，缺一就会被内联样式 
 
 ## 9. 文档索引
 
-**完整导航（现状 / 手册 / 进行中 / 归档 四类，含「要做 X 该看哪份」决策表）见 [`README.md` 文档导航](README.md#文档导航)**。以下是开发时常查的几份：
-
-| 文档 | 用途 |
-| --- | --- |
-| `AGENTS.md` | 开发约定（本文） |
-| `docs/CHANGELOG.md` | 版本记录 + 应用内更新 / 自动更新机制现状 |
-| `docs/RELEASE.md` | 发版操作 |
-| `docs/BRIDGE.md` | 转换核桥接口冻结（ispartaAPI / node-env / processor） |
-| `docs/CEP-UPGRADE-SCOPE.md` | CEP 升级范围与双端边界（共有 vs 注入） |
-| `docs/PLAN-DUAL-TARGET.md` | 双端（桌面 + CEP）计划与分工 |
-| `docs/PLAN-GUIDE-PAGES.md` | 引导页规格依据（已上线；源码注释按 §锚点引用，**勿删**） |
+全仓文档导航只维护在 [`README.md` 文档导航](README.md#文档导航)，包含现状、手册、验收、归档和「要做什么看哪份」索引。新增文档只在那里登记。

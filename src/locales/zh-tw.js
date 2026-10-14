@@ -6,7 +6,7 @@ module.exports = {
     "projectNoOpen": "未打開 AE 工程",
     "projectUnsaved": "工程未保存，請先在 AE 裡保存工程",
     "compScanFailed": "讀取合成失敗",
-    "uploadCompRule": "AE 擴充：從工程拖入/貼上合成，或用合成樹勾選後加入任務",
+    "uploadCompRule": "AE 合成列表為空時，點擊此處重新讀取目前工程中的合成",
     "pickComps": "選擇合成…",
     "compImportPending": "合成導入即將接入",
     //function

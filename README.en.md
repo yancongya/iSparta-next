@@ -153,7 +153,7 @@ All three platforms are built by GitHub Actions. **macOS packages are unsigned**
 
 ## Requirements
 
-- [Node.js](https://nodejs.org/) (16+ recommended, matches CI)
+- [Node.js](https://nodejs.org/) (use version 20 from `.nvmrc`, matching CI)
 - npm
 - Linux extra dep for some native binaries:
 
@@ -232,10 +232,11 @@ iSparta-next/
 │   ├── store/                 # Vuex
 │   ├── locales/               # i18n
 │   └── router.js
-├── static/bin/                # Native binaries (win32 / win64 / mac)
-├── public/                    # Assets, icons, screenshots
-├── test/                      # Sample PNG / GIF / APNG / WebP
-├── docs/                      # Roadmap & specs
+├── public/                    # Web assets; bin/ supplies dev tools and CEP payload tools
+├── static/bin/                # Platform conversion tools used as an Electron runtime fallback
+├── targets/cep/               # CEP shell, JSX host scripts, and tracked UI build output
+├── scripts/                   # Build, preview, release, and verification entrypoints
+├── docs/                      # Current guidance, acceptance steps, and archived specs
 ├── electron-builder.yml
 └── vue.config.js
 ```
@@ -253,7 +254,7 @@ iSparta-next/
 | `node scripts/dev/build.js cep` | Rebuild the AE / CEP panel bundle `targets/cep/ui` only |
 | `node scripts/dev/check.js lint\|pack\|ports\|all` | Health check: lint / packaging gate / port occupancy & owner |
 
-The matching `.cmd` wrappers under `scripts/dev/` (`run-preview` / `run-build-win` / `run-build-cep` / `run-check`) are double-click friendly. See [`AGENTS.md`](AGENTS.md) for dev conventions and the full script index (Chinese).
+Double-click friendly wrappers under `scripts/dev/`: `run-all-dev`, `run-dev-cep`, `run-landing`, `run-preview`, `run-build-win`, `run-build-cep`, and `run-check`. See [`AGENTS.md`](AGENTS.md) for development conventions and the full script index (Chinese).
 
 ## Docs map
 
@@ -268,13 +269,14 @@ The matching `.cmd` wrappers under `scripts/dev/` (`run-preview` / `run-build-wi
 | [`docs/SIGNPATH.md`](docs/SIGNPATH.md) | Guide | Free Windows code signing application |
 | [`docs/SEO_SUBMIT.md`](docs/SEO_SUBMIT.md) | Guide | Landing page search submission |
 | [`docs/ACCEPTANCE-RUNBOOK.md`](docs/ACCEPTANCE-RUNBOOK.md) | Guide | Dual-target on-device acceptance steps |
-| [`docs/PLAN-DUAL-TARGET.md`](docs/PLAN-DUAL-TARGET.md) | In progress | Dual-target (desktop + CEP) plan and work split |
+| [`docs/PLAN-DUAL-TARGET.md`](docs/PLAN-DUAL-TARGET.md) | In progress (host acceptance) | Dual-target implementation record; cross-platform AE/install acceptance is tracked in the runbook |
 | [`AGENTS.md`](AGENTS.md) | Convention | Dev / commit / release conventions (humans and agents) |
 | [`docs/PLAN-GUIDE-PAGES.md`](docs/PLAN-GUIDE-PAGES.md) | Archived | Onboarding page spec (shipped; source comments anchor to its §sections — do not delete) |
 | [`docs/CEP-ALIGNMENT.md`](docs/CEP-ALIGNMENT.md) | Archived | Desktop ↔ AE extension parity checklist (historical gap analysis) |
 | [`docs/EXEC-WAVE2.md`](docs/EXEC-WAVE2.md) | Archived | Wave 2 multi-agent execution brief (done) |
 | [`docs/ACCEPTANCE-DUAL-TARGET.md`](docs/ACCEPTANCE-DUAL-TARGET.md) | Archived | Dual-target acceptance checklist (tick-off record) |
 | [`docs/compose/ROADMAP-isparta-next.md`](docs/compose/ROADMAP-isparta-next.md) | Archived | Six-phase upgrade roadmap |
+| [`docs/compose/spec/`](docs/compose/spec/) | Archived | Historical Electron, frontend, interaction, and size-limit specifications |
 
 **What do I want to do → read**
 

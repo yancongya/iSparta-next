@@ -6,7 +6,7 @@ module.exports = {
     "projectNoOpen": "No AE project is open",
     "projectUnsaved": "Project is unsaved — save it in AE first",
     "compScanFailed": "Failed to read compositions",
-    "uploadCompRule": "AE extension: drop/paste comps, or select them in the composition tree",
+    "uploadCompRule": "If the AE composition list is empty, click here to reload comps from the current project",
     "pickComps": "Pick comps…",
     "compImportPending": "Composition import coming soon",
     //function
