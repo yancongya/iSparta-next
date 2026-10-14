@@ -2,7 +2,7 @@
 
 **架构约定：本地只触发，打包发版全部由 GitHub CI/CD 完成。**
 
-更新/自动更新架构说明见 [UPDATER.md](./UPDATER.md)。
+更新/自动更新架构说明见 [CHANGELOG.md](./CHANGELOG.md#更新机制)。
 
 ```text
 本地 CLI（gh / scripts/release.ps1）

@@ -32,7 +32,7 @@
 | CLI | `public/bin/{win32,win64,mac,linux}/` |
 | 打包 | `electron-builder.yml`（NSIS 完整向导） |
 | CI | `.github/workflows/{build,release,pages}.yml` |
-| 约定 | `AGENTS.md`、`docs/UPDATER.md`、`docs/RELEASE.md`、`docs/CHANGELOG.md` |
+| 约定 | `AGENTS.md`、`docs/CHANGELOG.md`、`docs/RELEASE.md` |
 
 ## 3. 工作流拆分（可多 Agent 并行）
 
@@ -145,7 +145,7 @@
 
 ## 9. 安装范围 / AE 版本探测 / 回退链（设计说明，待实现）
 
-> 2026-10-13 升级实现：此节保留历史设计与回归背景。当前安装契约以 `AGENTS.md` §8.1、`docs/UPDATER.md`、`build/installer.nsh` 和 `scripts/mac-pkg/postinstall` 为准：固定系统级、先检测 AE、按需部署 CEP、安装结果反馈、只清理本产品旧副本。下文关于组件勾选、无 AE 仍装 CEP、macOS 首启用户级补装的描述不再适用；跨平台真机验收仍待完成。
+> 2026-10-13 升级实现：此节保留历史设计与回归背景。当前安装契约以 `AGENTS.md` §8.1、`docs/CHANGELOG.md`（更新机制）、`build/installer.nsh` 和 `scripts/mac-pkg/postinstall` 为准：固定系统级、先检测 AE、按需部署 CEP、安装结果反馈、只清理本产品旧副本。下文关于组件勾选、无 AE 仍装 CEP、macOS 首启用户级补装的描述不再适用；跨平台真机验收仍待完成。
 
 
 

@@ -15,26 +15,23 @@
 > Product page: **[https://yancongya.github.io/iSparta-next/](https://yancongya.github.io/iSparta-next/)**  
 > Stack: Electron 28 + Vue 2 · Platforms: Windows / macOS / Linux  
 >  
-> **Docs:** [Update & auto-update (current)](docs/UPDATER.md) · [Release process](docs/RELEASE.md) · [Changelog](docs/CHANGELOG.md) · [SEO checklist](docs/SEO_SUBMIT.md)
+> **Docs:** [Changelog & updater](docs/CHANGELOG.md) · [Release process](docs/RELEASE.md) · [Docs map](#docs-map) · [SEO checklist](docs/SEO_SUBMIT.md)
 
 ### Updates & auto-update
 
-On startup the app checks GitHub Releases (version + OS type only; you can turn this off in **Settings → Automatic update check**). A non-blocking in-app corner toast (dock) appears when an update exists; click **Update now** to download, then **Restart to update**. Manual **Check for updates** opens a full notes dialog.
+- Roughly 8 seconds after launch the app checks **GitHub Releases** once (version + OS type only; turn it off in **Settings → Automatic update check**). When an update exists, a non-blocking corner card appears in-app; confirm to download, then **Restart to update**.
+- **Windows (NSIS) / Linux (AppImage) / macOS (pkg)** all support in-app updates; macOS asks for administrator permission. CI packages are unsigned, so the OS may ask you to allow opening. The **AE panel** reuses the same official installer and needs an After Effects restart afterwards.
+- Mechanics, architecture and limitations: [`docs/CHANGELOG.md`](docs/CHANGELOG.md#更新机制); release process: [`docs/RELEASE.md`](docs/RELEASE.md); free Windows signing: [`docs/SIGNPATH.md`](docs/SIGNPATH.md).
 
-- **Windows (NSIS installer) / Linux (AppImage):** in-app auto-update channel after you confirm download
-- **macOS:** unsigned pkg installer; installation requests administrator permission. If macOS blocks it, use **System Settings → Privacy & Security → Open Anyway**
-- **AE extension (bundled install):** pick a composition in After Effects → render PNG sequence → APNG / WebP / GIF, on the same conversion engine as the desktop app. Windows and macOS installers deploy the matching AE extension when After Effects is present.
-- Docs: [UPDATER.md](docs/UPDATER.md) · [RELEASE.md](docs/RELEASE.md) · [CHANGELOG.md](docs/CHANGELOG.md)
-- **macOS (unsigned pkg):** in-app update with administrator approval; see Release notes for Gatekeeper
-- Architecture and limitations: **[docs/UPDATER.md](docs/UPDATER.md)**
+> **Install and update:** Windows and macOS installers are system-wide; the matching CEP extension is deployed when After Effects is detected. Desktop and AE panel share the same official installer — restart the app or After Effects when prompted. AE panel capabilities and upgrade boundary: [`docs/CEP-UPGRADE-SCOPE.md`](docs/CEP-UPGRADE-SCOPE.md).
 
-> **Install and update:** Windows and macOS installers deploy the matching CEP extension when After Effects is present. Desktop and CEP updates use the official installer; restart the app or After Effects when prompted. See [updater details](docs/UPDATER.md).
+### Recent highlights
 
-### Recent experience updates
+- **AE panel:** one-button switch between comp tree and task list; right-click to open comp location / output folder / stop task; double-click to jump to a comp; pinned filter bar
+- **Bundled install:** system-wide installation (UAC prompt, CEP under Common Files, a single copy per machine); auto-detects the AE version; version shown in both the desktop title bar and the AE panel
+- **Onboarding (7 pages):** Welcome → Import → Output → Naming → Path variables → AE → Done, covering import methods, output settings and naming rules in one pass
 
-- **AE extension:** one-button switch between comp tree and task list; right-click to open comp location / output folder / stop task; double-click to jump to a comp; pinned filter bar (search / frame rate / frames); same-name comps disambiguated by folder
-- **Bundled install:** system-wide desktop installation, with the matching AE extension when After Effects is detected; version shown in the desktop title bar and the AE extension menu
-- Empty-state import panel: folder open/close animation, 3D keycap paste hint; click / drag / Ctrl+V to import
+Full per-version changes: [`docs/CHANGELOG.md`](docs/CHANGELOG.md).
 
 ### Good for
 
@@ -257,6 +254,39 @@ iSparta-next/
 | `node scripts/dev/check.js lint\|pack\|ports\|all` | Health check: lint / packaging gate / port occupancy & owner |
 
 The matching `.cmd` wrappers under `scripts/dev/` (`run-preview` / `run-build-win` / `run-build-cep` / `run-check`) are double-click friendly. See [`AGENTS.md`](AGENTS.md) for dev conventions and the full script index (Chinese).
+
+## Docs map
+
+**The single index for this repo.** Grouped by role — the status column tells you which files are still authoritative:
+
+| Doc | Status | Purpose |
+| --- | --- | --- |
+| [`docs/CHANGELOG.md`](docs/CHANGELOG.md) | Current | Release history + in-app update mechanics (architecture / limits / local verification) |
+| [`docs/BRIDGE.md`](docs/BRIDGE.md) | Current | Conversion-core bridge contract (ispartaAPI / node-env / processor) |
+| [`docs/CEP-UPGRADE-SCOPE.md`](docs/CEP-UPGRADE-SCOPE.md) | Current | CEP upgrade scope and dual-target boundary (shared vs injected) |
+| [`docs/RELEASE.md`](docs/RELEASE.md) | Guide | Release process (local CLI triggers the cloud build) |
+| [`docs/SIGNPATH.md`](docs/SIGNPATH.md) | Guide | Free Windows code signing application |
+| [`docs/SEO_SUBMIT.md`](docs/SEO_SUBMIT.md) | Guide | Landing page search submission |
+| [`docs/ACCEPTANCE-RUNBOOK.md`](docs/ACCEPTANCE-RUNBOOK.md) | Guide | Dual-target on-device acceptance steps |
+| [`docs/PLAN-DUAL-TARGET.md`](docs/PLAN-DUAL-TARGET.md) | In progress | Dual-target (desktop + CEP) plan and work split |
+| [`AGENTS.md`](AGENTS.md) | Convention | Dev / commit / release conventions (humans and agents) |
+| [`docs/PLAN-GUIDE-PAGES.md`](docs/PLAN-GUIDE-PAGES.md) | Archived | Onboarding page spec (shipped; source comments anchor to its §sections — do not delete) |
+| [`docs/CEP-ALIGNMENT.md`](docs/CEP-ALIGNMENT.md) | Archived | Desktop ↔ AE extension parity checklist (historical gap analysis) |
+| [`docs/EXEC-WAVE2.md`](docs/EXEC-WAVE2.md) | Archived | Wave 2 multi-agent execution brief (done) |
+| [`docs/ACCEPTANCE-DUAL-TARGET.md`](docs/ACCEPTANCE-DUAL-TARGET.md) | Archived | Dual-target acceptance checklist (tick-off record) |
+| [`docs/compose/ROADMAP-isparta-next.md`](docs/compose/ROADMAP-isparta-next.md) | Archived | Six-phase upgrade roadmap |
+
+**What do I want to do → read**
+
+| I want to… | Read |
+| --- | --- |
+| See what changed in a version | [`docs/CHANGELOG.md`](docs/CHANGELOG.md) |
+| Understand how updating works | [`docs/CHANGELOG.md`](docs/CHANGELOG.md#更新机制) |
+| Ship a release | [`docs/RELEASE.md`](docs/RELEASE.md) |
+| Touch the conversion core or bridges | [`docs/BRIDGE.md`](docs/BRIDGE.md) |
+| Change the UI or add a feature | [`AGENTS.md`](AGENTS.md) + [`docs/PLAN-DUAL-TARGET.md`](docs/PLAN-DUAL-TARGET.md) |
+| Sign / publish / SEO | [`docs/SIGNPATH.md`](docs/SIGNPATH.md) · [`docs/SEO_SUBMIT.md`](docs/SEO_SUBMIT.md) |
+| Run on-device acceptance | [`docs/ACCEPTANCE-RUNBOOK.md`](docs/ACCEPTANCE-RUNBOOK.md) |
 
 ## Tech stack
 

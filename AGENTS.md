@@ -163,12 +163,13 @@ CI：`release.yml` 负责 bump、打包、挂 Release（notes 模板见该 workf
 ## 7. 文档与变更记录
 
 - **重要版本摘要**维护在 [`docs/CHANGELOG.md`](docs/CHANGELOG.md)（中文单语）：抽取关键 `feat`/`fix` commit 与 Release 结果，按版本写「用户可感知」短列表；不要粘贴琐碎 chore
-- **README**（`README.md` / `README.en.md`）只保留：产品能力、更新机制、近期体验要点、文档链接；细节放 CHANGELOG / UPDATER，避免与 CHANGELOG 整段重复
+- **README**（`README.md` / `README.en.md`）只保留：产品能力、更新机制、近期亮点、**文档导航**；细节一律放 `docs/`，避免与 [`docs/CHANGELOG.md`](docs/CHANGELOG.md) 整段重复。**中英两版必须同步改**，章节结构保持一致
+- **文档导航单一入口**：README 的「文档导航」表是全仓唯一索引；AGENTS 本节、`docs/CHANGELOG.md` 文末只留与自身强相关的 2–3 行并指向它，新增文档只登记在 README 导航表
 - 新发版若含**用户可见**变化：更新 CHANGELOG 对应版本段 → 同步 README 中已过时描述 → 再 push；功能 commit 与 `docs` commit 可分开
 
 ## 8. Agent 行为
 
-- 先搜代码/文档/脚本再改；架构与交互以本文、`docs/UPDATER.md`、`docs/RELEASE.md`、`docs/CHANGELOG.md` 为准
+- 先搜代码/文档/脚本再改；架构与交互以本文、`docs/CHANGELOG.md`（版本记录 + 应用内更新机制）、`docs/RELEASE.md` 为准
 - 优先 `scripts\` 与 `npm run *`；不要为 lint/发版/图标另起临时流程
 - **未经用户明确要求，禁止 commit 以外的发版/release**（见 §2.2）
 - 主树（`master`）大范围写入前按会话规则确认 worktree；发版后 `git pull` 同步 bump
@@ -274,14 +275,14 @@ CEP 下弹窗要铺满时必须三件套同时做，缺一就会被内联样式 
 
 ## 9. 文档索引
 
+**完整导航（现状 / 手册 / 进行中 / 归档 四类，含「要做 X 该看哪份」决策表）见 [`README.md` 文档导航](README.md#文档导航)**。以下是开发时常查的几份：
+
 | 文档 | 用途 |
 | --- | --- |
 | `AGENTS.md` | 开发约定（本文） |
-| `docs/CEP-UPGRADE-SCOPE.md` | CEP 升级范围与双端边界（共有 vs 注入） |
-| `docs/PLAN-DUAL-TARGET.md` | 双端（桌面+CEP）计划与分工 |
-| `docs/PLAN-GUIDE-PAGES.md` | 引导页面升级计划（启动/安装/首启共 7 页） |
-| `docs/CHANGELOG.md` | 版本摘要（中文） |
-| `docs/BRIDGE.md` | 转换核桥接口冻结（ispartaAPI / node-env / processor） |
-| `docs/UPDATER.md` | 更新检查 / 自动更新现状 |
+| `docs/CHANGELOG.md` | 版本记录 + 应用内更新 / 自动更新机制现状 |
 | `docs/RELEASE.md` | 发版操作 |
-| `README.md` | 中文产品说明 |
+| `docs/BRIDGE.md` | 转换核桥接口冻结（ispartaAPI / node-env / processor） |
+| `docs/CEP-UPGRADE-SCOPE.md` | CEP 升级范围与双端边界（共有 vs 注入） |
+| `docs/PLAN-DUAL-TARGET.md` | 双端（桌面 + CEP）计划与分工 |
+| `docs/PLAN-GUIDE-PAGES.md` | 引导页规格依据（已上线；源码注释按 §锚点引用，**勿删**） |

@@ -23,30 +23,19 @@
 
 ### 更新检查与自动更新
 
-- 应用启动后会向 **GitHub Releases** 发起一次版本检查（仅携带版本号与系统类型，不上传个人数据）；可在 **默认设置 → 自动检查更新** 中关闭。
-- 发现新版本时在**应用内右下角**弹出非阻断提示（Dock）：可查看详情说明，点 **立即更新** 后再下载；下载完成后提示 **重启以更新**。手动「检查更新」会打开完整说明对话框。
-- **Windows（NSIS 安装版）/ Linux（AppImage）** 支持应用内自动更新通道；**macOS** 使用 `.pkg` 安装与应用内更新，安装时请求管理员权限；CI 包未签名，系统可能要求手动允许打开。
-- 架构、限制与测试入口：[`docs/UPDATER.md`](docs/UPDATER.md)；发版步骤：[`docs/RELEASE.md`](docs/RELEASE.md)；版本摘要：[`docs/CHANGELOG.md`](docs/CHANGELOG.md)。
-- Windows 免费开源签名申请步骤见 [docs/SIGNPATH.md](docs/SIGNPATH.md)。
-- **AE 扩展（一体安装）**：After Effects 内直接选合成 → 渲 PNG 序列 → APNG / WebP / GIF，与桌面同一套转换核。Windows 与 macOS 安装包检测到 AE 时同步安装桌面 + AE 扩展；升级边界见 [`docs/CEP-UPGRADE-SCOPE.md`](docs/CEP-UPGRADE-SCOPE.md)、计划见 [`docs/PLAN-DUAL-TARGET.md`](docs/PLAN-DUAL-TARGET.md)。
+- 启动约 8 秒后向 **GitHub Releases** 检查一次版本（仅携带版本号与系统类型，可在 **默认设置 → 自动检查更新** 关闭）；发现新版在**应用内右下角**弹出非阻断卡片，确认后下载，完成后提示**重启以更新**。
+- **Windows（NSIS）/ Linux（AppImage）/ macOS（pkg）** 均支持应用内更新，macOS 安装时请求管理员权限；CI 包未签名，系统可能要求手动允许打开。**AE 面板**复用同一官方安装包，装完需重启 After Effects。
+- 机制、架构与限制见 [`docs/CHANGELOG.md`](docs/CHANGELOG.md#更新机制)；发版步骤见 [`docs/RELEASE.md`](docs/RELEASE.md)；Windows 免费签名见 [`docs/SIGNPATH.md`](docs/SIGNPATH.md)。
 
-> **安装与更新**：Windows 与 macOS 安装包固定系统级；检测到 After Effects 时同步部署同版本 CEP。桌面版和 AE 面板共用官方安装包更新，完成后按提示重启桌面版或 After Effects。详见 [更新说明](docs/UPDATER.md)。
+> **安装与更新**：Windows 与 macOS 安装包固定系统级；检测到 After Effects 时同步部署同版本 CEP。桌面版和 AE 面板共用官方安装包更新，完成后按提示重启桌面版或 After Effects。AE 面板能力与升级边界见 [`docs/CEP-UPGRADE-SCOPE.md`](docs/CEP-UPGRADE-SCOPE.md)。
 
-### 近期体验更新
+### 近期亮点
 
-- **AE 扩展**：合成树 / 任务列表双视图一键切换；右键打开合成位置 / 输出目录 / 终止任务；双击定位合成；过滤条钉顶
-- **一体安装**：固定「所有用户」系统级安装（安装时 UAC 授权，CEP 扩展进 Common Files，全机只保留一份）；自动扫描 AE 版本；桌面与扩展均显示版本号
-- 空态导入面板：文件夹开合动画 + 立体键帽粘贴提示
-- 空态标题蓝渐变，支持点击 / 拖拽 / Ctrl+V 导入
+- **AE 面板**：合成树 / 任务列表一键切换，右键打开合成位置 / 输出目录 / 终止任务，双击定位合成，过滤条钉顶
+- **一体安装**：固定系统级安装（UAC 授权，CEP 进 Common Files，全机只留一份），自动扫描 AE 版本，桌面与扩展均显示版本号
+- **首启引导（7 页）**：欢迎 → 导入 → 输出 → 命名 → 路径变量 → AE → 完成，一次讲清导入方式、输出设置与命名规则
 
-### 历史体验更新（v3.4.0）
-
-- **更新弹窗**改为「新版已就绪」布局：品牌标、要点列表与安装说明更清晰。
-- 落地页导航 **logo** 与应用图标统一；右侧面板窄窗下单列排布、不再横向溢出。
-- 列表：空白拖拽**框选**、双击全选、Delete 删除所选；运行中右键可终止/删除。
-- 多选时右侧仍显示**完整共享输出设置**，输出名可逐项**拆词**。
-- Windows：更新安装时系统提示「正在安装更新…」；安装为**一键全机安装**，系统会申请管理员权限。
-- 详细版本摘要见 [`docs/CHANGELOG.md`](docs/CHANGELOG.md)。
+每个版本的完整变更见 [`docs/CHANGELOG.md`](docs/CHANGELOG.md)。
 
 ### 适合这些场景
 
@@ -314,6 +303,39 @@ iSparta-next/
 | `node scripts/dev/check.js lint\|pack\|ports\|all` | 体检：lint / 出包自检 / 端口占用与归属识别 |
 
 `scripts/dev/` 下另有等价的双击友好包装：`run-preview` / `run-build-win` / `run-build-cep` / `run-check`。开发约定、行尾策略与完整脚本索引见 [`AGENTS.md`](AGENTS.md)。
+
+## 文档导航
+
+**全仓唯一索引**，按用途分四类（状态列可直接判断哪份还能信）：
+
+| 文档 | 状态 | 用途 |
+| --- | --- | --- |
+| [`docs/CHANGELOG.md`](docs/CHANGELOG.md) | 现状 | 版本记录 + 应用内更新机制（架构 / 限制 / 本地验证） |
+| [`docs/BRIDGE.md`](docs/BRIDGE.md) | 现状 | 转换核桥接口冻结（ispartaAPI / node-env / processor） |
+| [`docs/CEP-UPGRADE-SCOPE.md`](docs/CEP-UPGRADE-SCOPE.md) | 现状 | CEP 升级范围与双端边界（共有 vs 注入） |
+| [`docs/RELEASE.md`](docs/RELEASE.md) | 手册 | 发版步骤（本地 CLI 触发云端打包） |
+| [`docs/SIGNPATH.md`](docs/SIGNPATH.md) | 手册 | Windows 免费代码签名申请 |
+| [`docs/SEO_SUBMIT.md`](docs/SEO_SUBMIT.md) | 手册 | 落地页搜索收录提交 |
+| [`docs/ACCEPTANCE-RUNBOOK.md`](docs/ACCEPTANCE-RUNBOOK.md) | 手册 | 双端真机验收步骤 |
+| [`docs/PLAN-DUAL-TARGET.md`](docs/PLAN-DUAL-TARGET.md) | 进行中 | 双端（桌面 + CEP）计划与分工 |
+| [`AGENTS.md`](AGENTS.md) | 约定 | 开发 / commit / release 约定（人与 Agent 共用） |
+| [`docs/PLAN-GUIDE-PAGES.md`](docs/PLAN-GUIDE-PAGES.md) | 归档 | 引导页规格依据（已上线；源码注释按 §锚点引用，勿删） |
+| [`docs/CEP-ALIGNMENT.md`](docs/CEP-ALIGNMENT.md) | 归档 | 桌面 ↔ AE 扩展对齐清单（历史差距分析） |
+| [`docs/EXEC-WAVE2.md`](docs/EXEC-WAVE2.md) | 归档 | Wave 2 多 Agent 执行简报（已完成） |
+| [`docs/ACCEPTANCE-DUAL-TARGET.md`](docs/ACCEPTANCE-DUAL-TARGET.md) | 归档 | 双端一体验收清单（勾选记录） |
+| [`docs/compose/ROADMAP-isparta-next.md`](docs/compose/ROADMAP-isparta-next.md) | 归档 | 六阶段升级总目标 |
+
+**要做什么 → 看哪份**
+
+| 我想…… | 看 |
+| --- | --- |
+| 知道某版本改了什么 | [`docs/CHANGELOG.md`](docs/CHANGELOG.md) |
+| 搞懂更新 / 自动更新怎么工作 | [`docs/CHANGELOG.md`](docs/CHANGELOG.md#更新机制) |
+| 发一个新版本 | [`docs/RELEASE.md`](docs/RELEASE.md) |
+| 改转换核 / 两端桥接口 | [`docs/BRIDGE.md`](docs/BRIDGE.md) |
+| 改界面、加功能 | [`AGENTS.md`](AGENTS.md) + [`docs/PLAN-DUAL-TARGET.md`](docs/PLAN-DUAL-TARGET.md) |
+| 签名 / 上架 / 搜索收录 | [`docs/SIGNPATH.md`](docs/SIGNPATH.md) · [`docs/SEO_SUBMIT.md`](docs/SEO_SUBMIT.md) |
+| 上真机验收 | [`docs/ACCEPTANCE-RUNBOOK.md`](docs/ACCEPTANCE-RUNBOOK.md) |
 
 ## 技术栈
 
