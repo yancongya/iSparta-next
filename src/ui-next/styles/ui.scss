@@ -2156,15 +2156,6 @@ body.is-scroll-locked {
   transform: translateY(8px) scale(0.98);
 }
 
-// 默认设置里「下载更新」进度块
-.gs-update-progress {
-  display: flex;
-  flex-direction: column;
-  gap: var(--is-s-2);
-  width: 100%;
-  min-width: 0;
-}
-
 // --------------------------------------------------------------------------
 // 右栏拖拽（grip / side）—— body 级规则
 // shell.scss 由 Home.vue 的 scoped 块引入，body 单条选择器会被加上 [data-v-xxx]

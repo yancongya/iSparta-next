@@ -138,6 +138,39 @@ export function compareSemver (a, b) {
   return comparePrerelease(sa.pre, sb.pre)
 }
 
+/**
+ * 复用缓存结果时把 `current` 刷新为「本机当前版本」，但缓存的 `state` 是按**写缓存那刻的
+ * 旧 current** 判定的。升级后缓存里可能还留着「旧版 → 可更新 v3.6.9」的结论，此时本机其实
+ * 已是 v3.6.12；只换 current 不重算，界面就会冒出「发现新版本 v3.6.9（当前 v3.6.12）」
+ * 这种自相矛盾（latest 反而比 current 旧）。
+ *
+ * 这里按新 current 重算 available / skipped：latest ≤ current 时降级为 latest（已是最新）。
+ * 只动 `state`，`latest` / `notes` / 资产探测等远端事实原样保留。幂等，可重复调用。
+ */
+export function reconcileCachedResult (result, currentVersion) {
+  if (!result || typeof result !== 'object') { return result }
+  var cur = currentVersion || result.current || ''
+  var next = Object.assign({}, result, { current: cur })
+  if ((next.state === 'available' || next.state === 'skipped') &&
+      next.latest && compareSemver(next.latest, cur) <= 0) {
+    next.state = 'latest'
+  }
+  return next
+}
+
+/**
+ * 结果是否真的指向一个「比当前更新」的版本 —— 判定出口的最后一道防线。
+ *
+ * 即便 `state` 声称 `available`（例如缓存的 state 是按**旧 current** 判定的、上游某处漏了
+ * `reconcileCachedResult`），只要 `latest` 不比 `current` 新就一律不认。这样界面永远不会
+ * 冒出「发现新版本 v3.6.12（当前 v3.6.12）」这类自相矛盾的红点 / 弹窗 / 状态行。
+ * `current` 缺失或版本非法时同样返回 false —— 宁可不提示，不可误报。
+ */
+export function isReallyNewer (result) {
+  if (!result || !result.latest) { return false }
+  return compareSemver(result.latest, result.current) > 0
+}
+
 /** 失败分类：网络层错误一律 offline，绝不向上抛成"有更新" */
 export function classifyFailure (err) {
   var msg = (err && err.message) || String(err || '')
@@ -167,6 +200,42 @@ function baseResult (deps) {
 }
 
 /**
+ * 统一构造 checkUpdate 的 deps —— 桌面（主进程）/ CEP（Node 桥）/ 浏览器兜底三端共用。
+ *
+ * 「版本检查」的判定只有一份（本文件 checkUpdate）。三端真正的差异只有两处：
+ *   1) 传输层：fetchHead / fetchJson（桌面走主进程 node https，CEP 走桥的 updater:http，
+ *      浏览器走 fetch 兜底）；
+ *   2) 宿主事实：currentVersion / platform / arch / env（桌面读 app.getVersion() 与
+ *      process.*，CEP 读桥的 updater:meta —— 扩展目录 version.json，两者在正规安装后一致）。
+ * 把它们收敛成同一处映射，避免三端各写一份、字段悄悄漂移（既往 current/skipVersion
+ * 这类字段就出现过口径不一致）。
+ *
+ * @param {object} payload 渲染层统一入参 { force, enabled, lastCheckAt|lastAt, skipVersion,
+ *                        cachedResult, current }
+ * @param {object} host    宿主注入 { currentVersion, platform, arch, env, now, timeoutMs,
+ *                        fetchHead, fetchJson }
+ */
+export function makeCheckDeps (payload, host) {
+  var p = payload || {}
+  var h = host || {}
+  return {
+    force: !!p.force,
+    enabled: p.enabled !== false,
+    lastCheckAt: Number(p.lastCheckAt || p.lastAt || 0),
+    skipVersion: typeof p.skipVersion === 'string' ? p.skipVersion : '',
+    cachedResult: p.cachedResult || null,
+    currentVersion: h.currentVersion || p.current || p.currentVersion || '',
+    platform: h.platform || 'win32',
+    arch: h.arch || 'x64',
+    env: h.env || {},
+    now: h.now || Date.now(),
+    timeoutMs: h.timeoutMs || DEFAULT_TIMEOUT_MS,
+    fetchHead: h.fetchHead,
+    fetchJson: h.fetchJson
+  }
+}
+
+/**
  * deps:
  *   fetchHead(url, timeoutMs) → { status, location }   必须不跟随重定向
  *   fetchJson(url, timeoutMs) → { status, json }
@@ -191,8 +260,9 @@ export async function checkUpdate (deps) {
   //   「发现新版本 vX（当前 v3.4.1）」自相矛盾。故只复用 latest/notes/资产探测等远端信息。
   var since = now - (Number(d.lastCheckAt) || 0)
   if (!d.force && d.lastCheckAt && since < THROTTLE_MS && d.cachedResult) {
-    return Object.assign({}, d.cachedResult, {
-      current: deps.currentVersion || d.cachedResult.current || '',
+    // 复用缓存：刷新 current 后必须按新 current 重算 state —— 否则升级后会把
+    // 比当前版本还旧的缓存结论（如 v3.6.9）当成「有新版本」重放给用户。
+    return Object.assign({}, reconcileCachedResult(d.cachedResult, deps.currentVersion), {
       throttled: true,
       checkedAt: d.cachedResult.checkedAt || now
     })

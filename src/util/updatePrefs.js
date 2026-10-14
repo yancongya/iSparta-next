@@ -12,6 +12,7 @@
 // CEP **不回退** —— 旧键里的节流与「稍后」是桌面写的，继承过来等于白改。
 
 import { storage } from './node-env'
+import { isReallyNewer } from './updateCheck'
 
 const LEGACY_KEY = 'updateCheck'
 
@@ -107,11 +108,15 @@ export function shouldPersistThrottle (state) {
   return state === 'available' || state === 'latest' || state === 'skipped'
 }
 
-/** 是否应在自动检查时弹窗（每版本一次；skip / 已通知都不弹） */
+//
+// 判定出口带 `isReallyNewer` 兜底（见 updateCheck.js）：即使缓存里的 state 是陈旧的
+// 'available'，只要 latest 不比 current 新，就不会弹窗、不会亮红点。
+
+/** 是否应在自动检查时弹窗（每版本一次；skip / 已通知 / 实际不更新都不弹） */
 export function shouldAutoPrompt (result, prefs) {
   if (!result || result.state !== 'available') { return false }
   var latest = result.latest
-  if (!latest) { return false }
+  if (!latest || !isReallyNewer(result)) { return false }
   if (prefs && prefs.skipVersion && prefs.skipVersion === latest) { return false }
   if (prefs && prefs.lastNotifiedVersion && prefs.lastNotifiedVersion === latest) { return false }
   return true
@@ -121,6 +126,6 @@ export function shouldAutoPrompt (result, prefs) {
 export function hasUpdateBadge (result, prefs) {
   if (!result || result.state !== 'available') { return false }
   var latest = result.latest
-  if (!latest) { return false }
+  if (!latest || !isReallyNewer(result)) { return false }
   return !(prefs && prefs.skipVersion && prefs.skipVersion === latest)
 }

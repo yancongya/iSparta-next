@@ -213,33 +213,10 @@
           <is-switch v-model="updateEnabled" />
           <em class="hint">{{ $t('updatePrivacyTip') }}</em>
         </is-form-item>
-        <is-form-item v-if="updateAutoSupported" :label="$t('updateRestartNow')">
-          <div v-if="updateAutoDownloading || updateAutoDownloaded" class="gs-update-progress">
-            <is-progress
-              :percent="updateAutoProgress"
-              :active="updateAutoDownloading"
-              :done="updateAutoDownloaded"
-              :label="$t('updateDownloading')"
-            />
-            <is-button
-              v-if="updateAutoDownloaded"
-              size="sm"
-              type="primary"
-              @click="onRestartUpdate"
-            >{{ $t('updateRestartNow') }}</is-button>
-            <em v-else class="hint">{{ $t('updateDownloading') }}</em>
-          </div>
-          <is-button
-            v-else-if="updateHasNewVersion"
-            size="sm"
-            type="primary"
-            @click="onStartUpdate"
-          >{{ $t('updateDockUpdate') }}</is-button>
-          <em v-else class="hint">{{ $t('updateCheckFirst') }}</em>
-        </is-form-item>
-        <is-form-item v-else-if="updateHasNewVersion" :label="$t('updateRestartNow')">
-          <em class="hint">{{ $t('updateAutoUnsupported') }}</em>
-        </is-form-item>
+        <!-- 设置面板只负责「检查」：下载进度与「立即更新 / 重启」统一交给更新弹窗
+             （IsUpdateDialog）承载，桌面与 CEP 完全一致的同一套更新 UI，
+             不再在这里重复展示进度（否则检查时会与弹窗同时「进行」）。 -->
+        <p class="gs-hint">{{ $t('updateSettingsHint') }}</p>
 
         <div class="gs-split"></div>
 
@@ -280,11 +257,11 @@ import {
   removeCustomPreset
 } from '../../util/outputPresets'
 import updateService from '../../util/updateService'
-import IsProgress from '../../ui-next/components/ui/IsProgress.vue'
 import notice from '../../ui-next/notice'
 import hostAdapter from '../../util/host-env'
 import { MODE_SYSTEM, resolveLocale } from '../../util/system-locale'
 import { APP_NAME, LANDING_URL } from '../../brand'
+import { isReallyNewer } from '../../util/updateCheck'
 
 const DEFAULT_SIZE_LIMIT = {
   enabled: true,
@@ -304,7 +281,7 @@ const DEFAULT_OUTPUT_TO = {
 }
 
 export default {
-  components: { PathVars, IsPresetBar, IsProgress },
+  components: { PathVars, IsPresetBar },
   data () {
     return {
       setting: this.loadSetting(),
@@ -332,26 +309,6 @@ export default {
     updateChecking () {
       return !!(this.updateUi && this.updateUi.checking)
     },
-    updateAutoSupported () {
-      var a = this.updateUi && this.updateUi.auto
-      return !!(a && a.supported)
-    },
-    updateAutoDownloading () {
-      var a = this.updateUi && this.updateUi.auto
-      return !!(a && a.downloading)
-    },
-    updateAutoDownloaded () {
-      var a = this.updateUi && this.updateUi.auto
-      return !!(a && a.downloaded)
-    },
-    updateAutoProgress () {
-      var a = this.updateUi && this.updateUi.auto
-      return (a && a.progress) || 0
-    },
-    updateHasNewVersion () {
-      var r = this.updateUi && this.updateUi.lastResult
-      return !!(r && r.state === 'available' && r.latest)
-    },
     // 检查更新状态常显行：文案 + 色相（ok/info/warn/bad）
     updateStatus () {
       var ui = this.updateUi
@@ -367,6 +324,11 @@ export default {
         return { tone: 'ok', text: this.$t('updateLatest') }
       }
       if (st === 'available') {
+        // 再比一次版本：上游若漏了缓存重算（例：在 3.6.11 缓存「可更新 3.6.12」，随后升到
+        // 3.6.12），状态行也不显示「发现新版本 v3.6.12（当前 v3.6.12）」这种自相矛盾文案
+        if (!isReallyNewer(r)) {
+          return { tone: 'ok', text: this.$t('updateLatest') }
+        }
         return {
           tone: 'warn',
           text: this.$t('updateAvailable', {
@@ -477,7 +439,8 @@ export default {
       }).then(function (result) {
         if (!result) { return }
         if (result.state === 'available') {
-          // 对话框由 updateService 打开；设置面板出「立即更新」，不自动下载
+          // 设置面板只做「检查」：发现新版本由 updateService 直接打开更新弹窗
+          // （更新说明 + 下载进度 + 立即更新/重启都在弹窗里），这里不下载、不安装
           return
         }
         if (result.state === 'latest') {
@@ -500,12 +463,6 @@ export default {
       }).catch(function (e) {
         notice.warning(self.$t('updateFailed'), String(e && e.message || e))
       })
-    },
-    onStartUpdate () {
-      updateService.startUpdateFromDock(this.updateUi && this.updateUi.lastResult)
-    },
-    onRestartUpdate () {
-      updateService.restartToUpdate()
     },
     // ---------- 输出路径预设（与输出设置面板共享同一份存储） ----------
     applyGsTemplate (tpl, mode) {

@@ -8,14 +8,14 @@
  *                     向导组件页顺带刷新 AE 扩展目录；装完需重启 AE 生效）
  * - cep 其它形态    → 'none'（或 env 指定 notify-only，仅提示 + 前往下载）
  * - browser-mock    → 'notify-only'（UI 预览）
- * 详见 src/util/cepUpdater.js 与 docs/UPDATER.md。
+ * 详见 src/util/cepUpdater.js 与 docs/CHANGELOG.md（更新机制）。
  */
 
 import Vue from 'vue'
 import { ipc, os as osBridge, path as pathBridge } from './node-env'
 import appLog from '../ui-next/log'
 import hostAdapter from './host-env'
-import { checkUpdate } from './updateCheck'
+import { checkUpdate, isReallyNewer, makeCheckDeps, reconcileCachedResult } from './updateCheck'
 import {
   POLL_MS,
   cancelInstallerDownload,
@@ -210,9 +210,11 @@ export async function runUpdateCheck (opts) {
       result = { state: 'error', current: (meta && meta.version) || '', latest: null }
     }
     // current 永远是本机版本：以本次实读的 meta 为准，覆盖任何来源（缓存 / CEP 桥
-    // 落盘的旧 version.json / env 强制版本）带来的陈旧值。
-    if (meta && meta.version && result.current !== meta.version) {
-      result = Object.assign({}, result, { current: meta.version })
+    // 落盘的旧 version.json / env 强制版本）带来的陈旧值。用 reconcile 而非裸覆盖：
+    // 缓存里的 state 是按旧 current 判定的，覆盖后必须按新 current 重算，否则升级后
+    // 会把比当前还旧的 cached latest 当「有新版本」显示（如 v3.6.9 vs 当前 v3.6.12）。
+    if (meta && meta.version) {
+      result = reconcileCachedResult(result, meta.version)
     }
 
     var auto = !o.force
@@ -222,7 +224,9 @@ export async function runUpdateCheck (opts) {
 
     var prefsAfter = persistResult(result, { forceNotify: false })
 
-    if (result.state === 'available' && o.openDialog !== false) {
+    // 弹 UI 前再比一次版本（isReallyNewer）：缓存重放若未被上游重算，
+    // 这里也不会为一个「不比自己新」的 latest 弹出更新弹窗
+    if (result.state === 'available' && isReallyNewer(result) && o.openDialog !== false) {
       var prompt = o.force || shouldAutoPrompt(result, prefsAfter)
       if (prompt) {
         // 手动检查或显式要求：开完整 Dialog；自动检查：只出角落 Dock
@@ -301,22 +305,12 @@ function browserFetchHead (url, timeoutMs) {
 function browserCheck (payload) {
   var p = payload || {}
   var proc = (typeof window !== 'undefined' && window.ispartaAPI && window.ispartaAPI.process) || null
-  var platform = (proc && proc.platform) || 'win32'
-  var arch = (proc && proc.arch) || 'x64'
-  return checkUpdate({
-    force: !!p.force,
-    enabled: p.enabled !== false,
-    lastCheckAt: p.lastCheckAt || p.lastAt || 0,
-    skipVersion: p.skipVersion || '',
-    cachedResult: p.cachedResult || null,
-    currentVersion: p.current || p.currentVersion || '',
-    platform: platform,
-    arch: arch,
-    env: {},
-    fetchJson: browserFetchJson,
+  return checkUpdate(makeCheckDeps(p, {
+    platform: (proc && proc.platform) || 'win32',
+    arch: (proc && proc.arch) || 'x64',
     fetchHead: browserFetchHead,
-    now: Date.now()
-  })
+    fetchJson: browserFetchJson
+  }))
 }
 
 /** CEP：桥下载是异步单任务，面板轮询拿进度；结束（完成/失败）自动停表 */
@@ -456,7 +450,7 @@ function applyAutoState (snap) {
   if (snap.downloading || snap.downloaded) {
     var last = state.lastResult
     var prefs = loadUpdatePrefs()
-    if (last && last.state === 'available' &&
+    if (last && last.state === 'available' && isReallyNewer(last) &&
         !(prefs.skipVersion && prefs.skipVersion === last.latest)) {
       state.dockVisible = true
     }
@@ -639,7 +633,9 @@ export function bootstrapUpdateFromStorage () {
   if (prefs.lastResult && typeof prefs.lastResult === 'object') {
     loadMeta().then(function (meta) {
       if (!meta || !meta.version) { return }
-      state.lastResult = Object.assign({}, state.lastResult, { current: meta.version })
+      // 按新 current 重算：升级后旧缓存常残留「可更新到更旧版本」的结论
+      // （缓存写于装有 3.6.9 之前的版本、latest=3.6.9），不重算就会自相矛盾。
+      state.lastResult = reconcileCachedResult(state.lastResult, meta.version)
       refreshBadge()
     }).catch(function () { /* 读不到版本就按缓存原样显示 */ })
   } else {

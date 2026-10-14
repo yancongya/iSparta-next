@@ -17,6 +17,7 @@
 import { ipc } from './node-env.js'
 import {
   checkUpdate,
+  makeCheckDeps,
   resolveUpdateConfig
 } from './updateCheck.js'
 
@@ -109,21 +110,14 @@ function bridgeFetchText (url, timeoutMs) {
  * @param {object} p { force, enabled, lastCheckAt, skipVersion, cachedResult, current }
  */
 export function cepCheckUpdate (p) {
-  var pkg = p || {}
-  return checkUpdate({
-    force: !!pkg.force,
-    enabled: pkg.enabled !== false,
-    lastCheckAt: pkg.lastCheckAt || pkg.lastAt || 0,
-    skipVersion: pkg.skipVersion || '',
-    cachedResult: pkg.cachedResult || null,
-    currentVersion: pkg.current || '',
+  // 与桌面同一条判定（checkUpdate）；deps 由 makeCheckDeps 统一构造，
+  // CEP 只注入自身特有的传输层（桥 updater:http）与平台来源，其余口径与桌面一致。
+  return checkUpdate(makeCheckDeps(p || {}, {
     platform: cepPlatform() || 'win32',
     arch: cepArch() || 'x64',
-    env: {},
     fetchHead: bridgeFetchHead,
-    fetchJson: bridgeFetchJson,
-    now: Date.now()
-  })
+    fetchJson: bridgeFetchJson
+  }))
 }
 
 /**

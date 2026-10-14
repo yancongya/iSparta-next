@@ -30,6 +30,8 @@ async function main () {
     isAllowedExternalUrl,
     resolveUpdateConfig,
     formatReleaseNotes,
+    reconcileCachedResult,
+    isReallyNewer,
     THROTTLE_MS
   } = mod
 
@@ -301,6 +303,66 @@ async function main () {
     })
     const r = await checkUpdate(s.deps)
     ok('case notes attached', r.state === 'available' && r.notes && r.notes.indexOf('demo notes') >= 0, r.notes)
+  }
+
+  // 缓存重放（回归）：缓存的 state 是按「写缓存那刻的 current」判定的；复用缓存时必须按
+  // **新 current** 重算 —— 否则在 3.6.11 时缓存「可更新 v3.6.12」、随即升级到 3.6.12 后，
+  // 界面会冒出「发现新版本 v3.6.12（当前 v3.6.12）」（latest 与 current 相等却仍报有新版）
+  {
+    const NOW = 1000000
+    const dirty = {
+      state: 'available',
+      current: '3.6.11',
+      latest: '3.6.12',
+      notes: '· 修复 xxx',
+      checkedAt: NOW - 3600 * 1000,
+      throttled: false
+    }
+
+    const rec = reconcileCachedResult(dirty, '3.6.12')
+    ok('reconcile latest==current → latest',
+      rec.state === 'latest' && rec.latest === '3.6.12' && rec.current === '3.6.12', rec)
+    ok('reconcile latest<current → latest',
+      reconcileCachedResult({ state: 'available', latest: '3.6.9' }, '3.6.12').state === 'latest')
+    ok('reconcile latest>current 保持 available',
+      reconcileCachedResult({ state: 'available', latest: '3.6.13' }, '3.6.12').state === 'available')
+    ok('reconcile skipped 已装到该版 → latest',
+      reconcileCachedResult({ state: 'skipped', latest: '3.6.12' }, '3.6.12').state === 'latest')
+    ok('reconcile 保留远端事实',
+      rec.notes === '· 修复 xxx' && rec.checkedAt === dirty.checkedAt)
+    ok('reconcile 幂等', reconcileCachedResult(rec, '3.6.12').state === 'latest')
+    ok('reconcile 非对象安全', reconcileCachedResult(null, '3.6.12') === null)
+
+    // 端到端：节流分支复用缓存必须已重算，且一个网络请求都不发
+    const s = stub({
+      head: () => { throw new Error('should not be called') },
+      json: () => { throw new Error('should not be called') }
+    })
+    const r = await checkUpdate(Object.assign({}, s.deps, {
+      force: false,
+      currentVersion: '3.6.12',
+      lastCheckAt: NOW - 3600 * 1000,
+      cachedResult: dirty
+    }))
+    ok('节流复用不触网', r.throttled === true && s.calls.length === 0, s.calls)
+    ok('节流复用按新 current 重算', r.state === 'latest' && r.current === '3.6.12', r)
+  }
+
+  // 判定出口兜底：state 说「有新版」但 latest 不比 current 新 —— 一律不认。
+  // 即使上游某处漏了 reconcile，红点 / 弹窗 / 设置面板状态行也不会出现
+  // 「发现新版本 v3.6.12（当前 v3.6.12）」这种自相矛盾
+  {
+    ok('guard latest==current → false',
+      isReallyNewer({ state: 'available', latest: '3.6.12', current: '3.6.12' }) === false)
+    ok('guard latest<current → false',
+      isReallyNewer({ state: 'available', latest: '3.6.9', current: '3.6.12' }) === false)
+    ok('guard latest>current → true',
+      isReallyNewer({ state: 'available', latest: '3.6.13', current: '3.6.12' }) === true)
+    ok('guard current 缺失 → false',
+      isReallyNewer({ state: 'available', latest: '3.6.13', current: '' }) === false)
+    ok('guard latest 缺失 → false',
+      isReallyNewer({ state: 'available', latest: null, current: '3.6.12' }) === false)
+    ok('guard 非对象安全', isReallyNewer(null) === false)
   }
 
   console.log('\nResult:', passed, 'passed,', failed, 'failed')

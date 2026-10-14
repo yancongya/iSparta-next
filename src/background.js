@@ -5,7 +5,7 @@ import {
   createProtocol
 } from 'vue-cli-plugin-electron-builder/lib'
 import { APP_NAME } from './brand'
-import { checkUpdate, isAllowedExternalUrl } from './util/updateCheck'
+import { checkUpdate, isAllowedExternalUrl, makeCheckDeps } from './util/updateCheck'
 import { registerAutoUpdateIpc } from './util/autoUpdate'
 import { ensureCepExtension } from './util/cepSync'
 import { ensurePlayerDebugMode } from './util/cepDebugMode'
@@ -599,20 +599,15 @@ ipcMain.handle('updater:meta', async () => {
 })
 
 ipcMain.handle('updater:check', async (event, payload) => {
-  var p = payload || {}
-  return checkUpdate({
+  // deps 由 updateCheck.makeCheckDeps 统一构造（与 CEP 桥、浏览器兜底同一处映射），
+  // 主进程只注入自身特有的传输层（node http）与宿主事实（app.getVersion / process.*）。
+  return checkUpdate(makeCheckDeps(payload || {}, {
     env: process.env,
     // 允许用 env 覆盖当前版本来模拟旧版，避免为了测试去改 package.json
     currentVersion: process.env.ISPARTA_FORCE_VERSION || app.getVersion(),
     platform: process.platform,
     arch: process.arch,
-    now: Date.now(),
     timeoutMs: UPDATE_TIMEOUT_MS,
-    force: !!p.force,
-    enabled: p.enabled !== false,
-    lastCheckAt: Number(p.lastCheckAt) || 0,
-    skipVersion: typeof p.skipVersion === 'string' ? p.skipVersion : '',
-    cachedResult: p.cachedResult || null,
     fetchHead: async function (url) {
       var r = await httpRequest('HEAD', url, UPDATE_TIMEOUT_MS)
       return { status: r.status, location: r.location }
@@ -624,7 +619,7 @@ ipcMain.handle('updater:check', async (event, payload) => {
       try { json = JSON.parse(r.text) } catch (e) { json = null }
       return { status: r.status, json: json }
     }
-  })
+  }))
 })
 
 ipcMain.handle('shell:openExternal', async (event, url) => {
