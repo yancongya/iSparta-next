@@ -17,6 +17,7 @@ const ICONS = {
   'chevron-left': "<polyline points=\"15 18 9 12 15 6\"/>",
   'chevron-right': "<polyline points=\"9 18 15 12 9 6\"/>",
   'chevron-up': "<polyline points=\"18 15 12 9 6 15\"/>",
+  clipboard: "<rect x=\"5\" y=\"4\" width=\"14\" height=\"18\" rx=\"2\"/><path d=\"M9 4.5V3h6v1.5M9 12h6M9 16h6\"/>",
   clock: "<circle cx=\"12\" cy=\"12\" r=\"10\"/><polyline points=\"12 6 12 12 16 14\"/>",
   close: "<line x1=\"18\" y1=\"6\" x2=\"6\" y2=\"18\"/><line x1=\"6\" y1=\"6\" x2=\"18\" y2=\"18\"/>",
   // 窗口按钮：还原（双层方框）/ 最大化（单层方框）
@@ -29,6 +30,7 @@ const ICONS = {
   filter: "<polygon points=\"21 4 3 4 10 12.5 10 19 14 21 14 12.5 21 4\"/>",
   folder: "<path d=\"M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z\"/>",
   'folder-plus': "<path d=\"M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z\"/><line x1=\"12\" y1=\"11\" x2=\"12\" y2=\"17\"/><line x1=\"9\" y1=\"14\" x2=\"15\" y2=\"14\"/>",
+  'folder-open': "<path d=\"M3 7.5V5a2 2 0 0 1 2-2h5l2 3h7a2 2 0 0 1 2 2v1\"/><path d=\"M3 10h18l-2 9a2 2 0 0 1-2 1.6H5A2 2 0 0 1 3 19z\"/>",
   globe: "<circle cx=\"12\" cy=\"12\" r=\"10\"/><line x1=\"2\" y1=\"12\" x2=\"22\" y2=\"12\"/><path d=\"M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z\"/>",
   grid: "<rect x=\"3\" y=\"3\" width=\"7\" height=\"7\" rx=\"1\"/><rect x=\"14\" y=\"3\" width=\"7\" height=\"7\" rx=\"1\"/><rect x=\"14\" y=\"14\" width=\"7\" height=\"7\" rx=\"1\"/><rect x=\"3\" y=\"14\" width=\"7\" height=\"7\" rx=\"1\"/>",
   image: "<rect x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"2\"/><circle cx=\"8.5\" cy=\"8.5\" r=\"1.5\"/><polyline points=\"21 15 16 10 5 21\"/>",

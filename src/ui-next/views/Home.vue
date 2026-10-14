@@ -181,6 +181,19 @@
           <span v-if="updateBadge" class="ib-rail__badge" aria-hidden="true" />
         </button>
 
+        <!-- 默认复制文件；按住 Alt 悬停后点击可打开输出目录 -->
+        <button
+          type="button"
+          class="ib-rail__btn ib-rail__btn--output"
+          :title="outputActionTitle"
+          :disabled="!selectedCompletedItems.length"
+          @mouseenter="outputActionHover = true"
+          @mouseleave="outputActionHover = false"
+          @click="onOutputActionClick"
+        >
+          <is-icon :name="isOutputFolderMode ? 'folder-open' : 'clipboard'" size="sm" />
+        </button>
+
         <!-- 删除所选任务：仅桌面文件任务；CEP 任务=合成列表，删除会清空且无意义 -->
         <button
           v-if="!supportsCompImport"
@@ -294,7 +307,7 @@ import { f as fsOperate } from '../../components/drag/file.js'
 import { naturalSort } from '../../util/sort'
 import ThemeManager from '../theme'
 import { BP_NARROW, BP_WIDE } from '../styles/breakpoints'
-import { storage } from '../../util/node-env'
+import { storage, fs, path } from '../../util/node-env'
 import notice from '../notice'
 import { APP_NAME, APP_VERSION } from '../../brand'
 import updateService from '../../util/updateService'
@@ -364,6 +377,8 @@ export default {
       logOpen: false,
       compTreeOpen: false,
       settingsDialogOpen: false,
+      outputActionHover: false,
+      altPressed: false,
       // 仅工程/扫描异常时非空
       projectStatusMsg: ''
     }
@@ -420,6 +435,20 @@ export default {
     },
     selectedCount () {
       return this.$store.getters.getterSelected.length
+    },
+    selectedCompletedItems () {
+      return (this.$store.getters.getterSelected || []).filter(function (item) {
+        return item && item.process && item.process.schedule === 1
+      })
+    },
+    outputActionTitle () {
+      if (!this.selectedCompletedItems.length) { return this.$t('selectCompletedOutput') }
+      return this.isOutputFolderMode
+        ? this.$t('openOutputFolder')
+        : this.$t('copyOutputFiles') + ' · ' + this.$t('outputActionHint')
+    },
+    isOutputFolderMode () {
+      return this.outputActionHover && this.altPressed && this.selectedCompletedItems.length > 0
     },
     // 面板关着时的未读告警数（读 state 上的响应式字段）
     logUnread () {
@@ -488,7 +517,7 @@ export default {
     window.addEventListener('keydown', this.onKeydown)
     window.addEventListener('keyup', this.onKeyup)
     // 拖到窗口外缘时浏览器不会补发 dragleave，兜底重置遮罩
-    window.addEventListener('blur', this.resetDrag)
+    window.addEventListener('blur', this.onWindowBlur)
     // projectList 等子组件要求打开「任务输出设置」：CEP 用全屏覆盖层，桌面展开右栏
     if (this.$root && this.$root.eventBus) {
       this.$root.eventBus.$on('open-task-setting', this.onOpenTaskSetting)
@@ -510,7 +539,7 @@ export default {
     window.removeEventListener('paste', this.onPaste)
     window.removeEventListener('keydown', this.onKeydown)
     window.removeEventListener('keyup', this.onKeyup)
-    window.removeEventListener('blur', this.resetDrag)
+    window.removeEventListener('blur', this.onWindowBlur)
     if (this.$root && this.$root.eventBus) {
       this.$root.eventBus.$off('open-task-setting', this.onOpenTaskSetting)
       this.$root.eventBus.$off('task-setting-started', this.onTaskSettingStarted)
@@ -651,14 +680,9 @@ export default {
         this.settingsOpen = true
       }
     },
-    /** 任务设置里点「开始」后收起面板，回主列表看进度 */
+    /** 任务设置里点「开始」后只关闭 CEP 覆盖层；桌面保留右侧批量设置面板 */
     onTaskSettingStarted () {
       this.settingsDialogOpen = false
-      if (this.supportsCompImport) {
-        // CEP 覆盖层已关
-      } else {
-        this.settingsOpen = false
-      }
     },
     openGlobalSetting () {
       this.$root.eventBus.$emit('openGlobalSetting')
@@ -818,6 +842,55 @@ export default {
       if (this.isLocked || !this.selectedCount) return
       this.$store.dispatch('removeSelectedForce')
     },
+    selectedCompletedOutputFiles () {
+      const extensions = { APNG: '.png', GIF: '.gif', WEBP: '.webp' }
+      const files = []
+      this.selectedCompletedItems.forEach(function (item) {
+        const basic = item.basic || {}
+        const options = item.options || {}
+        const dir = basic.outputPath || ''
+        const name = options.outputName || ''
+        if (!dir || !name) return
+        const sizeLimit = options.sizeLimit || {}
+        const keepRetryVersions = !sizeLimit.autoDelete && sizeLimit.autoQuality !== false
+        const retryCount = keepRetryVersions
+          ? Math.max(0, Math.floor(Number(sizeLimit.maxTries) || 0))
+          : 0
+        ;(Array.isArray(options.outputFormat) ? options.outputFormat : []).forEach(function (format) {
+          const ext = extensions[String(format).toUpperCase()]
+          if (!ext) return
+          const candidates = [path.join(dir, name + ext)]
+          for (let version = 2; version <= retryCount + 1; version++) {
+            candidates.push(path.join(dir, name + '_v' + version + ext))
+          }
+          candidates.forEach(function (file) {
+            try {
+              if (fs.existsSync(file) && files.indexOf(file) < 0) files.push(file)
+            } catch (e) { /* 跳过已被移动或删除的输出 */ }
+          })
+        })
+      })
+      return files
+    },
+    async onOutputActionClick () {
+      const openFolder = this.isOutputFolderMode
+      const files = this.selectedCompletedOutputFiles()
+      if (!files.length) {
+        notice.warning(this.$t('copyOutputFailed'), this.$t('noCompletedOutputFiles'))
+        return
+      }
+      if (openFolder) {
+        const opened = await hostAdapter.openPath(path.dirname(files[0]))
+        if (!opened) { notice.error(this.$t('openOutputFolder'), this.$t('noticeOpenFailed')) }
+        return
+      }
+      const copied = await hostAdapter.copyFilesToClipboard(files)
+      if (copied) {
+        notice.success(this.$t('copyOutputSuccess', { count: files.length }))
+      } else {
+        notice.error(this.$t('copyOutputFailed'))
+      }
+    },
 
     // ---------- 拖拽反馈 ----------
     onDragEnter (e) {
@@ -832,6 +905,10 @@ export default {
     resetDrag () {
       this.dragDepth = 0
       this.dragging = false
+    },
+    onWindowBlur () {
+      this.resetDrag()
+      this.altPressed = false
     },
     hasFiles (e) {
       var t = e.dataTransfer && e.dataTransfer.types
@@ -856,6 +933,7 @@ export default {
 
     // ---------- 快捷键 ----------
     onKeydown (e) {
+      this.altPressed = !!e.altKey || e.key === 'Alt'
       // 输入框里保留原生编辑行为
       if (this.isTyping(e.target)) return
 
@@ -905,6 +983,7 @@ export default {
       }
     },
     onKeyup (e) {
+      this.altPressed = !!e.altKey
       if (e.key === 'Control' && this.pressed === 'Control') this.pressed = ''
       if ((e.key === 'v' || e.key === 'V') && this.pressed === 'v') this.pressed = ''
     },

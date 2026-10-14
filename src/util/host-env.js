@@ -1,6 +1,7 @@
 // hostAdapter：双端只换实现，不换调用方（docs/EXEC-WAVE2.md §2.1）
 // W6-shell 可继续扩展 openPath/pickFolder 细节；此处先冻结接口名与 supportsCompImport。
 /* global window */
+import { getChildProcess, getProcessBridge } from './node-env'
 
 function detectKind () {
   if (typeof window === 'undefined') { return 'browser-mock' }
@@ -26,6 +27,69 @@ function cs () {
   return (typeof window !== 'undefined' && window.ispartaCS) || null
 }
 
+function evalCepScript (script) {
+  const host = cs()
+  if (host && typeof host.evalScript === 'function') {
+    return Promise.resolve(host.evalScript(script)).then(function (result) {
+      return String(result).toLowerCase() === 'true'
+    })
+  }
+  const cep = typeof window !== 'undefined' && (window.__adobe_cep__ || window.cep)
+  if (cep && typeof cep.evalScript === 'function') {
+    return new Promise(function (resolve, reject) {
+      cep.evalScript(script, function (result) {
+        if (result === 'EvalScript error.') { reject(new Error('AE 脚本执行失败')); return }
+        resolve(String(result).toLowerCase() === 'true')
+      })
+    })
+  }
+  return Promise.resolve(false)
+}
+
+function appleScriptLiteral (value) {
+  return '"' + String(value).replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\r/g, '\\r').replace(/\n/g, '\\n') + '"'
+}
+
+function base64Utf8 (value) {
+  return window.btoa(unescape(encodeURIComponent(String(value))))
+}
+
+function base64Utf16 (value) {
+  const text = String(value)
+  let binary = ''
+  for (let i = 0; i < text.length; i++) {
+    const code = text.charCodeAt(i)
+    binary += String.fromCharCode(code & 0xff, code >> 8)
+  }
+  return window.btoa(binary)
+}
+
+function copyFilesFromCep (files) {
+  let platform = ''
+  try { platform = getProcessBridge().platform || '' } catch (e) { /* no CEP Node bridge */ }
+  let command
+  let args
+  if (platform === 'win32') {
+    const json = base64Utf8(JSON.stringify(files))
+    const script = 'Add-Type -AssemblyName System.Windows.Forms; $paths = @([Text.Encoding]::UTF8.GetString([Convert]::FromBase64String("' + json + '") ) | ConvertFrom-Json); $list = New-Object System.Collections.Specialized.StringCollection; foreach ($p in $paths) { [void]$list.Add([string]$p) }; [Windows.Forms.Clipboard]::SetFileDropList($list)'
+    command = 'powershell.exe'
+    args = ['-NoProfile', '-STA', '-EncodedCommand', base64Utf16(script)]
+  } else if (platform === 'darwin') {
+    command = '/usr/bin/osascript'
+    args = ['-e', 'set the clipboard to {' + files.map(function (file) {
+      return '(POSIX file ' + appleScriptLiteral(file) + ' as alias)'
+    }).join(', ') + '}']
+  } else {
+    return Promise.reject(new Error('当前系统暂不支持复制文件到剪贴板'))
+  }
+  return getChildProcess().execFile(command, args, { timeout: 15000, maxBuffer: 1024 * 1024 }).then(function (result) {
+    if (!result || !result.ok) {
+      throw new Error((result && (result.stderr || result.error)) || '系统剪贴板操作失败')
+    }
+    return true
+  })
+}
+
 export const hostAdapter = {
   kind,
   updatePolicy: isElectron ? 'full' : (isCep ? 'none' : 'none'),
@@ -35,10 +99,24 @@ export const hostAdapter = {
   supportsFrameDelay: !isCep,
 
   openPath (target) {
+    if (isCep) {
+      return evalCepScript('new Folder(' + JSON.stringify(String(target || '')) + ').execute()')
+        .catch(() => false)
+    }
     const ip = ipc()
     if (ip) {
-      return ip.invoke('shell:openPath', target).catch(() => {})
+      return ip.invoke('shell:openPath', target).then(function (error) { return !error }).catch(() => false)
     }
+    return Promise.resolve(false)
+  },
+  copyFilesToClipboard (files) {
+    const paths = Array.from(new Set((files || []).map(function (p) { return String(p || '') }).filter(Boolean)))
+    if (!paths.length) { return Promise.resolve(false) }
+    if (isElectron) {
+      const ip = ipc()
+      return ip ? ip.invoke('clipboard:copyFiles', paths).then(function (r) { return !!(r && r.ok) }).catch(() => false) : Promise.resolve(false)
+    }
+    if (isCep) { return copyFilesFromCep(paths).catch(() => false) }
     return Promise.resolve(false)
   },
   reveal (target) {

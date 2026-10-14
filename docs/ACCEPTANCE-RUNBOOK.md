@@ -141,4 +141,4 @@ foreach ($v in 6..14) {
 | 面板空白 | `PlayerDebugMode`；看 CEP 日志；确认已 `build:cep` |
 | 无合成 | 打开工程后点树「刷新」；需脚本写文件权限（AE 首选项） |
 | 编码失败 | `targets/cep/bin/win64` 五件套是否拷贝 |
-| 路径变量不对 | 勿把 `*_png` 当源名；Comp 的 `sourceDirOf` 应为合成工程路径侧 |
+| 路径变量不对 | CEP Comp 的 `outputBasePath` 应由 `comp-source` 注入为工程旁合成名目录；共享 `sourceDirOf` 只读取该基准并展开变量，不自行推断 CEP 路径 |

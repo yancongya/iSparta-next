@@ -918,6 +918,18 @@ body.is-theme-light .ib-drop .keyboard-key {
   background: var(--is-accent-soft);
 }
 
+.ib-rail__btn--output {
+  color: var(--is-ok);
+}
+.ib-rail__btn--output:hover:not(:disabled) {
+  color: var(--is-ok-fg);
+  background: var(--is-ok-bg);
+}
+.ib-rail__btn--output:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
 .ib-rail__btn--log {
   color: var(--is-ok);
 }

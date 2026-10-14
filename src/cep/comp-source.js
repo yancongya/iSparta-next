@@ -49,6 +49,20 @@ function readGlobalSetting () {
   }
 }
 
+/** CEP 合成的固定原目录：工程文件旁以合成名命名；桌面路径解析不感知此规则。 */
+function compOutputBasePath (projectPath, compName) {
+  if (!projectPath) { return '' }
+  const name = String(compName || '').replace(/^[\s\u3000]+|[\s\u3000]+$/g, '')
+  // 按宿主文件系统清理路径段，避免 Windows 非法字符；macOS 保留其合法字符。
+  const isWindows = path.sep === '\\'
+  let safeName = isWindows
+    ? name.replace(/["\\/:*?<>|]/g, '_').replace(/[. ]+$/g, '')
+    : name.replace(/\//g, '_')
+  if (isWindows && /^(con|prn|aux|nul|com[1-9]|lpt[1-9])$/i.test(safeName)) { safeName = '_' + safeName }
+  if (!safeName || safeName === '.' || safeName === '..') { safeName = '_comp' }
+  return path.join(path.dirname(projectPath), safeName)
+}
+
 /**
  * 把尚未被任务单独修改的设置同步到最新全局默认值，并补齐旧任务缺失项。
  * 任务设置与创建时的全局快照不同时视为用户覆盖，不能被全局值覆盖；否则
@@ -156,6 +170,8 @@ export function toCompItem (comp, optionsOverride) {
   // 与 file.js 非 PNGs 分支一致：inputPath = 目录 + '/' + 名（无扩展）
   temp.basic.inputPath = address ? (address + '/' + node.name) : node.name
   temp.basic.projectPath = projectPath
+  // 原目录由 CEP 注入适配决定；共享 outputPath 仅展开 {srcPath}/{parent}/{date} 等变量。
+  temp.basic.outputBasePath = compOutputBasePath(projectPath, temp.basic.compName)
   // 帧数：渲染进度分母（0.15–0.38）
   temp.basic.frameCount = Number(node.frames) || 0
   // CEP：帧率默认跟合成（可在输出设置改）
@@ -328,7 +344,7 @@ export function prepareCompSequence (item, opts) {
   const idx = Number(basic.compIndex)
   const name = basic.compName || ''
   // 序列帧与合成输出同目录：优先 processor 已解析的 outputPath（含 sameOutputPath），
-  // 否则走输出设置 resolveOutputPath（不另建方法）。默认模板 {srcPath}/{srcName} → 项目旁「合成名」子目录
+  // 否则走共享 resolveOutputPath；CEP 适配层已注入 outputBasePath，变量基于它展开。
   // 尾空格会另建「闪闪 」目录且 AE 写不进 → 统一 trim（jsx 侧再 trim 一次）
   const outDirRaw = basic.outputPath ||
     (item.options && resolveOutputPath(item, item.options)) ||

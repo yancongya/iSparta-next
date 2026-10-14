@@ -36,11 +36,12 @@
 | 合成列表 | PAG 列式、合成图标、实时同步 AE 列表 | `supportsCompImport` | `a0c8ba3` `048706f` |
 | 勾选同步 | 树↔任务列表双向、index:name 防误全选 | 合成树/CEP 分支 | `15b0b41` `6fe8aa6` |
 | 渲序列链路 | aerender 后台渲、PNG 序列、帧命名/清理、帧数校验 | `comp-source` / `targets/cep` | `e1ee9bf` `7c3b5c6` `5b3ae94` `47f568e` 等 |
-| 路径 | 真实工程路径、序列帧落输出目录、同目录合成 | Comp item 字段 | `19f2cab` `e60f701` |
+| 路径 | CEP 适配层注入 `basic.outputBasePath`（工程旁的合成名目录）；变量解析和序列帧/最终文件共用解析结果 | `comp-source.js` 注入；共享 `outputPath.js` 只消费 | `19f2cab` `e60f701` |
 | 进度绑定 | 渲染进度前置状态、帧率跟合成 | `prepareSequence` | `15b7c00` `1d366c5` |
 | 过滤条 | 搜索 / 帧率 / 帧数 | `showFilterBar` | `33a1637` |
 | 底栏计数 | 选中/总数 | `isCepHost` | `7212885` |
 | 右键三项 | 打开合成位置 / 输出目录 / 终止任务 | Comp 任务菜单 | `33a1637` |
+| 输出工具栏 | 选中已完成任务后复制输出文件；悬停切换为打开输出目录 | 共享 Home + hostAdapter；桌面走 Electron IPC，CEP 用 Node 子进程复制、AE JSX `Folder.execute()` 打开 | 本轮 |
 | 双击定位 | 打开 AE 合成 | `openSource` / type=Comp | `7212885` |
 | 合成树同名消歧 | folderPath 后缀 | 合成树组件 | `7212885` |
 | 小屏断点 | shell/列表/底栏降档 | `body.is-cep` + JS 门控 | `2c4d7b1` + 断点统一轮 |
@@ -66,6 +67,7 @@
 
 - 桌面宿主判定用 `navigator.userAgent` 含 `Electron`（`contextIsolation` 下无 `window.process`）
 - `openOsDir`：桌面走 `shell:openPath`；CEP 由 AE JSX `new Folder(path).execute()` 调系统文件管理器，Windows/macOS 共用宿主接口
+- 文件剪贴板：桌面由主进程校验输出文件并调用系统文件剪贴板；CEP 经现有 Node 子进程桥按平台调用 Windows 文件 DropList / macOS AppleScript；不可将文件路径当普通文本写入剪贴板
 - 断点样式包 `body.is-cep`；JS 断点加 `hostAdapter.supportsCompImport`
 
 

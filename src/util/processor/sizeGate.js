@@ -44,6 +44,35 @@ function outputPathFor (item, format) {
   return path.join(item.basic.outputPath, item.options.outputName + ext)
 }
 
+function retryOutputPathFor (item, format, version) {
+  const ext = format === TYPE.GIF ? '.gif' : format === TYPE.WEBP ? '.webp' : '.png'
+  return path.join(item.basic.outputPath, item.options.outputName + '_v' + version + ext)
+}
+
+function cleanupRetryVersions (item, format) {
+  if (typeof fs.readdirSync !== 'function' || typeof fs.remove !== 'function') {
+    return Promise.resolve()
+  }
+  const ext = format === TYPE.GIF ? '.gif' : format === TYPE.WEBP ? '.webp' : '.png'
+  const dir = item.basic.outputPath
+  const prefix = String(item.options.outputName || '') + '_v'
+  let names = []
+  try {
+    names = fs.readdirSync(dir) || []
+  } catch (e) { return Promise.resolve() }
+  const stale = names.filter(function (name) {
+    const value = String(name)
+    if (value.indexOf(prefix) !== 0 || value.slice(-ext.length) !== ext) return false
+    const version = value.slice(prefix.length, -ext.length)
+    return /^\d+$/.test(version)
+  })
+  return stale.reduce(function (chain, name) {
+    return chain.then(() => fs.remove(path.join(dir, name)))
+  }, Promise.resolve()).catch((err) => {
+    appLog.warn('size-gate retry version cleanup failed: ' + String(err && err.err || err))
+  })
+}
+
 /**
  * 中间产物一律 ASCII 名 out.<ext>（apngCompress / pngs2apng / apng2gif / apng2webp 的落盘名），
  * 最终文件名才用 outputName —— 两侧必须同一真相源，否则重压后 copy 必 ENOENT。
@@ -63,21 +92,21 @@ function restoreMasterApng (item) {
   }
 }
 
-function reExportFormat (item, format, store, locale, opts) {
+function reExportFormat (item, format, store, locale, opts, targetPath) {
   if (format === TYPE.APNG) {
     return fs.copy(
       tmpPathFor(item, TYPE.APNG),
-      outputPathFor(item, TYPE.APNG)
+      targetPath || outputPathFor(item, TYPE.APNG)
     )
   }
   if (format === TYPE.GIF) {
     return apng2gif(item, store, locale, opts).then(() => {
-      return fs.copy(tmpPathFor(item, TYPE.GIF), outputPathFor(item, TYPE.GIF))
+      return fs.copy(tmpPathFor(item, TYPE.GIF), targetPath || outputPathFor(item, TYPE.GIF))
     })
   }
   if (format === TYPE.WEBP) {
     return apng2webp(item, store, locale, opts).then(() => {
-      return fs.copy(tmpPathFor(item, TYPE.WEBP), outputPathFor(item, TYPE.WEBP))
+      return fs.copy(tmpPathFor(item, TYPE.WEBP), targetPath || outputPathFor(item, TYPE.WEBP))
     })
   }
   return Promise.resolve()
@@ -85,7 +114,8 @@ function reExportFormat (item, format, store, locale, opts) {
 
 /**
  * 逐格式检查输出大小；超限则按 step 降质量重压，直到达标或达 maxTries。
- * 仍超限：autoDelete 则删除，否则保留并警告。
+ * autoDelete 是历史配置键：勾选时覆盖旧结果、只留一个；未勾选时为每次重压另存版本。
+ * 达到重试上限仍超限时保留最终结果并警告，绝不把唯一结果删掉。
  */
 export function enforceSizeLimit (item, store, locale) {
   const limit = normalizeSizeLimit(item.options)
@@ -95,7 +125,7 @@ export function enforceSizeLimit (item, store, locale) {
 
   const maxBytes = limit.maxBytes
   const formats = item.options.outputFormat.slice()
-  let deleted = []
+  let versioned = []
   let warned = []
   let triesUsed = 0
 
@@ -117,26 +147,27 @@ export function enforceSizeLimit (item, store, locale) {
       return Promise.resolve({ format, size: 0, action: 'warn-missing' })
     }
     if (size <= maxBytes) {
-      return Promise.resolve(null)
+      return limit.autoDelete
+        ? cleanupRetryVersions(item, format).then(() => null)
+        : Promise.resolve(null)
     }
 
     if (!limit.autoQuality) {
-      if (limit.autoDelete) {
-        return fs.remove(outPath).then(() => {
-          deleted.push(format)
-          return { format, size, action: 'delete' }
-        })
-      }
       warned.push({ format, size })
-      return Promise.resolve({ format, size, action: 'warn' })
+      const result = { format, size, action: 'warn' }
+      return limit.autoDelete
+        ? cleanupRetryVersions(item, format).then(() => result)
+        : Promise.resolve(result)
     }
 
-    // 自动降质量重压（从 baseQuality 起算）
-    function retry (tries) {
-      appLog.warn(i18n.t('logGateRetry', {
-        fmt: format, tries: tries, size: (size / 1048576).toFixed(2), max: (maxBytes / 1048576).toFixed(2)
-      }))
-      size = fs.statSize(outPath)
+    // 每种格式独立从原始质量起跑，上一格式降低的质量不能串给下一格式。
+    item.options.quality = {
+      checked: baseQuality.checked,
+      value: baseQuality.value
+    }
+
+    function retry (tries, currentPath) {
+      size = fs.statSize(currentPath)
       if (size < 0) {
         warned.push({ format, size: 0, missing: true })
         return Promise.resolve({ format, size: 0, action: 'warn-missing' })
@@ -145,40 +176,43 @@ export function enforceSizeLimit (item, store, locale) {
         return Promise.resolve(null)
       }
       if (tries >= limit.maxTries) {
-        if (limit.autoDelete) {
-          return fs.remove(outPath).then(() => {
-            deleted.push(format)
-            return { format, size, action: 'delete-after-tries', tries }
-          })
-        }
+        appLog.warn(i18n.t('logGateExhausted', {
+          fmt: format,
+          tries: tries,
+          size: formatMB(size),
+          max: formatLimit(maxBytes)
+        }))
         warned.push({ format, size, tries })
         return Promise.resolve({ format, size, action: 'warn-after-tries', tries })
       }
 
-      if (!item.options.quality) {
-        item.options.quality = { checked: true, value: baseQuality.value }
-      }
-      item.options.quality.checked = true
       const startQ = isFinite(baseQuality.value) ? baseQuality.value : 80
-      const nextQ = Math.max(1, startQ - limit.step * (tries + 1))
-      if (nextQ === Number(item.options.quality.value) && tries > 0) {
+      const attempt = tries + 1
+      const nextQ = Math.max(1, startQ - limit.step * attempt)
+      if (nextQ >= Number(item.options.quality.value)) {
         // 已到质量下限，不再空转
-        if (limit.autoDelete) {
-          return fs.remove(outPath).then(() => {
-            deleted.push(format)
-            return { format, size, action: 'delete-floor', tries }
-          })
-        }
         warned.push({ format, size, tries })
         return Promise.resolve({ format, size, action: 'warn-floor', tries })
       }
+      item.options.quality.checked = true
       item.options.quality.value = nextQ
-      triesUsed = Math.max(triesUsed, tries + 1)
+      triesUsed = Math.max(triesUsed, attempt)
+
+      const targetPath = limit.autoDelete
+        ? outPath
+        : retryOutputPathFor(item, format, attempt + 1)
+      if (!limit.autoDelete) { versioned.push(targetPath) }
+      appLog.warn(i18n.t('logGateRetry', {
+        fmt: format,
+        tries: attempt,
+        size: formatMB(size),
+        max: formatLimit(maxBytes)
+      }))
 
       store.dispatch('editProcess', {
         index: item.index,
         text: (locale.sizeLimitRetry || 'Size over limit, quality→') + nextQ +
-          ' (' + formatMB(size) + ' > ' + formatLimit(maxBytes) + ') ' + (tries + 1) + '/' + limit.maxTries,
+          ' (' + formatMB(size) + ' > ' + formatLimit(maxBytes) + ') ' + attempt + '/' + limit.maxTries,
         schedule: 0.85
       })
 
@@ -189,34 +223,37 @@ export function enforceSizeLimit (item, store, locale) {
       let reEncode
       try {
         if (format === TYPE.WEBP) {
-          reEncode = reExportFormat(item, format, store, locale, { markFail: false })
+          reEncode = reExportFormat(item, format, store, locale, { markFail: false }, targetPath)
         } else {
           restoreMasterApng(item)
           reEncode = apngCompress(item, 0, store, locale, { markFail: false })
-            .then(() => reExportFormat(item, format, store, locale, { markFail: false }))
+            .then(() => reExportFormat(item, format, store, locale, { markFail: false }, targetPath))
         }
       } catch (syncErr) {
         appLog.error('size-gate retry sync error', String(syncErr && syncErr.stack || syncErr))
         warned.push({ format, size, error: String(syncErr) })
         return Promise.resolve({ format, size, action: 'warn-error' })
       }
-      return reEncode.then(() => retry(tries + 1)).catch((err) => {
+      return reEncode.then(() => retry(attempt, targetPath)).catch((err) => {
         appLog.error('size-gate retry failed', String(err && err.err || err))
         warned.push({ format, size, error: String(err && err.err || err) })
         return { format, size, action: 'warn-error' }
       })
     }
 
-    return retry(0)
+    return retry(0, outPath).then((result) => {
+      if (limit.autoDelete && (!result || result.action === 'warn-after-tries' || result.action === 'warn-floor')) {
+        return cleanupRetryVersions(item, format).then(() => result)
+      }
+      return result
+    })
   }
 
   return formats.reduce(function (chain, format) {
     return chain.then(() => checkOne(format))
   }, Promise.resolve()).then(() => {
     let text = locale.convertSuccess + '！'
-    if (deleted.length) {
-      text = (locale.sizeLimitDeleted || 'Over limit, deleted') + ': ' + deleted.join(', ')
-    } else if (warned.length) {
+    if (warned.length) {
       text = (locale.sizeLimitWarn || 'Over size limit') + ' ' +
         warned.map(w => {
           if (w.missing) { return w.format + ' ?' }
@@ -231,6 +268,6 @@ export function enforceSizeLimit (item, store, locale) {
       text: text,
       schedule: 1
     })
-    return { enforced: true, deleted, warned, triesUsed }
+    return { enforced: true, versioned, warned, triesUsed }
   })
 }

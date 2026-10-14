@@ -24,16 +24,21 @@ export function normalizeOutputTo (holder) {
 }
 
 export function sourceDirOf (item) {
-  const input = item && item.basic && item.basic.inputPath
+  const basic = item && item.basic
+  const input = basic && basic.inputPath
+  // 宿主适配层可注入明确的源目录基准；共享路径解析只消费它，不猜测宿主目录规则。
+  if (basic && typeof basic.outputBasePath === 'string' && basic.outputBasePath) {
+    return basic.outputBasePath
+  }
   if (!input) { return '' }
-  if (item.basic.type === 'PNGs') {
+  if (basic.type === 'PNGs') {
     return input
   }
-  // Comp：源目录 = 工程文件所在目录（真实路径）；无工程路径时不编造 ae-comp
-  if (item.basic.type === 'Comp') {
-    const pp = item.basic.projectPath || (item.basic && item.basic.projectPath)
+  // 未注入专属目录的 Comp 沿用原有工程目录回退，不把 CEP 规则写进共享层。
+  if (basic.type === 'Comp') {
+    const pp = basic.projectPath || ''
     if (pp) { return npath.dirname(pp) }
-    const inp = item.basic.inputPath || ''
+    const inp = basic.inputPath || ''
     if (inp && /[\\/]/.test(inp)) { return npath.dirname(inp) }
     return ''
   }

@@ -467,6 +467,49 @@ ipcMain.handle('shell:openPath', async (event, fullPath) => {
   return shell.openPath(fullPath)
 })
 
+function appleScriptLiteral (value) {
+  return '"' + String(value).replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\r/g, '\\r').replace(/\n/g, '\\n') + '"'
+}
+
+ipcMain.handle('clipboard:copyFiles', async (event, inputPaths) => {
+  const files = Array.from(new Set(Array.isArray(inputPaths) ? inputPaths : []))
+    .filter((value) => typeof value === 'string' && path.isAbsolute(value))
+  if (!files.length) { return { ok: false, error: '没有有效的输出文件' } }
+  try {
+    for (const file of files) {
+      if (!fsp.statSync(file).isFile()) { return { ok: false, error: '输出文件不存在：' + file } }
+    }
+  } catch (e) {
+    return { ok: false, error: String((e && e.message) || e) }
+  }
+
+  let command
+  let args
+  if (process.platform === 'win32') {
+    const json = Buffer.from(JSON.stringify(files), 'utf8').toString('base64')
+    const script = 'Add-Type -AssemblyName System.Windows.Forms; $paths = @([Text.Encoding]::UTF8.GetString([Convert]::FromBase64String("' + json + '") ) | ConvertFrom-Json); $list = New-Object System.Collections.Specialized.StringCollection; foreach ($p in $paths) { [void]$list.Add([string]$p) }; [Windows.Forms.Clipboard]::SetFileDropList($list)'
+    command = 'powershell.exe'
+    args = ['-NoProfile', '-STA', '-EncodedCommand', Buffer.from(script, 'utf16le').toString('base64')]
+  } else if (process.platform === 'darwin') {
+    command = '/usr/bin/osascript'
+    args = ['-e', 'set the clipboard to {' + files.map(function (file) {
+      return '(POSIX file ' + appleScriptLiteral(file) + ' as alias)'
+    }).join(', ') + '}']
+  } else {
+    return { ok: false, error: '当前系统暂不支持复制文件到剪贴板' }
+  }
+
+  return new Promise((resolve) => {
+    childProcess.execFile(command, args, { timeout: 15000, maxBuffer: 1024 * 1024 }, (error, stdout, stderr) => {
+      if (error) {
+        resolve({ ok: false, error: String(stderr || error.message || error) })
+      } else {
+        resolve({ ok: true })
+      }
+    })
+  })
+})
+
 // --- 更新检查：主进程注入层 ---
 // 渲染层保持离线，外部请求只发生在这里；判定逻辑全在 util/updateCheck.js（可脱离 Electron 测试）
 const UPDATE_UA = 'isparta-next-updater'

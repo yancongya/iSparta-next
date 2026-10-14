@@ -692,6 +692,9 @@ export default {
       this.sizeDraft = String(raw == null ? '' : raw)
     },
     onSizeBlur () {
+      this.commitSizeDraft()
+    },
+    commitSizeDraft () {
       const raw = this.sizeDraft
       this.sizeDraft = null
       const n = parseFloat(String(raw == null ? '' : raw).replace(',', '.'))
@@ -896,6 +899,8 @@ export default {
       ipc.send('change-multiItem-fold', outputPath)
     },
     start (sameOutputPath) {
+      // 开始转换前再次提交输入草稿，避免点击按钮与宿主 blur 顺序差异导致沿用旧阈值。
+      this.commitSizeDraft()
       let locale = this.$i18n.messages[this.$i18n.locale]
       for (var i = 0; i < this.selectedList.length; i++) {
         this.$store.dispatch('editProcess', {

@@ -144,6 +144,13 @@ export default class Action {
         console.warn('stdout:', result && result.stdout)
         console.warn('stderr:', result && result.stderr)
         console.warn(result && result.error)
+        // 子进程真正的失败原因常在 stderr；只抛 error.message 会把它丢掉，
+        // CEP 日志最终只能显示「Command failed: ...」而无法定位 APNG 编码问题。
+        var outputDetails = []
+        if (result && result.stderr) { outputDetails.push('stderr: ' + String(result.stderr).trim().slice(-4000)) }
+        if (result && result.stdout) { outputDetails.push('stdout: ' + String(result.stdout).trim().slice(-2000)) }
+        var errorText = String((result && result.error) || 'command failed')
+        if (outputDetails.length) { errorText += '\n' + outputDetails.join('\n') }
         // silent：探测性命令（如 webpmux 取帧到末尾）的预期失败，不写 convertFail、不解锁
         // markFail:false：网关阈值重压的子步骤失败由调用方吞掉并重试，不把任务标红「生成失败」
         if (!(options && options.silent) && !(options && options.markFail === false)) {
@@ -160,7 +167,9 @@ export default class Action {
           command: command,
           args: cleanArgs,
           cancelled: !!(result && result.cancelled),
-          err: result && result.error
+          err: errorText,
+          stdout: result && result.stdout,
+          stderr: result && result.stderr
         })
       }
       return {

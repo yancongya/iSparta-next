@@ -10,9 +10,11 @@ commits: e100612..0d232bb
 
 ## Report
 
-**当前行为** — 默认阈值为 800KB，启用阈值与自动降质量；自动删除默认开启，但可在单个任务设置中关闭。超限后自动降质量重试，仍超限时按自动删除开关删除或保留并提示。CEP 转换时保留任务单独修改；未单独修改的选项才跟随最新全局设置。
+**当前行为** — 阈值、每次降质量幅度和重试次数都是任务设置；批量设置会写入所有当前选中任务。输入框失焦或点击开始时提交编辑中的值。超限后按配置的幅度逐次降低质量，每次重压后重新检查，达标立即停止。
 
-`sizeGate.enforceSizeLimit` 只检查当前任务生成的输出路径；自动删除只会删除这个输出文件，不会清理目录中的历史文件。同名、同格式的再次导出会写入相同路径并覆盖旧文件，因此“只看到最新文件”本身不代表自动删除生效。
+“重压时仅保留一个版本”勾选时，每次重压覆盖同一输出文件；未勾选时保留初始文件和每次重压结果，重压文件名依次为 `_v2`、`_v3` 等。达到重试次数仍超限时，保留最后结果并告警，不删除输出。日志按 KB/MB 显示实际任务阈值。
+
+`sizeGate.enforceSizeLimit` 只检查当前任务生成的输出路径；重压版本策略只影响本次输出。同名、同格式的再次导出仍从基础文件名开始。
 
 转换主流程 `apng2other` 拷贝完成后调用 `sizeGate.enforceSizeLimit`；PNGs 组装后保留 `-src.png` 母版供重压。
 
@@ -26,7 +28,7 @@ commits: e100612..0d232bb
 
 ## [S2] Design
 
-**配置结构** `options.sizeLimit`（当前默认）：
+**配置结构** `options.sizeLimit`（默认值来自全局设置，任务可单独修改）：
 ```
 { enabled=true, maxBytes=819200, autoDelete=true, autoQuality=true, step=5, maxTries=10 }
 ```
@@ -36,9 +38,9 @@ commits: e100612..0d232bb
 **流程**（每种输出格式串行）：
 1. 拷贝到 outputPath 后 `statSize`
 2. `size <= maxMB*1024*1024` → 通过  
-3. 未开 autoQuality：autoDelete 则删，否则文案警告  
-4. 开 autoQuality：`quality.checked=true`，`value -= step`（≥1）→ 恢复母版 → `apngCompress` → 重导出该格式 → 再测  
-5. 达 maxTries 仍超：autoDelete 则删，否则警告；任务 status 仍为 1（完成）但文案说明超限
+3. 未开 autoQuality：保留原输出并警告。
+4. 开 autoQuality：从基准质量开始，每次按 `step` 降低 → 恢复母版 → `apngCompress`（WEBP 只重新运行 cwebp）→ 重导出该格式 → 再测；勾选 `autoDelete` 时覆盖原输出，未勾选时另存带版本号的文件。
+5. 达 `maxTries` 仍超：保留最后一次输出并警告；任务 status 仍为 1（完成），绝不删除唯一结果。
 
 **UI**：`setting.vue` 单任务面板 + `globalSetting.vue` 默认值；三语文案。单任务修改必须保留到 CEP 转换阶段，不能被全局默认值覆盖。
 
@@ -54,4 +56,4 @@ commits: e100612..0d232bb
 - [x] T2: fs:statSize IPC + node-env — acceptance: 渲染可取字节数 (covers: S2)
 - [x] T3: sizeGate 警告/删/降质重压 — acceptance: enforceSizeLimit 挂入 apng2other (covers: S2)
 - [x] T4: 输出设置与默认设置 UI + i18n — acceptance: 两处可调阈值相关项 (covers: S2)
-- [ ] T5: 大文件人工冒烟 — acceptance: 超过当前设置阈值的序列能自动降质至阈值内或按配置删除 (covers: S2; depends: T3)
+- [ ] T5: 大文件人工冒烟 — acceptance: 超限时逐次降质并按版本保留策略写出；达重试上限仍保留最后结果并提示 (covers: S2; depends: T3)

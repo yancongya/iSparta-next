@@ -166,7 +166,7 @@
           <div class="side__btns">
             <button
               type="button"
-              class="iconbtn"
+              class="iconbtn ib-rail__btn--settings"
               :title="$t('tipTaskSetting')"
               :disabled="isLocked"
               @click.stop="onTaskSetting(project, index)"
@@ -751,6 +751,8 @@ export default {
     onItemClick (index) {
       if (this.suppressBlankClick) {
         this.suppressBlankClick = false
+        clearTimeout(this._suppressBlankClickTimer)
+        this._suppressBlankClickTimer = null
         return
       }
       if (this.isLocked) return
@@ -766,6 +768,8 @@ export default {
     onBlankClick (e) {
       if (this.suppressBlankClick) {
         this.suppressBlankClick = false
+        clearTimeout(this._suppressBlankClickTimer)
+        this._suppressBlankClickTimer = null
         return
       }
       if (this.isLocked || !this.projectList.length) return
@@ -791,8 +795,8 @@ export default {
       if (!t || !t.closest) return
       // 卡片文字区也可作为框选起点；保留复选框、缩略图、按钮和输入框自己的交互。
       if (t.closest('.check, .thumb, button, input, a, .open-folder, .mod-list__marquee, .is-check')) return
-      // 立刻抑制原生文字/图片拖选
-      e.preventDefault()
+      // 仅在确认拖动后抑制原生选区；mousedown 阶段 preventDefault 会让部分
+      // Chromium/CEP 不派发 click，导致空白单击/双击取消与全选失效。
       var rect = this.$el.getBoundingClientRect()
       this.marquee = {
         active: true,
@@ -811,8 +815,6 @@ export default {
     },
     onMarqueeMove (e) {
       if (!this.marquee.active) return
-      // 拖拽过程中持续禁止原生选区
-      if (e.preventDefault) e.preventDefault()
       var host = this.$el
       var rect = host.getBoundingClientRect()
       var sx = this.marquee.startX - rect.left
@@ -823,6 +825,8 @@ export default {
           Math.abs(e.clientY - this.marquee.startY) > 4) {
         this.marquee.moved = true
       }
+      // CSS user-select:none 提供拖动初期保护；越过阈值后再取消默认，保留 click。
+      if (this.marquee.moved && e.preventDefault) e.preventDefault()
       this.marquee.x = Math.min(sx, ex)
       this.marquee.y = Math.min(sy, ey)
       this.marquee.w = Math.abs(ex - sx)
@@ -864,9 +868,20 @@ export default {
       this.marquee = { active: false, moved: false, x: 0, y: 0, w: 0, h: 0, startX: 0, startY: 0 }
       if (moved) {
         this.suppressBlankClick = true
+        // 只抑制框选结束后浏览器可能补发的同一轮 click；若没有 click，
+        // 下一事件循环立即清除，避免吞掉后续空白/任务点击。
+        clearTimeout(this._suppressBlankClickTimer)
+        this._suppressBlankClickTimer = setTimeout(() => {
+          this.suppressBlankClick = false
+          this._suppressBlankClickTimer = null
+        }, 0)
       }
     },
     unbindMarquee () {
+      if (this._suppressBlankClickTimer) {
+        clearTimeout(this._suppressBlankClickTimer)
+        this._suppressBlankClickTimer = null
+      }
       if (this._onMarqueeMove) {
         window.removeEventListener('mousemove', this._onMarqueeMove)
         this._onMarqueeMove = null
