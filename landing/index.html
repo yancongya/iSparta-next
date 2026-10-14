@@ -238,10 +238,7 @@
   </section>
 
   <!-- 可抓取产品说明（SEO 静态正文，不依赖 JS） -->
-  <!-- trae.ai「What You'll Unlock」式：左栏一个统一大标题（滚动时吸附），
-       右栏一轨横向浏览全部能力。
-       轨道卡片 = 原 ABOUT 六张能力卡 + 原 WHY NEXT 五条工程要点 + 一张运行日志面板卡。
-       编号 [NN] 由 CSS counter 生成，不往卡片里插元素。 -->
+  <!-- 产品介绍：左侧定位说明，右侧保留全部 12 项能力；横向轨道交互保持不变。 -->
   <section class="section section-about" id="about">
     <div class="ab">
       <div class="ab__aside">
@@ -257,41 +254,157 @@
         <div class="rail" id="rail-about">
           <div class="rail__viewport">
         <div class="rail__track">
-        <article class="why-card">
-          <div class="why-ill" aria-hidden="true">
-            <svg viewBox="0 0 64 40" class="why-svg"><rect x="8" y="8" width="48" height="28" rx="6" class="wy-box"/><path d="M20 22h24M32 14v16" class="wy-stroke wy-plus"/><circle cx="48" cy="14" r="3" class="wy-dot"/></svg>
+        <article class="about-card about-card--ill">
+          <div class="ill" aria-hidden="true">
+            <svg class="ill-svg ill-ae-install" viewBox="0 0 160 88" xmlns="http://www.w3.org/2000/svg">
+    <rect class="ill-ui-window" x="22" y="9" width="116" height="68" rx="6"/>
+    <path class="ill-ui-header" d="M28 9h104a6 6 0 0 1 6 6v9H22v-9a6 6 0 0 1 6-6Z"/>
+    <circle class="ill-ui-window-dot" cx="31" cy="17" r="1.7"/><circle class="ill-ui-window-dot" cx="38" cy="17" r="1.7"/>
+    <text class="ill-ui-label" x="49" y="19">INSTALLER</text>
+    <rect class="ill-ui-check" x="32" y="33" width="7" height="7" rx="2"/><path class="ill-ui-checkmark" d="m34 36 1.5 1.5L38 34.5"/>
+    <path class="ill-ui-line" d="M44 36h37"/><rect class="ill-ui-check" x="32" y="47" width="7" height="7" rx="2"/><path class="ill-ui-checkmark" d="m34 50 1.5 1.5L38 48.5"/>
+    <path class="ill-ui-line" d="M44 50h28"/><rect class="ill-ui-track" x="32" y="62" width="62" height="4" rx="2"/><rect class="ill-ui-progress" x="32" y="62" width="43" height="4" rx="2"/>
+    <rect class="ill-ui-action" x="105" y="55" width="22" height="12" rx="4"/><path class="ill-ui-checkmark" d="m112 61 3 3 5-6"/>
+  </svg>
           </div>
-          <p class="why-card__tag mono" data-i18n="why.tag1">底层</p>
-          <h3 data-i18n="why.1t">Electron 28 · 关好门窗</h3>
-          <p data-i18n="why.1d">contextIsolation、sandbox，该走 IPC 的都走 IPC，不再让渲染层裸碰 Node。</p>
+          <h3 data-i18n="seo.pkg.t">一个安装包，按需勾选</h3>
+          <p data-i18n="seo.pkg.d">同一个安装包里，桌面版与 AE 扩展可单独勾选、也可一并安装；安装范围支持所有用户或仅当前用户。</p>
         </article>
+
+        <article class="about-card about-card--ill">
+          <div class="ill" aria-hidden="true">
+            <svg class="ill-svg ill-ae-core" viewBox="0 0 160 88" xmlns="http://www.w3.org/2000/svg">
+    <rect class="ill-ui-window" x="8" y="19" width="48" height="48" rx="5"/><path class="ill-ui-header" d="M13 19h38a5 5 0 0 1 5 5v6H8v-6a5 5 0 0 1 5-5Z"/>
+    <circle class="ill-ui-window-dot" cx="15" cy="25" r="1.3"/><path class="ill-ui-line" d="M15 39h23M15 46h30M15 53h17"/>
+    <rect class="ill-ui-window" x="104" y="19" width="48" height="48" rx="5"/><path class="ill-ui-header" d="M109 19h38a5 5 0 0 1 5 5v6h-48v-6a5 5 0 0 1 5-5Z"/>
+    <circle class="ill-ui-window-dot" cx="111" cy="25" r="1.3"/><path class="ill-ui-line" d="M111 39h23M111 46h30M111 53h17"/>
+    <path class="ill-ui-route" d="M56 43h17m14 0h17"/><circle class="ill-ui-engine" cx="80" cy="43" r="9"/><circle class="ill-ui-engine-core" cx="80" cy="43" r="3"/>
+    <text class="ill-ui-label" x="32" y="76" text-anchor="middle">CEP</text><text class="ill-ui-label" x="128" y="76" text-anchor="middle">DESKTOP</text>
+  </svg>
+          </div>
+          <h3 data-i18n="seo.core.t">两端同一颗引擎</h3>
+          <p data-i18n="seo.core.d">桌面端与 AE 扩展共用同一套压缩 / 合成 / 降质算法，输出的大小规则与命名习惯完全一致。</p>
+        </article>
+
+        <article class="about-card about-card--ill">
+          <div class="ill" aria-hidden="true">
+            <svg class="ill-svg ill-convert" viewBox="0 0 160 88" xmlns="http://www.w3.org/2000/svg">
+    <rect class="ill-ui-window" x="9" y="20" width="42" height="48" rx="5"/><path class="ill-ui-header" d="M14 20h32a5 5 0 0 1 5 5v5H9v-5a5 5 0 0 1 5-5Z"/>
+    <rect class="ill-frame f1" x="17" y="38" width="10" height="14" rx="2"/><rect class="ill-frame f2" x="27" y="38" width="10" height="14" rx="2"/><rect class="ill-frame f3" x="37" y="38" width="8" height="14" rx="2"/>
+    <path class="ill-rail" d="M55 45h25m0 0 7-7m-7 7 7 7"/>
+    <g class="ill-chip c1"><rect x="92" y="15" width="57" height="15" rx="7"/><text x="120" y="25" text-anchor="middle">APNG</text></g>
+    <g class="ill-chip c2"><rect x="92" y="36" width="57" height="15" rx="7"/><text x="120" y="46" text-anchor="middle">WEBP</text></g>
+    <g class="ill-chip c3"><rect x="92" y="57" width="57" height="15" rx="7"/><text x="120" y="67" text-anchor="middle">GIF</text></g>
+  </svg>
+          </div>
+          <h3 data-i18n="seo.fmt.t">格式互转</h3>
+          <p data-i18n="seo.fmt.d">支持 PNG 序列合成 APNG / GIF / Animated WebP，以及 APNG、GIF、WebP 之间的互转与再压缩，适合表情包、贴纸与帧动画导出。</p>
+        </article>
+
+        <article class="about-card about-card--ill">
+          <div class="ill" aria-hidden="true">
+            <svg class="ill-svg ill-gate" viewBox="0 0 160 88" xmlns="http://www.w3.org/2000/svg">
+    <rect class="ill-ui-window" x="12" y="12" width="136" height="64" rx="6"/><path class="ill-ui-header" d="M18 12h124a6 6 0 0 1 6 6v8H12v-8a6 6 0 0 1 6-6Z"/>
+    <text class="ill-ui-label" x="23" y="22">SIZE LIMIT</text><text class="ill-ui-value" x="126" y="22" text-anchor="end">1 MB</text>
+    <path class="ill-ui-grid" d="M25 38h110M25 49h110M25 60h110"/><path class="ill-ui-chart" d="m27 58 20-5 17 4 18-15 17 8 14-12 20 2"/>
+    <path class="ill-limit" d="M25 43h110"/><circle class="ill-ui-chart-dot" cx="113" cy="38" r="3"/>
+    <rect class="ill-ui-track" x="28" y="68" width="88" height="3" rx="1.5"/><rect class="ill-ui-progress" x="28" y="68" width="59" height="3" rx="1.5"/>
+  </svg>
+          </div>
+          <h3 data-i18n="seo.size.t">体积可控</h3>
+          <p data-i18n="seo.size.d">输出大小阈值可在超出上限时自动按步长降质量重压，适配平台 1MB 等体积限制，减少手动反复试压缩。</p>
+        </article>
+
+        <article class="about-card about-card--ill">
+          <div class="ill" aria-hidden="true">
+            <svg class="ill-svg ill-batch" viewBox="0 0 160 88" xmlns="http://www.w3.org/2000/svg">
+    <rect class="ill-ui-window" x="8" y="14" width="60" height="59" rx="5"/><path class="ill-ui-header" d="M13 14h50a5 5 0 0 1 5 5v8H8v-8a5 5 0 0 1 5-5Z"/><text class="ill-ui-label" x="17" y="23">INPUT</text>
+    <rect class="ill-ui-thumb" x="16" y="34" width="12" height="12" rx="2"/><path class="ill-ui-line" d="M33 37h26M33 43h19"/>
+    <rect class="ill-ui-thumb" x="16" y="51" width="12" height="12" rx="2" opacity=".6"/><path class="ill-ui-line" d="M33 54h26M33 60h19"/>
+    <path class="ill-ui-route" d="M69 43h22m0 0 7-7m-7 7 7 7"/>
+    <rect class="ill-ui-window" x="105" y="24" width="46" height="43" rx="5"/><path class="ill-ui-folder" d="M112 36h13l4 4h20v19h-37Z"/><path class="ill-ui-line" d="M115 48h18M115 53h12"/>
+    <text class="ill-ui-label" x="128" y="75" text-anchor="middle">OUTPUT</text>
+  </svg>
+          </div>
+          <h3 data-i18n="seo.batch.t">批量与路径</h3>
+          <p data-i18n="seo.batch.d">拖拽 / 粘贴导入多组帧目录；路径变量模板与源目录输出策略，便于按项目批量导出与归档。</p>
+        </article>
+
         <article class="why-card">
           <div class="why-ill" aria-hidden="true">
-            <svg viewBox="0 0 64 40" class="why-svg"><rect x="6" y="6" width="22" height="28" rx="4" class="wy-box"/><rect x="34" y="6" width="24" height="12" rx="3" class="wy-fill"/><rect x="34" y="22" width="24" height="12" rx="3" class="wy-box"/></svg>
+            <svg class="why-svg ill-log" viewBox="0 0 160 88" xmlns="http://www.w3.org/2000/svg">
+    <rect class="ill-ui-window" x="12" y="10" width="136" height="68" rx="6"/><path class="ill-ui-header" d="M18 10h124a6 6 0 0 1 6 6v8H12v-8a6 6 0 0 1 6-6Z"/><text class="ill-ui-label" x="23" y="21">PROCESS LOG</text>
+    <circle class="ill-ui-status" cx="27" cy="36" r="2.5"/><path class="ill-ui-line" d="M35 36h73"/><text class="ill-ui-time" x="136" y="38" text-anchor="end">00:04</text>
+    <circle class="ill-ui-status" cx="27" cy="49" r="2.5"/><path class="ill-ui-line" d="M35 49h56"/><text class="ill-ui-time" x="136" y="51" text-anchor="end">00:09</text>
+    <circle class="ill-ui-status" cx="27" cy="62" r="2.5"/><path class="ill-ui-line" d="M35 62h88"/><text class="ill-ui-time" x="136" y="64" text-anchor="end">00:12</text>
+    <rect class="ill-ui-progress" x="22" y="70" width="68" height="3" rx="1.5"/><rect class="ill-ui-track" x="90" y="70" width="46" height="3" rx="1.5"/>
+  </svg>
+          </div>
+          <p class="why-card__tag mono" data-i18n="seo.log.tag">日志</p>
+          <h3 data-i18n="seo.log.t">运行日志面板</h3>
+          <p data-i18n="seo.log.d">转换过程一条条摊开：解析帧序、编码器进度、每轮重压的体积与耗时，出问题能直接定位到某一次尝试。</p>
+        </article>
+
+        <article class="why-card">
+          <div class="why-ill" aria-hidden="true">
+            <svg class="why-svg ill-interface" viewBox="0 0 160 88" xmlns="http://www.w3.org/2000/svg">
+    <rect class="ill-ui-window" x="11" y="10" width="138" height="68" rx="6"/><path class="ill-ui-header" d="M17 10h126a6 6 0 0 1 6 6v8H11v-8a6 6 0 0 1 6-6Z"/><circle class="ill-ui-window-dot" cx="20" cy="17" r="1.5"/><circle class="ill-ui-window-dot" cx="26" cy="17" r="1.5"/>
+    <rect class="ill-ui-side" x="18" y="31" width="28" height="39" rx="3"/><path class="ill-ui-line" d="M53 35h84M53 42h68"/>
+    <rect class="ill-ui-tile" x="53" y="50" width="35" height="18" rx="3"/><rect class="ill-ui-tile" x="94" y="50" width="43" height="18" rx="3"/>
+    <path class="ill-ui-line" d="M22 37h18M22 43h15M22 49h18"/>
+  </svg>
           </div>
           <p class="why-card__tag mono" data-i18n="why.tag2">界面</p>
           <h3 data-i18n="why.2t">自己画的界面</h3>
           <p data-i18n="why.2d">两栏任务列表、亮暗主题、前后对比、运行日志面板。不绑 Element UI，想改就改。</p>
         </article>
+
         <article class="why-card">
           <div class="why-ill" aria-hidden="true">
-            <svg viewBox="0 0 64 40" class="why-svg"><path d="M32 6l18 8v10c0 10-8 16-18 20-10-4-18-10-18-20V14z" class="wy-box"/><path d="M24 22l6 6 12-12" class="wy-stroke"/></svg>
+            <svg class="why-svg ill-security" viewBox="0 0 160 88" xmlns="http://www.w3.org/2000/svg">
+    <rect class="ill-ui-window" x="10" y="12" width="54" height="60" rx="6"/><path class="ill-ui-header" d="M16 12h42a6 6 0 0 1 6 6v7H10v-7a6 6 0 0 1 6-6Z"/><path class="ill-ui-line" d="M20 36h32M20 43h26M20 50h30"/>
+    <path class="ill-ui-shield" d="M105 15 136 27v16c0 17-13 27-31 34-18-7-31-17-31-34V27Z"/><path class="ill-ui-shield-check" d="m91 46 9 9 19-21"/><circle class="ill-ui-lock" cx="105" cy="42" r="5"/>
+  </svg>
           </div>
           <p class="why-card__tag mono" data-i18n="why.tag5">依赖</p>
           <h3 data-i18n="why.5t">安全底子</h3>
           <p data-i18n="why.5d">libwebp 1.5（修了 CVE-2023-4863）；execFile 受控执行，少踩注入坑。</p>
         </article>
+
         <article class="why-card">
           <div class="why-ill" aria-hidden="true">
-            <svg viewBox="0 0 64 40" class="why-svg"><circle cx="18" cy="20" r="8" class="wy-box"/><circle cx="46" cy="12" r="6" class="wy-fill"/><circle cx="46" cy="28" r="6" class="wy-box"/><path d="M26 20h12M40 14l-4 4M40 26l-4-4" class="wy-stroke"/></svg>
+            <svg class="why-svg ill-electron" viewBox="0 0 160 88" xmlns="http://www.w3.org/2000/svg">
+    <rect class="ill-ui-window" x="9" y="9" width="74" height="68" rx="6"/><path class="ill-ui-header" d="M15 9h62a6 6 0 0 1 6 6v8H9v-8a6 6 0 0 1 6-6Z"/><circle class="ill-ui-window-dot" cx="18" cy="16" r="1.5"/>
+    <rect class="ill-ui-side" x="16" y="31" width="20" height="37" rx="3"/><path class="ill-ui-line" d="M42 34h32M42 41h25M42 50h32M42 57h25M42 65h18"/>
+    <path class="ill-ui-route" d="M85 43h17"/><rect class="ill-ui-bridge" x="103" y="27" width="46" height="34" rx="5"/><path class="ill-ui-line" d="M111 38h30M111 46h22M111 54h16"/>
+  </svg>
+          </div>
+          <p class="why-card__tag mono" data-i18n="why.tag1">底层</p>
+          <h3 data-i18n="why.1t">Electron 28 · 关好门窗</h3>
+          <p data-i18n="why.1d">contextIsolation、sandbox，该走 IPC 的都走 IPC，不再让渲染层裸碰 Node。</p>
+        </article>
+
+        <article class="why-card">
+          <div class="why-ill" aria-hidden="true">
+            <svg class="why-svg ill-ci" viewBox="0 0 160 88" xmlns="http://www.w3.org/2000/svg">
+    <rect class="ill-ui-window" x="11" y="12" width="138" height="64" rx="6"/><path class="ill-ui-header" d="M17 12h126a6 6 0 0 1 6 6v8H11v-8a6 6 0 0 1 6-6Z"/><text class="ill-ui-label" x="21" y="23">BUILD PIPELINE</text>
+    <path class="ill-ui-route" d="M80 32v9M35 41h90M35 41v8m45-8v8m45-8v8"/>
+    <rect class="ill-ui-tile" x="19" y="50" width="32" height="17" rx="4"/><rect class="ill-ui-tile" x="64" y="50" width="32" height="17" rx="4"/><rect class="ill-ui-tile" x="109" y="50" width="32" height="17" rx="4"/>
+    <text class="ill-ui-label" x="35" y="62" text-anchor="middle">WIN</text><text class="ill-ui-label" x="80" y="62" text-anchor="middle">MAC</text><text class="ill-ui-label" x="125" y="62" text-anchor="middle">LINUX</text>
+  </svg>
           </div>
           <p class="why-card__tag mono" data-i18n="why.tag6">发版</p>
           <h3 data-i18n="why.6t">三端 CI</h3>
           <p data-i18n="why.6d">Win / macOS / Linux 自动构建，版本号和 Release 说明也自动出。</p>
         </article>
+
         <article class="why-card">
           <div class="why-ill" aria-hidden="true">
-            <svg viewBox="0 0 64 40" class="why-svg"><path d="M26 6l-10 18h10l-4 10 16-20H28z" class="wy-fill"/><path d="M10 30h10M44 30h10" class="wy-stroke"/></svg>
+            <svg class="why-svg ill-hot-update" viewBox="0 0 160 88" xmlns="http://www.w3.org/2000/svg">
+    <rect class="ill-ui-window" x="8" y="11" width="82" height="66" rx="6"/><path class="ill-ui-header" d="M14 11h70a6 6 0 0 1 6 6v8H8v-8a6 6 0 0 1 6-6Z"/><circle class="ill-ui-window-dot" cx="17" cy="18" r="1.5"/>
+    <path class="ill-ui-code" d="m23 37 6 5-6 5m18-10-6 10m15-10 6 5-6 5M23 59h45"/>
+    <path class="ill-ui-route" d="M91 44h17m0 0 6-6m-6 6 6 6"/><rect class="ill-ui-bridge" x="119" y="22" width="32" height="46" rx="6"/><rect class="ill-ui-tile" x="125" y="31" width="20" height="14" rx="3"/><path class="ill-ui-line" d="M125 53h20M125 59h14"/>
+  </svg>
           </div>
           <p class="why-card__tag mono" data-i18n="why.tag8">开发</p>
           <h3 data-i18n="why.8t">热更新开发链路</h3>
@@ -300,101 +413,18 @@
 
         <article class="about-card about-card--ill">
           <div class="ill" aria-hidden="true">
-            <svg class="ill-svg ill-convert" viewBox="0 0 160 88" xmlns="http://www.w3.org/2000/svg">
-              <rect class="ill-frame f1" x="10" y="22" width="34" height="34" rx="6"/>
-              <rect class="ill-frame f2" x="10" y="22" width="34" height="34" rx="6"/>
-              <rect class="ill-frame f3" x="10" y="22" width="34" height="34" rx="6"/>
-              <path class="ill-rail" d="M52 39 H108" />
-              <g class="ill-chip c1"><rect x="112" y="14" width="40" height="20" rx="10"/><text x="132" y="28" text-anchor="middle">APNG</text></g>
-              <g class="ill-chip c2"><rect x="112" y="38" width="40" height="20" rx="10"/><text x="132" y="52" text-anchor="middle">WebP</text></g>
-              <g class="ill-chip c3"><rect x="112" y="62" width="40" height="20" rx="10"/><text x="132" y="76" text-anchor="middle">GIF</text></g>
-            </svg>
-          </div>
-          <h3 data-i18n="seo.fmt.t">格式互转</h3>
-          <p data-i18n="seo.fmt.d">支持 PNG 序列合成 APNG / GIF / Animated WebP，以及 APNG、GIF、WebP 之间的互转与再压缩，适合表情包、贴纸与帧动画导出。</p>
-        </article>
-        <article class="about-card about-card--ill">
-          <div class="ill" aria-hidden="true">
-            <svg class="ill-svg ill-gate" viewBox="0 0 160 88" xmlns="http://www.w3.org/2000/svg">
-              <rect class="ill-tank" x="18" y="16" width="70" height="56" rx="8"/>
-              <rect class="ill-fill" x="24" y="40" width="58" height="28" rx="5"/>
-              <line class="ill-limit" x1="18" y1="36" x2="88" y2="36"/>
-              <text class="ill-cap" x="53" y="12" text-anchor="middle">1MB</text>
-              <g class="ill-scale">
-                <rect class="ill-needle" x="118" y="28" width="6" height="32" rx="3"/>
-                <circle class="ill-dial" cx="121" cy="64" r="14"/>
-                <path class="ill-tick" d="M121 52 V58"/>
-              </g>
-            </svg>
-          </div>
-          <h3 data-i18n="seo.size.t">体积可控</h3>
-          <p data-i18n="seo.size.d">输出大小阈值可在超出上限时自动按步长降质量重压，适配平台 1MB 等体积限制，减少手动反复试压缩。</p>
-        </article>
-        <article class="about-card about-card--ill">
-          <div class="ill" aria-hidden="true">
-            <svg class="ill-svg ill-batch" viewBox="0 0 160 88" xmlns="http://www.w3.org/2000/svg">
-              <rect class="ill-folder fo1" x="12" y="18" width="40" height="30" rx="5"/>
-              <path class="ill-folder-tab" d="M18 18 h12 l4 6 h18 v0"/>
-              <rect class="ill-folder fo2" x="12" y="52" width="40" height="22" rx="5" opacity=".55"/>
-              <path class="ill-flow" d="M60 34 H88 M60 62 H88 M88 34 V62 M88 48 H112"/>
-              <rect class="ill-out" x="112" y="34" width="36" height="28" rx="6"/>
-              <text class="ill-cap" x="130" y="52" text-anchor="middle">{src}</text>
-            </svg>
-          </div>
-          <h3 data-i18n="seo.batch.t">批量与路径</h3>
-          <p data-i18n="seo.batch.d">拖拽 / 粘贴导入多组帧目录；路径变量模板与源目录输出策略，便于按项目批量导出与归档。</p>
-        </article>
-        <article class="about-card about-card--ill">
-          <div class="ill" aria-hidden="true">
             <svg class="ill-svg ill-dl" viewBox="0 0 160 88" xmlns="http://www.w3.org/2000/svg">
-              <rect class="ill-tray" x="36" y="54" width="88" height="18" rx="6"/>
-              <path class="ill-arrow" d="M80 12 V42 M68 32 L80 44 L92 32"/>
-              <circle class="ill-orb o1" cx="48" cy="28" r="5"/>
-              <circle class="ill-orb o2" cx="112" cy="24" r="4"/>
-              <circle class="ill-orb o3" cx="128" cy="40" r="3.5"/>
-            </svg>
+    <rect class="ill-ui-window" x="10" y="12" width="140" height="64" rx="6"/><path class="ill-ui-header" d="M16 12h128a6 6 0 0 1 6 6v8H10v-8a6 6 0 0 1 6-6Z"/><text class="ill-ui-label" x="21" y="23">AVAILABLE BUILDS</text>
+    <circle class="ill-ui-platform" cx="34" cy="42" r="8"/><circle class="ill-ui-platform" cx="34" cy="61" r="8"/>
+    <path class="ill-ui-line" d="M49 39h55M49 45h37M49 58h55M49 64h43"/>
+    <rect class="ill-ui-action ill-ui-download-button" x="112" y="36" width="26" height="12" rx="4"/><path class="ill-ui-download" d="M125 38v6m-3-3 3 3 3-3"/>
+    <rect class="ill-ui-action ill-ui-download-button" x="112" y="55" width="26" height="12" rx="4"/><path class="ill-ui-download" d="M125 57v6m-3-3 3 3 3-3"/>
+  </svg>
           </div>
           <h3 data-i18n="seo.dl.t">系统与下载</h3>
           <p><span data-i18n="seo.dl.d1">Windows / macOS / Linux 免费使用。安装包由 GitHub Actions 构建，可在</span>
             <a href="https://github.com/yancongya/iSparta-next/releases" target="_blank" rel="noopener">GitHub Releases</a>
             <span data-i18n="seo.dl.d2">获取最新版；亦可从本页下载区选择对应平台。</span></p>
-        </article>
-        <article class="about-card about-card--ill">
-          <div class="ill" aria-hidden="true">
-            <svg class="ill-svg ill-ae-install" viewBox="0 0 160 88" xmlns="http://www.w3.org/2000/svg">
-              <rect class="ill-tank" x="28" y="18" width="104" height="52" rx="8"/>
-              <rect class="ill-fill" x="40" y="30" width="36" height="12" rx="3"/>
-              <rect class="ill-fill" x="40" y="48" width="36" height="12" rx="3" opacity=".45"/>
-              <path class="ill-arrow" d="M110 32 v22 M100 44 l10 12 10-12"/>
-              <text class="ill-cap" x="58" y="78" text-anchor="middle">NSIS</text>
-            </svg>
-          </div>
-          <h3 data-i18n="seo.pkg.t">一个安装包，按需勾选</h3>
-          <p data-i18n="seo.pkg.d">同一个安装包里，桌面版与 AE 扩展可单独勾选、也可一并安装；安装范围支持所有用户或仅当前用户。</p>
-        </article>
-        <article class="about-card about-card--ill">
-          <div class="ill" aria-hidden="true">
-            <svg class="ill-svg ill-ae-core" viewBox="0 0 160 88" xmlns="http://www.w3.org/2000/svg">
-              <circle class="ill-dial" cx="80" cy="44" r="18"/>
-              <circle class="ill-fill" cx="80" cy="44" r="8"/>
-              <path class="ill-flow" d="M80 18 V28 M80 60 V70 M50 44 H60 M100 44 H110"/>
-              <rect class="ill-frame" x="28" y="34" width="16" height="20" rx="3"/>
-              <rect class="ill-frame" x="116" y="34" width="16" height="20" rx="3"/>
-              <text class="ill-cap" x="36" y="68" text-anchor="middle">CEP</text>
-              <text class="ill-cap" x="124" y="68" text-anchor="middle">Desk</text>
-            </svg>
-          </div>
-          <h3 data-i18n="seo.core.t">两端同一颗引擎</h3>
-          <p data-i18n="seo.core.d">桌面端与 AE 扩展共用同一套压缩 / 合成 / 降质算法，输出的大小规则与命名习惯完全一致。</p>
-        </article>
-    
-        <article class="why-card">
-          <div class="why-ill" aria-hidden="true">
-            <svg viewBox="0 0 64 40" class="why-svg"><rect x="6" y="8" width="52" height="24" rx="4" class="wy-box"/><path d="M13 16h12M13 22h20M13 28h9" class="wy-stroke"/><circle cx="48" cy="16" r="2.5" class="wy-fill"/><circle cx="48" cy="28" r="2.5" class="wy-fill"/></svg>
-          </div>
-          <p class="why-card__tag mono" data-i18n="seo.log.tag">日志</p>
-          <h3 data-i18n="seo.log.t">运行日志面板</h3>
-          <p data-i18n="seo.log.d">转换过程一条条摊开：解析帧序、编码器进度、每轮重压的体积与耗时，出问题能直接定位到某一次尝试。</p>
         </article>
 </div>
       </div>

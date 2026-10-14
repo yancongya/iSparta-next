@@ -3125,7 +3125,7 @@ html[data-theme="dark"] .cmp-tab.is-on { color: #0c0f0e; }
   }
 }
 /* ==========================================================================
-   00 · ABOUT — trae.ai「What You'll Unlock」式
+   00 · ABOUT — 产品定位与能力卡片
    左栏一个统一大标题（滚动时吸附），右栏一轨横向浏览全部能力。
    轨道卡片 = 原 ABOUT 六张能力卡 + 原 WHY NEXT 五条工程要点 + 一张运行日志面板卡。
    两类卡片原本各有各的类名与尺寸，这里在轨道内统一成同一套外观；
@@ -3192,7 +3192,7 @@ html[data-theme="dark"] .cmp-tab.is-on { color: #0c0f0e; }
   min-width: 0;
 }
 
-/* 轨道内统一卡片外观：宽度、内距、编号 */
+/* 轨道内统一卡片外观：内容层级参考产品能力卡片，轨道交互保持原样 */
 .rail__track {
   counter-reset: abcard;
 }
@@ -3202,20 +3202,24 @@ html[data-theme="dark"] .cmp-tab.is-on { color: #0c0f0e; }
   counter-increment: abcard;
   display: flex;
   flex-direction: column;
+  /* 保持原卡片宽度，滚轮横移的每段位移仍对应相同的视觉节奏。 */
   width: clamp(232px, 24vw, 288px);
   flex: 0 0 auto;
   margin: 0;
-  padding: 15px 15px 17px;
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  transition: border-color 0.2s ease, transform 0.2s ease;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  transition: transform 0.2s ease;
 }
 
 .rail__track > .about-card:hover,
 .rail__track > .why-card:hover {
   transform: translateY(-3px);
-  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+  box-shadow: none;
+}
+
+.rail__track > .about-card--ill:hover {
   box-shadow: none;
 }
 
@@ -3224,30 +3228,30 @@ html[data-theme="dark"] .cmp-tab.is-on { color: #0c0f0e; }
 .rail__track > .why-card::before {
   content: "[" counter(abcard, decimal-leading-zero) "]";
   display: block;
-  margin: 0 0 9px;
+  margin: 0 0 12px;
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   color: var(--accent);
 }
 
 .rail__track > .about-card h3,
 .rail__track > .why-card h3 {
-  margin: 0 0 10px;
-  font-size: 1rem;
+  margin: 0 0 16px;
+  font-size: clamp(1.08rem, 1.35vw, 1.32rem);
   font-weight: 700;
-  line-height: 1.35;
-  /* 两行封顶，标题长短不一才不会把卡片撑得参差 */
-  min-height: 2.7em;
+  line-height: 1.3;
+  min-height: 2.6em;
+  text-wrap: balance;
 }
 
 .rail__track > .about-card > p:not(.ill-cap),
 .rail__track > .why-card > p:not(.why-card__tag) {
-  margin: 10px 0 0;
+  margin: 14px 0 0;
   color: var(--muted);
-  font-size: 13px;
-  line-height: 1.6;
+  font-size: clamp(13px, 1vw, 14px);
+  line-height: 1.7;
 }
 
 /* 插图承载区：ABOUT 的宽幅插画（160×88）与 WHY 的小图标（64×40）
@@ -3260,11 +3264,28 @@ html[data-theme="dark"] .cmp-tab.is-on { color: #0c0f0e; }
   display: grid;
   place-items: center;
   width: auto;
-  height: 122px;
-  margin: 0 0 2px;
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--paper) 60%, var(--card));
+  height: auto;
+  aspect-ratio: 1.55;
+  min-height: 168px;
+  max-height: 252px;
+  margin: 0;
+  border: 1px solid color-mix(in srgb, var(--line) 82%, transparent);
+  border-radius: 12px;
+  background:
+    radial-gradient(ellipse at 50% 48%, color-mix(in srgb, var(--accent) 9%, transparent), transparent 58%),
+    repeating-linear-gradient(0deg, transparent 0 27px, color-mix(in srgb, var(--line) 22%, transparent) 28px),
+    repeating-linear-gradient(90deg, transparent 0 27px, color-mix(in srgb, var(--line) 22%, transparent) 28px),
+    color-mix(in srgb, var(--card) 74%, var(--line));
+  box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 4%, transparent);
   overflow: hidden;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.rail__track > .about-card:hover .ill,
+.rail__track > .why-card:hover .why-ill {
+  border-color: color-mix(in srgb, var(--accent) 52%, var(--line));
+  box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 5%, transparent),
+    0 10px 30px color-mix(in srgb, var(--accent) 8%, transparent);
 }
 
 .rail__track .ill-svg {
@@ -3274,13 +3295,19 @@ html[data-theme="dark"] .cmp-tab.is-on { color: #0c0f0e; }
 }
 
 .rail__track .why-svg {
-  width: auto;
-  height: 84px;
+  width: 100%;
+  height: 100%;
+  max-height: none;
 }
 
-/* 标题与说明排在插图之后（order 让插图提前） */
+/* TRAE 式阅读顺序：编号 → 标题 → 主视觉 → 说明 */
 .rail__track > .about-card h3,
 .rail__track > .why-card h3 {
+  order: 1;
+}
+
+.rail__track .ill,
+.rail__track .why-ill {
   order: 2;
 }
 
@@ -3292,6 +3319,13 @@ html[data-theme="dark"] .cmp-tab.is-on { color: #0c0f0e; }
 .rail__track .why-card__tag {
   order: 0;
   display: none;
+}
+
+@media (max-width: 480px) {
+  .rail__track .ill,
+  .rail__track .why-ill {
+    min-height: 152px;
+  }
 }
 
 @media (max-width: 900px) {
@@ -3638,30 +3672,47 @@ html[data-theme="dark"] .cmp-tab.is-on { color: #0c0f0e; }
 /* 窄屏回竖轨：横轨在手机上圆点间距太密、卡片也容易顶到屏幕外 */
 @media (max-width: 720px) {
   .timeline {
-    padding: 56px 0 56px 10px;
-    flex-direction: column;
-    justify-content: space-between;
+    display: grid;
+    gap: 12px;
+    padding: 0;
   }
 
   .timeline::before {
-    left: 14px;
+    left: 15px;
     right: auto;
-    top: 56px;
-    bottom: 56px;
+    top: 16px;
+    bottom: 16px;
     width: 2px;
     height: auto;
     background: linear-gradient(180deg, var(--line), var(--accent), var(--line));
   }
 
-  /* 竖轨下卡片改为「从右侧淡入并垂直居中于圆点」，仍然不参与布局 */
+  .tl-node {
+    display: grid;
+    grid-template-columns: var(--tl-dot) minmax(0, 1fr);
+    align-items: start;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  .tl-dot-btn {
+    margin-top: 13px;
+  }
+
+  /* 触屏没有 hover：窄屏改成时间点与内容卡片并排，默认完整展示。 */
   .tl-card,
   .tl-node:first-child .tl-card,
   .tl-node:last-child .tl-card {
-    top: 50%;
-    left: 34px;
-    right: auto;
-    width: calc(100vw - 96px);
-    transform: translate(-10px, -50%);
+    position: relative;
+    inset: auto;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    padding: 12px 14px;
+    transform: none;
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
   }
 
   .tl-node:hover .tl-card,
@@ -3673,7 +3724,12 @@ html[data-theme="dark"] .cmp-tab.is-on { color: #0c0f0e; }
   .tl-node:last-child:hover .tl-card,
   .tl-node:last-child:focus-within .tl-card,
   .tl-node:last-child.is-on .tl-card {
-    transform: translate(0, -50%);
+    transform: none;
+  }
+
+  .tl-card__title,
+  .tl-card__text {
+    overflow-wrap: anywhere;
   }
 }
 
@@ -4318,7 +4374,7 @@ html[data-theme="dark"] .cmp-tab.is-on { color: #0c0f0e; }
 }
 @media (max-width: 900px) {
   .ae-stage-grid { grid-template-columns: minmax(0, 1fr); gap: 22px; }
-  .ae-stage-grid > .ae-panel { width: 360px; min-height: 0; margin: 0 auto; }
+  .ae-stage-grid > .ae-panel { width: min(100%, 360px); max-width: 100%; min-height: 0; margin: 0 auto; }
   .ae-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: auto; }
   .ae-card { padding: 15px 14px; }
   .ae-card-ico { width: 34px; height: 34px; margin-bottom: 9px; }
@@ -4326,7 +4382,39 @@ html[data-theme="dark"] .cmp-tab.is-on { color: #0c0f0e; }
   .ae-card p { font-size: 0.8rem; }
 }
 @media (max-width: 620px) {
-  .ae-grid { grid-template-columns: minmax(0, 1fr); }
+  .ae-grid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-auto-rows: auto;
+    container-type: normal;
+  }
+  .ae-card {
+    container-type: normal;
+    min-height: 0;
+    padding: 14px;
+    justify-content: flex-start;
+    overflow: visible;
+  }
+  .ae-card-head {
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .ae-card-ico {
+    width: 32px;
+    height: 32px;
+    margin: 0;
+  }
+  .ae-card h3 {
+    font-size: 0.95rem;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
+  .ae-card p {
+    display: block;
+    overflow: visible;
+    font-size: 0.82rem;
+    line-height: 1.55;
+    -webkit-line-clamp: unset;
+  }
 }
 
 /* 左：CEP 面板 mockup —— 结构与配色都对齐真实应用
@@ -5269,6 +5357,139 @@ html[data-theme="dark"] .cep {
   fill: var(--muted);
   font-size: 8px;
 }
+.ill-ui-window {
+  fill: color-mix(in srgb, var(--card) 72%, var(--paper));
+  stroke: color-mix(in srgb, var(--line) 84%, var(--ink));
+  stroke-width: 0.8;
+}
+.ill-ui-header {
+  fill: color-mix(in srgb, var(--line) 48%, var(--card));
+}
+.ill-ui-window-dot {
+  fill: var(--muted);
+  opacity: 0.7;
+}
+.ill-svg .ill-ui-label,
+.ill-svg .ill-ui-time,
+.ill-svg .ill-ui-value,
+.why-svg .ill-ui-label {
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: 5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  fill: var(--muted);
+}
+.ill-svg .ill-ui-value {
+  fill: var(--accent);
+}
+.ill-svg .ill-ui-time {
+  font-size: 4px;
+  font-weight: 500;
+}
+.ill-ui-line {
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 1.35;
+  stroke-linecap: round;
+  opacity: 0.68;
+}
+.ill-ui-grid {
+  fill: none;
+  stroke: var(--line);
+  stroke-width: 0.65;
+}
+.ill-ui-check,
+.ill-ui-progress,
+.ill-ui-engine-core,
+.ill-ui-status,
+.ill-ui-platform {
+  fill: var(--accent);
+}
+.ill-ui-checkmark {
+  fill: none;
+  stroke: var(--paper);
+  stroke-width: 1.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.ill-ui-track,
+.ill-ui-side {
+  fill: color-mix(in srgb, var(--line) 56%, var(--card));
+}
+.ill-ui-action,
+.ill-ui-tile {
+  fill: color-mix(in srgb, var(--accent) 13%, var(--card));
+  stroke: color-mix(in srgb, var(--accent) 56%, var(--line));
+  stroke-width: 0.8;
+}
+.ill-ui-download-button {
+  fill: color-mix(in srgb, var(--accent) 20%, var(--card));
+  stroke: var(--accent);
+}
+.ill-ui-route {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-dasharray: 2 2;
+}
+.ill-ui-engine {
+  fill: var(--card);
+  stroke: var(--accent);
+  stroke-width: 1.4;
+}
+.ill-ui-chart {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.ill-ui-chart-dot {
+  fill: var(--accent);
+  stroke: var(--card);
+  stroke-width: 1;
+}
+.ill-ui-thumb {
+  fill: color-mix(in srgb, var(--accent) 22%, var(--card));
+  stroke: color-mix(in srgb, var(--accent) 45%, var(--line));
+  stroke-width: 0.7;
+}
+.ill-ui-folder {
+  fill: color-mix(in srgb, var(--accent) 12%, var(--card));
+  stroke: var(--accent);
+  stroke-width: 1;
+}
+.ill-ui-shield {
+  fill: color-mix(in srgb, var(--accent) 13%, var(--card));
+  stroke: var(--accent);
+  stroke-width: 1.5;
+}
+.ill-ui-shield-check,
+.ill-ui-code {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.ill-ui-lock {
+  fill: var(--card);
+  stroke: var(--accent);
+  stroke-width: 1;
+}
+.ill-ui-bridge {
+  fill: color-mix(in srgb, var(--accent) 10%, var(--card));
+  stroke: color-mix(in srgb, var(--accent) 68%, var(--line));
+  stroke-width: 1;
+}
+.ill-ui-download {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
 .ill-orb {
   fill: var(--accent);
   opacity: 0.55;
@@ -5298,6 +5519,54 @@ html[data-theme="dark"] .cep {
 }
 .ill-convert .ill-chip.c2 { animation-delay: 0.3s; }
 .ill-convert .ill-chip.c3 { animation-delay: 0.6s; }
+
+.ill-ae-install .ill-ui-progress,
+.ill-gate .ill-ui-progress,
+.ill-log .ill-ui-progress {
+  transform-box: fill-box;
+  transform-origin: left center;
+  animation: uiProgress 2.8s ease-in-out infinite alternate;
+}
+.ill-ae-core .ill-ui-route,
+.ill-batch .ill-ui-route,
+.ill-electron .ill-ui-route,
+.ill-ci .ill-ui-route,
+.ill-hot-update .ill-ui-route {
+  animation: illDash 1.8s linear infinite;
+}
+.ill-ae-core .ill-ui-engine-core,
+.ill-gate .ill-ui-chart-dot,
+.ill-log .ill-ui-status,
+.ill-interface .ill-ui-tile,
+.ill-electron .ill-ui-bridge,
+.ill-ci .ill-ui-platform,
+.ill-hot-update .ill-ui-bridge {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: illPulse 2.6s ease-in-out infinite;
+}
+.ill-log .ill-ui-status:nth-of-type(2) { animation-delay: 0.25s; }
+.ill-log .ill-ui-status:nth-of-type(3) { animation-delay: 0.5s; }
+.ill-security .ill-ui-shield {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: shieldGlow 3s ease-in-out infinite;
+}
+.ill-security .ill-ui-shield-check,
+.ill-hot-update .ill-ui-code {
+  stroke-dasharray: 84;
+  stroke-dashoffset: 84;
+  animation: chartDraw 3.4s ease-in-out infinite;
+}
+.ill-hot-update .ill-ui-code {
+  animation-delay: 0.45s;
+}
+.ill-dl .ill-ui-download {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: downloadNudge 1.8s ease-in-out infinite;
+}
+.ill-dl .ill-ui-download:nth-of-type(2) { animation-delay: 0.45s; }
 
 .ill-gate .ill-fill {
   transform-box: fill-box;
@@ -5360,6 +5629,23 @@ html[data-theme="dark"] .cep {
   from { transform: translateY(0); }
   to   { transform: translateY(-6px); }
 }
+@keyframes uiProgress {
+  from { transform: scaleX(0.68); }
+  to   { transform: scaleX(1); }
+}
+@keyframes chartDraw {
+  0% { stroke-dashoffset: 84; opacity: 0.35; }
+  55%, 75% { stroke-dashoffset: 0; opacity: 1; }
+  100% { stroke-dashoffset: -84; opacity: 0.65; }
+}
+@keyframes shieldGlow {
+  0%, 100% { opacity: 0.72; transform: scale(0.98); }
+  50% { opacity: 1; transform: scale(1.02); }
+}
+@keyframes downloadNudge {
+  0%, 100% { transform: translateY(-1px); opacity: 0.55; }
+  55% { transform: translateY(2px); opacity: 1; }
+}
 
 /* why 卡片：小图标 + hover 点亮 */
 .why-ill {
@@ -5420,6 +5706,19 @@ html[data-theme="dark"] .cep {
   .ill-batch .ill-out,
   .ill-dl .ill-arrow,
   .ill-dl .ill-orb,
+  .ill-ui-progress,
+  .ill-ui-route,
+  .ill-ui-engine-core,
+  .ill-ui-chart,
+  .ill-ui-chart-dot,
+  .ill-ui-status,
+  .ill-ui-tile,
+  .ill-ui-shield,
+  .ill-ui-shield-check,
+  .ill-ui-bridge,
+  .ill-ui-code,
+  .ill-ui-download,
+  .ill-ui-platform,
   .why-card:hover .why-ill {
     animation: none;
   }
