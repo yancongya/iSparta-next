@@ -169,6 +169,19 @@ function localeOf (opts) {
   return (opts && opts.locale) || {}
 }
 
+/** 弹窗文案（三语）按 JSX 需要的键收拢，避免把整个 locale 对象传过去 */
+function seqModeLocale (opts) {
+  const loc = localeOf(opts)
+  return {
+    title: loc.seqModeTitle || '',
+    body: loc.seqModeBody || '',
+    bodyIncomplete: loc.seqModeBodyIncomplete || '',
+    rerender: loc.seqModeRerender || '',
+    reuse: loc.seqModeReuse || '',
+    cancel: loc.seqModeCancel || ''
+  }
+}
+
 /** 渲染进度 → store.editProcess（或 onProgress）；失败 schedule:-1 与 action.js 一致 */
 function emitRenderProgress (item, opts, payload) {
   const loc = localeOf(opts)
@@ -221,6 +234,64 @@ function parseRenderEventData (ev) {
 }
 
 /**
+ * 预筛：输出目录内「属于本合成」的 PNG 帧数（同步、只读）。
+ * 口径与 JSX ispartaCountFrames / ispartaCollectPngs 对齐；宁多勿漏——
+ * 只用于判断「是否值得弹一次窗」，真正判定仍以 JSX 为准。
+ */
+function countExistingFrames (outDir, name) {
+  try {
+    if (!fs || typeof fs.readdirSync !== 'function') { return 0 }
+    const safeName = String(name || '').replace(/["' /\\:*?<>|]/g, '_')
+    const names = fs.readdirSync(outDir)
+    let n = 0
+    for (let i = 0; i < names.length; i++) {
+      const f = String(names[i] || '')
+      const isPng = /\.png$/i.test(f) || /^\S+\.png\d+$/i.test(f)
+      if (!isPng) { continue }
+      if (/^frame/i.test(f)) { n++; continue }
+      if (safeName && f.indexOf(safeName + '_') === 0) { n++; continue }
+      if (safeName && f.indexOf(safeName + '.') === 0) { n++; }
+    }
+    return n
+  } catch (e) { return 0 }
+}
+
+/**
+ * 「复用现有帧」路径：不清理、不渲染，直接收集输出目录现有 PNG 填 fileList。
+ * 进度按 done 收尾（复用无渲染过程，故不发 start/轮询）。
+ */
+function reuseExistingFrames (item, opts, outDir, name) {
+  const basic = (item && item.basic) || {}
+  const folder = outDir
+  return Promise.resolve()
+    .then(() => evalJson('ispartaListPngs(' + JSON.stringify(folder) + ')'))
+    .catch(() => null)
+    .then((listRes) => {
+      let files = []
+      if (listRes && listRes.ok && listRes.files && listRes.files.length) {
+        files = listRes.files.slice()
+      } else if (fs && typeof fs.readdirSync === 'function') {
+        try {
+          files = fs.readdirSync(folder)
+            .filter((n) => /\.png$/i.test(n) || /^\S+\.png\d+$/i.test(n))
+            .map((n) => folder + (String(folder).slice(-1) === '/' ? '' : '/') + n)
+        } catch (e) { files = [] }
+      }
+      if (!files.length) {
+        throw new Error('no PNG frames to reuse for comp: ' + name)
+      }
+      basic.fileList = files
+      if (!basic.sourceFile) { basic.sourceFile = files[0] }
+      emitRenderProgress(item, opts, {
+        phase: 'done',
+        done: files.length,
+        total: files.length
+      })
+      return item
+    })
+}
+
+/**
  * 转换前渲 PNG 序列并填 fileList（fileNameList）。
  * 路径变量 {srcName} 始终取合成名；fileList 只作输入帧，不改源目录。
  * opts: { store, locale, onProgress } — 绑定 jsx 渲染进度事件，结束/失败解绑。
@@ -254,7 +325,40 @@ export function prepareCompSequence (item, opts) {
     }
   } catch (e) { /* ensure 失败交由 jsx 报错 */ }
 
+  const location = outDir + (String(outDir).slice(-1) === '/' ? '' : (path.sep || '/'))
+  const expectedFrames = Number(basic.frameCount) || 0
+
+  // —— 序列帧模式判定（渲前）：输出目录已有本合成帧时，弹 JSX ScriptUI 三选 ——
+  // 面板侧只做同步预筛（零延迟，宁多勿漏）；真正判定 + 弹窗在 JSX ispartaAskSequenceMode
+  // （与 ispartaCollectPngs 同口径，无帧时立即返回 rerender、不弹窗）。
+  // rerender → 落回下方原流程；reuse → 跳过清理与渲染，直接用现有帧；cancel → 中止本次任务。
+  if (!(opts && opts.__skipSeqAsk) && countExistingFrames(outDir, name) > 0) {
+    const askScript = 'ispartaAskSequenceMode(' + JSON.stringify({
+      location: outDir,
+      baseName: name,
+      compName: name,
+      expected: expectedFrames,
+      loc: seqModeLocale(opts)
+    }) + ')'
+    return evalJson(askScript)
+      .catch(function () { return null })
+      .then((ask) => {
+        // JSX 询问失败/无结果：按原行为重渲，绝不因询问环节阻断导出
+        const mode = (ask && ask.ok && ask.mode) || 'rerender'
+        if (mode === 'cancel') {
+          const err = new Error(localeOf(opts).seqModeCancel || 'cancelled')
+          err.cancelled = true
+          throw err
+        }
+        if (mode === 'reuse') {
+          return reuseExistingFrames(item, opts, outDir, name)
+        }
+        return prepareCompSequence(item, Object.assign({}, opts, { __skipSeqAsk: true }))
+      })
+  }
+
   // 覆盖策略：渲前清掉 frame* + 合成名_*，避免新旧序列帧混用（aerender / renderQueue 一致）
+  // 仅「重新渲染」路径执行；reuse 已在上方提前返回，不会走到这里删帧
   try {
     if (fs && typeof fs.readdirSync === 'function' && typeof fs.remove === 'function') {
       const safeName = String(name || '').replace(/["' /\\:*?<>|]/g, '_')
@@ -269,8 +373,6 @@ export function prepareCompSequence (item, opts) {
       }
     }
   } catch (eClean) { /* ignore */ }
-  const location = outDir + (String(outDir).slice(-1) === '/' ? '' : (path.sep || '/'))
-  const expectedFrames = Number(basic.frameCount) || 0
 
   // 同一输出目录只允许一个导出在跑：防双任务同时渲出「闪闪」和「闪闪 」两套帧
   const exportKey = String(outDir).toLowerCase()

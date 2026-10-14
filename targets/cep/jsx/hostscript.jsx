@@ -613,6 +613,104 @@ function ispartaCollectPngs (folderPath, baseName) {
 }
 
 /**
+ * 只读统计目录内「属于本合成」的序列帧数（不重命名、无副作用）。
+ * 口径与 ispartaCollectPngs 对齐：*.png 且（frame 前缀 或「合成名_」/「合成名.」前缀）。
+ */
+function ispartaCountFrames (folder, baseName) {
+    var n = 0;
+    if (!folder || !folder.exists) { return 0; }
+    var files = folder.getFiles();
+    for (var i = 0; i < files.length; i++) {
+        var f = files[i];
+        if (!(f instanceof File)) { continue; }
+        var name = String(f.name || '');
+        var isPng = /\.png$/i.test(name) || /^\S+\.png\d+$/i.test(name);
+        if (!isPng) { continue; }
+        if (/^frame/i.test(name)) { n++; continue; }
+        if (baseName && name.indexOf(baseName + '_') === 0) { n++; continue; }
+        if (baseName && name.indexOf(baseName + '.') === 0) { n++; }
+    }
+    return n;
+}
+
+/** 简易 {key} 占位替换（ES3 无模板字符串；key 为受控字面量，无注入风险） */
+function ispartaFillTemplate (tpl, map) {
+    var out = String(tpl === null || tpl === undefined ? '' : tpl);
+    for (var k in map) {
+        if (map.hasOwnProperty(k)) {
+            out = out.split('{' + k + '}').join(String(map[k]));
+        }
+    }
+    return out;
+}
+
+/**
+ * 序列帧模式询问（ScriptUI 模态）：渲前检测输出目录是否已有本合成帧。
+ * 无帧 → 直接返回 mode:'rerender'（不弹窗）；有帧 → 弹「重新渲染 / 复用现有帧 / 取消」。
+ * payload: { location, baseName, compName, expected,
+ *            loc:{ title, body, bodyIncomplete, rerender, reuse, cancel } }
+ * 返回 JSON：{ ok, mode:'rerender'|'reuse'|'cancel', hasExisting, existing, expected }
+ * 模态窗口阻塞宿主 → 天然挡住后续渲染流程；回车=重新渲染，ESC/关窗=取消。
+ */
+function ispartaAskSequenceMode (payload) {
+    var p = payload;
+    if (typeof p === 'string') {
+        try { p = eval('(' + p + ')'); } catch (eP) { p = null; }
+    }
+    if (!p) { return ispartaErr('askSequenceMode: bad payload'); }
+    var loc = p.loc || {};
+    var compName = String(p.compName || p.baseName || '');
+    var baseName = ispartaFilterName(ispartaTrimPath(String(p.baseName || p.compName || '')));
+    var expected = Number(p.expected) || 0;
+
+    var existing = 0;
+    try {
+        var folder = new Folder(ispartaTrimPath(ispartaDecodePath(String(p.location || ''))));
+        existing = ispartaCountFrames(folder, baseName);
+    } catch (eC) { existing = 0; }
+
+    // 无已有帧：无需询问，直接走渲染（面板无需分支）
+    if (existing < 1) {
+        return ispartaOk({ mode: 'rerender', hasExisting: false, existing: 0, expected: expected });
+    }
+
+    var bodyTpl = (existing < expected && loc.bodyIncomplete) ? loc.bodyIncomplete : (loc.body || '');
+    var body = ispartaFillTemplate(bodyTpl, {
+        comp: compName,
+        existing: existing,
+        expected: expected
+    });
+
+    var mode = 'cancel';
+    try {
+        var dlg = new Window('dialog', String(loc.title || 'iSparta'));
+        dlg.orientation = 'column';
+        dlg.alignChildren = 'fill';
+        var msg = dlg.add('statictext', undefined, body, { multiline: true });
+        try { msg.preferredSize.width = 380; } catch (eW) { /* 某些版本不支持 preferredSize */ }
+        var row = dlg.add('group');
+        row.alignment = 'right';
+        var bRe = row.add('button', undefined, String(loc.rerender || 'Re-render'));
+        var bUs = row.add('button', undefined, String(loc.reuse || 'Reuse existing'));
+        var bCa = row.add('button', undefined, String(loc.cancel || 'Cancel'));
+        // 回车=重新渲染；ESC / 关窗=取消
+        try { dlg.defaultElement = bRe; } catch (eD) { /* ignore */ }
+        try { dlg.cancelElement = bCa; } catch (eCx) { /* ignore */ }
+        var hit = dlg.show();
+        if (hit === bRe) {
+            mode = 'rerender';
+        } else if (hit === bUs) {
+            mode = 'reuse';
+        } else {
+            mode = 'cancel';
+        }
+    } catch (e) {
+        return ispartaErr(e);
+    }
+    return ispartaOk({ mode: mode, hasExisting: true, existing: existing, expected: expected });
+}
+
+/**
  * 选 PNG 序列输出模板。
  * 对齐 helper.jsx：优先最后一个模板（多为 _HIDDEN X-Factor 16 Premul），
  * 再按名称找 PNG/X-Factor/_HIDDEN，避免误用「无损」写出 mov/avi。
