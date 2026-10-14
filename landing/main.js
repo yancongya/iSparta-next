@@ -2143,8 +2143,9 @@
    *  · 文字本身不能直接进 WebGL（WebGL 画不了 DOM），所以先把字标按 computed style
    *    手工描到一张离屏 2D 画布上（`fillStyle` 透明 + `strokeText`，等价于 `-webkit-text-stroke`），
    *    再当作纹理喂给着色器。字号/行高/字距/对齐全部读 computed，保证和 DOM 版式一致。
-   *  · canvas 只覆盖 .foot-giant 的盒子，字形溢出（line-height 0.82 故意压扁）由
-   *    .foot 的 overflow:hidden 兜住；栅格化时四周留 pad，避免压扁导致的上下截断被切掉。
+   *  · canvas 的 backing bitmap 按 DPR 放大，CSS 尺寸仍使用布局像素；四周留 pad，避免
+   *    压扁行高导致的上下截断。若不显式设置 CSS 宽高，Retina 屏会把 backing 像素当布局宽度，
+   *    画布会被拉宽，粒子字标因此偏向一侧。
    *  · 无 WebGL / 减少动效 / 上下文丢失：wrap 不加 .is-fx，DOM 字标照常显示（安全降级）。
    */
   function setupFootGiant() {
@@ -2370,11 +2371,12 @@
     function sync() {
       var fs = parseFloat(window.getComputedStyle(text).fontSize) || 100;
       pad = Math.round(fs * 0.3);
-      // 让覆盖层连 pad 一起罩住，否则压扁行高溢出的字形会被 canvas 边界切掉
+      // 让覆盖层连 pad 一起罩住，否则压扁行高溢出的字形会被 canvas 边界切掉。
+      // canvas.width/height 是 DPR 放大后的 backing bitmap，不能用 inset 推导 CSS 尺寸。
       canvas.style.top = -pad + "px";
-      canvas.style.bottom = -pad + "px";
       canvas.style.left = -pad + "px";
-      canvas.style.right = -pad + "px";
+      canvas.style.right = "auto";
+      canvas.style.bottom = "auto";
 
       var r = rasterize();
       if (!r) return false;
@@ -2387,6 +2389,8 @@
       }
       size.w = r.boxW + pad * 2;
       size.h = r.boxH + pad * 2;
+      canvas.style.width = size.w + "px";
+      canvas.style.height = size.h + "px";
 
       gl.bindTexture(gl.TEXTURE_2D, tex);
       gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);

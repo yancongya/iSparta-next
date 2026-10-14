@@ -1940,15 +1940,19 @@ html[data-theme="dark"] .dl-badge {
 /* 超大描边字标：贴底裁切，纯装饰 */
 .foot-giant-wrap {
   position: relative;
+  width: min(100%, var(--max));
+  margin-inline: auto;
 }
 
 .foot-giant {
+  width: 100%;
   margin: 0;
-  font-size: clamp(4rem, 17vw, 15rem);
+  font-size: clamp(2.25rem, 17vw, 15rem);
   font-weight: 800;
   line-height: 0.82;
   letter-spacing: 0.02em;
   text-align: center;
+  white-space: nowrap;
   color: transparent;
   -webkit-text-stroke: 1px color-mix(in srgb, #eef3ec 22%, transparent);
   user-select: none;
@@ -1957,13 +1961,13 @@ html[data-theme="dark"] .dl-badge {
 
 /* 尘埃化覆盖层：默认透明（= 特效未生效，字标本体可见）；
    setupFootGiant 拿到 WebGL 上下文并成功栅格化后才给 wrap 加 .is-fx 接管。
-   尺寸不写 width/height —— 靠 inset 定位，JS 会把四边各自外扩 pad */
+   JS 按布局像素设置 width/height，并把四边向外扩 pad；DPR 只用于 backing bitmap。 */
 .foot-giant-fx {
   position: absolute;
   top: 0;
-  right: 0;
-  bottom: 0;
   left: 0;
+  width: 100%;
+  height: 100%;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.45s ease;
