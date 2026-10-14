@@ -284,13 +284,6 @@ module.exports = {
     "obPrev":"上一步",
     "obNext":"下一步",
     "obDone":"开始使用",
-    // 引导第0 步「正在准备」（启动进度，见 docs/PLAN-GUIDE-PAGES.md §5.9）
-    "obBootTitle":"正在准备",
-    "obBootSub":"首次启动要初始化环境与扩展，稍等一下就好",
-    "obBootStageEnv":"读取本地配置",
-    "obBootStageTheme":"应用主题与语言",
-    "obBootStageCep":"检查 AE 扩展",
-    "obBootStageReady":"就绪",
     // 引导独立窗的窗口按钮（无边框窗口自绘，悬浮提示与无障碍标签共用）
     "obWinMinimize":"最小化",
     "obWinMaximize":"最大化",

@@ -1,9 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1120" height="700" viewBox="0 0 1120 700" role="img" aria-labelledby="title desc">
-<!-- [INPUT]: Both channels same package (desktop auto-update / CEP panel hot-update), machine-wide UAC, pre-install self-check purges both scopes, runtime single copy, panel loading feedback. -->
+<!-- [INPUT]: Both channels same package (desktop auto-update / CEP panel hot-update), machine-wide UAC, pre-install self-check purges both scopes, runtime single copy, CEP update Dock feedback. -->
 <!-- [OUTPUT]: Geek pixel-style install/update flow map for iSparta-next README (English). -->
 <!-- [POS]: Self-contained diagram; edges map to real electron-updater / launchInstaller / installer.nsh / cepSync paths. -->
 <title id="title">iSparta-next install &amp; update flow</title>
-<desc id="desc">Desktop auto-update and CEP panel hot-update both download the same GitHub Release NSIS package. The installer is fixed machine-wide (perMachine=true): pre-install self-check purges stale copies in both user %APPDATA% and system Common Files, then prompts UAC and writes to Common Files, leaving exactly one CEP copy machine-wide. At runtime the desktop startup self-check keeps one copy per scope, and the panel loading page is the only progress feedback during the silent install.</desc>
+<desc id="desc">Desktop auto-update and CEP panel hot-update both download the same GitHub Release NSIS package. The installer is fixed machine-wide (perMachine=true): pre-install self-check purges stale copies in both user %APPDATA% and system Common Files, then prompts UAC and writes to Common Files, leaving exactly one CEP copy machine-wide. The CEP update Dock shows silent-install status and prompts an AE restart after success. Desktop relaunch goes directly to the existing onboarding guide when first-install or upgrade state requires it.</desc>
 <defs>
   <pattern id="grid" width="16" height="16" patternUnits="userSpaceOnUse">
     <rect width="2" height="2" fill="#222a2c"/>
@@ -90,13 +90,13 @@
   <text x="126" y="644" fill="#b4c0b8" font-size="12">keep one copy per scope, never reseed other</text>
 </g>
 
-<!-- ========== Runtime guarantee 2: panel loading feedback ========== -->
+<!-- ========== Runtime guarantee 2: CEP update Dock feedback ========== -->
 <path d="M628 560H1002V568H1010V644H1002V652H628V644H620V568H628Z" fill="#1c2428" stroke="#779fc6" stroke-width="2" shape-rendering="crispEdges"/>
 <path d="M636 576h8v8h-8zm16 0h8v8h-8zm16 0h8v8h-8z" fill="#779fc6" shape-rendering="crispEdges"/>
 <g font-family="ui-monospace,SFMono-Regular,Consolas,monospace">
-  <text x="636" y="598" fill="#fff4df" font-size="16" font-weight="bold">Panel loading page (sole feedback)</text>
-  <text x="636" y="624" fill="#b4c0b8" font-size="12">silent install has no native UI → 'Installing…'</text>
-  <text x="636" y="644" fill="#b4c0b8" font-size="12">Onboarding guide replays when done</text>
+  <text x="636" y="598" fill="#fff4df" font-size="16" font-weight="bold">CEP update Dock status</text>
+  <text x="636" y="624" fill="#b4c0b8" font-size="12">silent install → in-panel 'Installing…' feedback</text>
+  <text x="636" y="644" fill="#b4c0b8" font-size="12">success → restart AE; desktop relaunch opens guide</text>
 </g>
 
 <!-- Footer -->

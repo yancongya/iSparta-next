@@ -1,9 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1120" height="700" viewBox="0 0 1120 700" role="img" aria-labelledby="title desc">
-<!-- [INPUT]: 双通道同包（桌面自动更 / CEP 面板热更）、系统级 UAC、安装前自检清双作用域、运行时单副本、面板 loading 反馈。 -->
+<!-- [INPUT]: 双通道同包（桌面自动更 / CEP 面板热更）、系统级 UAC、安装前自检清双作用域、运行时单副本、CEP 更新 Dock 反馈。 -->
 <!-- [OUTPUT]: iSparta-next 极客像素风安装/更新流程图（中文），供 README 使用。 -->
 <!-- [POS]: 自包含工程图；流向对应真实 electron-updater / launchInstaller / installer.nsh / cepSync 链路。 -->
 <title id="title">iSparta-next 安装与更新流程</title>
-<desc id="desc">桌面自动更新与 CEP 面板热更都下载同一个 GitHub Release NSIS 包。安装器固定系统级（perMachine=true）：安装前自检清理用户级与 Common Files 双作用域冗余副本，弹 UAC 授权后落盘 Common Files，全机只留一份 CEP。运行时桌面启动自检按作用域只维护单份，静默安装期间面板 loading 页是唯一进度反馈。</desc>
+<desc id="desc">桌面自动更新与 CEP 面板热更都下载同一个 GitHub Release NSIS 包。安装器固定系统级（perMachine=true）：安装前自检清理用户级与 Common Files 双作用域冗余副本，弹 UAC 授权后落盘 Common Files，全机只留一份 CEP。CEP 更新 Dock 显示静默安装状态，成功后提示重启 AE；桌面重启后按版本状态直接打开现有指导页或工作台。</desc>
 <defs>
   <pattern id="grid" width="16" height="16" patternUnits="userSpaceOnUse">
     <rect width="2" height="2" fill="#222a2c"/>
@@ -90,13 +90,13 @@
   <text x="126" y="644" fill="#b4c0b8" font-size="12">按作用域只维护一份，绝不重建另一份</text>
 </g>
 
-<!-- ========== 运行时保证 2：面板 loading 反馈 ========== -->
+<!-- ========== 运行时保证 2：CEP 更新 Dock 反馈 ========== -->
 <path d="M628 560H1002V568H1010V644H1002V652H628V644H620V568H628Z" fill="#1c2428" stroke="#779fc6" stroke-width="2" shape-rendering="crispEdges"/>
 <path d="M636 576h8v8h-8zm16 0h8v8h-8zm16 0h8v8h-8z" fill="#779fc6" shape-rendering="crispEdges"/>
 <g font-family="ui-monospace,SFMono-Regular,Consolas,'PingFang SC','Microsoft YaHei',monospace">
-  <text x="636" y="598" fill="#fff4df" font-size="16" font-weight="bold">面板 loading 页（唯一反馈）</text>
-  <text x="636" y="624" fill="#b4c0b8" font-size="12">静默安装无原生界面 → 显示『正在安装…』</text>
-  <text x="636" y="644" fill="#b4c0b8" font-size="12">装完 Onboarding 指导页复播</text>
+  <text x="636" y="598" fill="#fff4df" font-size="16" font-weight="bold">CEP 更新 Dock 状态</text>
+  <text x="636" y="624" fill="#b4c0b8" font-size="12">静默安装 → 面板内显示『正在安装…』进度</text>
+  <text x="636" y="644" fill="#b4c0b8" font-size="12">成功后重启 AE；桌面启动直接进入指导页</text>
 </g>
 
 <!-- 底部说明 -->

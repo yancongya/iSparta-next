@@ -283,13 +283,6 @@ module.exports = {
     "obPrev":"上一步",
     "obNext":"下一步",
     "obDone":"開始使用",
-    // 導引第 0 步「正在準備」（啟動進度）
-    "obBootTitle":"正在準備",
-    "obBootSub":"首次啟動要初始化環境與擴充功能，稍等一下就好",
-    "obBootStageEnv":"讀取本機設定",
-    "obBootStageTheme":"套用主題與語言",
-    "obBootStageCep":"檢查 AE 擴充功能",
-    "obBootStageReady":"就緒",
     //  引導獨立視窗的視窗按鈕（無邊框視窗自繪）
     "obWinMinimize":"最小化",
     "obWinMaximize":"最大化",

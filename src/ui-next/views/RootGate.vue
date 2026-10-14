@@ -32,10 +32,8 @@
  *   它走专属路由 `#/onboarding`（见 router.js），直接挂 Onboarding 组件；
  *   主进程 openOnboardingWindow() 负责 loadURL 带上这个 hash。
  *
- *启动进度页（BootSplash）是**独立无边框小窗 + 独立路由 `#/boot`**，
- *   由主进程在 app ready 时开、渲染层发boot:done 后关闭，不在这里分流。
- *   （它处于「storage 尚未就绪」的阶段，而本组件的 shouldAutoOpen 恰恰依赖
- *   storage就绪，故不能把启动页挂在 RootGate 下。）
+ * 首启与升级后的引导判定在这里完成；桌面向主进程报告首帧就绪，
+ * 主进程等待该信号后再显示工作台或打开指导页，避免先闪现主界面。
  */
 import Home from './Home.vue'
 import Onboarding from '../onboarding/Onboarding.vue'
@@ -50,13 +48,21 @@ export default {
     isStandalone () { return hostAdapter.kind === 'electron' },
     // state 是 Vue.observable 单例，引导内部的 close/finish 会直接驱动这里
     overlay () { return !this.isStandalone && state.open },
-    // CEP 升级复播：用轻量「更新说明」单屏替代完整 7 步引导，避免装完一关 loading 就弹长引导
+    // CEP 升级复播：用轻量「更新说明」单屏替代完整 7 步引导
     showWhatsNew () { return !this.isStandalone && state.open && state.mode === 'upgrade' }
   },
   created () {
     // 挂载前判定：main.js 已完成 ThemeManager.init() / syncLocaleFromStorage()，
     // 此刻 storage 路径已绑定，读得到真实标记。
     if (shouldAutoOpen()) { openOnboarding() }
+    if (this.isStandalone) {
+      try {
+        const api = typeof window !== 'undefined' && window.ispartaAPI
+        if (api && api.ipc && typeof api.ipc.send === 'function') {
+          api.ipc.send('app:ready')
+        }
+      } catch (e) { /* 主进程保留启动兜底，不阻断工作台 */ }
+    }
   }
 }
 </script>

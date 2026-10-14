@@ -319,7 +319,7 @@ iSparta-next/
 | [`docs/ACCEPTANCE-RUNBOOK.md`](docs/ACCEPTANCE-RUNBOOK.md) | 手册 | 双端真机验收步骤 |
 | [`docs/PLAN-DUAL-TARGET.md`](docs/PLAN-DUAL-TARGET.md) | 进行中（实机验收） | 双端实现记录；跨平台 AE / 安装验收状态见验收手册 |
 | [`AGENTS.md`](AGENTS.md) | 约定 | 开发 / commit / release 约定（人与 Agent 共用） |
-| [`docs/PLAN-GUIDE-PAGES.md`](docs/PLAN-GUIDE-PAGES.md) | 归档 | 引导页规格依据（已上线；源码注释按 §锚点引用，勿删） |
+| [`docs/PLAN-GUIDE-PAGES.md`](docs/PLAN-GUIDE-PAGES.md) | 归档 | 首启引导历史规格；原 BootSplash 启动页已取消 |
 | [`docs/CEP-ALIGNMENT.md`](docs/CEP-ALIGNMENT.md) | 归档 | 桌面 ↔ AE 扩展对齐清单（历史差距分析） |
 | [`docs/EXEC-WAVE2.md`](docs/EXEC-WAVE2.md) | 归档 | Wave 2 多 Agent 执行简报（已完成） |
 | [`docs/ACCEPTANCE-DUAL-TARGET.md`](docs/ACCEPTANCE-DUAL-TARGET.md) | 归档 | 双端一体验收清单（勾选记录） |

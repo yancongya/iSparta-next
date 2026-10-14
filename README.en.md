@@ -271,7 +271,7 @@ Double-click friendly wrappers under `scripts/dev/`: `run-all-dev`, `run-dev-cep
 | [`docs/ACCEPTANCE-RUNBOOK.md`](docs/ACCEPTANCE-RUNBOOK.md) | Guide | Dual-target on-device acceptance steps |
 | [`docs/PLAN-DUAL-TARGET.md`](docs/PLAN-DUAL-TARGET.md) | In progress (host acceptance) | Dual-target implementation record; cross-platform AE/install acceptance is tracked in the runbook |
 | [`AGENTS.md`](AGENTS.md) | Convention | Dev / commit / release conventions (humans and agents) |
-| [`docs/PLAN-GUIDE-PAGES.md`](docs/PLAN-GUIDE-PAGES.md) | Archived | Onboarding page spec (shipped; source comments anchor to its §sections — do not delete) |
+| [`docs/PLAN-GUIDE-PAGES.md`](docs/PLAN-GUIDE-PAGES.md) | Archived | Historical onboarding spec; the BootSplash startup page was retired |
 | [`docs/CEP-ALIGNMENT.md`](docs/CEP-ALIGNMENT.md) | Archived | Desktop ↔ AE extension parity checklist (historical gap analysis) |
 | [`docs/EXEC-WAVE2.md`](docs/EXEC-WAVE2.md) | Archived | Wave 2 multi-agent execution brief (done) |
 | [`docs/ACCEPTANCE-DUAL-TARGET.md`](docs/ACCEPTANCE-DUAL-TARGET.md) | Archived | Dual-target acceptance checklist (tick-off record) |

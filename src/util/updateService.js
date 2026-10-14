@@ -501,7 +501,7 @@ export async function restartToUpdate () {
     var title = (i18nMod && i18nMod.t('updateInstallingApp')) || 'iSparta-next'
     var body = (i18nMod && i18nMod.t('updateInstallingBody')) || '正在安装更新…'
     // delayMs 是留给用户看到 installing 这一屏的时间；安装完成后由 `--force-run`
-    // 自动启动，新进程交给启动进度窗 BootSplash，视觉上是一段连续的 loading。
+    // 自动启动，新进程会根据版本状态直接进入现有指导页或工作台。
     var res = await ipc.invoke('updater:quitAndInstall', {
       title: title,
       body: body,
