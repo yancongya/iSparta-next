@@ -475,7 +475,17 @@
     // Apple Silicon 无法从 UA 可靠区分（Chrome 一律报 Macintosh），
     // 故 mac 一律推荐 arm64 包（Rosetta 能跑 x64，反之不行）。
     var navKey = isWin ? "win" : isMac ? "mac" : /Linux|X11/i.test(ua) ? "linux" : "";
-    var tileKey = isWin ? "win" : isMac ? "macArm" : /Linux|X11/i.test(ua) ? "linux" : "";
+    var tileKey = currentDownloadKey();
+
+    // Hero 主按钮也跟随当前设备。静态 HTML 的 Windows href 只作无 JS 时的兜底；
+    // Mac 优先 arm64（Apple Silicon 原生，Intel 机也可通过 Rosetta 运行），Linux 用 AppImage。
+    var heroCta = document.querySelector(".hero-cta");
+    var heroAsset = {
+      win: "win-x64.exe",
+      macArm: "mac-arm64.pkg",
+      linux: "linux-x64.AppImage"
+    }[tileKey];
+    if (heroCta && heroAsset) { heroCta.href = BRAND.latestDownload(heroAsset); }
 
     var label = tRel("dl.thisDevice", "当前设备");
 
@@ -505,6 +515,15 @@
 
     if (tileKey) { mark('.dl-tile[data-dl="' + tileKey + '"]', "tile"); }
     if (navKey) { mark('.nav-dl__item[data-dl="' + navKey + '"]', "nav"); }
+  }
+
+  function currentDownloadKey() {
+    var ua = navigator.userAgent || "";
+    if (/Windows/i.test(ua)) return "win";
+    // Mac UA 不区分 Intel 与 Apple Silicon；arm64 是兼容性更好的默认包。
+    if (/Mac OS X|Macintosh/i.test(ua)) return "macArm";
+    if (/Linux|X11/i.test(ua)) return "linux";
+    return "";
   }
 
   function setupScroll() {
@@ -1292,7 +1311,8 @@
     });
     var hero = document.querySelector(".hero-actions a.btn-primary");
     if (hero && (map.win || map.linux || map.macArm)) {
-      hero.href = map.win || map.macArm || map.linux || hero.href;
+      var preferredKey = currentDownloadKey();
+      hero.href = map[preferredKey] || map.win || map.macArm || map.linux || hero.href;
     }
   }
 
