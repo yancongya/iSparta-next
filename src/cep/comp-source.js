@@ -75,7 +75,7 @@ function fillMissingGlobalSizeAndQuality (item) {
     item.options = item.options || {}
     item.basic = item.basic || {}
     const snapshot = item.basic.globalSettingsSnapshot || (item.basic.globalSettingsSnapshot = {})
-    ;['sizeLimit', 'quality'].forEach(function (key) {
+    ;['sizeLimit', 'quality', 'frameRemap'].forEach(function (key) {
       if (!opts[key]) return
       const current = item.options[key]
       const previousDefault = snapshot[key]
@@ -135,7 +135,8 @@ export function toCompItem (comp, optionsOverride) {
   temp.options = _.cloneDeep(globalSetting.options || {})
   const globalSettingsSnapshot = {
     sizeLimit: _.cloneDeep(temp.options.sizeLimit),
-    quality: _.cloneDeep(temp.options.quality)
+    quality: _.cloneDeep(temp.options.quality),
+    frameRemap: _.cloneDeep(temp.options.frameRemap)
   }
   if (optionsOverride && typeof optionsOverride === 'object') {
     // 只覆盖传入键，避免把整个 options 引用共享出去

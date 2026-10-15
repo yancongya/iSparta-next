@@ -90,9 +90,11 @@
 
     <!-- 内容区：步骤切换（裁剪，避免动画期间溢出） -->
     <div class="ob-screen">
-      <transition :name="dir === 'prev' ? 'ob-step-prev' : 'ob-step-next'" mode="out-in">
-        <component :is="currentComponent" :key="current.key" class="ob-step" />
-      </transition>
+      <div class="ob-step-scroll">
+        <transition :name="dir === 'prev' ? 'ob-step-prev' : 'ob-step-next'" mode="out-in">
+          <component :is="currentComponent" :key="current.key" class="ob-step" />
+        </transition>
+      </div>
     </div>
 
     <!-- 页脚 -->
@@ -501,17 +503,27 @@ export default {
   display: flex;
 }
 
-.ob-step {
+.ob-step-scroll {
   flex: 1 1 auto;
   min-width: 0;
   min-height: 0;
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  /* auto margins center short steps while resolving to zero for tall steps,
+     so small CEP panels keep the beginning of the content reachable. */
+}
+
+.ob-step {
+  flex: 0 0 auto;
+  min-width: 0;
+  min-height: 0;
   padding: var(--is-s-2) var(--is-s-8) var(--is-s-6);
   width: 100%;
   /* 880：宽出 720 是为了末页 2×2 卡片横排（每列 ~420px，文字不必折成三行），
      同时输出页的「大小门槛」左右双栏也不至于挤。仍窄于窗口时不留白边。 */
   max-width: 880px;
-  margin: 0 auto;
+  margin: auto;
 }
 
 .ob--cep .ob-step { padding: var(--is-s-2) var(--is-s-4) var(--is-s-5); }

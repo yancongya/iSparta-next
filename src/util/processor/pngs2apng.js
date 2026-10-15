@@ -1,6 +1,7 @@
 import { fs, path } from '../node-env'
 import action from './action'
 import apngCompress from './apngCompress'
+import { remapSequence } from '../frameRemap'
 
 export default function (item, store, locale) {
   store.dispatch('editProcess', {
@@ -9,21 +10,43 @@ export default function (item, store, locale) {
     schedule: 0.4
   })
 
-	// copy filelist to temp dir（限流：长序列一次 Promise.all 会打爆句柄/内存）
+  // 可选重映射：均匀取样用于编码，绝不删除 AE/用户的源帧。
+  const originalFrames = item.basic.fileList.slice()
+  const remapped = remapSequence(item, originalFrames)
+  const frameFiles = remapped.files
+  const sourceIndices = remapped.indices
+  const outputFrameRate = remapped.targetFrameRate
+
+  if (remapped.enabled) {
+    store.dispatch('editProcess', {
+      index: item.index,
+      text: (locale.frameRemapping || 'Frame remapping') + ' ' + originalFrames.length + ' → ' + frameFiles.length +
+        ' (' + remapped.sourceFrameRate + ' → ' + outputFrameRate + ' fps)',
+      schedule: 0.42
+    })
+  }
+
+  // copy filelist to temp dir（限流：长序列一次 Promise.all 会打爆句柄/内存）
   var tmpDir = item.basic.tmpDir
-  var numLen = item.basic.fileList.length.toString().split('').length
+  var numLen = frameFiles.length.toString().split('').length
   fs.ensureDirSync(tmpDir)
   var firstPNG = 'apng' + action.pad(1, numLen) + '.png'
 
-  var copyJobs = item.basic.fileList.map((file, index) => {
+  var copyJobs = frameFiles.map((file, index) => {
     return function () {
       var target = path.join(tmpDir, 'apng' + action.pad(index + 1, numLen) + '.png')
-      var p = fs.copy(file, target)
-      if (item.options.delays && item.options.delays[index]) {
-        var txtFile = path.join(tmpDir, 'apng' + action.pad(index + 1, numLen) + '.txt')
-        p = p.then(() => fs.writeFile(txtFile, "delay=" + item.options.delays[index] * 1000 + "/1000"))
-      }
-      return p
+      var txtFile = path.join(tmpDir, 'apng' + action.pad(index + 1, numLen) + '.txt')
+      const sourceIndex = sourceIndices[index]
+      const delay = !remapped.enabled && item.options.delays && item.options.delays[sourceIndex]
+      // Clear stale per-frame delays from an earlier run; remapping uses its new uniform cadence.
+      const clearDelay = typeof fs.remove === 'function'
+        ? fs.remove(txtFile).catch(function () {})
+        : Promise.resolve()
+      return clearDelay.then(() => fs.copy(file, target)).then(() => {
+        if (delay) {
+          return fs.writeFile(txtFile, 'delay=' + delay * 1000 + '/1000')
+        }
+      })
     }
   })
 
@@ -86,7 +109,7 @@ export default function (item, store, locale) {
       path.join(item.basic.tmpOutputDir, toolBase + '.png'),
       path.join(tmpDir, firstPNG),
       '1',
-      String(item.options.frameRate),
+      String(outputFrameRate),
       '-l' + (item.options.loop || 0),
       '-kc',
       '-z0',

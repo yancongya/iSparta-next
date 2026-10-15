@@ -51,6 +51,10 @@ const defaultState = {
   language: MODE_SYSTEM,
   options: {
     'frameRate': 25,
+    'frameRemap': {
+      enabled: false,
+      targetFrameRate: 12
+    },
     'loop': 0,
     'outputSuffix': '',
     'outputName': '',
@@ -130,6 +134,19 @@ if (!globalSetting) {
     let parsed = JSON.parse(globalSetting)
     let changed = false
     if (parsed && parsed.options) {
+      if (!parsed.options.frameRemap) {
+        parsed.options.frameRemap = _.cloneDeep(defaultState.options.frameRemap)
+        changed = true
+      } else {
+        if (parsed.options.frameRemap.enabled === undefined) {
+          parsed.options.frameRemap.enabled = false
+          changed = true
+        }
+        if (!isFinite(Number(parsed.options.frameRemap.targetFrameRate)) || Number(parsed.options.frameRemap.targetFrameRate) <= 0) {
+          parsed.options.frameRemap.targetFrameRate = defaultState.options.frameRemap.targetFrameRate
+          changed = true
+        }
+      }
       if (parsed.options.frameRate !== defaultState.options.frameRate) {
         parsed.options.frameRate = defaultState.options.frameRate
         changed = true
@@ -208,6 +225,14 @@ if (localData) {
       // 老数据里每条 item 的 options 是独立副本，同样按出厂默认补齐缺失键，
       // 否则后续 _.extend 写入的是非响应式属性，界面不会跟着更新。
       item.options = item.options || {}
+      if (!item.options.frameRemap) {
+        item.options.frameRemap = _.cloneDeep(defaultState.options.frameRemap)
+      } else {
+        if (item.options.frameRemap.enabled === undefined) item.options.frameRemap.enabled = false
+        if (!isFinite(Number(item.options.frameRemap.targetFrameRate)) || Number(item.options.frameRemap.targetFrameRate) <= 0) {
+          item.options.frameRemap.targetFrameRate = defaultState.options.frameRemap.targetFrameRate
+        }
+      }
       if (!item.options.outputTo) {
         item.options.outputTo = _.cloneDeep(defaultState.options.outputTo)
       }

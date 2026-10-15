@@ -102,6 +102,27 @@ function push (level, msg, detail, category) {
   if (level === 'warn' || level === 'error') { state.unread += 1 }
   persist()
   emit()
+  return state.seq
+}
+
+function updateEntry (id, level, msg, detail) {
+  var index = state.entries.findIndex(function (entry) { return entry.id === id })
+  if (index < 0) return false
+  var previous = state.entries[index]
+  var next = Object.assign({}, previous, {
+    t: now(),
+    ts: Date.now(),
+    level: level || previous.level,
+    msg: String(msg == null ? previous.msg : msg),
+    detail: detail === undefined ? previous.detail : safeDetail(detail)
+  })
+  if (previous.level !== 'warn' && previous.level !== 'error' && (next.level === 'warn' || next.level === 'error')) {
+    state.unread += 1
+  }
+  Vue.set(state.entries, index, next)
+  persist()
+  emit()
+  return true
 }
 
 /** log-core 风格：core.info('bridge', 'msg', detail) */
@@ -113,7 +134,8 @@ const log = {
   state: state,
 
   // —— 桌面兼容（勿改调用方）——
-  info: function (msg, detail, category) { push('info', msg, detail, category) },
+  info: function (msg, detail, category) { return push('info', msg, detail, category) },
+  update: function (id, level, msg, detail) { return updateEntry(id, level, msg, detail) },
   success: function (msg, detail, category) { push('ok', msg, detail, category) },
   warn: function (msg, detail, category) { push('warn', msg, detail, category) },
   error: function (msg, detail, category) { push('error', msg, detail, category) },

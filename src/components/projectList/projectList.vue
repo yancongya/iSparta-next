@@ -419,21 +419,33 @@ export default {
     // 帧数/帧率 = 时长（秒），左上角显示
     durationOf (project) {
       var fc = this.frameCount(project)
-      var fps = Number(project && project.options && project.options.frameRate)
+      var basic = project && project.basic
+      var fps = basic && basic.type === 'Comp' && Number(basic.compFps) > 0
+        ? Number(basic.compFps)
+        : Number(project && project.options && project.options.frameRate)
       if (!fc || !isFinite(fps) || fps <= 0) return ''
       var sec = fc / fps
       return String(Math.round(sec * 10) / 10).replace(/\.0$/, '') + 's'
     },
     frameCount (project) {
       var list = project && project.basic && project.basic.fileList
-      return list ? list.length : 0
+      return list && list.length ? list.length : Number(project && project.basic && project.basic.frameCount) || 0
     },
     // ---------- 摘要项的完整说明气泡 ----------
     tipOf (labelKey, value) {
       return this.$t(labelKey) + '：' + (value || '—')
     },
     fpsTip (project) {
-      var v = project && project.options && project.options.frameRate
+      var options = project && project.options
+      const remap = options && options.frameRemap
+      if (remap && remap.enabled) {
+        var basic = project && project.basic
+        var source = basic && basic.type === 'Comp' && Number(basic.compFps) > 0
+          ? Number(basic.compFps)
+          : Number(options.frameRate)
+        return source + ' → ' + remap.targetFrameRate + ' ' + this.$t('fpsUnit')
+      }
+      var v = options && options.frameRate
       return v ? v + ' ' + this.$t('fpsUnit') : ''
     },
     loopTip (project) {
@@ -444,12 +456,7 @@ export default {
     },
     sizeLimitTip (project) {
       var shown = this.sizeLimitOf(project)
-      if (!shown) { return '' }
-      var s = project.options.sizeLimit
-      var extra = []
-      if (s.autoQuality !== false) { extra.push(this.$t('sizeLimitAutoQuality')) }
-      if (s.autoDelete) { extra.push(this.$t('sizeLimitAutoDelete')) }
-      return shown + (extra.length ? ' · ' + extra.join(' / ') : '')
+      return shown || ''
     },
     // ---------- 标题与路径 ----------
     // 主标题 = 合成名 / 输出名（禁止把 ae-comp 或 basePath(outputPath) 当名字）
@@ -551,7 +558,9 @@ export default {
       return (Math.round(v * 100) / 100) + unit
     },
     frameRateOf (project) {
-      var v = project && project.options && project.options.frameRate
+      var options = project && project.options
+      var remap = options && options.frameRemap
+      var v = remap && remap.enabled ? remap.targetFrameRate : options && options.frameRate
       return v ? v : '—'
     },
     loopText (project) {

@@ -23,6 +23,14 @@
         <is-form-item :label="$t('fps')">
           <is-input v-model="setting.options.frameRate" type="number" class="w-80" :max="100" :min="0" number />
           <em class="hint">0-100</em>
+          <is-checkbox v-model="frameRemapEnabled">{{ $t('frameRemapEnable') }}</is-checkbox>
+          <template v-if="frameRemapEnabled">
+            <span class="unit">{{ $t('frameRemapTarget') }}</span>
+            <is-input v-model="frameRemapTargetRate" type="number" class="w-80" :max="frameRateMax" :min="0.01" :step="0.01" number />
+            <button type="button" class="is-info" :aria-label="$t('frameRemapTarget')" v-tip="$t('frameRemapTip')">
+              <is-icon name="info" size="sm" />
+            </button>
+          </template>
         </is-form-item>
         <is-form-item :label="$t('loop')">
           <is-input v-model="setting.options.loop" type="number" class="w-80" number />
@@ -52,7 +60,8 @@
               </button>
             </span>
             <div class="gs-pair__ctrl">
-              <is-input v-model="setting.options.quality.value" type="number" class="w-80" :max="100" :min="0" number />
+              <is-checkbox v-model="qualityChecked">{{ $t('qualityEnable') }}</is-checkbox>
+              <is-input v-model="qualityValue" type="number" class="w-80" :max="100" :min="0" :disabled="!qualityChecked" number />
             </div>
           </div>
         </div>
@@ -118,7 +127,7 @@
             </button>
           </span>
         </is-form-item>
-        <is-form-item :label="$t('sizeLimitMax')">
+        <is-form-item v-if="setting.options.sizeLimit.enabled" :label="$t('sizeLimitMax')">
           <div class="gs-size-row">
             <is-input
               class="w-80"
@@ -138,56 +147,14 @@
           </div>
         </is-form-item>
 
-        <div class="gs-pair">
-          <div class="gs-pair__cell">
-            <span class="gs-pair__label">
-              {{ $t('sizeLimitAutoQuality') }}
-              <button type="button" class="is-info" :aria-label="$t('sizeLimitAutoQuality')" v-tip="$t('sizeLimitAutoQualityTip')">
-                <is-icon name="info" size="sm" />
-              </button>
-            </span>
-            <div class="gs-pair__ctrl">
-              <is-switch v-model="setting.options.sizeLimit.autoQuality" />
-            </div>
-          </div>
-          <div class="gs-pair__cell">
-            <span class="gs-pair__label">
-              {{ $t('sizeLimitAutoDelete') }}
-              <button type="button" class="is-info" :aria-label="$t('sizeLimitAutoDelete')" v-tip="$t('sizeLimitAutoDeleteTip')">
-                <is-icon name="info" size="sm" />
-              </button>
-            </span>
-            <div class="gs-pair__ctrl">
-              <is-switch v-model="setting.options.sizeLimit.autoDelete" />
-            </div>
-          </div>
-        </div>
-
-        <div v-if="setting.options.sizeLimit.autoQuality" class="gs-pair">
-          <div class="gs-pair__cell">
-            <span class="gs-pair__label">
-              {{ $t('sizeLimitStep') }}
-              <button type="button" class="is-info" :aria-label="$t('sizeLimitStep')" v-tip="$t('sizeLimitStepTip')">
-                <is-icon name="info" size="sm" />
-              </button>
-            </span>
-            <div class="gs-pair__ctrl">
-              <is-input v-model="setting.options.sizeLimit.step" type="number" class="w-80" :max="100" :min="1" number />
-            </div>
-          </div>
-          <div class="gs-pair__cell">
-            <span class="gs-pair__label">
-              {{ $t('sizeLimitTries') }}
-              <button type="button" class="is-info" :aria-label="$t('sizeLimitTries')" v-tip="$t('sizeLimitTriesTip')">
-                <is-icon name="info" size="sm" />
-              </button>
-            </span>
-            <div class="gs-pair__ctrl">
-              <is-input v-model="setting.options.sizeLimit.maxTries" type="number" class="w-80" :max="50" :min="1" number />
-              <span class="unit">{{ $t('sizeLimitUnitTimes') }}</span>
-            </div>
-          </div>
-        </div>
+        <quality-retry-sliders
+          v-if="setting.options.sizeLimit.enabled"
+          :start-quality="qualityRetryBase"
+          :step="sizeLimitStep"
+          :tries="sizeLimitMaxTries"
+          @step-change="sizeLimitStep = $event"
+          @tries-change="sizeLimitMaxTries = $event"
+        />
 
         <div class="gs-split"></div>
 
@@ -262,6 +229,8 @@ import hostAdapter from '../../util/host-env'
 import { MODE_SYSTEM, resolveLocale } from '../../util/system-locale'
 import { APP_NAME, LANDING_URL } from '../../brand'
 import { isReallyNewer } from '../../util/updateCheck'
+import { adjustQualityRetrySettings, effectiveQualityRetries, effectiveQualityStart } from '../../util/sizeLimitConfig'
+import QualityRetrySliders from '../../ui-next/components/QualityRetrySliders.vue'
 
 const DEFAULT_SIZE_LIMIT = {
   enabled: true,
@@ -281,7 +250,7 @@ const DEFAULT_OUTPUT_TO = {
 }
 
 export default {
-  components: { PathVars, IsPresetBar },
+  components: { PathVars, IsPresetBar, QualityRetrySliders },
   data () {
     return {
       setting: this.loadSetting(),
@@ -302,6 +271,106 @@ export default {
     // CEP：铺满（IsDialog 内联 width 会盖 CSS，必须在 prop 层给）；桌面 560px
     dialogWidth () {
       return (hostAdapter && hostAdapter.supportsCompImport) ? '100%' : '560px'
+    },
+    frameRateMax () {
+      const rate = Number(this.setting && this.setting.options && this.setting.options.frameRate)
+      return isFinite(rate) && rate > 0 ? rate : 1
+    },
+    frameRemapEnabled: {
+      get () { return !!(this.setting && this.setting.options.frameRemap && this.setting.options.frameRemap.enabled) },
+      set (value) {
+        const current = (this.setting.options.frameRemap || {})
+        let target = Number(current.targetFrameRate)
+        if (!isFinite(target) || target <= 0 || target >= this.frameRateMax) {
+          target = Math.max(0.01, Math.floor(this.frameRateMax * 0.8 * 100) / 100)
+        }
+        this.$set(this.setting.options, 'frameRemap', { enabled: !!value, targetFrameRate: target })
+      }
+    },
+    frameRemapTargetRate: {
+      get () {
+        const remap = this.setting && this.setting.options && this.setting.options.frameRemap
+        const target = Number(remap && remap.targetFrameRate)
+        return Math.min(this.frameRateMax, isFinite(target) && target > 0 ? target : Math.max(0.01, this.frameRateMax * 0.8))
+      },
+      set (value) {
+        const target = Number(value)
+        if (!isFinite(target) || target <= 0) return
+        const current = this.setting.options.frameRemap || {}
+        this.$set(this.setting.options, 'frameRemap', {
+          enabled: !!current.enabled,
+          targetFrameRate: Math.min(this.frameRateMax, target)
+        })
+      }
+    },
+    qualityChecked: {
+      get () { return !!this.setting.options.quality.checked },
+      set (value) {
+        const quality = this.setting.options.quality
+        const sizeLimit = this.setting.options.sizeLimit
+        const retry = adjustQualityRetrySettings(
+          effectiveQualityStart(quality.value, value),
+          sizeLimit.step,
+          sizeLimit.maxTries,
+          'quality'
+        )
+        this.$set(quality, 'checked', !!value)
+        this.$set(sizeLimit, 'step', retry.step)
+        this.$set(sizeLimit, 'maxTries', retry.maxTries)
+      }
+    },
+    qualityRetryBase () {
+      const quality = this.setting.options.quality
+      return effectiveQualityStart(quality.value, quality.checked)
+    },
+    qualityValue: {
+      get () { return this.setting.options.quality.value },
+      set (value) {
+        const numeric = Number(value)
+        if (!isFinite(numeric)) return
+        const quality = Math.max(0, Math.min(100, numeric))
+        const sizeLimit = this.setting.options.sizeLimit
+        const retry = adjustQualityRetrySettings(
+          effectiveQualityStart(quality, this.qualityChecked),
+          sizeLimit.step,
+          sizeLimit.maxTries,
+          'quality'
+        )
+        this.$set(this.setting.options.quality, 'value', quality)
+        this.$set(sizeLimit, 'step', retry.step)
+        this.$set(sizeLimit, 'maxTries', retry.maxTries)
+      }
+    },
+    sizeLimitStep: {
+      get () { return this.setting.options.sizeLimit.step || 5 },
+      set (value) {
+        const sizeLimit = this.setting.options.sizeLimit
+        const retry = adjustQualityRetrySettings(
+          this.qualityRetryBase,
+          value,
+          sizeLimit.maxTries,
+          'step'
+        )
+        this.$set(sizeLimit, 'step', retry.step)
+        this.$set(sizeLimit, 'maxTries', retry.maxTries)
+      }
+    },
+    sizeLimitMaxTries: {
+      get () {
+        const sizeLimit = this.setting.options.sizeLimit
+        return effectiveQualityRetries(this.qualityRetryBase, sizeLimit.step, sizeLimit.maxTries)
+      },
+      set (value) {
+        const sizeLimit = this.setting.options.sizeLimit
+        const retry = adjustQualityRetrySettings(
+          this.qualityRetryBase,
+          sizeLimit.step,
+          value,
+          'tries'
+        )
+        this.$set(sizeLimit, 'step', retry.step)
+        this.$set(sizeLimit, 'maxTries', retry.maxTries)
+      }
     },
     updateUi () {
       return updateService.getUpdateState()

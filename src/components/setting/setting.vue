@@ -94,10 +94,11 @@
         </div>
       </div>
 
-      <!-- 帧频/循环 一行并排；压缩质量换行占满（小屏不挤在半列里断行） -->
-      <div class="mod-form__pairwrap">
-        <div v-if="showFrame" class="mod-form__paircell mod-form__paircell--duo">
-          <div class="mod-form__row">
+      <!-- 动画参数：帧率与循环次数 -->
+      <div v-if="showFrame || canRemapFrames" class="mod-form__group animation-settings">
+        <p class="mod-form__caption">{{ $t('animationSettings') }}</p>
+        <div class="animation-settings__row">
+          <div v-if="showFrame" class="mod-form__row">
             <span class="row-label">{{ $t('fps') }}</span>
             <is-input v-model="frameRate" type="number" class="num" :max="100" :min="0" number placeholder="25" />
             <button type="button" class="is-info" v-tip="$t('fpsUnit')">
@@ -113,8 +114,12 @@
             </button>
           </div>
         </div>
+      </div>
 
-        <div class="mod-form__paircell mod-form__paircell--full">
+      <!-- 压缩设置：质量与抽帧并排，阈值设置放在下方 -->
+      <div class="mod-form__group compression-settings">
+        <p class="mod-form__caption">{{ $t('compressionSettings') }}</p>
+        <div class="compression-settings__controls">
           <div class="mod-form__row">
             <span class="row-label">{{ $t('compressionQuality') }}</span>
             <is-checkbox v-model="qualityCheck">{{ $t('enable') }}</is-checkbox>
@@ -131,6 +136,56 @@
             <button type="button" class="is-info" :aria-label="$t('compressionQuality')" v-tip="$t('qualityTip')">
               <is-icon name="info" size="sm" />
             </button>
+          </div>
+          <div v-if="canRemapFrames" class="mod-form__row mod-form__row--remap">
+            <is-checkbox v-model="frameRemapEnabled">{{ $t('frameRemapEnable') }}</is-checkbox>
+            <template v-if="frameRemapEnabled">
+              <span class="row-label row-label--remap">{{ $t('frameRemapTarget') }}</span>
+              <is-input v-model="frameRemapTargetRate" type="number" class="num" :max="remapSourceRate" :min="0.01" :step="0.01" number />
+              <button type="button" class="is-info" :aria-label="$t('frameRemapTarget')" v-tip="$t('frameRemapTip')">
+                <is-icon name="info" size="sm" />
+              </button>
+            </template>
+          </div>
+        </div>
+        <p v-if="hasUnsupportedRemapItems" class="frame-remap-note">
+          {{ $t('frameRemapUnsupported') }}
+        </p>
+
+        <div class="compression-settings__threshold">
+          <div class="mod-form__capline">
+            <p class="mod-form__caption mod-form__caption--flush">{{ $t("sizeLimit") }}</p>
+            <span class="capline-act">
+              <is-switch v-model="sizeEnabled" />
+              <button type="button" class="is-info" :aria-label="$t('sizeLimitEnable')" v-tip="$t('sizeLimitEnableTip')">
+                <is-icon name="info" size="sm" />
+              </button>
+            </span>
+          </div>
+          <div v-show="sizeEnabled" class="size-limit">
+            <div class="size-limit__row">
+              <span class="size-limit__label">{{ $t('sizeLimitMax') }}</span>
+              <is-input
+                class="num"
+                :value="sizeDraft !== null ? sizeDraft : sizeValueText"
+                inputmode="decimal"
+                placeholder="1"
+                @focus="onSizeFocus"
+                @input="onSizeDraftInput"
+                @blur="onSizeBlur"
+              />
+              <is-segmented v-model="sizeUnit" :options="['MB', 'KB']" size="sm" />
+              <button type="button" class="is-info" :aria-label="$t('sizeLimitMax')" v-tip="$t('sizeLimitMaxTip')">
+                <is-icon name="info" size="sm" />
+              </button>
+            </div>
+            <quality-retry-sliders
+              :start-quality="minimumSelectedQuality"
+              :step="sizeStep"
+              :tries="sizeMaxTries"
+              @step-change="sizeStep = $event"
+              @tries-change="sizeMaxTries = $event"
+            />
           </div>
         </div>
       </div>
@@ -149,7 +204,13 @@
 
       <!-- 输出路径：展示真实路径；CEP 无「选目录/输出到目录」（固定为项目旁合成子目录） -->
       <div class="mod-form__group">
-        <p class="mod-form__caption">{{ $t("outputTo") }}</p>
+        <div class="mod-form__capline">
+          <p class="mod-form__caption mod-form__caption--flush">{{ $t("outputTo") }}</p>
+          <span class="capline-act path-vars-toggle">
+            <span>{{ $t('pathVar') }}</span>
+            <is-switch v-model="variablesExpanded" />
+          </span>
+        </div>
         <is-preset-bar
           :presets="presetItems"
           :active-id="presetActiveId"
@@ -178,106 +239,43 @@
 
           <p v-if="isArraySetting" class="mod-form__hint">{{ $t('multiPathHint') }}</p>
 
-          <!-- 变量路径 + 彩色变量胶囊：与默认设置共用同一组件。
-               append 插槽挂「存为预设」书签：调好路径一键收藏，无需进编辑器 -->
-          <path-vars v-model="outputToTemplate" :ctx="pathContext" @insert="insertVariable">
-            <button
-              slot="append"
-              type="button"
-              class="pv__bookmark"
-              :class="{ 'is-on': bookmarkOpen }"
-              v-tip="$t('presetSaveTip')"
-              :aria-label="$t('presetSaveTip')"
-              @click.stop="bookmarkOpen = !bookmarkOpen"
-            ><is-icon name="bookmark" size="sm" /></button>
-          </path-vars>
-
-          <!-- 书签命名行：确认后新胶囊从右侧弹入 -->
           <transition name="is-collapse">
-            <div v-if="bookmarkOpen" class="bookmark-row">
-              <is-input
-                ref="bookmarkIn"
-                v-model="bookmarkLabel"
-                class="bookmark-row__in"
-                size="sm"
-                :placeholder="$t('presetNamePh')"
-                :maxlength="16"
-                @keyup.enter.native="confirmBookmark"
-                @keyup.esc.native="bookmarkOpen = false"
-              />
-              <button type="button" class="bookmark-row__ok" :aria-label="$t('confirm')" @click.stop="confirmBookmark">
-                <is-icon name="check" size="xs" />
-              </button>
-              <button type="button" :aria-label="$t('cancel')" @click.stop="bookmarkOpen = false">
-                <is-icon name="close" size="xs" />
-              </button>
+            <div v-if="variablesExpanded" class="path-variables-panel">
+              <!-- 变量路径与胶囊按需展开；append 插槽用于收藏模板 -->
+              <path-vars v-model="outputToTemplate" :ctx="pathContext" @insert="insertVariable">
+                <button
+                  slot="append"
+                  type="button"
+                  class="pv__bookmark"
+                  :class="{ 'is-on': bookmarkOpen }"
+                  v-tip="$t('presetSaveTip')"
+                  :aria-label="$t('presetSaveTip')"
+                  @click.stop="bookmarkOpen = !bookmarkOpen"
+                ><is-icon name="bookmark" size="sm" /></button>
+              </path-vars>
+
+              <transition name="is-collapse">
+                <div v-if="bookmarkOpen" class="bookmark-row">
+                  <is-input
+                    ref="bookmarkIn"
+                    v-model="bookmarkLabel"
+                    class="bookmark-row__in"
+                    size="sm"
+                    :placeholder="$t('presetNamePh')"
+                    :maxlength="16"
+                    @keyup.enter.native="confirmBookmark"
+                    @keyup.esc.native="bookmarkOpen = false"
+                  />
+                  <button type="button" class="bookmark-row__ok" :aria-label="$t('confirm')" @click.stop="confirmBookmark">
+                    <is-icon name="check" size="xs" />
+                  </button>
+                  <button type="button" :aria-label="$t('cancel')" @click.stop="bookmarkOpen = false">
+                    <is-icon name="close" size="xs" />
+                  </button>
+                </div>
+              </transition>
             </div>
           </transition>
-        </div>
-      </div>
-
-      <!-- 输出大小阈值：开关移到标题右侧 -->
-      <div class="mod-form__group">
-        <div class="mod-form__capline">
-          <p class="mod-form__caption mod-form__caption--flush">{{ $t("sizeLimit") }}</p>
-          <span class="capline-act">
-            <is-switch v-model="sizeEnabled" />
-            <button type="button" class="is-info" :aria-label="$t('sizeLimitEnable')" v-tip="$t('sizeLimitEnableTip')">
-              <is-icon name="info" size="sm" />
-            </button>
-          </span>
-        </div>
-
-        <div v-show="sizeEnabled" class="size-limit">
-          <div class="size-limit__row">
-            <span class="size-limit__label">{{ $t('sizeLimitMax') }}</span>
-            <is-input
-              class="num"
-              :value="sizeDraft !== null ? sizeDraft : sizeValueText"
-              inputmode="decimal"
-              placeholder="1"
-              @focus="onSizeFocus"
-              @input="onSizeDraftInput"
-              @blur="onSizeBlur"
-            />
-            <is-segmented v-model="sizeUnit" :options="['MB', 'KB']" size="sm" />
-            <button type="button" class="is-info" :aria-label="$t('sizeLimitMax')" v-tip="$t('sizeLimitMaxTip')">
-              <is-icon name="info" size="sm" />
-            </button>
-          </div>
-          <!-- 两个复选框并为一行 -->
-          <div class="size-limit__row size-limit__row--checks">
-            <is-checkbox v-model="sizeAutoQuality" class="size-limit__check">
-              {{ $t("sizeLimitAutoQuality") }}
-            </is-checkbox>
-            <is-checkbox v-model="sizeAutoDelete" class="size-limit__check">
-              {{ $t("sizeLimitAutoDelete") }}
-            </is-checkbox>
-          </div>
-
-          <template v-if="sizeAutoQuality">
-            <div class="mod-form__pairwrap">
-              <div class="mod-form__paircell">
-                <div class="mod-form__row">
-                  <span class="row-label">{{ $t('sizeLimitStep') }}</span>
-                  <is-input v-model="sizeStep" type="number" class="num" :max="100" :min="1" number />
-                  <button type="button" class="is-info" :aria-label="$t('sizeLimitStep')" v-tip="$t('sizeLimitStepTip')">
-                    <is-icon name="info" size="sm" />
-                  </button>
-                </div>
-              </div>
-              <div class="mod-form__paircell">
-                <div class="mod-form__row">
-                  <span class="row-label">{{ $t('sizeLimitTries') }}</span>
-                  <is-input v-model="sizeMaxTries" type="number" class="num" :max="50" :min="1" number />
-                  <span class="unit">{{ $t('sizeLimitUnitTimes') }}</span>
-                  <button type="button" class="is-info" :aria-label="$t('sizeLimitTries')" v-tip="$t('sizeLimitTriesTip')">
-                    <is-icon name="info" size="sm" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          </template>
         </div>
       </div>
 
@@ -327,12 +325,14 @@ import { tokenizeName, joinTokens } from '../../util/tokenizeName'
 import PathVars from '../../ui-next/components/PathVars.vue'
 import IsPresetBar from '../../ui-next/components/IsPresetBar.vue'
 import notice from '../../ui-next/notice'
+import { adjustQualityRetrySettings, effectiveQualityRetries, effectiveQualityStart } from '../../util/sizeLimitConfig'
+import QualityRetrySliders from '../../ui-next/components/QualityRetrySliders.vue'
 
 export default {
   props: {
     hideTitle: { type: Boolean, default: false }
   },
-  components: { PathVars, IsPresetBar },
+  components: { PathVars, IsPresetBar, QualityRetrySliders },
   data () {
     return {
       sizeDraft: null,
@@ -347,12 +347,21 @@ export default {
       outputPresets: loadPresets(),
       // 「将当前路径存为预设」的内联命名框
       bookmarkOpen: false,
-      bookmarkLabel: ''
+      bookmarkLabel: '',
+      variablesExpanded: false
     }
   },
   computed: {
     selectedList () {
       return this.$store.getters.getterSelected
+    },
+    minimumSelectedQuality () {
+      if (!this.selectedList.length) return 100
+      return this.selectedList.reduce(function (minimum, item) {
+        const quality = item && item.options && item.options.quality
+        const value = effectiveQualityStart(quality && quality.value, quality && quality.checked)
+        return isFinite(value) ? Math.min(minimum, value) : minimum
+      }, 100)
     },
     projectCount () {
       return this.$store.getters.getterItems.length
@@ -405,6 +414,30 @@ export default {
         return it.basic && (it.basic.type === 'PNGs' || it.basic.type === 'Comp')
       })
     },
+    canRemapFrames () {
+      return this.selectedList.length > 0 && this.selectedList.every(function (item) {
+        const type = item && item.basic && item.basic.type
+        return type === 'PNGs' || type === 'Comp' || type === 'APNG'
+      })
+    },
+    hasUnsupportedRemapItems () {
+      return this.selectedList.some(function (item) {
+        const type = item && item.basic && item.basic.type
+        return type !== 'PNGs' && type !== 'Comp' && type !== 'APNG'
+      })
+    },
+    remapSourceRate () {
+      if (!this.selectedList.length) return 1
+      return this.selectedList.reduce(function (minimum, item) {
+        const basic = (item && item.basic) || {}
+        const rate = basic.type === 'APNG'
+          ? 100
+          : basic.type === 'Comp' && Number(basic.compFps) > 0
+            ? Number(basic.compFps)
+            : Number(item && item.options && item.options.frameRate)
+        return isFinite(rate) && rate > 0 ? Math.min(minimum, rate) : minimum
+      }, 100)
+    },
     formatStatic () {
       if (!this.selectedList.length) {
         return ['APNG', 'GIF', 'WEBP']
@@ -452,6 +485,31 @@ export default {
         this.writeOptions({ frameRate: value })
       }
     },
+    frameRemapEnabled: {
+      get () { return !!(this.curtSetting && this.curtSetting.frameRemap && this.curtSetting.frameRemap.enabled) },
+      set (value) {
+        const current = (this.curtSetting && this.curtSetting.frameRemap) || {}
+        let targetFrameRate = Number(current.targetFrameRate)
+        if (!isFinite(targetFrameRate) || targetFrameRate <= 0 || targetFrameRate >= this.remapSourceRate) {
+          targetFrameRate = Math.max(0.01, Math.floor(this.remapSourceRate * 0.8 * 100) / 100)
+        }
+        this.writeOptions({ frameRemap: { enabled: !!value, targetFrameRate: targetFrameRate } })
+      }
+    },
+    frameRemapTargetRate: {
+      get () {
+        const remap = this.curtSetting && this.curtSetting.frameRemap
+        const value = Number(remap && remap.targetFrameRate)
+        const fallback = Math.max(0.01, Math.floor(this.remapSourceRate * 0.8 * 100) / 100)
+        return Math.min(this.remapSourceRate, isFinite(value) && value > 0 ? value : fallback)
+      },
+      set (value) {
+        const numeric = Number(value)
+        if (!isFinite(numeric) || numeric <= 0) return
+        const current = (this.curtSetting && this.curtSetting.frameRemap) || {}
+        this.writeOptions({ frameRemap: { enabled: !!current.enabled, targetFrameRate: Math.min(this.remapSourceRate, numeric) } })
+      }
+    },
     loop: {
       get () { return this.curtSetting.loop },
       set (value) {
@@ -486,19 +544,36 @@ export default {
     qualityCheck: {
       get () { return this.curtSetting.quality.checked },
       set (value) {
+        const limit = this.curtSetting && this.curtSetting.sizeLimit
+        const start = effectiveQualityStart(this.quality, value)
+        const retry = adjustQualityRetrySettings(
+          start,
+          limit && limit.step,
+          limit && limit.maxTries,
+          'quality'
+        )
         this.writeOptions({
-          quality: { checked: value, value: this.quality }
+          quality: { checked: value, value: this.quality },
+          sizeLimit: Object.assign({}, limit || {}, retry)
         })
       }
     },
     quality: {
       get () { return this.curtSetting.quality.value },
       set (value) {
-        if (value > 100 || value < 0) {
+        if (!isFinite(Number(value)) || value > 100 || value < 0) {
           return false
         }
+        const limit = this.curtSetting && this.curtSetting.sizeLimit
+        const retry = adjustQualityRetrySettings(
+          effectiveQualityStart(value, this.qualityCheck),
+          limit && limit.step,
+          limit && limit.maxTries,
+          'quality'
+        )
         this.writeOptions({
-          quality: { checked: this.qualityCheck, value: value }
+          quality: { checked: this.qualityCheck, value: value },
+          sizeLimit: Object.assign({}, limit || {}, retry)
         })
       }
     },
@@ -528,30 +603,37 @@ export default {
         this.pushSizeLimit({ unit: value, maxBytes: bytes, maxMB: bytes / (1024 * 1024) })
       }
     },
-    sizeAutoQuality: {
-      get () {
-        const s = this.curtSetting && this.curtSetting.sizeLimit
-        return !s || s.autoQuality !== false
-      },
-      set (value) { this.pushSizeLimit({ autoQuality: !!value }) }
-    },
-    sizeAutoDelete: {
-      get () { return !!(this.curtSetting && this.curtSetting.sizeLimit && this.curtSetting.sizeLimit.autoDelete) },
-      set (value) { this.pushSizeLimit({ autoDelete: !!value }) }
-    },
     sizeStep: {
       get () {
         const s = this.curtSetting && this.curtSetting.sizeLimit
         return (s && s.step) || 5
       },
-      set (value) { this.pushSizeLimit({ step: Number(value) || 5 }) }
+      set (value) {
+        const base = this.curtSetting && this.curtSetting.sizeLimit
+        const retry = adjustQualityRetrySettings(
+          this.minimumSelectedQuality,
+          value,
+          base && base.maxTries,
+          'step'
+        )
+        this.pushSizeLimit(retry)
+      }
     },
     sizeMaxTries: {
       get () {
         const s = this.curtSetting && this.curtSetting.sizeLimit
-        return (s && s.maxTries) || 10
+        return effectiveQualityRetries(this.minimumSelectedQuality, s && s.step, s && s.maxTries)
       },
-      set (value) { this.pushSizeLimit({ maxTries: Number(value) || 10 }) }
+      set (value) {
+        const base = this.curtSetting && this.curtSetting.sizeLimit
+        const retry = adjustQualityRetrySettings(
+          this.minimumSelectedQuality,
+          base && base.step,
+          value,
+          'tries'
+        )
+        this.pushSizeLimit(retry)
+      }
     },
     outputToTemplate: {
       get () {
@@ -570,6 +652,9 @@ export default {
   // 按「后者覆盖前者」的规则把这里的 selectedList / curtSetting 监听整块吃掉了，
   // 导致切换选中项后路径预览停留在上一个项目。
   watch: {
+    variablesExpanded (expanded) {
+      if (!expanded) { this.bookmarkOpen = false }
+    },
     selectedList () {
       this.syncPathUI()
       this.syncMultiNameTokens()
@@ -616,6 +701,10 @@ export default {
     window.removeEventListener('keyup', this._onKeyUp)
   },
   methods: {
+    canRemapType (item) {
+      const type = item && item.basic && item.basic.type
+      return type === 'PNGs' || type === 'Comp' || type === 'APNG'
+    },
     /**
      * 写入选中项的 options：
      * - 单选（含设置按钮进入的单项）只写该 item，禁止串到全部
@@ -794,7 +883,7 @@ export default {
         maxMB: 1,
         maxBytes: 1048576,
         unit: 'MB',
-        autoDelete: false,
+        autoDelete: true,
         autoQuality: true,
         step: 5,
         maxTries: 10

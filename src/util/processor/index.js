@@ -12,6 +12,7 @@ import { resolveOutputPath } from '../outputPath'
 import hostAdapter 	from '../host-env'
 import appLog from '../../ui-next/log'
 import i18n from '../../i18n'
+import { sampleTimedFrameIndices } from '../frameRemap'
 
 function stat (label) {
   try {
@@ -121,7 +122,7 @@ export default function (store, sameOutputPath, locale) {
             case TYPE.GIF:
               return gif2apng(ready, store, locale).then(() => apng2other(ready, store, locale))
             case TYPE.APNG:
-              return apngCompress(ready, 0, store, locale).then(() => apng2other(ready, store, locale))
+              return remapApng(ready, store, locale).then(() => apng2other(ready, store, locale))
             case TYPE.WEBP:
               return webp2apng(ready, store, locale).then(() => apng2other(ready, store, locale))
             default:
@@ -174,6 +175,72 @@ export default function (store, sameOutputPath, locale) {
     return Promise.reject(err)
   })
 }
+
+// APNG remapping shares the existing APNG decoder and PNG-sequence encoder.
+// apngdis emits fully composited full-canvas frames, so sampling them cannot
+// break APNG delta-frame blend/disposal dependencies.
+function remapApng (item, store, locale) {
+  const remap = item.options && item.options.frameRemap
+  const targetRate = Number(remap && remap.targetFrameRate)
+  const sourceFile = item.basic && item.basic.sourceFile
+  if (!remap || !remap.enabled || !isFinite(targetRate) || targetRate <= 0 || !sourceFile) {
+    return apngCompress(item, 0, store, locale)
+  }
+
+  const tmpDir = item.basic.tmpDir
+  const decodeDir = path.join(tmpDir, 'apng-remap')
+  const decodeSource = path.join(decodeDir, 'source.png')
+  fs.ensureDirSync(decodeDir)
+  return fs.copy(sourceFile, decodeSource).then(() => {
+    return Action.exec(Action.bin('apngdis'), [decodeSource], item, store, locale, { cwd: decodeDir })
+  }).then(() => {
+    const metadataPath = path.join(decodeDir, 'apngframe_metadata.json')
+    const animation = JSON.parse(fs.readFileSync(metadataPath, { encoding: 'utf-8' }))
+    const frames = animation && animation.frames
+    if (!Array.isArray(frames) || !frames.length) {
+      throw new Error('APNG remapping failed: decoded frame metadata is empty')
+    }
+    const delays = frames.map(function (frame) {
+      const numerator = Number(frame.delay_num)
+      const denominator = Number(frame.delay_den) || 100
+      const seconds = numerator / denominator
+      return isFinite(seconds) && seconds > 0 ? seconds : 0.01
+    })
+    const duration = delays.reduce(function (sum, value) { return sum + value }, 0)
+    const sourceRate = frames.length / duration
+    if (targetRate >= sourceRate) {
+      // A target at or above the actual APNG rate cannot reduce frames.
+      return apngCompress(item, 0, store, locale)
+    }
+    const indices = sampleTimedFrameIndices(delays, targetRate)
+    const selectedFiles = indices.map(function (index) {
+      return path.join(decodeDir, frames[index].src)
+    })
+    if (!selectedFiles.length) {
+      throw new Error('APNG remapping failed: no frames selected')
+    }
+    store.dispatch('editProcess', {
+      index: item.index,
+      text: (locale.frameRemapping || 'Frame remapping') + ' ' + frames.length + ' → ' + selectedFiles.length +
+        ' (' + sourceRate.toFixed(2) + ' → ' + targetRate + ' fps)',
+      schedule: 0.42
+    })
+
+    const sequenceItem = Object.assign({}, item, {
+      basic: Object.assign({}, item.basic, { type: TYPE.PNGs, fileList: selectedFiles }),
+      options: Object.assign({}, item.options, {
+        frameRate: targetRate,
+        frameRemap: { enabled: false, targetFrameRate: targetRate }
+      })
+    })
+    return PNGs2apng(sequenceItem, store, locale).then(function () {
+      item.basic.fileList = sequenceItem.basic.fileList
+      item.basic.assembledApng = sequenceItem.basic.assembledApng
+      item.options.frameRate = targetRate
+    })
+  })
+}
+
 function apng2other (item, store, locale) {
   var funcArr = []
   // 中间产物 ASCII 名 out.*；最终输出仍用用户 outputName

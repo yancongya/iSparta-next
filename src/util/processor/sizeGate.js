@@ -6,8 +6,9 @@ import apng2webp from './apng2webp'
 import TYPE from '../../store/enum/type'
 import appLog from '../../ui-next/log'
 import i18n from '../../i18n'
+import { effectiveQualityRetries, effectiveQualityStart } from '../sizeLimitConfig'
 
-export function normalizeSizeLimit (options) {
+export function normalizeSizeLimit (options, quality) {
   const s = (options && options.sizeLimit) || {}
   const step = Number(s.step)
   const maxTries = Number(s.maxTries)
@@ -16,14 +17,19 @@ export function normalizeSizeLimit (options) {
     const maxMB = Number(s.maxMB)
     maxBytes = (isFinite(maxMB) && maxMB > 0) ? maxMB * 1024 * 1024 : 1024 * 1024
   }
+  const stepValue = isFinite(step) && step > 0 ? step : 5
+  const configuredMaxTries = isFinite(maxTries) && maxTries >= 0 ? Math.floor(maxTries) : 10
   return {
     enabled: !!s.enabled,
     maxBytes: maxBytes,
     maxMB: maxBytes / 1024 / 1024,
-    autoDelete: !!s.autoDelete,
-    autoQuality: s.autoQuality !== false,
-    step: isFinite(step) && step > 0 ? step : 5,
-    maxTries: isFinite(maxTries) && maxTries > 0 ? Math.floor(maxTries) : 10
+    // Version policy is fixed: overwrite intermediate attempts and retain the
+    // final output. Legacy preferences are intentionally ignored.
+    autoDelete: true,
+    autoQuality: true,
+    step: stepValue,
+    configuredMaxTries: configuredMaxTries,
+    maxTries: effectiveQualityRetries(quality, stepValue, configuredMaxTries)
   }
 }
 
@@ -42,11 +48,6 @@ export function formatLimit (bytes) {
 function outputPathFor (item, format) {
   const ext = format === TYPE.GIF ? '.gif' : format === TYPE.WEBP ? '.webp' : '.png'
   return path.join(item.basic.outputPath, item.options.outputName + ext)
-}
-
-function retryOutputPathFor (item, format, version) {
-  const ext = format === TYPE.GIF ? '.gif' : format === TYPE.WEBP ? '.webp' : '.png'
-  return path.join(item.basic.outputPath, item.options.outputName + '_v' + version + ext)
 }
 
 function cleanupRetryVersions (item, format) {
@@ -113,30 +114,44 @@ function reExportFormat (item, format, store, locale, opts, targetPath) {
 }
 
 /**
- * 逐格式检查输出大小；超限则按 step 降质量重压，直到达标或达 maxTries。
- * autoDelete 是历史配置键：勾选时覆盖旧结果、只留一个；未勾选时为每次重压另存版本。
- * 达到重试上限仍超限时保留最终结果并警告，绝不把唯一结果删掉。
+ * 逐格式检查输出大小；超限则按 step 降质量重压，直到达标或重试上限。
+ * 只保留最终结果；达到上限仍超限时保留产物并将任务标为失败。
  */
 export function enforceSizeLimit (item, store, locale) {
-  const limit = normalizeSizeLimit(item.options)
+  const initialQuality = effectiveQualityStart(
+    item.options.quality && item.options.quality.value,
+    item.options.quality && item.options.quality.checked
+  )
+  const limit = normalizeSizeLimit(item.options, initialQuality)
   if (!limit.enabled || !item.options.outputFormat || !item.options.outputFormat.length) {
     return Promise.resolve({ enforced: false })
   }
 
   const maxBytes = limit.maxBytes
   const formats = item.options.outputFormat.slice()
-  let versioned = []
   let warned = []
   let triesUsed = 0
+  let progressLogId = null
 
   // 每种格式从同一质量基线重试，避免串色
-  const baseQuality = item.options.quality
+  const originalQuality = item.options.quality
+  const baseQuality = originalQuality
     ? {
-      checked: item.options.quality.checked,
-      value: Number(item.options.quality.value)
+      checked: originalQuality.checked,
+      value: initialQuality
     }
     : { checked: true, value: 80 }
   if (!isFinite(baseQuality.value)) { baseQuality.value = 80 }
+  function updateRetryLog (level, tries, detail) {
+    const titleKey = level === 'warn' ? 'logGateProgressWarn' : level === 'ok' ? 'logGateProgressDone' : 'logGateProgress'
+    const title = i18n.t(titleKey, { tries: tries, maxTries: limit.maxTries * formats.length })
+    if (progressLogId && appLog.update) {
+      appLog.update(progressLogId, level, title, detail)
+    } else if (!progressLogId) {
+      progressLogId = appLog.info(title, detail)
+      if (level !== 'info' && appLog.update) appLog.update(progressLogId, level, title, detail)
+    }
+  }
 
   function checkOne (format) {
     const outPath = outputPathFor(item, format)
@@ -147,17 +162,7 @@ export function enforceSizeLimit (item, store, locale) {
       return Promise.resolve({ format, size: 0, action: 'warn-missing' })
     }
     if (size <= maxBytes) {
-      return limit.autoDelete
-        ? cleanupRetryVersions(item, format).then(() => null)
-        : Promise.resolve(null)
-    }
-
-    if (!limit.autoQuality) {
-      warned.push({ format, size })
-      const result = { format, size, action: 'warn' }
-      return limit.autoDelete
-        ? cleanupRetryVersions(item, format).then(() => result)
-        : Promise.resolve(result)
+      return cleanupRetryVersions(item, format).then(() => null)
     }
 
     // 每种格式独立从原始质量起跑，上一格式降低的质量不能串给下一格式。
@@ -176,38 +181,30 @@ export function enforceSizeLimit (item, store, locale) {
         return Promise.resolve(null)
       }
       if (tries >= limit.maxTries) {
-        appLog.warn(i18n.t('logGateExhausted', {
-          fmt: format,
-          tries: tries,
-          size: formatMB(size),
-          max: formatLimit(maxBytes)
-        }))
         warned.push({ format, size, tries })
         return Promise.resolve({ format, size, action: 'warn-after-tries', tries })
       }
-
       const startQ = isFinite(baseQuality.value) ? baseQuality.value : 80
       const attempt = tries + 1
       const nextQ = Math.max(1, startQ - limit.step * attempt)
       if (nextQ >= Number(item.options.quality.value)) {
-        // 已到质量下限，不再空转
-        warned.push({ format, size, tries })
+        const quality = Number(item.options.quality.value)
+        warned.push({ format, size, tries, quality, floor: true })
         return Promise.resolve({ format, size, action: 'warn-floor', tries })
       }
       item.options.quality.checked = true
       item.options.quality.value = nextQ
-      triesUsed = Math.max(triesUsed, attempt)
+      triesUsed += 1
 
-      const targetPath = limit.autoDelete
-        ? outPath
-        : retryOutputPathFor(item, format, attempt + 1)
-      if (!limit.autoDelete) { versioned.push(targetPath) }
-      appLog.warn(i18n.t('logGateRetry', {
+      const retryDetail = i18n.t('logGateRetry', {
         fmt: format,
         tries: attempt,
         size: formatMB(size),
         max: formatLimit(maxBytes)
-      }))
+      })
+      updateRetryLog('info', triesUsed, retryDetail)
+
+      const targetPath = outPath
 
       store.dispatch('editProcess', {
         index: item.index,
@@ -242,16 +239,23 @@ export function enforceSizeLimit (item, store, locale) {
     }
 
     return retry(0, outPath).then((result) => {
-      if (limit.autoDelete && (!result || result.action === 'warn-after-tries' || result.action === 'warn-floor')) {
-        return cleanupRetryVersions(item, format).then(() => result)
-      }
-      return result
+      return cleanupRetryVersions(item, format).then(() => result)
     })
   }
 
   return formats.reduce(function (chain, format) {
     return chain.then(() => checkOne(format))
   }, Promise.resolve()).then(() => {
+    // Retry quality is temporary per-conversion state; preserve the user's
+    // configured baseline for the next run and for the settings panel.
+    if (originalQuality) item.options.quality = originalQuality
+    const summary = formats.map(function (format) {
+      const finalSize = fs.statSize(outputPathFor(item, format))
+      return format + ' ' + formatMB(finalSize) + (finalSize > maxBytes ? ' > ' : ' ≤ ') + formatLimit(maxBytes)
+    }).join('; ')
+    if (triesUsed > 0 || warned.length) {
+      updateRetryLog(warned.length ? 'warn' : 'ok', triesUsed, summary)
+    }
     let text = locale.convertSuccess + '！'
     if (warned.length) {
       text = (locale.sizeLimitWarn || 'Over size limit') + ' ' +
@@ -266,8 +270,11 @@ export function enforceSizeLimit (item, store, locale) {
     store.dispatch('editProcess', {
       index: item.index,
       text: text,
-      schedule: 1
+      // A generated file that still exceeds the configured limit is not a
+      // successful conversion. The task card and output actions key off this
+      // status, so leave it visibly failed until the user adjusts the limit.
+      schedule: warned.length ? -1 : 1
     })
-    return { enforced: true, versioned, warned, triesUsed }
+    return { enforced: true, warned, triesUsed, succeeded: warned.length === 0 }
   })
 }

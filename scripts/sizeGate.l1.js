@@ -8,8 +8,15 @@ const source = fs.readFileSync(path.join(__dirname, '../src/util/processor/sizeG
   .replace(/^import .*$/gm, '')
   .replace(/^export function /gm, 'function ')
   .concat('\n globalThis.testApi = { normalizeSizeLimit, enforceSizeLimit }')
+const configSource = fs.readFileSync(path.join(__dirname, '../src/util/sizeLimitConfig.js'), 'utf8')
+  .replace(/^export function /gm, 'function ')
+  .concat('\n globalThis.sizeLimitConfigApi = { effectiveQualityRetries, adjustQualityRetrySettings, effectiveQualityStart, maxQualityRetries, maxAdjustableQualityStep, maxAdjustableQualityRetries }')
+const remapSource = fs.readFileSync(path.join(__dirname, '../src/util/frameRemap.js'), 'utf8')
+  .replace(/^import TYPE from .*$/m, '')
+  .replace(/^export function /gm, 'function ')
+  .concat('\n globalThis.frameRemapApi = { sampleFrameIndices, sampleTimedFrameIndices, frameRemapSettings, remapSequence }')
 
-function makeHarness (autoDelete, maxTries) {
+function makeHarness (autoDelete, maxTries, maxKB, staysOverAtQualityFloor) {
   const sizes = Object.create(null)
   const logs = []
   const dispatches = []
@@ -42,14 +49,28 @@ function makeHarness (autoDelete, maxTries) {
     apng2gif: () => Promise.resolve(),
     apng2webp: item => {
       const q = Number(item.options.quality.value)
-      sizes[path.join(item.basic.tmpOutputDir, 'out.webp')] = q <= 60 ? 450000 : 700000
+      sizes[path.join(item.basic.tmpOutputDir, 'out.webp')] = staysOverAtQualityFloor
+        ? 510000 + q * 6000
+        : (q <= 60 ? 450000 : 700000)
       return Promise.resolve()
     },
-    appLog: { warn: message => logs.push(message), error: message => logs.push(message) },
+    appLog: {
+      info: (message, detail) => {
+        logs.push(message + (detail ? ' — ' + detail : ''))
+        return logs.length
+      },
+      update: (id, level, message, detail) => {
+        logs[id - 1] = message + (detail ? ' — ' + detail : '')
+      },
+      warn: message => logs.push(message),
+      error: message => logs.push(message)
+    },
     i18n: {
       t: (key, args) => key + ' ' + Object.keys(args).map(k => k + '=' + args[k]).join(' ')
     }
   }
+  vm.runInNewContext(configSource, context, { filename: 'sizeLimitConfig.js' })
+  context.effectiveQualityRetries = context.sizeLimitConfigApi.effectiveQualityRetries
   vm.runInNewContext(source, context, { filename: 'sizeGate.js' })
   const item = {
     index: 0,
@@ -60,7 +81,7 @@ function makeHarness (autoDelete, maxTries) {
       quality: { checked: true, value: 80 },
       sizeLimit: {
         enabled: true,
-        maxBytes: 500 * 1024,
+        maxBytes: (maxKB || 500) * 1024,
         autoDelete,
         autoQuality: true,
         step: 10,
@@ -70,18 +91,58 @@ function makeHarness (autoDelete, maxTries) {
   }
   sizes['/out/animation.webp'] = 900000
   const store = { dispatch: (type, payload) => dispatches.push({ type, payload }) }
-  return { api: context.testApi, item, sizes, logs, dispatches, store }
+  return { api: context.testApi, retryConfig: context.sizeLimitConfigApi, item, sizes, logs, dispatches, store }
 }
 
 async function main () {
+  const remapContext = { TYPE: { Comp: 'Comp' }, Number, Math, isFinite }
+  vm.runInNewContext(remapSource, remapContext, { filename: 'frameRemap.js' })
+  const frameIndices = remapContext.frameRemapApi.sampleFrameIndices(60, 12, 10)
+  assert.strictEqual(frameIndices.length, 50, '12 fps to 10 fps should sample 50 frames from a 5 second sequence')
+  assert.strictEqual(new Set(frameIndices).size, 50, 'remapping must not duplicate source frames')
+  assert.strictEqual(frameIndices[0], 0)
+  assert.strictEqual(frameIndices[frameIndices.length - 1], 59)
+  const timedIndices = remapContext.frameRemapApi.sampleTimedFrameIndices([0.11, 0.11, 0.11, 0.11, 0.11, 0.11], 4)
+  assert.deepStrictEqual(Array.from(timedIndices), [1, 3, 5], 'APNG timing should be sampled evenly across its original duration')
+  const variableTimedIndices = remapContext.frameRemapApi.sampleTimedFrameIndices([0.05, 0.3, 0.05, 0.3, 0.05, 0.25], 3)
+  assert.strictEqual(variableTimedIndices.length, 3, 'variable APNG frame delays should preserve total animation duration')
+  assert(variableTimedIndices.every((index, position) => position === 0 || index >= variableTimedIndices[position - 1]), 'timed sampling must preserve frame order')
+  const sourceFiles = Array.from({ length: 60 }, (_, index) => 'frame-' + index + '.png')
+  const remapped = remapContext.frameRemapApi.remapSequence({
+    basic: { type: 'Comp', compFps: 12 },
+    options: { frameRate: 12, frameRemap: { enabled: true, targetFrameRate: 10 } }
+  }, sourceFiles)
+  assert.strictEqual(remapped.files.length, 50)
+  assert.strictEqual(sourceFiles.length, 60, 'source frame list must remain intact')
+
   const keep = makeHarness(false, 10)
+  assert.strictEqual(keep.retryConfig.effectiveQualityStart(80, false), 100, 'unchecked compression starts threshold retries at quality 100')
+  assert.strictEqual(keep.retryConfig.effectiveQualityStart(80, true), 80, 'checked compression starts threshold retries at the selected quality')
+  assert.strictEqual(keep.retryConfig.maxQualityRetries(80, 10), 7, 'quality must stay above zero')
+  const linked = keep.retryConfig.adjustQualityRetrySettings(80, 10, 19, 'tries')
+  assert.strictEqual(linked.step, 4, 'requesting 19 retries from quality 80 lowers a step of 10 to 4')
+  assert.strictEqual(linked.maxTries, 19)
+  const linkedFromStep = keep.retryConfig.adjustQualityRetrySettings(80, 4, 7, 'step')
+  assert.strictEqual(linkedFromStep.maxTries, 19, 'changing decrement must remap the retry count in the other direction')
+  const cappedRetries = keep.retryConfig.maxQualityRetries(100, 1)
+  assert.strictEqual(cappedRetries, 50, 'slider maximum must match the runtime retry cap')
+  assert.strictEqual(keep.retryConfig.maxAdjustableQualityStep(80, 50, 1), 2, 'step slider must remain draggable at 50 retries')
+  const unlockedStep = keep.retryConfig.adjustQualityRetrySettings(80, 2, 50, 'step')
+  assert.strictEqual(unlockedStep.step, 2)
+  assert.strictEqual(unlockedStep.maxTries, 39, 'moving step must remap retries to a compatible value')
+  assert.strictEqual(keep.retryConfig.maxAdjustableQualityRetries(80, 79, 1), 2, 'retry slider must remain adjustable at the maximum step')
+  const unusableQuality = keep.retryConfig.adjustQualityRetrySettings(0, 5, 10, 'quality')
+  assert.strictEqual(unusableQuality.step, 1, 'quality zero has no valid retry decrement')
+  assert.strictEqual(unusableQuality.maxTries, 0, 'quality zero has no valid retry count')
+  const bounded = keep.retryConfig.adjustQualityRetrySettings(80, 7, 19, 'step')
+  assert.strictEqual(bounded.maxTries, 11, 'a step of 7 permits at most 11 retries from quality 80')
   const kept = await keep.api.enforceSizeLimit(keep.item, keep.store, {})
-  assert.strictEqual(keep.sizes['/out/animation.webp'], 900000, 'original should remain when keeping versions')
-  assert.strictEqual(keep.sizes['/out/animation_v2.webp'], 700000, 'first retry should be retained')
-  assert.strictEqual(keep.sizes['/out/animation_v3.webp'], 450000, 'retry should stop once under 500 KiB')
+  assert.strictEqual(keep.sizes['/out/animation.webp'], 450000, 'retries replace the output and stop once under 500 KiB')
+  assert.strictEqual(Object.keys(keep.sizes).filter(file => /_v\d+\.webp$/.test(file)).length, 0, 'retry versions are not retained')
   assert.strictEqual(kept.triesUsed, 2)
-  assert(keep.logs.some(line => line.indexOf('max=500.0KB') >= 0), 'logs should report the actual 500 KiB limit')
-  assert(keep.logs.some(line => line.indexOf('tries=1') >= 0), 'retry numbering should start at one')
+  assert(keep.logs.some(line => line.indexOf('500.0KB') >= 0), 'logs should report the actual 500 KiB limit')
+  assert(keep.logs.some(line => line.indexOf('logGateProgressDone') >= 0 && line.indexOf('tries=2') >= 0), 'the summary should show the final retry count')
+  assert.strictEqual(keep.logs.filter(line => line.indexOf('logGateProgress') >= 0).length, 1, 'retries should update a single log row')
 
   const replace = makeHarness(true, 10)
   replace.sizes['/out/animation_v9.webp'] = 1200000
@@ -93,7 +154,33 @@ async function main () {
   const result = await exhausted.api.enforceSizeLimit(exhausted.item, exhausted.store, {})
   assert.strictEqual(exhausted.sizes['/out/animation.webp'], 700000, 'retry exhaustion must retain the last output')
   assert.strictEqual(result.warned.length, 1)
-  assert(exhausted.logs.some(line => line.indexOf('logGateExhausted') === 0))
+  assert(exhausted.logs.some(line => line.indexOf('logGateProgressWarn') >= 0 && line.indexOf('tries=1') >= 0))
+  assert.strictEqual(exhausted.dispatches.filter(({ payload }) => payload && payload.schedule !== undefined).slice(-1)[0].payload.schedule, -1)
+
+  const noRetries = makeHarness(true, 0)
+  const noRetryResult = await noRetries.api.enforceSizeLimit(noRetries.item, noRetries.store, {
+    convertSuccess: '转换完成',
+    sizeLimitWarn: '超出大小阈值'
+  })
+  assert.strictEqual(noRetryResult.triesUsed, 0, 'zero retries must be honored')
+  assert.strictEqual(noRetries.sizes['/out/animation.webp'], 900000, 'zero retries leave the measured output intact')
+  assert.strictEqual(noRetryResult.succeeded, false, 'zero retries with an over-limit output are not successful')
+
+  const floor = makeHarness(true, 19, 400, true)
+  floor.sizes['/out/animation.webp'] = 1100000
+  const floorResult = await floor.api.enforceSizeLimit(floor.item, floor.store, {
+    convertSuccess: '转换完成',
+    sizeLimitWarn: '超出大小阈值',
+    sizeLimitQualityFloor: '{format} 已重压 {tries} 次并降至最低质量 {quality}，最终 {size}，仍高于阈值 {max}'
+  })
+  assert.strictEqual(floorResult.triesUsed, 7, 'quality 80 with step 10 permits seven retries while keeping quality above zero')
+  assert.strictEqual(floor.item.options.quality.value, 80, 'retry quality must not overwrite the user configured baseline')
+  assert.strictEqual(floor.sizes['/out/animation.webp'], 570000, 'keep the last result even if it cannot meet the threshold')
+  const finalFloorStatus = floor.dispatches.filter(({ payload }) => payload && payload.schedule !== undefined).slice(-1)[0]
+  assert.strictEqual(finalFloorStatus.payload.schedule, -1, 'an output still over the threshold must use the failed task state')
+  assert.strictEqual(floorResult.succeeded, false, 'an unmet threshold must not report success')
+  assert(floor.logs.some(line => line.indexOf('logGateProgressWarn') >= 0 && line.indexOf('tries=7') >= 0), 'summarize the retry count when the threshold remains unmet')
+  assert(floor.dispatches.some(({ payload }) => payload && payload.text && payload.text.indexOf('超出大小阈值') >= 0))
 
   console.log('size gate L1 OK')
 }

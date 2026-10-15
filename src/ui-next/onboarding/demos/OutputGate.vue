@@ -87,25 +87,14 @@
           <span>{{ $t('obGateEnable') }}</span>
         </label>
 
-        <label class="gate-toggle">
-          <input class="gate-check" type="checkbox" v-model="autoQuality" @change="stop">
-          <span>{{ $t('obGateAutoQuality') }}</span>
+        <label class="gate-range gate-range--wide">
+          <span>{{ $t('obGateStep') }} <b>{{ stepVal }} q</b></span>
+          <input type="range" min="1" :max="stepMax" :value="stepVal" :disabled="running" @input="setStep($event.target.value)">
         </label>
 
-        <label class="gate-field">
-          <span>{{ $t('obGateStep') }}</span>
-          <span class="gate-field__row">
-            <input class="gate-num" type="number" min="1" max="20" v-model.number="stepVal" @change="stop">
-            <span class="gate-suffix">q</span>
-          </span>
-        </label>
-
-        <label class="gate-field">
-          <span>{{ $t('obGateTries') }}</span>
-          <span class="gate-field__row">
-            <input class="gate-num" type="number" min="3" max="8" v-model.number="tries" @change="stop">
-            <span class="gate-suffix">{{ $t('obGateTimes') }}</span>
-          </span>
+        <label class="gate-range gate-range--wide">
+          <span>{{ $t('obGateTries') }} <b>{{ tries }} {{ $t('obGateTimes') }}</b></span>
+          <input type="range" min="0" :max="triesMax" :value="tries" :disabled="running" @input="setTries($event.target.value)">
         </label>
       </div>
 
@@ -130,6 +119,8 @@
  *   · 「自动重压」从 q=85 起按 step 递减，直到 ≤ 阈值、或达最多重试 / q 触底。
  * 动效只用 width / opacity / transform；颜色全走 token（暗色荧光绿、亮色砖橙）。
  */
+import { maxAdjustableQualityRetries, maxAdjustableQualityStep, adjustQualityRetrySettings } from '../../../util/sizeLimitConfig'
+
 const FORMATS = ['APNG', 'GIF', 'WEBP']
 const FMT_FACTOR = { APNG: 1, GIF: 0.72, WEBP: 0.55 }
 
@@ -139,11 +130,11 @@ export default {
     return {
       FORMATS,
       q: 85,
+      qualityBase: 85,
       fmt: 'APNG',
       unit: 'MB',
       limitRaw: 1,
       enabled: true,
-      autoQuality: true,
       stepVal: 12,
       tries: 5,
       running: false,
@@ -190,7 +181,9 @@ export default {
     limitPct () {
       const scale = Math.max(this.maxMB * 2.2, 1)
       return Math.min(100, (this.maxMB / scale) * 100)
-    }
+    },
+    stepMax () { return maxAdjustableQualityStep(this.qualityBase, this.tries, this.stepVal) },
+    triesMax () { return maxAdjustableQualityRetries(this.qualityBase, this.stepVal, this.tries) }
   },
   created () {
     this.reduceMotion = typeof window !== 'undefined' && typeof window.matchMedia === 'function' &&
@@ -212,7 +205,23 @@ export default {
     /* ---------- 交互 ---------- */
     onSlide (v) {
       this.stop()
-      this.q = Number(v) || 85
+      this.qualityBase = Number(v) || 85
+      this.q = this.qualityBase
+      const retry = adjustQualityRetrySettings(this.qualityBase, this.stepVal, this.tries, 'quality')
+      this.stepVal = retry.step
+      this.tries = retry.maxTries
+    },
+    setStep (v) {
+      this.stop()
+      const retry = adjustQualityRetrySettings(this.qualityBase, v, this.tries, 'step')
+      this.stepVal = retry.step
+      this.tries = retry.maxTries
+    },
+    setTries (v) {
+      this.stop()
+      const retry = adjustQualityRetrySettings(this.qualityBase, this.stepVal, v, 'tries')
+      this.stepVal = retry.step
+      this.tries = retry.maxTries
     },
     pickFmt (f) {
       this.stop()
@@ -242,7 +251,7 @@ export default {
     runDemo () {
       this.stop()
       this.log = []
-      let q = 85
+      let q = this.qualityBase
       let n = 0
       this.running = true
       this.q = q
@@ -268,10 +277,9 @@ export default {
         }
         this.addLog(head + ' · ' + this.$t('obGateOver'), 'is-over')
 
-        if (!this.autoQuality) { this.finish(false); return }
-        if (n >= this.tries || q <= 10) { this.finish(false); return }
+        if (n - 1 >= this.tries) { this.finish(false); return }
 
-        q = Math.max(10, q - this.stepVal)
+        q = Math.max(1, this.qualityBase - this.stepVal * n)
         this.timer = setTimeout(attempt, delay)
       }
 
@@ -580,6 +588,35 @@ export default {
   align-items: center;
   gap: var(--is-s-1);
   flex: 0 0 auto;
+}
+
+.gate-range {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--is-s-1);
+  font-size: var(--is-fs-xs);
+  color: var(--is-text-2);
+}
+
+.gate-range--wide { grid-column: 1 / -1; }
+
+.gate-range > span {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--is-s-1);
+}
+
+.gate-range b {
+  color: var(--is-accent);
+  font-family: var(--is-mono);
+}
+
+.gate-range input[type='range'] {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  accent-color: var(--is-accent);
 }
 
 .gate-toggle {

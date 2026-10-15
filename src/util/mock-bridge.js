@@ -269,6 +269,7 @@ function seedItems (fs, path, storage) {
       },
       options: {
         frameRate: 25,
+        frameRemap: { enabled: false, targetFrameRate: 12 },
         loop: 0,
         outputSuffix: '',
         outputName,
