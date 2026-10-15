@@ -94,102 +94,6 @@
         </div>
       </div>
 
-      <!-- 动画参数：帧率与循环次数 -->
-      <div v-if="showFrame || canRemapFrames" class="mod-form__group animation-settings">
-        <p class="mod-form__caption">{{ $t('animationSettings') }}</p>
-        <div class="animation-settings__row">
-          <div v-if="showFrame" class="mod-form__row">
-            <span class="row-label">{{ $t('fps') }}</span>
-            <is-input v-model="frameRate" type="number" class="num" :max="100" :min="0" number placeholder="25" />
-            <button type="button" class="is-info" v-tip="$t('fpsUnit')">
-              <is-icon name="info" size="sm" />
-            </button>
-          </div>
-          <div class="mod-form__row">
-            <span class="row-label">{{ $t('loop') }}</span>
-            <is-input v-model="loop" type="number" class="num" number placeholder="0" />
-            <span class="unit">{{ $t('times') }}</span>
-            <button type="button" class="is-info" v-tip="$t('loopTips')">
-              <is-icon name="info" size="sm" />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- 压缩设置：质量与抽帧并排，阈值设置放在下方 -->
-      <div class="mod-form__group compression-settings">
-        <p class="mod-form__caption">{{ $t('compressionSettings') }}</p>
-        <div class="compression-settings__controls">
-          <div class="mod-form__row">
-            <span class="row-label">{{ $t('compressionQuality') }}</span>
-            <is-checkbox v-model="qualityCheck">{{ $t('enable') }}</is-checkbox>
-            <is-input
-              v-model="quality"
-              type="number"
-              class="num"
-              :disabled="!qualityCheck"
-              :max="100"
-              :min="0"
-              number
-              placeholder="100"
-            />
-            <button type="button" class="is-info" :aria-label="$t('compressionQuality')" v-tip="$t('qualityTip')">
-              <is-icon name="info" size="sm" />
-            </button>
-          </div>
-          <div v-if="canRemapFrames" class="mod-form__row mod-form__row--remap">
-            <is-checkbox v-model="frameRemapEnabled">{{ $t('frameRemapEnable') }}</is-checkbox>
-            <template v-if="frameRemapEnabled">
-              <span class="row-label row-label--remap">{{ $t('frameRemapTarget') }}</span>
-              <is-input v-model="frameRemapTargetRate" type="number" class="num" :max="remapSourceRate" :min="0.01" :step="0.01" number />
-              <button type="button" class="is-info" :aria-label="$t('frameRemapTarget')" v-tip="$t('frameRemapTip')">
-                <is-icon name="info" size="sm" />
-              </button>
-            </template>
-          </div>
-        </div>
-        <p v-if="hasUnsupportedRemapItems" class="frame-remap-note">
-          {{ $t('frameRemapUnsupported') }}
-        </p>
-
-        <div class="compression-settings__threshold">
-          <div class="mod-form__capline">
-            <p class="mod-form__caption mod-form__caption--flush">{{ $t("sizeLimit") }}</p>
-            <span class="capline-act">
-              <is-switch v-model="sizeEnabled" />
-              <button type="button" class="is-info" :aria-label="$t('sizeLimitEnable')" v-tip="$t('sizeLimitEnableTip')">
-                <is-icon name="info" size="sm" />
-              </button>
-            </span>
-          </div>
-          <div v-show="sizeEnabled" class="size-limit">
-            <div class="size-limit__row">
-              <span class="size-limit__label">{{ $t('sizeLimitMax') }}</span>
-              <is-input
-                class="num"
-                :value="sizeDraft !== null ? sizeDraft : sizeValueText"
-                inputmode="decimal"
-                placeholder="1"
-                @focus="onSizeFocus"
-                @input="onSizeDraftInput"
-                @blur="onSizeBlur"
-              />
-              <is-segmented v-model="sizeUnit" :options="['MB', 'KB']" size="sm" />
-              <button type="button" class="is-info" :aria-label="$t('sizeLimitMax')" v-tip="$t('sizeLimitMaxTip')">
-                <is-icon name="info" size="sm" />
-              </button>
-            </div>
-            <quality-retry-sliders
-              :start-quality="minimumSelectedQuality"
-              :step="sizeStep"
-              :tries="sizeMaxTries"
-              @step-change="sizeStep = $event"
-              @tries-change="sizeMaxTries = $event"
-            />
-          </div>
-        </div>
-      </div>
-
       <!-- 输出格式：三等分 -->
       <div class="mod-form__group">
         <p class="mod-form__caption">{{ $t('outputFormat') }}</p>
@@ -276,6 +180,100 @@
               </transition>
             </div>
           </transition>
+        </div>
+      </div>
+
+      <!-- 动画参数：帧率与循环次数 -->
+      <div v-if="showFrame || canRemapFrames" class="mod-form__group animation-settings">
+        <p class="mod-form__caption">{{ $t('animationSettings') }}</p>
+        <div class="animation-settings__row">
+          <div v-if="showFrame" class="mod-form__row">
+            <span class="row-label">{{ $t('fps') }}</span>
+            <is-input v-model="frameRate" type="number" class="num" :max="100" :min="0" number placeholder="25" />
+            <button type="button" class="is-info" v-tip="$t('fpsUnit')">
+              <is-icon name="info" size="sm" />
+            </button>
+          </div>
+          <div class="mod-form__row">
+            <span class="row-label">{{ $t('loop') }}</span>
+            <is-input v-model="loop" type="number" class="num" number placeholder="0" />
+            <span class="unit">{{ $t('times') }}</span>
+            <button type="button" class="is-info" v-tip="$t('loopTips')">
+              <is-icon name="info" size="sm" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 压缩设置：质量与抽帧并排，阈值设置放在下方 -->
+      <div class="mod-form__group compression-settings">
+        <p class="mod-form__caption">{{ $t('compressionSettings') }}</p>
+        <div class="compression-settings__controls">
+          <div class="mod-form__row">
+            <span class="row-label">{{ $t('compressionQuality') }}</span>
+            <is-checkbox v-model="qualityCheck">{{ $t('enable') }}</is-checkbox>
+            <is-input
+              v-model="quality"
+              type="number"
+              class="num"
+              :disabled="!qualityCheck"
+              :max="100"
+              :min="0"
+              number
+              placeholder="100"
+            />
+            <button type="button" class="is-info" :aria-label="$t('compressionQuality')" v-tip="$t('qualityTip')">
+              <is-icon name="info" size="sm" />
+            </button>
+          </div>
+          <div v-if="canRemapFrames" class="mod-form__row mod-form__row--remap">
+            <is-checkbox v-model="frameRemapEnabled">{{ $t('frameRemapEnable') }}</is-checkbox>
+            <span class="row-label row-label--remap">{{ $t('frameRemapTarget') }}</span>
+            <is-input v-model="frameRemapTargetRate" type="number" class="num" :disabled="!frameRemapEnabled" :max="remapSourceRate" :min="0.01" :step="0.01" number />
+            <button type="button" class="is-info" :aria-label="$t('frameRemapTarget')" v-tip="$t('frameRemapTip')">
+              <is-icon name="info" size="sm" />
+            </button>
+          </div>
+        </div>
+        <p v-if="hasUnsupportedRemapItems" class="frame-remap-note">
+          {{ $t('frameRemapUnsupported') }}
+        </p>
+
+        <div class="compression-settings__threshold">
+          <div class="mod-form__capline">
+            <p class="mod-form__caption mod-form__caption--flush">{{ $t("sizeLimit") }}</p>
+            <span class="capline-act">
+              <is-switch v-model="sizeEnabled" />
+              <button type="button" class="is-info" :aria-label="$t('sizeLimitEnable')" v-tip="$t('sizeLimitEnableTip')">
+                <is-icon name="info" size="sm" />
+              </button>
+            </span>
+          </div>
+          <div v-show="sizeEnabled" class="size-limit">
+            <div class="size-limit__row">
+              <span class="size-limit__label">{{ $t('sizeLimitMax') }}</span>
+              <is-input
+                class="num"
+                :value="sizeDraft !== null ? sizeDraft : sizeValueText"
+                inputmode="decimal"
+                placeholder="1"
+                @focus="onSizeFocus"
+                @input="onSizeDraftInput"
+                @blur="onSizeBlur"
+              />
+              <is-segmented v-model="sizeUnit" :options="['MB', 'KB']" size="sm" />
+              <button type="button" class="is-info" :aria-label="$t('sizeLimitMax')" v-tip="$t('sizeLimitMaxTip')">
+                <is-icon name="info" size="sm" />
+              </button>
+            </div>
+            <quality-retry-sliders
+              :start-quality="minimumSelectedQuality"
+              :step="sizeStep"
+              :tries="sizeMaxTries"
+              @step-change="sizeStep = $event"
+              @tries-change="sizeMaxTries = $event"
+            />
+          </div>
         </div>
       </div>
 
