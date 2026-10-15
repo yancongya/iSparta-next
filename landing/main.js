@@ -7,7 +7,7 @@
     name: "iSparta-next",
     artifactPrefix: "isparta-next",
     repo: "yancongya/iSparta-next",
-    /** 更新日志实时拉取条数 */
+    /** 更新日志展示条数；Hero 下载统计另外分页汇总全部 Release */
     releaseListCount: 8,
     get releaseLatestApi() {
       return "https://api.github.com/repos/" + this.repo + "/releases/latest";
@@ -926,6 +926,47 @@
     }
   }
 
+  function applyHeroDownloadCount (releases) {
+    var el = document.getElementById("hero-download-count")
+    if (!el || !releases || !releases.length) return
+    var total = 0
+    releases.forEach(function (release) {
+      ;((release && release._allAssetDownloads) || []).forEach(function (downloads) {
+        total += Number(downloads) || 0
+      })
+    })
+    if (!releases.some(function (release) { return !!(release && release._hasAssets) })) return
+    var label = tRel("hero.downloadCount", "累计下载")
+    el.textContent = label + " · " + new Intl.NumberFormat().format(total)
+    el.hidden = false
+  }
+
+  function fetchAllReleaseDownloadAssets (getJson) {
+    var all = []
+    var page = 1
+    var perPage = 100
+    function next () {
+      var url = "https://api.github.com/repos/" + BRAND.repo +
+        "/releases?per_page=" + perPage + "&page=" + page
+      return getJson(url, "all-releases-" + page).then(function (batch) {
+        if (!Array.isArray(batch) || !batch.length) return all
+        all = all.concat(batch.filter(function (release) {
+          return release && !release.draft
+        }).map(function (release) {
+          var mapped = mapApiRelease(release)
+          if (!mapped) return null
+          mapped._allAssetDownloads = (release.assets || []).map(function (asset) { return asset.download_count })
+          mapped._hasAssets = !!(release.assets && release.assets.length)
+          return mapped
+        }).filter(Boolean))
+        if (batch.length < perPage) return all
+        page += 1
+        return next()
+      })
+    }
+    return next()
+  }
+
   function tRel(key, fallback) {
     if (window.LandingI18n && typeof window.LandingI18n.t === "function") {
       var v = window.LandingI18n.t(key);
@@ -1237,6 +1278,7 @@
     if (!releases || !releases.length) return;
     renderRelBoard(releases);
     applyHeroVersion(releases[0].tag, releases[0].publishedAt);
+    applyHeroDownloadCount(releases);
     var a0 = releases[0].assets || {};
     var map = {
       win: a0.win && a0.win.url,
@@ -1282,11 +1324,20 @@
     getJson(listApi, "list")
       .then(function (list) {
         var releases = (list || [])
-          .filter(function (r) { return r && !r.draft && !r.prerelease })
-          .map(mapApiRelease)
+          .filter(function (r) { return r && !r.draft })
+          .map(function (release) {
+            var mapped = mapApiRelease(release)
+            if (!mapped) return null
+            mapped._allAssetDownloads = (release.assets || []).map(function (asset) { return asset.download_count })
+            mapped._hasAssets = !!(release.assets && release.assets.length)
+            return mapped
+          })
           .filter(Boolean)
         if (releases.length) {
           applyLiveDownloads(releases)
+          fetchAllReleaseDownloadAssets(getJson).then(applyHeroDownloadCount).catch(function () {
+            // 全量分页失败时保留已加载的最近版本合计。
+          })
           return null
         }
         return getJson(latestApi, "latest")

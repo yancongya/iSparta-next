@@ -799,6 +799,20 @@ html[data-theme="dark"] .hero::before {
   color: var(--paper);
 }
 
+.hero-download-count {
+  display: inline-flex;
+  align-items: center;
+  min-height: 20px;
+  color: var(--muted, #666);
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.hero-download-count[hidden] {
+  display: none;
+}
+
 html[data-theme="dark"] .hero-actions .btn-primary {
   background: #eef3ec;
   color: #0c0f0e;
