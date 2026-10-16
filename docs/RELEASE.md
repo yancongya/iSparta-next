@@ -132,6 +132,8 @@ git push origin :refs/tags/vX.Y.Z
 git tag -d vX.Y.Z
 ```
 
+如果工作流已把版本提交推到 `master`，但在打 tag 前失败，不要再次按 `patch` 发版（会跳过该版本）。先确认对应 tag 尚不存在，再由维护者创建该版本 tag；随后从 `master` 运行 Release 工作流并填写 `resume_version=<当前 package.json 版本>`，工作流会校验版本与 tag、跳过重复 bump/commit/tag，只构建并发布该版本。
+
 ## 5. 不要做的事
 
 - 不要在未合并进 `master` 时发版
