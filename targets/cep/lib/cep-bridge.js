@@ -235,8 +235,7 @@
   }
 
   function statSize (p) {
-    var r = statSizeRaw(p)
-    return (r && r.ok) ? r.size : -1
+    return statSizeRaw(p)
   }
 
   function readDataUrl (p) {

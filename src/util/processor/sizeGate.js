@@ -156,8 +156,21 @@ export function enforceSizeLimit (item, store, locale) {
   function checkOne (format) {
     const outPath = outputPathFor(item, format)
     let size = fs.statSize(outPath)
+    appLog.info('size-gate 输出文件检查', {
+      format: format,
+      path: outPath,
+      sizeBytes: size,
+      exists: fs.existsSync(outPath),
+      maxBytes: maxBytes
+    })
     if (size < 0) {
       // 输出缺失
+      appLog.error('size-gate 无法读取输出文件大小', {
+        format: format,
+        path: outPath,
+        sizeBytes: size,
+        exists: fs.existsSync(outPath)
+      })
       warned.push({ format, size: 0, missing: true })
       return Promise.resolve({ format, size: 0, action: 'warn-missing' })
     }
