@@ -28,6 +28,8 @@
 ### Recent highlights
 
 - **AE panel:** one-button switch between comp tree and task list; right-click to open comp location / output folder / stop task; double-click to jump to a comp; pinned filter bar
+- **Tasks and output:** per-comp settings persist; completed rows show final output size; copying files reports progress and result
+- **Output actions:** copy completed files; hold Alt while hovering the toolbar button to open the output folder
 - **Bundled install:** system-wide installation (UAC prompt, CEP under Common Files, a single copy per machine); auto-detects the AE version; version shown in both the desktop title bar and the AE panel
 - **Onboarding (7 pages):** Welcome → Import → Output → Naming → Path variables → AE → Done, covering import methods, output settings and naming rules in one pass
 
@@ -80,7 +82,7 @@ This repo is **not a small patch**. It is a **full frontend/backend refactor** o
 2. **Output path strategy + templates** — source / beside / custom; `{srcPath}` `{srcName}` `{srcParent}` etc.  
 3. **Before/after compare slider** — click a done thumbnail, drag or arrow-key to compare  
 4. **Paste import** — drag, open folder, or paste a screenshot  
-5. **Light / dark theme** — including “follow system”  
+5. **Light / dark theme** — switch from the desktop title bar or settings panel; CEP uses the settings panel, including “follow system”
 6. **Custom UI workspace** — two columns, 1:1 covers, hover preview, collapsible panel, progress, batch stats  
 7. **Motion** — entrance, number tween, confetti, drop feedback; respects `prefers-reduced-motion`  
 8. **Per-frame delay** — PNG sequences can set delay per frame  

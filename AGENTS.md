@@ -69,7 +69,7 @@ node scripts\dev\check.js all                # lint + pack + ports
 - 业务改动与发版 bump（`chore(release): vX.Y.Z [skip ci]`）分开：bump 由 CI 生成，本地只提交功能 commit
 - 提交前跑 `npm run lint`；不要 commit 本地日志（`dev.log`、`.g*-run.log` 等）
 - 文案只写本仓库自身的改动与用户收益；**不要**在 commit / Release / 文档里点名外部项目或写「参考了…」
-- **不要**在 commit 主题里写裸 `@word`（如 `@import`）：Release 笔记由 commit 主题生成，GitHub 会把它渲染成用户提及、并在 Release 页生成假的 Contributors 段（v3.6.8 曾因此多出一个不存在的 "import" 贡献者）。`release.yml` 的 notes 生成器有零宽空格兜底，但提交时就该避开
+- **不要**在 commit 主题里写裸 `@word`（如 `@import`）：GitHub 会把它渲染成用户提及、并在 Release 页生成假的 Contributors 段（v3.6.8 曾因此多出一个不存在的 "import" 贡献者），提交时就该避开
 
 示例：
 
@@ -86,34 +86,12 @@ feat(list): 空白处框选任务；Delete 删除所选
 
 ### 2.3 Release 说明结构（用户可见）
 
-发版正文用 GitHub Markdown，**结构固定**：
+Release 正文与 commit 文案分开维护，每个版本在 `.github/release-notes/vX.Y.Z.md` 手工撰写；Release workflow 不再拿 commit 主题拼 Release 正文。CI 在版本 bump 前校验版本文案和首屏条目数量，再补入资产表与完整变更链接。Release 正文用 GitHub Markdown，**结构固定**：
 
 1. **标题行 / 首屏简述**：`更新到 vX.Y.Z` + 3–6 条「用户能感知的变化」短句（先写这个，不要一上来贴 commit 列表）
 2. **折叠的详细说明**：完整变更、修复、开发说明等
 
-模板（可交给 Actions 或手工粘贴）：
-
-```markdown
-## 更新到 vX.Y.Z
-
-- 一句话：最重要的变化
-- 一句话：次重要
-- 一句话：体验/修复要点
-
-<details>
-<summary>详细说明</summary>
-
-### 新增
-- …
-
-### 修复
-- …
-
-### 开发 / 其他
-- …
-
-</details>
-```
+版本文案源文件结构见 [Release Notes 模板](.github/release-notes/TEMPLATE.md)。必须在提交代码前分别写清 commit 实现内容与 Release 用户收益；不要从 commit 列表复制 Release 正文。
 
 发版入口（**用现成脚本，不要另写一套**）：
 
@@ -124,7 +102,7 @@ feat(list): 空白处框选任务；Delete 删除所选
 # 等价：gh workflow run release.yml -R yancongya/iSparta-next -f bump=patch …
 ```
 
-CI：`release.yml` 负责 bump、打包、挂 Release（notes 模板见该 workflow）；`build.yml` 仅日常构建 Artifact；`pages.yml` 部署落地页。
+CI：`release.yml` 校验版本化 Release 文案、负责 bump、打包、挂 Release；`build.yml` 仅日常构建 Artifact；`pages.yml` 部署落地页。
 
 ## 3. 更新体验（产品约定）
 

@@ -99,6 +99,26 @@ jobs:
 
           const tag = 'v' + version
 
+          // Release 文案必须独立于 commit 主题维护。缺少版本文案时，在任何
+          // package 版本写入、commit 或 tag 之前失败，避免发布后再补文案。
+          const notesPath = path.join(process.cwd(), '.github', 'release-notes', `${tag}.md`)
+          if (!fs.existsSync(notesPath)) {
+            console.error(`Missing editorial release notes: ${notesPath}`)
+            process.exit(1)
+          }
+          const notes = fs.readFileSync(notesPath, 'utf8')
+          const required = ['## 更新到 {{TAG}}', '<details>', '<summary>详细说明</summary>', '<!-- RELEASE_INSTALLERS -->', '<!-- RELEASE_CHANGELOG -->', '</details>']
+          const missing = required.filter(marker => !notes.includes(marker))
+          if (missing.length) {
+            console.error('Release notes are missing required structure: ' + missing.join(', '))
+            process.exit(1)
+          }
+          const highlights = notes.split('<details>')[0].split('\n').filter(line => /^-\s+\S/.test(line))
+          if (highlights.length < 3 || highlights.length > 6) {
+            console.error(`Release notes need 3–6 user-facing highlights (found ${highlights.length})`)
+            process.exit(1)
+          }
+
           if (!resumeVersion) {
             pkg.version = version
             fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n')
@@ -151,7 +171,7 @@ jobs:
           TAG: ${{ steps.bump.outputs.tag }}
         run: git rev-parse --verify "refs/tags/${TAG}^{commit}" >/dev/null
 
-      - name: Generate release notes (bot summary)
+      - name: Assemble editorial release notes
         if: ${{ inputs.dry_run != true }}
         id: notes
         env:
@@ -161,92 +181,38 @@ jobs:
           REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
-          # 结构约定（见 AGENTS.md）：首屏「更新到 vX」+ 用户可见短列表；详细说明放 <details> 折叠
-          RANGE="${PREV_TAG}..HEAD^"
-          if [ -z "$PREV_TAG" ]; then
-            RANGE=""
-          fi
-
-          collect_lines () {
-            local pattern="$1"
-            # 路径排除：Release 面向安装包用户（桌面 + CEP），只收录影响产物的提交。
-            # landing/（GitHub Pages 落地页，独立部署）、docs/（仓库文档）改动静默跳过；
-            # 混合提交（同时改了 src/ 等与被排除路径）仍会收录。
-            local out=""
-            if [ -n "$RANGE" ]; then
-              out=$(git log $RANGE --pretty=format:'- %s' --no-merges --extended-regexp --regexp-ignore-case --grep="$pattern" -- . ':(exclude)landing' ':(exclude)docs' || true)
-            else
-              out=$(git log --pretty=format:'- %s' --no-merges --extended-regexp --regexp-ignore-case --grep="$pattern" -- . ':(exclude)landing' ':(exclude)docs' || true)
-            fi
-            # GitHub 会把正文里的 @word 渲染成用户提及、并在 Release 页生成 Contributors 段：
-            # 提交主题中的裸 @（如 "@import"）会误造出不存在的贡献者（v3.6.8 事故）。
-            # 在 @ 后插零宽空格（U+200B）打断提及匹配，视觉无变化。
-            printf '%s\n' "$out" | sed -E 's/@([A-Za-z0-9])/&\xe2\x80\x8b\1/g'
+          node <<'NODE'
+          const fs = require('fs')
+          const tag = process.env.TAG
+          const version = process.env.VERSION
+          const repo = process.env.REPO
+          const previousTag = process.env.PREV_TAG
+          const sourcePath = `.github/release-notes/${tag}.md`
+          let notes = fs.readFileSync(sourcePath, 'utf8')
+          const installers = [
+            '### 安装包', '',
+            '| 平台 | 文件 |', '| --- | --- |',
+            `| Windows x64 | \`isparta-next-${version}-win-x64.exe\` |`,
+            `| Linux x64 | \`isparta-next-${version}-linux-x64.AppImage\` |`,
+            `| macOS arm64（zip / pkg） | \`isparta-next-${version}-mac-arm64.zip\` / \`isparta-next-${version}-mac-arm64.pkg\` |`,
+            `| macOS x64（zip / pkg） | \`isparta-next-${version}-mac-x64.zip\` / \`isparta-next-${version}-mac-x64.pkg\` |`,
+            `| AE CEP Windows | \`isparta-next-${version}-cep-win.zip\` |`,
+            `| AE CEP macOS | \`isparta-next-${version}-cep-mac.zip\` |`, '',
+            '- Windows / Linux 安装版支持应用内更新；macOS 通过 pkg 安装，检测到 After Effects 时同步安装 CEP。',
+            '- macOS 构建尚未签名，首次打开时可能需要在「系统设置 → 隐私与安全性」允许。',
+            '- CEP zip 内含对应平台的安装说明与调试模式脚本。'
+          ].join('\n')
+          const changelog = previousTag
+            ? `**完整变更记录**：https://github.com/${repo}/compare/${previousTag}...${tag}`
+            : `**提交记录**：https://github.com/${repo}/commits/${tag}`
+          notes = notes.replaceAll('{{TAG}}', tag)
+            .replace('<!-- RELEASE_INSTALLERS -->', installers)
+            .replace('<!-- RELEASE_CHANGELOG -->', changelog)
+          if (/<!-- RELEASE_(INSTALLERS|CHANGELOG) -->/.test(notes)) {
+            throw new Error('Release note placeholders were not fully assembled')
           }
-
-          FEAT=$(collect_lines '^feat(\([^)]+\))?:')
-          FIX=$(collect_lines '^fix(\([^)]+\))?:')
-          DOCS=$(collect_lines '^docs(\([^)]+\))?:')
-
-          # 首屏简述：取 feat/fix 主题行（去掉 scope 前缀噪声），最多 6 条
-          HIGHLIGHT=$(
-            {
-              printf '%s\n' "$FEAT"
-              printf '%s\n' "$FIX"
-            } | sed -E 's/^- (feat|fix)(\([^)]+\))?: /- /' | awk 'NF' | head -n 6
-          )
-          if [ -z "$HIGHLIGHT" ]; then
-            HIGHLIGHT="- 本版本无用户可见功能变更（仅工程/依赖调整）。"
-          fi
-
-          {
-            echo "## 更新到 ${TAG}"
-            echo ""
-            echo "$HIGHLIGHT"
-            echo ""
-            echo "<details>"
-            echo "<summary>详细说明</summary>"
-            echo ""
-            if [ -n "$FEAT" ]; then
-              echo "### 新增 Features"
-              echo "$FEAT"
-              echo ""
-            fi
-            if [ -n "$FIX" ]; then
-              echo "### 修复 Fixes"
-              echo "$FIX"
-              echo ""
-            fi
-            if [ -n "$DOCS" ]; then
-              echo "### 文档 Docs"
-              echo "$DOCS"
-              echo ""
-            fi
-            echo "### 安装包 Installers"
-            echo ""
-            echo "| Platform | Asset |"
-            echo "| --- | --- |"
-            echo "| Windows x64 (NSIS) | \`isparta-next-${VERSION}-win-x64.exe\` |"
-            echo "| Linux x64 (AppImage) | \`isparta-next-${VERSION}-linux-x64.AppImage\` |"
-            echo "| macOS arm64 (zip) | \`isparta-next-${VERSION}-mac-arm64.zip\` |"
-            echo "| macOS x64 (zip) | \`isparta-next-${VERSION}-mac-x64.zip\` |"
-            echo "| macOS arm64 (pkg) | \`isparta-next-${VERSION}-mac-arm64.pkg\` |"
-            echo "| macOS x64 (pkg) | \`isparta-next-${VERSION}-mac-x64.pkg\` |"
-            echo "| AE CEP Windows | \`isparta-next-${VERSION}-cep-win.zip\` |"
-            echo "| AE CEP macOS | \`isparta-next-${VERSION}-cep-mac.zip\` |"
-            echo ""
-            echo "- Windows / Linux 安装版支持应用内自动更新（下载完成后提示重启）。"
-            echo "- macOS 主安装包为 pkg：安装时申请管理员权限，并在检测到 After Effects 时同步安装 CEP。CI 构建尚未签名，首次安装可能需要在「系统设置 → 隐私与安全性」允许打开。"
-            echo "- AE CEP 扩展 zip 解压后：\`安装方法-*.txt\` 与 PlayerDebugMode 脚本就在压缩包**顶层**（win: Add Keys.reg，mac: 安装扩展.command），按说明把 \`io.github.isparta-next\` 文件夹拷到 Adobe CEP extensions 目录即可。"
-            echo ""
-            if [ -n "$PREV_TAG" ]; then
-              echo "**Full Changelog**: https://github.com/${REPO}/compare/${PREV_TAG}...${TAG}"
-            else
-              echo "**Commits**: https://github.com/${REPO}/commits/${TAG}"
-            fi
-            echo ""
-            echo "</details>"
-          } > release-notes.md
+          fs.writeFileSync('release-notes.md', notes)
+          NODE
 
           echo "----- notes -----"
           cat release-notes.md

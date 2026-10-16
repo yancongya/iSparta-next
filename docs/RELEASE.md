@@ -10,7 +10,7 @@
         ▼
 GitHub Actions  Release 工作流
         │  bump 版本 → commit + tag
-        │  → 汇总 feat / fix / docs 生成 Release Notes
+        │  → 读取独立撰写的版本 Release Notes（不复用 commit 文案）
         │  → Win NSIS / Linux AppImage / macOS pkg（兼容 zip） → 挂 Release
         │  → 上传 latest*.yml（electron-updater）
         ▼
@@ -93,18 +93,19 @@ CI 会额外写入**稳定别名**（无版本号），供落地页 `releases/la
 > `latest*.yml` 的 `path` 必须与 **版本化** 资产名一致，供 electron-updater 定位安装包；**不要**改名或删除这些 yml。  
 > macOS pkg 由同一份已构建 CEP payload 与桌面应用组装；当前 CI 无 Developer ID 签名/公证。`latest-mac-pkg.yml` 独立记录 pkg 的 URL、SHA-512 和大小，不覆盖 electron-builder 的 zip 更新清单。
 
-### Release Notes 汇总规则
+### Release 文案规范
 
-工作流只汇总**影响安装包产物（桌面 + CEP）**的用户可见变更（便于应用内弹窗展示），两个维度同时过滤：
+Commit 与 Release 各自服务不同读者：commit 主题按 Conventional Commits 写实现改动；Release 正文单独写用户看到的变化，不能把 commit 列表直接贴进更新说明。
 
-| 维度 | 规则 |
-| --- | --- |
-| 类型 | `feat` / `fix` / `docs` 前缀进汇总；`chore` / `ci` / `build` / `refactor` / `perf` / `test` 等工程项**否**；无前缀 commit 默认不进主列表 |
-| 路径 | 只统计影响安装包的提交：`landing/`（落地页，pages.yml 独立部署）与 `docs/`（仓库文档）的改动**不进**更新日志；同时改了 `src/` 等产物路径的混合提交仍收录 |
+每个版本的编辑源保存在 `.github/release-notes/vX.Y.Z.md`，可从 [`TEMPLATE.md`](../.github/release-notes/TEMPLATE.md) 复制。正文必须包含：
 
-> 落地页与发版**解耦**：push 命中 `landing/**` 由 pages.yml 自动部署 Pages，不出现在 Release 更新日志里——更新日志只面向桌面版/CEP 用户。
+1. 首屏 `## 更新到 {{TAG}}` 和 **3–6 条用户收益摘要**，避免内部模块名、commit 前缀和开发过程描述。
+2. `<details><summary>详细说明</summary>` 折叠区，按「新增 / 修复 / 体验优化」解释具体行为；不适用的类别可删。
+3. `<!-- RELEASE_INSTALLERS -->` 和 `<!-- RELEASE_CHANGELOG -->` 两个占位符。CI 会在折叠区自动补安装资产表与比较链接。
 
-仍会附安装包表与 changelog 链接。若某次要改文案，在 GitHub 上 Edit release 即可。
+工作流会在改写版本号、提交 bump、创建 tag 之前校验对应 Release 文案文件、固定结构和摘要数量。缺少文案时会提前失败，不再退回由 commit 标题自动生成。新版本发布后，编辑源与 GitHub Release 正文保持一致；更正文案时应同时更新两处。
+
+每个新版本的文案文件必须先提交并 push 到 `master`（可与功能 commit 分开），然后触发 release workflow。`landing/` 页面部署仍由 `pages.yml` 独立处理，不进入桌面 / CEP Release 说明。
 
 ## 3. 版本号怎么选
 
