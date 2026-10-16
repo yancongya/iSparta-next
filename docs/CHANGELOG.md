@@ -11,6 +11,10 @@
 > 完整安装包与自动生成说明见 [Releases](https://github.com/yancongya/iSparta-next/releases)。  
 > Commit 规范与 Release 正文结构见 [AGENTS.md](../AGENTS.md)。
 
+### v3.6.20（2026-10-16）
+
+- 修复 CEP 合成序列询问弹窗的选项返回值，确保「复用现有帧」「重新渲染」「取消」分别执行对应操作。
+
 ### v3.6.19（2026-10-16）
 
 - 修复 CEP 合成动画渲染后未识别 URI 编码中文序列帧，导致误报无帧并转换失败。
