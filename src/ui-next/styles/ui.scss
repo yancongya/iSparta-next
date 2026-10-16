@@ -4,6 +4,7 @@
 // 与 tokens.css 配套：这里只描述结构与状态，一切颜色/尺寸/时长取自令牌。
 // 由 src/main.js 全局引入，组件本身不再各自写样式，避免皮肤分散。
 // ==========================================================================
+@import "./_bp";
 
 // --------------------------------------------------------------------------
 // 图标
@@ -995,6 +996,34 @@ body.is-scroll-locked {
   max-height: 0;
   margin-top: calc(-1 * var(--is-s-2));
   transform: translateX(60%) scale(0.94);
+}
+
+// CEP 面板窄且高度有限：toast 收到底部居中，避开顶栏与右侧操作区。
+// 使用唯一断点 token；桌面版保留右上角通知位置。
+@media (max-width: $bp-compact) {
+  body.is-cep .is-notice {
+    top: auto;
+    right: 50%;
+    bottom: var(--is-s-3);
+    width: calc(100vw - var(--is-s-6));
+    max-width: none;
+    transform: translateX(50%);
+  }
+
+  body.is-cep .is-notice-enter,
+  body.is-cep .is-notice-leave-to {
+    transform: translateY(8px) scale(0.98);
+  }
+}
+
+@media (max-width: $bp-narrow) {
+  body.is-cep .is-notice-item {
+    gap: var(--is-s-2);
+    padding: var(--is-s-2) var(--is-s-3);
+  }
+
+  body.is-cep .is-notice-item__icon { font-size: var(--is-fs-lg); }
+  body.is-cep .is-notice-item__title { font-size: var(--is-fs-sm); }
 }
 
 // 列表：FLIP 位移 + 进出场；位移用过冲曲线，重排后「弹一下」落位

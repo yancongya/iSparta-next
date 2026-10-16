@@ -70,6 +70,7 @@ import IsDialog from './ui/IsDialog.vue'
 import IsIcon from './ui/IsIcon.vue'
 import IsCheckbox from './ui/IsCheckbox.vue'
 import log from '../log'
+import notice from '../notice'
 
 export default {
   name: 'IsLogPanel',
@@ -134,27 +135,35 @@ export default {
     copyAll () {
       var text = log.toText()
       if (!text) { return }
-      var done = () => { this.$emit('copied') }
+      var done = () => {
+        this.$emit('copied')
+        notice.success(this.$t('logCopySuccess'))
+      }
       if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text).then(done).catch(() => this.fallbackCopy(text, done))
+        navigator.clipboard.writeText(text).then(done).catch(() => {
+          if (this.fallbackCopy(text)) done()
+          else notice.error(this.$t('logCopyFailed'))
+        })
       } else {
-        this.fallbackCopy(text, done)
+        if (this.fallbackCopy(text)) done()
+        else notice.error(this.$t('logCopyFailed'))
       }
     },
     // sandbox 渲染进程里 navigator.clipboard 可能因缺少焦点/权限而 reject，
     // execCommand 虽已废弃但在 Electron 内仍可用，作为兜底
-    fallbackCopy (text, done) {
+    fallbackCopy (text) {
       var ta = document.createElement('textarea')
       ta.value = text
       ta.setAttribute('readonly', '')
       ta.style.cssText = 'position:fixed;top:-1000px;left:0;opacity:0'
       document.body.appendChild(ta)
       ta.select()
+      var copied = false
       try {
-        document.execCommand('copy')
-        done()
-      } catch (e) { /* 复制失败时不打断用户 */ }
-      document.body.removeChild(ta)
+        copied = document.execCommand('copy')
+      } catch (e) { copied = false }
+      finally { document.body.removeChild(ta) }
+      return copied
     }
   }
 }

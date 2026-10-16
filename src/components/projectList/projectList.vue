@@ -137,6 +137,13 @@
             >
               <is-icon name="box" size="xs" /><span class="sum-v">≤ {{ sizeLimitOf(project) }}</span>
             </span>
+            <span
+              v-if="stateOf(project.process) === 'done' && outputSizeOf(project)"
+              class="sum sum--size"
+              v-tip="outputSizeTip(project)"
+            >
+              <is-icon name="save" size="xs" /><span class="sum-v">{{ outputSizeOf(project) }}</span>
+            </span>
           </div>
           <!-- 第三行：输出名 + 变量路径（仅桌面；CEP 名已在第一行） -->
           <div v-if="showOutPath" class="summary summary--out">
@@ -226,7 +233,7 @@
   </section>
 </template>
 <script>
-import { ipc } from '../../util/node-env'
+import { fs, path, ipc } from '../../util/node-env'
 import rightMenu from './menu'
 import DelayDialog from '../delayDialog/index.vue'
 import CompareDialog from '../compareDialog/index.vue'
@@ -573,6 +580,41 @@ export default {
       var fmt = project && project.options && project.options.outputFormat
       if (!fmt || !fmt.length) return this.$t('noFormat')
       return fmt.join('+')
+    },
+    outputFilesOf (project) {
+      var basic = (project && project.basic) || {}
+      var options = (project && project.options) || {}
+      var formats = options.outputFormat || []
+      if (!basic.outputPath || !options.outputName || !formats.length) return []
+      return formats.map(function (format) {
+        var ext = format === 'GIF' ? '.gif' : format === 'WEBP' ? '.webp' : '.png'
+        return path.join(basic.outputPath, options.outputName + ext)
+      })
+    },
+    outputSizeBytesOf (project) {
+      var files = this.outputFilesOf(project)
+      if (!files.length) return -1
+      var sizes = files.map(function (file) {
+        var size = fs.statSize(file)
+        return size >= 0 ? size : -1
+      })
+      if (sizes.some(function (size) { return size < 0 })) return -1
+      return sizes.reduce(function (sum, size) { return sum + size }, 0)
+    },
+    outputSizeOf (project) {
+      var bytes = this.outputSizeBytesOf(project)
+      if (bytes <= 0) return ''
+      return bytes < 1024 * 1024
+        ? (bytes / 1024).toFixed(1) + ' KB'
+        : (bytes / 1024 / 1024).toFixed(2) + ' MB'
+    },
+    outputSizeTip (project) {
+      var files = this.outputFilesOf(project)
+      var rows = files.map(function (file) {
+        var size = fs.statSize(file)
+        return file + ' — ' + (size >= 0 ? size.toLocaleString() + ' B' : '不可读取')
+      })
+      return rows.join('\n')
     },
     // schedule: 0/undefined 待处理，(0,1) 进行中，1 成功，-1 失败
     stateOf (process) {

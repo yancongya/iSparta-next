@@ -201,6 +201,8 @@ export default {
   display: inline-flex;
   cursor: pointer;
   transition: color var(--is-dur-fast) var(--is-ease-std);
+  /* 整条标题栏是 drag 区，品牌链接本身必须退出才能收到点击。 */
+  -webkit-app-region: no-drag;
 }
 
 .wbar__brand:hover {
@@ -208,8 +210,6 @@ export default {
   align-items: center;
   gap: 7px;
   min-width: 0;
-  /* 品牌本身可点（跳落地页）但不算拖拽区 */
-  -webkit-app-region: no-drag;
 }
 
 .wbar__mark {

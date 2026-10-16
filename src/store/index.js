@@ -552,11 +552,46 @@ const actions = {
       selectedSet[String(k)] = true
     })
     var tempState = JSON.parse(storage.getItem('globalSetting'))
+    // 合成列表会随 AE 项目树刷新而整表重建。收集当前内存和上次持久化的
+    // Comp 任务设置，按工程路径 + 合成序号 + 名称恢复单项选项。
+    var previousComps = []
+    function collectComps (items, requireProjectPath) {
+      _.each(items || [], function (it) {
+        if (it && it.basic && it.basic.type === 'Comp' &&
+            (!requireProjectPath || it.basic.projectPath)) previousComps.push(it)
+      })
+    }
+    try {
+      var savedItems = JSON.parse(storage.getItem('iSparta-item') || '[]')
+      collectComps(savedItems, true)
+    } catch (e) { /* 忽略损坏的旧任务缓存 */ }
+    // 内存状态优先于 debounce 尚未落盘的旧快照。
+    collectComps(state.items)
+    function compKey (basic) {
+      basic = basic || {}
+      return String(basic.projectPath || '') + '|' + String(basic.folderPath || '') + ':' + String(basic.compName || '')
+    }
+    function compIndexKey (basic) {
+      basic = basic || {}
+      return String(basic.projectPath || '') + '|' + Number(basic.compIndex)
+    }
+    var previousByKey = {}
+    var previousByIndex = {}
+    _.each(previousComps, function (it) {
+      previousByKey[compKey(it.basic)] = it
+      previousByIndex[compIndexKey(it.basic)] = it
+    })
     var remain = _.filter(state.items, function (it) {
       return !(it && it.basic && it.basic.type === 'Comp')
     })
     _.each(gen, function (g) {
       var itemData = _.cloneDeep(_.extend({}, tempState, { basic: g.basic, options: g.options }))
+      var previous = previousByKey[compKey(g.basic)] || previousByIndex[compIndexKey(g.basic)]
+      if (previous && previous.options) {
+        // 新的 basic/process 来自 AE 当前状态；用户配置的单项输出选项继续保留。
+        itemData.options = _.extend({}, itemData.options || {}, _.cloneDeep(previous.options))
+        itemData.basic.outputPath = resolveOutputPath(itemData, itemData.options)
+      }
       var key = Number(g.basic.compIndex) + ':' + String(g.basic.compName || '')
       itemData.isSelected = !!selectedSet[key]
       if (!itemData.process) { itemData.process = { text: '', schedule: 0 } }

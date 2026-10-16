@@ -25,7 +25,7 @@
              不能为了塞进框内复制两份；所以定位偏移由 shell.scss 的
              .ib-import__acts 手工补上面板那层外边距。 -->
       <div class="ib-import__panel">
-        <!-- 空态工具按钮：视图切换（仅 CEP）/ 使用引导 / 设置 / 主题 -->
+        <!-- 空态工具按钮：视图切换（仅 CEP）/ 使用引导 / 设置；主题切换仅桌面显示 -->
         <div class="ib-import__acts">
           <button
             v-if="supportsCompImport"
@@ -44,7 +44,7 @@
             <is-icon name="settings" />
             <span v-if="updateBadge" class="ib-rail__badge" aria-hidden="true" />
           </button>
-          <button type="button" class="ib-iconbtn" :title="themeTitle" @click="toggleTheme">
+          <button v-if="!supportsCompImport" type="button" class="ib-iconbtn" :title="themeTitle" @click="toggleTheme">
             <is-icon :name="theme === 'dark' ? 'sun' : 'moon'" />
           </button>
         </div>
@@ -149,11 +149,11 @@
           <is-icon :name="compTreeOpen ? 'list' : 'layers'" size="sm" />
         </button>
 
-        <button type="button" class="ib-rail__btn ib-rail__btn--theme" :title="themeTitle" @click="toggleTheme">
+        <button v-if="!supportsCompImport" type="button" class="ib-rail__btn ib-rail__btn--theme" :title="themeTitle" @click="toggleTheme">
           <is-icon :name="theme === 'dark' ? 'sun' : 'moon'" size="sm" />
         </button>
 
-        <div class="ib-rail__lang">
+        <div v-if="!supportsCompImport" class="ib-rail__lang">
           <button
             type="button"
             class="ib-rail__btn ib-rail__btn--lang"
@@ -884,11 +884,12 @@ export default {
         if (!opened) { notice.error(this.$t('openOutputFolder'), this.$t('noticeOpenFailed')) }
         return
       }
+      const copyingNotice = notice.progress(this.$t('copyOutputWorking'))
       const copied = await hostAdapter.copyFilesToClipboard(files)
       if (copied) {
-        notice.success(this.$t('copyOutputSuccess', { count: files.length }))
+        copyingNotice.done('success', this.$t('copyOutputSuccess', { count: files.length }))
       } else {
-        notice.error(this.$t('copyOutputFailed'))
+        copyingNotice.done('error', this.$t('copyOutputFailed'))
       }
     },
 
