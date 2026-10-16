@@ -11,6 +11,11 @@
 > 完整安装包与自动生成说明见 [Releases](https://github.com/yancongya/iSparta-next/releases)。  
 > Commit 规范与 Release 正文结构见 [AGENTS.md](../AGENTS.md)。
 
+### v3.6.19（2026-10-16）
+
+- 修复 CEP 合成动画渲染后未识别 URI 编码中文序列帧，导致误报无帧并转换失败。
+- 渲染结束需确认 AE 队列成功，且实际序列帧数与合成工作区帧数一致。
+
 ### v3.6.18（2026-10-16）
 
 - CEP 合成序列帧固定保存到工程旁的合成名目录；变量路径只决定最终动画文件的输出位置。
