@@ -37,19 +37,25 @@ export default function (item, store, locale) {
     const ascii = function (offset) {
       return String.fromCharCode(byteAt(offset), byteAt(offset + 1), byteAt(offset + 2), byteAt(offset + 3))
     }
+    const asciiExact = function (offset, length) {
+      let value = ''
+      for (let i = 0; i < length; i++) { value += String.fromCharCode(byteAt(offset + i)) }
+      return value
+    }
     const uint32 = function (offset) {
       return (((byteAt(offset) << 24) | (byteAt(offset + 1) << 16) | (byteAt(offset + 2) << 8) | byteAt(offset + 3)) >>> 0)
     }
-    if (header.length < 24 || byteAt(0) !== 0x89 || ascii(1) !== 'PNG' || ascii(12) !== 'IHDR') {
+    // PNG signature has 3 bytes at offset 1; reading 4 includes the following CR byte.
+    if (header.length < 24 || byteAt(0) !== 0x89 || asciiExact(1, 3) !== 'PNG' || ascii(12) !== 'IHDR') {
       const hexParts = []
       for (let i = 0; i < Math.min(header.length, 16); i++) {
         hexParts.push(('0' + Number(byteAt(i)).toString(16)).slice(-2))
       }
       const hex = hexParts.join(' ')
-      const size = fs.statSize ? fs.statSize(file) : -1
+      const size = data.length
       throw new Error('invalid PNG frame: ' + file + ' | dataType=' + (typeof data) + ' | bytes=' + header.length + ' | size=' + size + ' | header=' + (hex || '<empty>'))
     }
-    return { width: uint32(16), height: uint32(20) }
+    return { width: uint32(16), height: uint32(20), fileSize: data.length }
   }
 
   let firstDimensions = null
@@ -59,7 +65,7 @@ export default function (item, store, locale) {
     frameDiagnostics.push({
       index: i,
       file: path.basename(frameFiles[i]),
-      size: fs.statSize ? fs.statSize(frameFiles[i]) : -1,
+      size: dimensions.fileSize,
       width: dimensions.width,
       height: dimensions.height
     })
