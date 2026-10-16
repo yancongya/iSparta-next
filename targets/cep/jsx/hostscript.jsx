@@ -697,17 +697,23 @@ function ispartaAskSequenceMode (payload) {
         var bRe = row.add('button', undefined, String(loc.rerender || 'Re-render'));
         var bUs = row.add('button', undefined, String(loc.reuse || 'Reuse existing'));
         var bCa = row.add('button', undefined, String(loc.cancel || 'Cancel'));
+        // ScriptUI 的 show() 不返回被点击的 Button 对象；点击时显式记录模式并关闭。
+        bRe.onClick = function () {
+            mode = 'rerender';
+            dlg.close(1);
+        };
+        bUs.onClick = function () {
+            mode = 'reuse';
+            dlg.close(2);
+        };
+        bCa.onClick = function () {
+            mode = 'cancel';
+            dlg.close(0);
+        };
         // 回车=重新渲染；ESC / 关窗=取消
         try { dlg.defaultElement = bRe; } catch (eD) { /* ignore */ }
         try { dlg.cancelElement = bCa; } catch (eCx) { /* ignore */ }
-        var hit = dlg.show();
-        if (hit === bRe) {
-            mode = 'rerender';
-        } else if (hit === bUs) {
-            mode = 'reuse';
-        } else {
-            mode = 'cancel';
-        }
+        dlg.show();
     } catch (e) {
         return ispartaErr(e);
     }
