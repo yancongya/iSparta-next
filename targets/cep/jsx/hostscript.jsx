@@ -561,7 +561,8 @@ function ispartaNormalizeFrameNames (folderPath, baseName) {
     for (var i = 0; i < files.length; i++) {
         var f = files[i];
         if (!(f instanceof File)) { continue; }
-        var n = String(f.name || '');
+        // ExtendScript 在 Windows 上可能把 File.name 暴露为 URI 编码形式。
+        var n = ispartaDecodePath(f.name || '');
         // 已是 合成名_序号.png
         if (/\.png$/i.test(n) && n.indexOf('_') > 0) {
             var pre = n.replace(/\.png$/i, '');
@@ -599,7 +600,8 @@ function ispartaCollectPngs (folderPath, baseName) {
     for (var i = 0; i < files.length; i++) {
         var f = files[i];
         if (!(f instanceof File)) { continue; }
-        var n = String(f.name || '');
+        // ExtendScript 在 Windows 上可能把 File.name 暴露为 URI 编码形式。
+        var n = ispartaDecodePath(f.name || '');
         var isPng = /\.png$/i.test(n) || /^\S+\.png\d+$/i.test(n);
         if (!isPng) { continue; }
         if (safeBaseName && !/^frame/i.test(n) && n.indexOf(safeBaseName + '_') !== 0 && n.indexOf(safeBaseName + '.') !== 0) { continue; }
@@ -607,8 +609,8 @@ function ispartaCollectPngs (folderPath, baseName) {
     }
     // 字典序，保证帧顺序（闪闪_00000.png / frame.png00000 均可）
     out.sort(function (a, b) {
-        var na = String(a.name || '');
-        var nb = String(b.name || '');
+        var na = ispartaDecodePath(a.name || '');
+        var nb = ispartaDecodePath(b.name || '');
         return na < nb ? -1 : (na > nb ? 1 : 0);
     });
     return out;
@@ -625,7 +627,7 @@ function ispartaCountFrames (folder, baseName) {
     for (var i = 0; i < files.length; i++) {
         var f = files[i];
         if (!(f instanceof File)) { continue; }
-        var name = String(f.name || '');
+        var name = ispartaDecodePath(f.name || '');
         var isPng = /\.png$/i.test(name) || /^\S+\.png\d+$/i.test(name);
         if (!isPng) { continue; }
         if (/^frame/i.test(name)) { n++; continue; }
@@ -910,6 +912,22 @@ function ispartaSavePngSequence (theComp, theLocation) {
         app.project.renderQueue.render();
         var statusAfter = -1;
         try { statusAfter = String(rqItem.status); } catch (eSt) { /* ignore */ }
+        // 只有 DONE 才代表渲染完整结束；其他状态不能报告成功。
+        var doneStatus = false;
+        try { doneStatus = rqItem.status == RQItemStatus.DONE; } catch (eDone) { /* ignore */ }
+        if (!doneStatus) {
+            ispartaDispatchRenderProgress({
+                phase: 'error', token: renderToken, compIndex: theComp.index, compName: theComp.name,
+                done: 0, total: renderTotal,
+                error: 'render queue did not finish successfully (status=' + statusAfter + ')'
+            });
+            try { rqItem.remove(); } catch (eRmFailed) { /* ignore */ }
+            rqItem = null;
+            if (RQbackup !== null && RQbackup !== undefined) { ispartaRestoreRenderQueue(RQbackup); }
+            try { app.activeViewer.setActive(); } catch (evFailed) { /* ignore */ }
+            theComp.resolutionFactor = res;
+            return 'ERR:render queue did not finish successfully (status=' + statusAfter + ')';
+        }
         ispartaDispatchRenderProgress({
             phase: 'done',
             token: renderToken,
@@ -1047,13 +1065,13 @@ function ispartaExportCompPngSequence (comp, location) {
     try {
         var checkFolder = new Folder(parent.fsName);
         var pngs = ispartaCollectPngs(parent.fsName, compName);
-        if (!pngs || pngs.length < 1) {
+        if (!pngs || pngs.length !== frames) {
             // 列出目录里实际落盘的文件，区分「写到别处 / Format 不是 PNG / 路径不对」
             var extras = [];
             try {
                 var all = checkFolder.getFiles();
                 for (var i = 0; i < all.length && i < 12; i++) {
-                    extras.push(String(all[i].name));
+                    extras.push(ispartaDecodePath(all[i].name));
                 }
             } catch (eL) { /* ignore */ }
             var dmsg = '';
@@ -1061,7 +1079,7 @@ function ispartaExportCompPngSequence (comp, location) {
                 dmsg = ' | template=' + diag.template + ' format=' + diag.format +
                     ' status=' + diag.status + ' total=' + diag.total + ' file=' + diag.file;
             }
-            return ispartaErr('render produced 0 PNG frames in ' + parent.fsName +
+            return ispartaErr('render produced ' + (pngs ? pngs.length : 0) + ' of ' + frames + ' PNG frames in ' + parent.fsName +
                 ' | dirExists=' + (checkFolder.exists ? '1' : '0') +
                 ' | files=[' + extras.join(', ') + ']' + dmsg);
         }
