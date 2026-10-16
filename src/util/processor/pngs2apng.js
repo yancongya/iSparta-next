@@ -2,6 +2,7 @@ import { fs, path } from '../node-env'
 import action from './action'
 import apngCompress from './apngCompress'
 import { remapSequence } from '../frameRemap'
+import appLog from '../../ui-next/log'
 
 export default function (item, store, locale) {
   store.dispatch('editProcess', {
@@ -17,31 +18,62 @@ export default function (item, store, locale) {
   const sourceIndices = remapped.indices
   const outputFrameRate = remapped.targetFrameRate
 
+  appLog.info('PNG 序列校验开始', {
+    frameCount: frameFiles.length,
+    firstFrame: frameFiles[0] || '',
+    lastFrame: frameFiles[frameFiles.length - 1] || '',
+    remapped: remapped.enabled,
+    outputFrameRate: outputFrameRate
+  })
+
   // APNG requires every source frame to have identical dimensions. Catch a stale
   // reused frame before invoking apngasm so the failing frame is actionable.
   function readPngDimensions (file) {
-    const header = fs.readFileSync(file).slice(0, 24)
+    const data = fs.readFileSync(file)
+    const header = data.slice(0, 24)
+    const byteAt = function (offset) {
+      return typeof header === 'string' ? header.charCodeAt(offset) : header[offset]
+    }
     const ascii = function (offset) {
-      return String.fromCharCode(header[offset], header[offset + 1], header[offset + 2], header[offset + 3])
+      return String.fromCharCode(byteAt(offset), byteAt(offset + 1), byteAt(offset + 2), byteAt(offset + 3))
     }
     const uint32 = function (offset) {
-      return (((header[offset] << 24) | (header[offset + 1] << 16) | (header[offset + 2] << 8) | header[offset + 3]) >>> 0)
+      return (((byteAt(offset) << 24) | (byteAt(offset + 1) << 16) | (byteAt(offset + 2) << 8) | byteAt(offset + 3)) >>> 0)
     }
-    if (header.length < 24 || header[0] !== 0x89 || ascii(1) !== 'PNG' || ascii(12) !== 'IHDR') {
-      throw new Error('invalid PNG frame: ' + file)
+    if (header.length < 24 || byteAt(0) !== 0x89 || ascii(1) !== 'PNG' || ascii(12) !== 'IHDR') {
+      const hexParts = []
+      for (let i = 0; i < Math.min(header.length, 16); i++) {
+        hexParts.push(('0' + Number(byteAt(i)).toString(16)).slice(-2))
+      }
+      const hex = hexParts.join(' ')
+      const size = fs.statSize ? fs.statSize(file) : -1
+      throw new Error('invalid PNG frame: ' + file + ' | dataType=' + (typeof data) + ' | bytes=' + header.length + ' | size=' + size + ' | header=' + (hex || '<empty>'))
     }
     return { width: uint32(16), height: uint32(20) }
   }
 
   let firstDimensions = null
+  const frameDiagnostics = []
   for (let i = 0; i < frameFiles.length; i++) {
     const dimensions = readPngDimensions(frameFiles[i])
+    frameDiagnostics.push({
+      index: i,
+      file: path.basename(frameFiles[i]),
+      size: fs.statSize ? fs.statSize(frameFiles[i]) : -1,
+      width: dimensions.width,
+      height: dimensions.height
+    })
     if (!firstDimensions) {
       firstDimensions = dimensions
     } else if (dimensions.width !== firstDimensions.width || dimensions.height !== firstDimensions.height) {
       throw new Error('PNG frame size mismatch: ' + frameFiles[0] + ' (' + firstDimensions.width + 'x' + firstDimensions.height + ') and ' + frameFiles[i] + ' (' + dimensions.width + 'x' + dimensions.height + '). Re-render the composition sequence before converting.')
     }
   }
+  appLog.info('PNG 序列校验通过', {
+    frameCount: frameDiagnostics.length,
+    dimensions: firstDimensions.width + 'x' + firstDimensions.height,
+    frames: frameDiagnostics
+  })
 
   if (remapped.enabled) {
     store.dispatch('editProcess', {

@@ -5,6 +5,7 @@ import { path, fs } from '../util/node-env'
 import { resolveOutputPath } from '../util/outputPath'
 import { buildInitialOutputName } from '../util/tokenizeName'
 import hostAdapter, { registerSourceAdapter as registerHostSource } from '../util/host-env'
+import appLog from '../ui-next/log'
 
 /* global window */
 
@@ -38,6 +39,13 @@ function evalJson (script) {
       try { resolve(typeof raw === 'string' ? JSON.parse(raw) : raw) } catch (e) { reject(e) }
     })
   })
+}
+
+function logCompSequence (level, message, detail) {
+  try {
+    const fn = appLog && appLog[level]
+    if (typeof fn === 'function') { fn.call(appLog, 'CEP 合成序列：' + message, detail) }
+  } catch (e) { /* diagnostics must not interrupt conversion */ }
 }
 
 function readGlobalSetting () {
@@ -313,8 +321,21 @@ function reuseExistingFrames (item, opts, outDir, name) {
         } catch (e) { files = [] }
       }
       if (!files.length) {
+        logCompSequence('error', '复用失败：宿主没有返回可用 PNG 帧', {
+          compName: name,
+          outDir: folder,
+          hostResult: listRes || null
+        })
         throw new Error('no PNG frames to reuse for comp: ' + name)
       }
+      logCompSequence('info', '复用现有帧', {
+        compName: name,
+        outDir: folder,
+        frameCount: files.length,
+        firstFrame: files[0],
+        lastFrame: files[files.length - 1],
+        hostCount: listRes && listRes.count
+      })
       basic.fileList = files
       if (!basic.sourceFile) { basic.sourceFile = files[0] }
       emitRenderProgress(item, opts, {
@@ -372,6 +393,14 @@ export function prepareCompSequence (item, opts) {
   // （与 ispartaCollectPngs 同口径，无帧时立即返回 rerender、不弹窗）。
   // rerender → 落回下方原流程；reuse → 跳过清理与渲染，直接用现有帧；cancel → 中止本次任务。
   if (!(opts && opts.__skipSeqAsk) && countExistingFrames(outDir, name) > 0) {
+    const existingBeforeAsk = countExistingFrames(outDir, name)
+    logCompSequence('info', '发现可复用帧，准备询问操作', {
+      compName: name,
+      compIndex: idx,
+      outDir: outDir,
+      existingFrames: existingBeforeAsk,
+      expectedFrames: expectedFrames
+    })
     const askScript = 'ispartaAskSequenceMode(' + JSON.stringify({
       location: outDir,
       baseName: name,
@@ -380,10 +409,25 @@ export function prepareCompSequence (item, opts) {
       loc: seqModeLocale(opts)
     }) + ')'
     return evalJson(askScript)
-      .catch(function () { return null })
+      .catch(function (err) {
+        logCompSequence('warn', '序列帧询问脚本调用失败，将继续尝试重渲', {
+          compName: name,
+          outDir: outDir,
+          error: String(err && err.stack || err)
+        })
+        return null
+      })
       .then((ask) => {
         // JSX 询问失败/无结果：按原行为重渲，绝不因询问环节阻断导出
         const mode = (ask && ask.ok && ask.mode) || 'rerender'
+        logCompSequence(mode === 'cancel' ? 'warn' : 'info', '序列帧询问结果', {
+          compName: name,
+          mode: mode,
+          hasExisting: ask && ask.hasExisting,
+          existingFrames: ask && ask.existing,
+          expectedFrames: ask && ask.expected,
+          hostError: ask && ask.ok === false ? ask.error : undefined
+        })
         if (mode === 'cancel') {
           const err = new Error(localeOf(opts).seqModeCancel || 'cancelled')
           err.cancelled = true
@@ -402,14 +446,20 @@ export function prepareCompSequence (item, opts) {
     if (fs && typeof fs.readdirSync === 'function' && typeof fs.remove === 'function') {
       const safeName = String(name || '').replace(/["' /\\:*?<>|]/g, '_')
       const olds = fs.readdirSync(outDir)
+      let removed = 0
       for (let oi = 0; oi < olds.length; oi++) {
         const n = String(olds[oi] || '')
         const hitFrame = /^frame/i.test(n)
         const hitName = !!safeName && (n.indexOf(safeName + '_') === 0 || n.indexOf(safeName + '.') === 0)
         if (hitFrame || hitName) {
-          try { fs.remove(path.join(outDir, n)) } catch (eDel) { /* ignore */ }
+          try { fs.remove(path.join(outDir, n)); removed++ } catch (eDel) { /* ignore */ }
         }
       }
+      logCompSequence('info', '重渲前清理旧帧', {
+        compName: name,
+        outDir: outDir,
+        matchedFiles: removed
+      })
     }
   } catch (eClean) { /* ignore */ }
 
@@ -533,13 +583,34 @@ export function prepareCompSequence (item, opts) {
     : 'ispartaMatchComps(' + JSON.stringify([{ name: name }]) + ')'
   // 主路径：jsx 内 renderQueue（能出 PNG 序列）；渲完统一归一化为 合成名_序号.png。
   // （aerender 后台渲本机挂死，整条链路删除；接受 renderQueue 阻塞。）
+  logCompSequence('info', '请求 AE 渲染 PNG 序列', {
+    compName: name,
+    compIndex: idx,
+    outDir: outDir,
+    expectedFrames: expectedFrames,
+    script: script
+  })
   return Promise.resolve()
     .then(() => evalJson(script))
     .then((res) => {
     if (!res || !res.ok) {
+      logCompSequence('error', 'AE 渲染返回失败', {
+        compName: name,
+        compIndex: idx,
+        outDir: outDir,
+        hostResult: res || null
+      })
       throw new Error((res && res.error) || 'export comp sequence failed')
     }
     const folder = res.folder || outDir
+    logCompSequence('info', 'AE 渲染完成，开始收集帧', {
+      compName: name,
+      folder: folder,
+      expectedFrames: expectedFrames,
+      hostFrames: res.frames,
+      dimensions: String(res.width || '?') + 'x' + String(res.height || '?'),
+      renderDiagnostics: res.diag || null
+    })
     // jsx ispartaListPngs 优先；退回 readdirSync
     return Promise.resolve()
       .then(() => evalJson('ispartaListPngs(' + JSON.stringify(folder) + ',' + JSON.stringify(name) + ')'))
@@ -559,9 +630,26 @@ export function prepareCompSequence (item, opts) {
           } catch (e) { files = [] }
         }
         if (!files.length) {
+          logCompSequence('error', 'AE 渲染后没有收集到 PNG 帧', {
+            compName: name,
+            folder: folder,
+            expectedFrames: expectedFrames,
+            hostResult: listRes || null,
+            directoryNames: (function () {
+              try { return fs.readdirSync(folder).slice(0, 20) } catch (e) { return [] }
+            })()
+          })
           throw new Error('no PNG frames for comp: ' + name)
         }
         basic.fileList = files
+        logCompSequence('info', 'AE 帧收集完成', {
+          compName: name,
+          folder: folder,
+          frameCount: files.length,
+          expectedFrames: expectedFrames,
+          firstFrame: files[0],
+          lastFrame: files[files.length - 1]
+        })
         if (!basic.sourceFile) { basic.sourceFile = files[0] }
         // 不在此覆盖 outputPath：processor 在 prepare 后统一解析
         // （模板走 resolveOutputPath；sameOutputPath 须原样保留，避免「输出到文件夹」被模板顶掉）
@@ -573,6 +661,12 @@ export function prepareCompSequence (item, opts) {
         return item
       })
   }).catch((err) => {
+    logCompSequence('error', '合成序列准备失败', {
+      compName: name,
+      compIndex: idx,
+      outDir: outDir,
+      error: String(err && err.stack || err)
+    })
     // 失败 schedule:-1，与 action.js 失败一致
     failProgress()
     return Promise.reject(err)
