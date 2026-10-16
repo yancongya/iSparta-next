@@ -11,6 +11,10 @@
 > 完整安装包与自动生成说明见 [Releases](https://github.com/yancongya/iSparta-next/releases)。  
 > Commit 规范与 Release 正文结构见 [AGENTS.md](../AGENTS.md)。
 
+### v3.6.23（2026-10-16）
+
+- 修复 CEP 大小阈值检查无法读取真实文件大小，导致 WEBP 等输出被误报为缺失并失败。
+
 ### v3.6.22（2026-10-16）
 
 - 修复 CEP 合成动画把有效 PNG 序列误判为无效，导致复用现有帧和重新渲染均无法完成转换。
