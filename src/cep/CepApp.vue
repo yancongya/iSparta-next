@@ -73,6 +73,20 @@
         <is-form-item label="APNG 压缩">
           <is-checkbox v-model="useCompress" label="apngquant / apngopt" />
         </is-form-item>
+        <is-form-item :label="$t('sizeLimitEnable')">
+          <is-checkbox v-model="sizeLimit.enabled" :label="$t('sizeLimitEnable')" />
+        </is-form-item>
+        <is-form-item :label="$t('sizeLimitMax')">
+          <is-input-number v-model="sizeLimit.maxKB" :min="1" :max="102400" :step="1" />
+          <span class="cep-hint">KB</span>
+        </is-form-item>
+        <is-form-item :label="$t('sizeLimitStep')">
+          <is-input-number v-model="sizeLimit.step" :min="1" :max="99" :step="1" />
+          <span class="cep-hint">Q</span>
+        </is-form-item>
+        <is-form-item :label="$t('sizeLimitTries')">
+          <is-input-number v-model="sizeLimit.maxTries" :min="0" :max="50" :step="1" />
+        </is-form-item>
       </is-form>
 
       <is-button
@@ -97,7 +111,8 @@
 <script>
 import processor from '../util/processor'
 import { ipc } from '../util/node-env'
-import store, { createItem } from './cep-store'
+import store from './cep-store'
+import { toCompItem, prepareCompSequence } from './comp-source'
 import appLog from '../ui-next/log'
 import IsLogPanel from '../ui-next/components/IsLogPanel.vue'
 import i18n from '../i18n'
@@ -134,6 +149,16 @@ export default {
       loop: 0,
       quality: 80,
       useCompress: true,
+      sizeLimit: {
+        enabled: true,
+        maxKB: 800,
+        maxBytes: 819200,
+        unit: 'KB',
+        autoDelete: true,
+        autoQuality: true,
+        step: 5,
+        maxTries: 10
+      },
       fpsFromComp: true,
       progressText: '就绪',
       progressKind: ''
@@ -168,7 +193,16 @@ export default {
         assembling: t('assembling', '合成动画'),
         convertSuccess: t('convertSuccess', '转换成功'),
         convertFail: t('convertFail', '转换失败'),
-        noticeConvertAborted: t('noticeConvertAborted', '已中止')
+        noticeConvertAborted: t('noticeConvertAborted', '已中止'),
+        renderingComp: t('renderingComp', '渲染合成'),
+        seqModeTitle: t('seqModeTitle', '序列帧已存在'),
+        seqModeBody: t('seqModeBody', '检测到「{comp}」已有 {existing} 帧序列（期望 {expected} 帧）。是否重新渲染？'),
+        seqModeBodyIncomplete: t('seqModeBodyIncomplete', '检测到「{comp}」已有 {existing} 帧，少于期望的 {expected} 帧，可能不完整，建议重新渲染。'),
+        seqModeRerender: t('seqModeRerender', '重新渲染'),
+        seqModeReuse: t('seqModeReuse', '复用现有帧'),
+        seqModeCancel: t('seqModeCancel', '取消'),
+        sizeLimitRetry: t('sizeLimitRetry', '超限，质量降至'),
+        sizeLimitWarn: t('sizeLimitWarn', '超出大小阈值')
       }
     },
     toggleComp (index) {
@@ -251,70 +285,37 @@ export default {
       this.busy = true
       this.setProgress('检查环境…')
       const locale = this.localePack()
-      const frames = selected.map((c, i) => ({
-        comp: c,
-        seq: i
-      }))
-
-      // 逐个导出 PNG 序列，再一次性进 processor（同一转换核）
+      // 先按共享合成任务源准备帧序列：已有帧时询问复用/重渲染/取消。
+      // 再把完整面板设置写入同一 processor 任务，保证阈值重压也生效。
       let chain = Promise.resolve([])
-      frames.forEach((entry) => {
-        chain = chain.then((acc) => {
-          this.setProgress('导出「' + entry.comp.name + '」PNG…')
-          // 每合成一个子目录，避免多选帧互相覆盖
-          const sub = bridge.path.join(outDir, entry.comp.name + '_png')
-          bridge.fs.ensureDirSync(sub)
-          return cs.evalJson(
-            'ispartaExportPngSequenceByIndex(' +
-            entry.comp.index + ',' + JSON.stringify(sub + (sub.slice(-1) === '/' ? '' : bridge.path.sep || '\\')) +
-            ')'
-          ).then((exp) => {
-            if (!exp || !exp.ok) {
-              throw new Error((exp && exp.error) || ('导出失败: ' + entry.comp.name))
-            }
-            const files = this.listPngs(exp.folder || sub)
-            if (!files.length) {
-              throw new Error('未找到 PNG 帧: ' + entry.comp.name)
-            }
-            const name = outName && selected.length === 1
-              ? outName
-              : (outName ? outName + '_' : '') + (exp.compName || entry.comp.name)
-            acc.push({
-              comp: entry.comp,
-              files,
-              folder: exp.folder || sub,
-              outputName: name,
-              fps: exp.fps || entry.comp.fps
-            })
-            return acc
+      selected.forEach((comp) => {
+        chain = chain.then((items) => {
+          const name = outName && selected.length === 1 ? outName : (outName ? outName + '_' : '') + comp.name
+          const item = toCompItem(Object.assign({}, comp, { projectPath: comp.projectPath || '' }), {
+            frameRate: this.fpsFromComp ? comp.fps : this.fps,
+            loop: this.loop,
+            outputName: name,
+            outputFormat: [this.format],
+            floyd: { checked: this.useCompress, value: 0.35 },
+            quality: { checked: true, value: this.quality },
+            sizeLimit: Object.assign({}, this.sizeLimit, {
+              maxBytes: Math.max(1, Number(this.sizeLimit.maxKB) || 800) * 1024,
+              maxMB: Math.max(1, Number(this.sizeLimit.maxKB) || 800) / 1024
+            }),
+            outputTo: { mode: 'custom', customPath: outDir, template: '' }
+          })
+          item.basic.outputPath = outDir
+          this.setProgress('检查「' + comp.name + '」序列帧…')
+          return prepareCompSequence(item, { store: store, locale: locale }).then((ready) => {
+            items.push(ready)
+            return items
           })
         })
       })
 
       chain
-        .then((exports) => {
+        .then((items) => {
           this.setProgress('进入转换核…')
-          const items = exports.map((exp) => createItem({
-            basic: {
-              type: 'PNGs',
-              fileList: exp.files.slice(),
-              inputPath: exp.folder,
-              outputPath: outDir,
-              sourceFile: exp.files[0]
-            },
-            options: {
-              frameRate: this.fpsFromComp ? exp.fps : this.fps,
-              loop: this.loop,
-              outputName: exp.outputName,
-              outputFormat: [this.format],
-              floyd: { checked: this.useCompress, value: 0.35 },
-              quality: { checked: true, value: this.quality },
-              outputTo: { mode: 'custom', customPath: outDir, template: '' }
-            },
-            process: { text: locale.startConvert + '...', schedule: 0.1 },
-            isSelected: true
-          }))
-
           return store.dispatch('setItems', items).then(() => {
             // sameOutputPath：输出目录由面板指定，与桌面「输出到文件夹」一致
             return processor(store, outDir, locale)

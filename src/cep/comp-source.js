@@ -298,7 +298,7 @@ function reuseExistingFrames (item, opts, outDir, name) {
   const basic = (item && item.basic) || {}
   const folder = outDir
   return Promise.resolve()
-    .then(() => evalJson('ispartaListPngs(' + JSON.stringify(folder) + ')'))
+    .then(() => evalJson('ispartaListPngs(' + JSON.stringify(folder) + ',' + JSON.stringify(name) + ')'))
     .catch(() => null)
     .then((listRes) => {
       let files = []
@@ -308,6 +308,7 @@ function reuseExistingFrames (item, opts, outDir, name) {
         try {
           files = fs.readdirSync(folder)
             .filter((n) => /\.png$/i.test(n) || /^\S+\.png\d+$/i.test(n))
+            .filter((n) => isCompFrameName(n, name))
             .map((n) => folder + (String(folder).slice(-1) === '/' ? '' : '/') + n)
         } catch (e) { files = [] }
       }
@@ -323,6 +324,12 @@ function reuseExistingFrames (item, opts, outDir, name) {
       })
       return item
     })
+}
+
+function isCompFrameName (fileName, compName) {
+  const name = String(fileName || '')
+  const base = String(compName || '').replace(/["' /\\:*?<>|]/g, '_')
+  return /^frame/i.test(name) || (base && (name.indexOf(base + '_') === 0 || name.indexOf(base + '.') === 0))
 }
 
 /**
@@ -344,11 +351,10 @@ export function prepareCompSequence (item, opts) {
   const host = cs()
   const idx = Number(basic.compIndex)
   const name = basic.compName || ''
-  // 序列帧与合成输出同目录：优先 processor 已解析的 outputPath（含 sameOutputPath），
-  // 否则走共享 resolveOutputPath；CEP 适配层已注入 outputBasePath，变量基于它展开。
+  // 序列帧固定放在工程旁的合成名目录，不能跟随用户选择的最终动画输出目录。
+  // 最终文件仍由 processor 按 outputPath 写入；未保存工程时退回应用临时目录。
   // 尾空格会另建「闪闪 」目录且 AE 写不进 → 统一 trim（jsx 侧再 trim 一次）
-  const outDirRaw = basic.outputPath ||
-    (item.options && resolveOutputPath(item, item.options)) ||
+  const outDirRaw = basic.outputBasePath ||
     (basic.tmpDir || basic.tmpOutputDir) ||
     ('ae-comp-tmp-' + (idx != null ? idx : 'x'))
   const outDir = String(outDirRaw).replace(/^[\s\u3000]+|[\s\u3000]+$/g, '')
@@ -536,7 +542,7 @@ export function prepareCompSequence (item, opts) {
     const folder = res.folder || outDir
     // jsx ispartaListPngs 优先；退回 readdirSync
     return Promise.resolve()
-      .then(() => evalJson('ispartaListPngs(' + JSON.stringify(folder) + ')'))
+      .then(() => evalJson('ispartaListPngs(' + JSON.stringify(folder) + ',' + JSON.stringify(name) + ')'))
       .catch(() => null)
       .then((listRes) => {
         let files = []
@@ -546,6 +552,7 @@ export function prepareCompSequence (item, opts) {
           try {
             files = fs.readdirSync(folder)
               .filter(function (n) { return /\.png$/i.test(n) || /^\S+\.png\d+$/i.test(n) })
+              .filter(function (n) { return isCompFrameName(n, name) })
               .map(function (n) {
                 return folder + (String(folder).slice(-1) === '/' ? '' : '/') + n
               })

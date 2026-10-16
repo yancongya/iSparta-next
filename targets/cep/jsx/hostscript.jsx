@@ -592,16 +592,18 @@ function ispartaNormalizeFrameNames (folderPath, baseName) {
 function ispartaCollectPngs (folderPath, baseName) {
     var folder = new Folder(folderPath);
     if (!folder.exists) { return []; }
-    try { ispartaNormalizeFrameNames(folderPath, baseName); } catch (eN) { /* ignore */ }
+    var safeBaseName = baseName ? ispartaFilterName(ispartaTrimPath(String(baseName))) : '';
+    try { ispartaNormalizeFrameNames(folderPath, safeBaseName); } catch (eN) { /* ignore */ }
     var out = [];
     var files = folder.getFiles();
     for (var i = 0; i < files.length; i++) {
         var f = files[i];
         if (!(f instanceof File)) { continue; }
         var n = String(f.name || '');
-        if (/\.png$/i.test(n) || /^\S+\.png\d+$/i.test(n)) {
-            out.push(f);
-        }
+        var isPng = /\.png$/i.test(n) || /^\S+\.png\d+$/i.test(n);
+        if (!isPng) { continue; }
+        if (safeBaseName && !/^frame/i.test(n) && n.indexOf(safeBaseName + '_') !== 0 && n.indexOf(safeBaseName + '.') !== 0) { continue; }
+        out.push(f);
     }
     // 字典序，保证帧顺序（闪闪_00000.png / frame.png00000 均可）
     out.sort(function (a, b) {
@@ -1161,14 +1163,14 @@ function ispartaExportPngSequence (location) {
     }
 }
 
-function ispartaListPngs (folderPath) {
+function ispartaListPngs (folderPath, baseName) {
     try {
         folderPath = ispartaTrimPath(ispartaDecodePath(folderPath));
         var folder = new Folder(folderPath);
         if (!folder.exists) {
             return ispartaErr('folder not found');
         }
-        var files = ispartaCollectPngs(folderPath);
+        var files = ispartaCollectPngs(folderPath, baseName);
         var names = [];
         for (var i = 0; i < files.length; i++) {
             names.push(ispartaDecodePath(files[i].fsName));

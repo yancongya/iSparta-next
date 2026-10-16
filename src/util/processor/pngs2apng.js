@@ -17,6 +17,32 @@ export default function (item, store, locale) {
   const sourceIndices = remapped.indices
   const outputFrameRate = remapped.targetFrameRate
 
+  // APNG requires every source frame to have identical dimensions. Catch a stale
+  // reused frame before invoking apngasm so the failing frame is actionable.
+  function readPngDimensions (file) {
+    const header = fs.readFileSync(file).slice(0, 24)
+    const ascii = function (offset) {
+      return String.fromCharCode(header[offset], header[offset + 1], header[offset + 2], header[offset + 3])
+    }
+    const uint32 = function (offset) {
+      return (((header[offset] << 24) | (header[offset + 1] << 16) | (header[offset + 2] << 8) | header[offset + 3]) >>> 0)
+    }
+    if (header.length < 24 || header[0] !== 0x89 || ascii(1) !== 'PNG' || ascii(12) !== 'IHDR') {
+      throw new Error('invalid PNG frame: ' + file)
+    }
+    return { width: uint32(16), height: uint32(20) }
+  }
+
+  let firstDimensions = null
+  for (let i = 0; i < frameFiles.length; i++) {
+    const dimensions = readPngDimensions(frameFiles[i])
+    if (!firstDimensions) {
+      firstDimensions = dimensions
+    } else if (dimensions.width !== firstDimensions.width || dimensions.height !== firstDimensions.height) {
+      throw new Error('PNG frame size mismatch: ' + frameFiles[0] + ' (' + firstDimensions.width + 'x' + firstDimensions.height + ') and ' + frameFiles[i] + ' (' + dimensions.width + 'x' + dimensions.height + '). Re-render the composition sequence before converting.')
+    }
+  }
+
   if (remapped.enabled) {
     store.dispatch('editProcess', {
       index: item.index,
