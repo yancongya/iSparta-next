@@ -90,7 +90,7 @@ This repo is **not a small patch**. It is a **full frontend/backend refactor** o
 10. **Batch workflow** — multi-select, batch start, unified output dir, success/fail stats  
 11. **Runtime log panel** — open from the toolbar; filter by level (all / info / ok / warn / error) with auto-follow, useful for debugging convert failures and path issues  
 
-Details: [`docs/compose/ROADMAP-isparta-next.md`](docs/compose/ROADMAP-isparta-next.md) and `docs/compose/spec/`.
+See [`docs/CHANGELOG.md`](docs/CHANGELOG.md), [`docs/PLAN-DUAL-TARGET.md`](docs/PLAN-DUAL-TARGET.md), and [`docs/CEP-UPGRADE-SCOPE.md`](docs/CEP-UPGRADE-SCOPE.md) for project history and current implementation boundaries.
 
 ## Screenshots
 
@@ -214,7 +214,7 @@ Push to `master` builds test packages. Or run **Build Multi-Platform** from the 
    - Commits `chore(release): vX.Y.Z [skip ci]` and tags `vX.Y.Z`
    - Builds Win/Linux and attaches them to the GitHub Release
 
-> macOS is not built in CI; build locally and attach the dmg.  
+> macOS x64 and arm64 artifacts are built by the release workflow and attached to the same GitHub Release.
 > If `master` blocks bot pushes, temporarily allow it or wire a PAT.  
 > Do not rely on hand-pushed `v*` tags — **only the Release workflow publishes**.
 
@@ -271,26 +271,16 @@ Double-click friendly wrappers under `scripts/dev/`: `run-all-dev`, `run-dev-cep
 | [`docs/SIGNPATH.md`](docs/SIGNPATH.md) | Guide | Free Windows code signing application |
 | [`docs/SEO_SUBMIT.md`](docs/SEO_SUBMIT.md) | Guide | Landing page search submission |
 | [`docs/ACCEPTANCE-RUNBOOK.md`](docs/ACCEPTANCE-RUNBOOK.md) | Guide | Dual-target on-device acceptance steps |
-| [`docs/PLAN-DUAL-TARGET.md`](docs/PLAN-DUAL-TARGET.md) | In progress (host acceptance) | Dual-target implementation record; cross-platform AE/install acceptance is tracked in the runbook |
+| [`docs/PLAN-DUAL-TARGET.md`](docs/PLAN-DUAL-TARGET.md) | Current | Shared desktop/CEP implementation, host boundaries, and status |
+| [`docs/maintenance/optimization-log.md`](docs/maintenance/optimization-log.md) | Log | Documentation/layout maintenance and verification boundaries |
+| [`targets/cep/README.md`](targets/cep/README.md) | Guide | CEP development, build, and safe local mounting |
+| [`targets/cep/bin/README.md`](targets/cep/bin/README.md) | Guide | CEP encoder tools and runtime requirements |
 | [`AGENTS.md`](AGENTS.md) | Convention | Dev / commit / release conventions (humans and agents) |
-| [`docs/PLAN-GUIDE-PAGES.md`](docs/PLAN-GUIDE-PAGES.md) | Archived | Historical onboarding spec; the BootSplash startup page was retired |
-| [`docs/CEP-ALIGNMENT.md`](docs/CEP-ALIGNMENT.md) | Archived | Desktop ↔ AE extension parity checklist (historical gap analysis) |
-| [`docs/EXEC-WAVE2.md`](docs/EXEC-WAVE2.md) | Archived | Wave 2 multi-agent execution brief (done) |
-| [`docs/ACCEPTANCE-DUAL-TARGET.md`](docs/ACCEPTANCE-DUAL-TARGET.md) | Archived | Dual-target acceptance checklist (tick-off record) |
-| [`docs/compose/ROADMAP-isparta-next.md`](docs/compose/ROADMAP-isparta-next.md) | Archived | Six-phase upgrade roadmap |
+| [`docs/compose/ROADMAP-isparta-next.md`](docs/compose/ROADMAP-isparta-next.md) | Archived | Electron modernization history (no current tasks) |
+| [`docs/PLAN-GUIDE-PAGES.md`](docs/PLAN-GUIDE-PAGES.md) | Archived | Onboarding history index and lessons; no current plan |
+| [`docs/CEP-ALIGNMENT.md`](docs/CEP-ALIGNMENT.md) | Archived | Historical shared CEP design; not current behavior |
+| [`docs/EXEC-WAVE2.md`](docs/EXEC-WAVE2.md) | Archived | Dual-target adapter history; no current tasks |
 | [`docs/compose/spec/`](docs/compose/spec/) | Archived | Historical Electron, frontend, interaction, and size-limit specifications |
-
-**What do I want to do → read**
-
-| I want to… | Read |
-| --- | --- |
-| See what changed in a version | [`docs/CHANGELOG.md`](docs/CHANGELOG.md) |
-| Understand how updating works | [`docs/CHANGELOG.md`](docs/CHANGELOG.md#更新机制) |
-| Ship a release | [`docs/RELEASE.md`](docs/RELEASE.md) |
-| Touch the conversion core or bridges | [`docs/BRIDGE.md`](docs/BRIDGE.md) |
-| Change the UI or add a feature | [`AGENTS.md`](AGENTS.md) + [`docs/PLAN-DUAL-TARGET.md`](docs/PLAN-DUAL-TARGET.md) |
-| Sign / publish / SEO | [`docs/SIGNPATH.md`](docs/SIGNPATH.md) · [`docs/SEO_SUBMIT.md`](docs/SEO_SUBMIT.md) |
-| Run on-device acceptance | [`docs/ACCEPTANCE-RUNBOOK.md`](docs/ACCEPTANCE-RUNBOOK.md) |
 
 ## Tech stack
 
@@ -312,7 +302,7 @@ From the renderer UI to the native CLIs, and across to the AE extension target �
 - Preload whitelist; FS and `execFile` prefer main process  
 - Renderer loads local frame thumbs via `isparta-file` protocol  
 
-Roadmap: [`docs/compose/ROADMAP-isparta-next.md`](docs/compose/ROADMAP-isparta-next.md).
+Current implementation status and project history are linked in the docs map above.
 
 ## Languages
 

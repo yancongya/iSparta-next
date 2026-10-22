@@ -107,7 +107,7 @@
 11. **运行日志面板**  
     工具条一键打开；按级别筛选（全部 / 信息 / 成功 / 警告 / 错误），支持自动滚动跟读，便于排查转换失败与路径问题。
 
-> 详细阶段说明见 [`docs/compose/ROADMAP-isparta-next.md`](docs/compose/ROADMAP-isparta-next.md) 与 `docs/compose/spec/` 下各特性规格。
+> 产品历史与当前实现边界见 [`docs/CHANGELOG.md`](docs/CHANGELOG.md)、[`docs/PLAN-DUAL-TARGET.md`](docs/PLAN-DUAL-TARGET.md) 和 [`docs/CEP-UPGRADE-SCOPE.md`](docs/CEP-UPGRADE-SCOPE.md)。
 
 ## 截图
 
@@ -319,26 +319,16 @@ iSparta-next/
 | [`docs/SIGNPATH.md`](docs/SIGNPATH.md) | 手册 | Windows 免费代码签名申请 |
 | [`docs/SEO_SUBMIT.md`](docs/SEO_SUBMIT.md) | 手册 | 落地页搜索收录提交 |
 | [`docs/ACCEPTANCE-RUNBOOK.md`](docs/ACCEPTANCE-RUNBOOK.md) | 手册 | 双端真机验收步骤 |
-| [`docs/PLAN-DUAL-TARGET.md`](docs/PLAN-DUAL-TARGET.md) | 进行中（实机验收） | 双端实现记录；跨平台 AE / 安装验收状态见验收手册 |
+| [`docs/PLAN-DUAL-TARGET.md`](docs/PLAN-DUAL-TARGET.md) | 现状 | 双端共享实现、宿主边界与当前状态 |
+| [`docs/maintenance/optimization-log.md`](docs/maintenance/optimization-log.md) | 记录 | 文档/目录梳理记录与验收边界 |
+| [`targets/cep/README.md`](targets/cep/README.md) | 手册 | CEP 开发、构建与安全挂载 |
+| [`targets/cep/bin/README.md`](targets/cep/bin/README.md) | 手册 | CEP 编码器工具的准备与运行要求 |
 | [`AGENTS.md`](AGENTS.md) | 约定 | 开发 / commit / release 约定（人与 Agent 共用） |
-| [`docs/PLAN-GUIDE-PAGES.md`](docs/PLAN-GUIDE-PAGES.md) | 归档 | 首启引导历史规格；原 BootSplash 启动页已取消 |
-| [`docs/CEP-ALIGNMENT.md`](docs/CEP-ALIGNMENT.md) | 归档 | 桌面 ↔ AE 扩展对齐清单（历史差距分析） |
-| [`docs/EXEC-WAVE2.md`](docs/EXEC-WAVE2.md) | 归档 | Wave 2 多 Agent 执行简报（已完成） |
-| [`docs/ACCEPTANCE-DUAL-TARGET.md`](docs/ACCEPTANCE-DUAL-TARGET.md) | 归档 | 双端一体验收清单（勾选记录） |
-| [`docs/compose/ROADMAP-isparta-next.md`](docs/compose/ROADMAP-isparta-next.md) | 归档 | 六阶段升级总目标 |
+| [`docs/compose/ROADMAP-isparta-next.md`](docs/compose/ROADMAP-isparta-next.md) | 归档 | Electron 现代化历史摘要（不含当前待办） |
+| [`docs/PLAN-GUIDE-PAGES.md`](docs/PLAN-GUIDE-PAGES.md) | 归档 | 首启引导历史索引与复用经验，不含当前计划 |
+| [`docs/CEP-ALIGNMENT.md`](docs/CEP-ALIGNMENT.md) | 归档 | CEP 桌面共用方案历史索引，不作当前实现说明 |
+| [`docs/EXEC-WAVE2.md`](docs/EXEC-WAVE2.md) | 归档 | 双端 adapter 历史接口摘要，不作当前待办 |
 | [`docs/compose/spec/`](docs/compose/spec/) | 归档 | Electron、前端、交互与输出阈值的历史规格 |
-
-**要做什么 → 看哪份**
-
-| 我想…… | 看 |
-| --- | --- |
-| 知道某版本改了什么 | [`docs/CHANGELOG.md`](docs/CHANGELOG.md) |
-| 搞懂更新 / 自动更新怎么工作 | [`docs/CHANGELOG.md`](docs/CHANGELOG.md#更新机制) |
-| 发一个新版本 | [`docs/RELEASE.md`](docs/RELEASE.md) |
-| 改转换核 / 两端桥接口 | [`docs/BRIDGE.md`](docs/BRIDGE.md) |
-| 改界面、加功能 | [`AGENTS.md`](AGENTS.md) + [`docs/PLAN-DUAL-TARGET.md`](docs/PLAN-DUAL-TARGET.md) |
-| 签名 / 上架 / 搜索收录 | [`docs/SIGNPATH.md`](docs/SIGNPATH.md) · [`docs/SEO_SUBMIT.md`](docs/SEO_SUBMIT.md) |
-| 上真机验收 | [`docs/ACCEPTANCE-RUNBOOK.md`](docs/ACCEPTANCE-RUNBOOK.md) |
 
 ## 技术栈
 
@@ -362,7 +352,7 @@ iSparta-next/
 - preload 白名单暴露 API；文件读写与 `execFile` 倾向主进程完成
 - 渲染层通过 `isparta-file` 协议安全读取本地帧缩略图
 
-详细阶段计划见 [`docs/compose/ROADMAP-isparta-next.md`](docs/compose/ROADMAP-isparta-next.md)。
+当前实现状态与产品历史见 [`docs/CHANGELOG.md`](docs/CHANGELOG.md) 和上方文档导航。
 
 ## 语言
 

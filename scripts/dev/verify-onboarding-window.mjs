@@ -46,7 +46,7 @@ function openOnboardingWindow () {
       preload: path.join(ROOT, 'scripts/dev/verify-onboarding-preload.js')
     }
   })
-  // 无头环境：GPU 进程会崩，必须走 swiftshader（见 PLAN-GUIDE-PAGES.md §5.10）
+  // 无头环境：GPU 进程会崩，必须走 swiftshader（见 docs/maintenance/optimization-log.md#onboarding-preview-lessons）
   ob.webContents.setFrameRate(30)
   ob.loadURL(URL)
   if (main && !main.isDestroyed()) { main.hide() }
