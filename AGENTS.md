@@ -47,7 +47,7 @@ node scripts\dev\check.js all                # lint + pack + ports
 
 环境：Node 经 `MIMO_NODE` / `MIMO_NPM` 时用 `& $env:MIMO_NODE $env:MIMO_NPM run <script>`。Windows 上不要用 Unix 登录 shell。
 
-**行尾约定**（见根目录 `.gitattributes`）：会被脚本 / 编辑器重写的文本（`scripts/dev/guide-preview/index.html`、`docs/PLAN-GUIDE-PAGES.md`、`src/util/updateCheck.js`、`targets/cep/CSXS/manifest.xml`）声明为 `text eol=lf`，此后行尾差异不再产生 diff；vendor 进来的 `forge.js` 三份拷贝声明 `-text` 冻结字节。**改这些文件不要再手工还原行尾。**
+**行尾约定**（见根目录 `.gitattributes`）：会被脚本 / 编辑器重写的文本（`scripts/dev/guide-preview/index.html`、`src/util/updateCheck.js`、`targets/cep/CSXS/manifest.xml`）声明为 `text eol=lf`，此后行尾差异不再产生 diff；vendor 进来的 `forge.js` 三份拷贝声明 `-text` 冻结字节。**改这些文件不要再手工还原行尾。**
 
 **写仓库脚本的三个坑**：① Windows 上 Node 不能直接 `spawn` `.cmd`/`.bat`（Node 18.20+ 起为 CVE-2024-27980 抛 `EINVAL`），须过一层 shell —— 用 `scripts/dev/*.js` 里的 `spawnTool()`；② 同步版 `spawnSync` / `execFileSync` 在受限环境会 `EBUSY`，必须显式传 `stdio: ['ignore','pipe','ignore']`（见 `scripts/dev/check.js` 的 `capture()`），且**不要把失败静默吞掉**，否则「查不到」会被误报成「一切正常」；③ 含中文的 `.ps1` **必须存为 UTF-8 with BOM** —— Windows PowerShell 5.1 读无 BOM 的脚本会按 ANSI(GBK) 解码，中文变乱码后直接语法报错、整脚本不执行（`scripts/release.ps1` 就踩过：报「参数列表中缺少参量」，且因为一个字没跑，**不会**误触发发版）。
 
@@ -155,7 +155,7 @@ CI：`release.yml` 校验版本化 Release 文案、负责 bump、打包、挂 R
 
 ## 8.1 双端目标（桌面 + AE CEP）
 
-- 完整计划与多 Agent 分工见 [`docs/PLAN-DUAL-TARGET.md`](docs/PLAN-DUAL-TARGET.md)（Goal / W1–W5 / 验收）。
+- 当前双端实现状态与共享/宿主边界见 [`docs/PLAN-DUAL-TARGET.md`](docs/PLAN-DUAL-TARGET.md)；AE 合成输入和更新边界见 [`docs/CEP-UPGRADE-SCOPE.md`](docs/CEP-UPGRADE-SCOPE.md)，真机验收步骤见 [`docs/ACCEPTANCE-RUNBOOK.md`](docs/ACCEPTANCE-RUNBOOK.md)。
 - 扩展 **Extension Id / CEP 目录名**：`io.github.isparta-next`；编码器用 **小工具子集**（与 `src/util/processor` 一致），扩展壳在 `targets/cep/`。
 - 转换核只依赖 `src/util/node-env.js` 桥接口；桌面 IPC 与 CEP Node 各写 adapter，业务不复制。
 - **Web 框架双端共用 Vue 2**；**压缩/合成只用 `src/util/processor/*`**，禁止在 CEP 另写编码链。AE 侧 jsx 负责选合成与渲序列，编码仍进 processor。
@@ -166,7 +166,7 @@ CI：`release.yml` 校验版本化 Release 文案、负责 bump、打包、挂 R
 - **不用** Bolt/Nx；复用现有构建、CEP 载荷和发布流程；发版仍须用户点名（§2.2）。
 - **macOS 系统级安装**：`scripts/build-mac-pkg.js` 生成 pkg，`scripts/mac-pkg/postinstall` 检测 After Effects 并部署系统级 CEP。桌面启动的 `cepSync.js` 只做检查，避免无权限时改写系统目录。
 - **Windows 系统级安装**：NSIS 固定 `perMachine: true`，主程序落 Program Files，CEP 落 Common Files；检测到 After Effects 才部署扩展；清理本产品旧的用户级副本，安装状态写入结果文件。
-- 实现阶段同步更新本节与 `docs/PLAN-DUAL-TARGET.md` 勾选状态。
+- 实现变化后同步更新本节与 `docs/PLAN-DUAL-TARGET.md` 的已验证状态；实机验收状态单独记录，不能用代码实现状态代替。
 
 ## 8.2 视口断点统一约束（强制）
 

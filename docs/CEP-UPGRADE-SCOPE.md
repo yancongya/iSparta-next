@@ -47,13 +47,11 @@
 | 小屏断点 | shell/列表/底栏降档 | `body.is-cep` + JS 门控 | `2c4d7b1` + 断点统一轮 |
 | UI 适配 | 隐藏 Comp 胶囊、隐藏输出路径、CEP 覆盖层设置 | `showOutPath` 等 | `38124a3` 等 |
 
-## 3. 桌面保持原样（CEP 不得改动）
+## 3. 当前合成输入交互与桌面保持原样
 
-- 文件导入 / 拖放 / 粘贴
-- 删除任务、Ctrl+Delete
-- 逐帧 delay（`supportsFrameDelay`）
-- Electron **原生右键菜单**（`menu:popup` / `menu:clicked`）
-- 更新策略 `full`（CEP 为 `none`）
+- CEP 当前工程合成会同步为任务列表项；合成树勾选联动任务选择，双击行调用 AE 定位/打开合成。
+- 合成树行会写入自定义拖拽数据，`comp-source.js` 保留 drop/paste 适配方法；但 `Home.vue` 当前 drop/paste 事件只处理文件导入，没有接入合成数据。不要将拖拽/粘贴合成当成已支持的 UI 操作。
+- 桌面文件导入 / 拖放 / 粘贴、删除任务、Ctrl+Delete、逐帧 delay（`supportsFrameDelay`）、Electron 原生右键菜单（`menu:popup` / `menu:clicked`）和更新策略 `full` 仍走原桌面路径（CEP 更新策略为 `none`）。
 
 ## 4. 桌面回归检查点（改 CEP 后必过）
 
@@ -110,8 +108,4 @@ CEP 下「日志 / 默认设置」等弹窗要铺满面板时，**必须同时�
 
 ## 9. 安装范围与 AE 探测
 
-见 [`docs/PLAN-DUAL-TARGET.md`](PLAN-DUAL-TARGET.md) **§9**：
-- AE 版本多盘探测（注册表 + 全盘枚举）→ 校验/展示/PlayerDebugMode，不装多份
-- 系统级 Common Files（推荐，管理员）与用户级 APPDATA **互斥禁双写**
-- 识别失败三级回退：注册表 → 全盘枚举 → 提示/手动选目录
-- CI 打 CEP zip 前须 `npm run build:cep`
+Windows NSIS 使用系统级 Common Files，macOS pkg 部署到 `/Library/Application Support/Adobe/CEP/extensions`；开发态用户级挂载与系统级正式安装不可同时保留同 ID 副本。实现以 `build/installer.nsh`、`electron-builder.yml`、`scripts/mac-pkg/postinstall` 和 [`ACCEPTANCE-RUNBOOK.md`](ACCEPTANCE-RUNBOOK.md) 为准。

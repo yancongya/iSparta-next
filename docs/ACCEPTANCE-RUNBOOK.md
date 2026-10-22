@@ -1,7 +1,6 @@
 # 真机验收步骤（桌面 + AE CEP）
 
 > 目标：在本机验证「完整工作台共用 + AE 合成注入 + 同一转换核 + 双端一起更」。  
-> 勾选可对照 [ACCEPTANCE-DUAL-TARGET.md](ACCEPTANCE-DUAL-TARGET.md)。  
 > 环境假设：Windows 10/11、已装 After Effects、仓库在 `F:\iSparta`。  
 > **本机命令优先走统一入口**（`scripts/dev/preview.js` / `build.js` / `check.js`，见 `AGENTS.md` §1.1）——
 > 它们内置了删除守卫豁免与产物定位，比裸跑 `npm run build:*` 少踩坑。
@@ -31,7 +30,13 @@
 node scripts/dev/build.js cep     # 等价 npm run build:cep，重建 targets/cep/ui
 $src = "F:\iSparta\targets\cep"
 $dst = Join-Path $env:APPDATA "Adobe\CEP\extensions\io.github.isparta-next"
-if (Test-Path $dst) { Remove-Item $dst -Recurse -Force }
+$systemDst = Join-Path $env:CommonProgramFiles "Adobe\CEP\extensions\io.github.isparta-next"
+if (Get-Item -LiteralPath $dst -Force -ErrorAction SilentlyContinue) {
+  throw "目标已存在，请先人工确认它是本仓库的开发挂载；本手册不会删除或覆盖现有扩展：$dst"
+}
+if (Get-Item -LiteralPath $systemDst -Force -ErrorAction SilentlyContinue) {
+  throw "检测到系统级正式扩展。请勿再挂载同 ID 的用户级副本：$systemDst"
+}
 New-Item -ItemType Junction -Path $dst -Target $src
 ```
 
@@ -51,13 +56,9 @@ foreach ($v in 6..14) {
 |---|------|------|
 | A3.1 | 打开 AE 工程（含 2+ 合成） | 工程正常 |
 | A3.2 | 窗口 → 扩展 → **iSparta** | 出现**完整工作台**（非精简单栏） |
-| A3.3 | 空态文案 | 提示「拖入/粘贴合成」或「选择合成」 |
-| A3.4 | 点「选择合成…」 | 出**合成树**（名称/尺寸/fps/帧数） |
-| A3.5 | 树上点「刷新」 | 列表更新；已勾选可按 name+index 恢复 |
-| A3.6 | 勾选 1–2 个合成 →「加入任务」 | 任务列表出现卡片（type=Comp） |
-| A3.7 | 从工程/树**拖**一行到列表 | 同样加入任务 |
-| A3.8 | 选中合成后 **Ctrl+V**（或面板粘贴） | 加入任务（无 AE 载荷时应有提示，不静默） |
-| A3.9 | 右键任务 → 打开源 | AE **定位/选中**该合成 |
+| A3.3 | 打开合成树并刷新 | 显示工程合成名称、尺寸、fps、帧数；任务列表按工程合成同步 |
+| A3.4 | 在合成树勾选/取消合成 | 对应任务的选择状态同步；切回任务列表后核对 |
+| A3.5 | 双击合成树中的一行 | AE 尝试定位/打开该合成 |
 
 ### A4. 命名 / 路径（与桌面同规则）
 
@@ -116,7 +117,7 @@ foreach ($v in 6..14) {
 |---|------|------|
 | D1 | 改扩展内 `version.json` 版本号为假值后启动桌面 | 启动后被**刷新回**与 app/payload 一致 |
 | D2 | （有新包时）electron-updater 热更后启动 | CEP 扩展版本同步 |
-| D3 | AE 面板内更新 UI | **不**走 electron-updater 下载；策略为 none/提示获取桌面版 |
+| D3 | AE 面板内更新 UI | **不**走 electron-updater 下载；遵循 CEP 当前更新提示策略 |
 
 ---
 

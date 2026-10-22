@@ -57,7 +57,13 @@ npm run pack:cep     # dist/isparta-next-cep-<ver>-win-x64.zip
 ```powershell
 $src = "F:\iSparta\targets\cep"
 $dst = Join-Path $env:APPDATA "Adobe\CEP\extensions\io.github.isparta-next"
-if (Test-Path $dst) { Remove-Item $dst -Recurse -Force }
+$systemDst = Join-Path $env:CommonProgramFiles "Adobe\CEP\extensions\io.github.isparta-next"
+if (Get-Item -LiteralPath $dst -Force -ErrorAction SilentlyContinue) {
+  throw "目标已存在，请先人工确认它是本仓库的开发挂载；不会自动删除或覆盖：$dst"
+}
+if (Get-Item -LiteralPath $systemDst -Force -ErrorAction SilentlyContinue) {
+  throw "检测到系统级正式扩展。请勿再挂载同 ID 的用户级副本：$systemDst"
+}
 New-Item -ItemType Junction -Path $dst -Target $src
 ```
 
@@ -78,12 +84,24 @@ macOS：
 
 ```bash
 npm run build:cep
-ln -s /path/to/iSparta/targets/cep "$HOME/Library/Application Support/Adobe/CEP/extensions/io.github.isparta-next"
+src="$(cd ./targets/cep && pwd)"
+dst="$HOME/Library/Application Support/Adobe/CEP/extensions/io.github.isparta-next"
+system_dst="/Library/Application Support/Adobe/CEP/extensions/io.github.isparta-next"
+if [[ -e "$dst" || -L "$dst" ]]; then
+  echo "目标已存在，请先人工确认；不会覆盖或删除：$dst" >&2
+  exit 1
+fi
+if [[ -e "$system_dst" || -L "$system_dst" ]]; then
+  echo "检测到系统级正式扩展。请勿再挂载同 ID 的用户级副本：$system_dst" >&2
+  exit 1
+fi
+mkdir -p "$(dirname "$dst")"
+ln -s "$src" "$dst"
 ```
 
 ## 一体安装
 
-桌面 NSIS 组件页可勾选「AE 扩展」；详见 `docs/PLAN-DUAL-TARGET.md` 与 `build/installer.nsh`。
+桌面 NSIS 安装使用系统级 Common Files 路径，macOS pkg 也部署到系统级 CEP 目录。开发挂载使用用户级目录；两种方式不可同时保留同 ID 副本。具体安装边界见 `docs/PLAN-DUAL-TARGET.md` 与 `build/installer.nsh`。
 
 ## JSX API
 
