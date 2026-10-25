@@ -159,6 +159,8 @@ export function toCompItem (comp, optionsOverride) {
   temp.basic.thumbPath = ''
   temp.basic.globalSettingsSnapshot = globalSettingsSnapshot
   temp.basic.compFps = Number(node.fps) || 0
+  temp.basic.compWidth = Number(node.width) || 0
+  temp.basic.compHeight = Number(node.height) || 0
   temp.basic.folderPath = String(node.folderPath || '').replace(/^\/+|\/+$/g, '')
 
   // 初始输出名：合成名，经 tokenizeName/joinTokens 同规则 + outputSuffix
@@ -640,6 +642,21 @@ export function prepareCompSequence (item, opts) {
             })()
           })
           throw new Error('no PNG frames for comp: ' + name)
+        }
+        if (expectedFrames > 0 && files.length !== expectedFrames) {
+          const mismatch = {
+            compName: name,
+            expectedFrames: expectedFrames,
+            collectedFrames: files.length,
+            hostFrames: res.frames,
+            renderDiagnostics: res.diag || null
+          }
+          logCompSequence('error', 'AE 合成帧数与项目树记录不一致，停止编码', mismatch)
+          const mismatchMessage = locale.sizeLimitFrameCountMismatch || 'Composition frame count changed: {comp} expected {expected} frames but rendered {actual}. Refresh the composition list and try again.'
+          throw new Error(mismatchMessage
+            .replace('{comp}', name)
+            .replace('{expected}', expectedFrames)
+            .replace('{actual}', files.length))
         }
         basic.fileList = files
         logCompSequence('info', 'AE 帧收集完成', {

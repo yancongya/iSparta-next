@@ -404,11 +404,17 @@ export default {
         this.sortDir = 1
       }
     },
-    refresh () {
-      if (this.busy) return
+    refresh (refreshedList) {
+      if (this.busy) {
+        this._refreshPending = Array.isArray(refreshedList) ? refreshedList : true
+        return
+      }
       this.busy = true
       const prev = this.selectedNodes.map((n) => ({ name: n.name, index: n.index }))
-      sourceAdapter.list()
+      const listPromise = Array.isArray(refreshedList)
+        ? Promise.resolve(refreshedList)
+        : sourceAdapter.list()
+      listPromise
         .then((list) => {
           this.nodes = (list || []).map(normalizeCompNode)
           if (this.storeHasCompTasks()) {
@@ -437,6 +443,11 @@ export default {
         })
         .then(() => {
           this.busy = false
+          if (this._refreshPending) {
+            const pending = this._refreshPending
+            this._refreshPending = null
+            this.refresh(Array.isArray(pending) ? pending : undefined)
+          }
         })
     },
     toggleAll () {

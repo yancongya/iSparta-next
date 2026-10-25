@@ -1,5 +1,6 @@
 import { path, fs } from '../node-env'
 import action from './action'
+import appLog from '../../ui-next/log'
 
 export default function (item, isLossless, store, locale, opts) {
   store.dispatch('editProcess', {
@@ -31,7 +32,23 @@ export default function (item, isLossless, store, locale, opts) {
       '--force',
       item.options.floyd.checked ? ('--floyd=' + item.options.floyd.value) : '',
       item.options.quality.checked ? ('--quality=0-' + item.options.quality.value) : ''
-    ], item, store, locale, gateOpts).then(() => {
+    ], item, store, locale, gateOpts).catch((err) => {
+      const detail = String(err && (err.err || err.stderr || err.message) || err)
+      if (!/out of memory|memory allocation|libpng failed/i.test(detail)) {
+        throw err
+      }
+      // Keep the assembled APNG usable when quantization cannot allocate its
+      // working buffers. Continue with lossless optimization; sizeGate can
+      // still enforce the configured output limit and report an oversized file.
+      item.basic.apngQuantSkipped = true
+      appLog.warn('APNG 质量压缩内存不足，改用无损优化继续转换', detail)
+      store.dispatch('editProcess', {
+        index: item.index,
+        text: locale.sizeLimitQuantMemoryFallback || '质量压缩内存不足，改用无损优化继续转换',
+        schedule: 0.62
+      })
+      return false
+    }).then(() => {
       return apngopt(item, store, locale, gateOpts)
     }).then(() => {
       // 收尾把 fileList[0] 指向规范化主文件 out.png（apngopt 的输出），而非 out-quant.png：

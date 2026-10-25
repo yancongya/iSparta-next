@@ -133,7 +133,7 @@ CI：`release.yml` 校验版本化 Release 文案、负责 bump、打包、挂 R
 - **设置说明只维护一份**：`src/locales/*` 里的 `*Tip` 键
 - 默认设置（globalSetting）与输出设置（setting）的 info 图标**必须**引用同一 `$t('xxxTip')`
 - 禁止两边各写一份文案；禁止把单位（如「次」）当 tip
-- 大小阈值 tip：`sizeLimitEnableTip` / `sizeLimitMaxTip` / `sizeLimitAutoQualityTip` / `sizeLimitAutoDeleteTip` / `sizeLimitStepTip` / `sizeLimitTriesTip`；单位用 `sizeLimitUnitTimes`
+- 大小阈值 tip：`sizeLimitEnableTip` / `sizeLimitMaxTip` / `sizeLimitAutoQualityTip` / `sizeLimitAutoDeleteTip` / `sizeLimitTriesTip`；单位用 `sizeLimitUnitTimes`
 - Floyd / 质量：`floydTip` / `qualityTip`
 
 - **应用内更新说明**：`formatReleaseNotes`（`src/util/updateCheck.js`）必须输出**纯文本**（已去掉 Markdown 井号/`<details>`/安装包表）；弹窗用普通 `div` + `pre-wrap`，禁止 `v-html`。Release 正文在 GitHub 网页上仍可是 Markdown + `<details>`。
@@ -162,6 +162,7 @@ CI：`release.yml` 校验版本化 Release 文案、负责 bump、打包、挂 R
 - **禁止简化版 UI**：扩展完整复用桌面工作台（列表/设置/命名/路径）；AE 特殊化仅通过 **注入/适配层**（jsx 宿主、合成输入源、host adapter），不得维护平行精简面板。
 - **双端一起更**：同一 NSIS/Release 更新桌面与 AE 扩展；扩展不单独热更。桌面 electron-updater 完成后由应用自检并刷新 CEP 目录；CEP 内不跑 electron-updater。
 - **CEP 的更新路径（Windows/macOS）**：AE 面板下载与桌面同版的官方安装包，校验后启动系统提权安装；Windows 为 NSIS，macOS 为 pkg。安装结果通过桥的状态通道反馈；完成后提示重启 After Effects。
+- **CEP 合成列表自动同步**：工作台每 60 秒轮询 AE 当前工程；面板恢复可见时立即刷新；转换期间暂停轮询。刷新需保留未变化合成的选中状态、单项设置和完成状态，并将同一轮结果同步给已打开的合成树。
 - **更新偏好双端分键**：桌面与 AE 面板共用 `%TEMP%/iSparta/localstorage.json`（`os.tmpdir()`），更新节流相关键按宿主分开（`updateCheck.app` / `updateCheck.cep`，见 `src/util/updatePrefs.js`）——否则一端点过「稍后」会吃掉另一端的更新提示。主题、语言等其余偏好仍双端共享。
 - **不用** Bolt/Nx；复用现有构建、CEP 载荷和发布流程；发版仍须用户点名（§2.2）。
 - **macOS 系统级安装**：`scripts/build-mac-pkg.js` 生成 pkg，`scripts/mac-pkg/postinstall` 检测 After Effects 并部署系统级 CEP。桌面启动的 `cepSync.js` 只做检查，避免无权限时改写系统目录。

@@ -150,9 +150,7 @@
         <quality-retry-sliders
           v-if="setting.options.sizeLimit.enabled"
           :start-quality="qualityRetryBase"
-          :step="sizeLimitStep"
           :tries="sizeLimitMaxTries"
-          @step-change="sizeLimitStep = $event"
           @tries-change="sizeLimitMaxTries = $event"
         />
 
@@ -229,7 +227,7 @@ import hostAdapter from '../../util/host-env'
 import { MODE_SYSTEM, resolveLocale } from '../../util/system-locale'
 import { APP_NAME, LANDING_URL } from '../../brand'
 import { isReallyNewer } from '../../util/updateCheck'
-import { adjustQualityRetrySettings, effectiveQualityRetries, effectiveQualityStart } from '../../util/sizeLimitConfig'
+import { automaticRetryCount, effectiveQualityStart } from '../../util/sizeLimitConfig'
 import QualityRetrySliders from '../../ui-next/components/QualityRetrySliders.vue'
 
 const DEFAULT_SIZE_LIMIT = {
@@ -305,19 +303,7 @@ export default {
     },
     qualityChecked: {
       get () { return !!this.setting.options.quality.checked },
-      set (value) {
-        const quality = this.setting.options.quality
-        const sizeLimit = this.setting.options.sizeLimit
-        const retry = adjustQualityRetrySettings(
-          effectiveQualityStart(quality.value, value),
-          sizeLimit.step,
-          sizeLimit.maxTries,
-          'quality'
-        )
-        this.$set(quality, 'checked', !!value)
-        this.$set(sizeLimit, 'step', retry.step)
-        this.$set(sizeLimit, 'maxTries', retry.maxTries)
-      }
+      set (value) { this.$set(this.setting.options.quality, 'checked', !!value) }
     },
     qualityRetryBase () {
       const quality = this.setting.options.quality
@@ -327,50 +313,12 @@ export default {
       get () { return this.setting.options.quality.value },
       set (value) {
         const numeric = Number(value)
-        if (!isFinite(numeric)) return
-        const quality = Math.max(0, Math.min(100, numeric))
-        const sizeLimit = this.setting.options.sizeLimit
-        const retry = adjustQualityRetrySettings(
-          effectiveQualityStart(quality, this.qualityChecked),
-          sizeLimit.step,
-          sizeLimit.maxTries,
-          'quality'
-        )
-        this.$set(this.setting.options.quality, 'value', quality)
-        this.$set(sizeLimit, 'step', retry.step)
-        this.$set(sizeLimit, 'maxTries', retry.maxTries)
-      }
-    },
-    sizeLimitStep: {
-      get () { return this.setting.options.sizeLimit.step || 5 },
-      set (value) {
-        const sizeLimit = this.setting.options.sizeLimit
-        const retry = adjustQualityRetrySettings(
-          this.qualityRetryBase,
-          value,
-          sizeLimit.maxTries,
-          'step'
-        )
-        this.$set(sizeLimit, 'step', retry.step)
-        this.$set(sizeLimit, 'maxTries', retry.maxTries)
+        if (isFinite(numeric)) this.$set(this.setting.options.quality, 'value', Math.max(0, Math.min(100, numeric)))
       }
     },
     sizeLimitMaxTries: {
-      get () {
-        const sizeLimit = this.setting.options.sizeLimit
-        return effectiveQualityRetries(this.qualityRetryBase, sizeLimit.step, sizeLimit.maxTries)
-      },
-      set (value) {
-        const sizeLimit = this.setting.options.sizeLimit
-        const retry = adjustQualityRetrySettings(
-          this.qualityRetryBase,
-          sizeLimit.step,
-          value,
-          'tries'
-        )
-        this.$set(sizeLimit, 'step', retry.step)
-        this.$set(sizeLimit, 'maxTries', retry.maxTries)
-      }
+      get () { return automaticRetryCount(this.qualityRetryBase, this.setting.options.sizeLimit.maxTries) },
+      set (value) { this.$set(this.setting.options.sizeLimit, 'maxTries', Number(value)) }
     },
     updateUi () {
       return updateService.getUpdateState()

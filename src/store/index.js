@@ -592,6 +592,13 @@ const actions = {
         itemData.options = _.extend({}, itemData.options || {}, _.cloneDeep(previous.options))
         itemData.basic.outputPath = resolveOutputPath(itemData, itemData.options)
       }
+      if (previous && previous.process) {
+        var sameRenderSpec = Number(previous.basic.frameCount) === Number(g.basic.frameCount) &&
+          Number(previous.basic.compFps) === Number(g.basic.compFps) &&
+          Number(previous.basic.compWidth) === Number(g.basic.compWidth) &&
+          Number(previous.basic.compHeight) === Number(g.basic.compHeight)
+        if (sameRenderSpec) itemData.process = _.cloneDeep(previous.process)
+      }
       var key = Number(g.basic.compIndex) + ':' + String(g.basic.compName || '')
       itemData.isSelected = !!selectedSet[key]
       if (!itemData.process) { itemData.process = { text: '', schedule: 0 } }

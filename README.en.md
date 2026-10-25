@@ -78,7 +78,7 @@ This repo is **not a small patch**. It is a **full frontend/backend refactor** o
 
 ### What was added
 
-1. **Output size limit** — default 1MB; warn / auto-delete / stepwise quality re-encode  
+1. **Output size limit** — default 1MB; set a size limit and retry count for automatic quality reduction
 2. **Output path strategy + templates** — source / beside / custom; `{srcPath}` `{srcName}` `{srcParent}` etc.  
 3. **Before/after compare slider** — click a done thumbnail, drag or arrow-key to compare  
 4. **Paste import** — drag, open folder, or paste a screenshot  
@@ -147,7 +147,7 @@ All three platforms are built by GitHub Actions. **macOS packages are unsigned**
 - **Batch** — many tasks, per-task options, batch start, shared output dir  
 - **Drag & paste** — files/folders or pasted screenshots  
 - **Path templates** — source / beside / custom with variables  
-- **Size limit** — default 1MB, warn / delete / auto re-encode  
+- **Size limit** — default 1MB; automatic re-encoding from a size limit and retry count
 - **Compare slider** — original vs output  
 - **Themes** — light, dark, system  
 - **i18n** — 简体中文, 繁體中文, English  

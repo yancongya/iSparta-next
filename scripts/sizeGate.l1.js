@@ -10,7 +10,7 @@ const source = fs.readFileSync(path.join(__dirname, '../src/util/processor/sizeG
   .concat('\n globalThis.testApi = { normalizeSizeLimit, enforceSizeLimit }')
 const configSource = fs.readFileSync(path.join(__dirname, '../src/util/sizeLimitConfig.js'), 'utf8')
   .replace(/^export function /gm, 'function ')
-  .concat('\n globalThis.sizeLimitConfigApi = { effectiveQualityRetries, adjustQualityRetrySettings, effectiveQualityStart, maxQualityRetries, maxAdjustableQualityStep, maxAdjustableQualityRetries }')
+  .concat('\n globalThis.sizeLimitConfigApi = { automaticRetryCount, automaticRetryQuality, effectiveQualityStart }')
 const remapSource = fs.readFileSync(path.join(__dirname, '../src/util/frameRemap.js'), 'utf8')
   .replace(/^import TYPE from .*$/m, '')
   .replace(/^export function /gm, 'function ')
@@ -70,7 +70,8 @@ function makeHarness (autoDelete, maxTries, maxKB, staysOverAtQualityFloor) {
     }
   }
   vm.runInNewContext(configSource, context, { filename: 'sizeLimitConfig.js' })
-  context.effectiveQualityRetries = context.sizeLimitConfigApi.effectiveQualityRetries
+  context.automaticRetryCount = context.sizeLimitConfigApi.automaticRetryCount
+  context.automaticRetryQuality = context.sizeLimitConfigApi.automaticRetryQuality
   vm.runInNewContext(source, context, { filename: 'sizeGate.js' })
   const item = {
     index: 0,
@@ -118,30 +119,19 @@ async function main () {
   const keep = makeHarness(false, 10)
   assert.strictEqual(keep.retryConfig.effectiveQualityStart(80, false), 100, 'unchecked compression starts threshold retries at quality 100')
   assert.strictEqual(keep.retryConfig.effectiveQualityStart(80, true), 80, 'checked compression starts threshold retries at the selected quality')
-  assert.strictEqual(keep.retryConfig.maxQualityRetries(80, 10), 7, 'quality must stay above zero')
-  const linked = keep.retryConfig.adjustQualityRetrySettings(80, 10, 19, 'tries')
-  assert.strictEqual(linked.step, 4, 'requesting 19 retries from quality 80 lowers a step of 10 to 4')
-  assert.strictEqual(linked.maxTries, 19)
-  const linkedFromStep = keep.retryConfig.adjustQualityRetrySettings(80, 4, 7, 'step')
-  assert.strictEqual(linkedFromStep.maxTries, 19, 'changing decrement must remap the retry count in the other direction')
-  const cappedRetries = keep.retryConfig.maxQualityRetries(100, 1)
-  assert.strictEqual(cappedRetries, 50, 'slider maximum must match the runtime retry cap')
-  assert.strictEqual(keep.retryConfig.maxAdjustableQualityStep(80, 50, 1), 2, 'step slider must remain draggable at 50 retries')
-  const unlockedStep = keep.retryConfig.adjustQualityRetrySettings(80, 2, 50, 'step')
-  assert.strictEqual(unlockedStep.step, 2)
-  assert.strictEqual(unlockedStep.maxTries, 39, 'moving step must remap retries to a compatible value')
-  assert.strictEqual(keep.retryConfig.maxAdjustableQualityRetries(80, 79, 1), 2, 'retry slider must remain adjustable at the maximum step')
-  const unusableQuality = keep.retryConfig.adjustQualityRetrySettings(0, 5, 10, 'quality')
-  assert.strictEqual(unusableQuality.step, 1, 'quality zero has no valid retry decrement')
-  assert.strictEqual(unusableQuality.maxTries, 0, 'quality zero has no valid retry count')
-  const bounded = keep.retryConfig.adjustQualityRetrySettings(80, 7, 19, 'step')
-  assert.strictEqual(bounded.maxTries, 11, 'a step of 7 permits at most 11 retries from quality 80')
+  assert.strictEqual(keep.retryConfig.automaticRetryCount(80, 50), 50, 'retry count is independent of saved step')
+  assert.strictEqual(keep.retryConfig.automaticRetryCount(4, 50), 3, 'each retry needs a distinct quality value')
+  assert.strictEqual(keep.retryConfig.automaticRetryQuality(80, 7, 7), 1, 'last retry reaches minimum quality')
+  assert.strictEqual(keep.retryConfig.automaticRetryQuality(80, 7, 1), 68, 'quality is spread across retries')
+  assert.strictEqual(keep.retryConfig.automaticRetryCount(0, 10), 0, 'quality zero cannot be reduced')
+  keep.item.options.sizeLimit.step = 79 // old preferences must not restrict the requested retry count
+  assert.strictEqual(keep.api.normalizeSizeLimit(keep.item.options, 80).maxTries, 10)
   const kept = await keep.api.enforceSizeLimit(keep.item, keep.store, {})
   assert.strictEqual(keep.sizes['/out/animation.webp'], 450000, 'retries replace the output and stop once under 500 KiB')
   assert.strictEqual(Object.keys(keep.sizes).filter(file => /_v\d+\.webp$/.test(file)).length, 0, 'retry versions are not retained')
-  assert.strictEqual(kept.triesUsed, 2)
+  assert.strictEqual(kept.triesUsed, 3)
   assert(keep.logs.some(line => line.indexOf('500.0KB') >= 0), 'logs should report the actual 500 KiB limit')
-  assert(keep.logs.some(line => line.indexOf('logGateProgressDone') >= 0 && line.indexOf('tries=2') >= 0), 'the summary should show the final retry count')
+  assert(keep.logs.some(line => line.indexOf('logGateProgressDone') >= 0 && line.indexOf('tries=3') >= 0), 'the summary should show the final retry count')
   assert.strictEqual(keep.logs.filter(line => line.indexOf('logGateProgress') >= 0).length, 1, 'retries should update a single log row')
 
   const replace = makeHarness(true, 10)
@@ -152,10 +142,10 @@ async function main () {
 
   const exhausted = makeHarness(true, 1)
   const result = await exhausted.api.enforceSizeLimit(exhausted.item, exhausted.store, {})
-  assert.strictEqual(exhausted.sizes['/out/animation.webp'], 700000, 'retry exhaustion must retain the last output')
-  assert.strictEqual(result.warned.length, 1)
-  assert(exhausted.logs.some(line => line.indexOf('logGateProgressWarn') >= 0 && line.indexOf('tries=1') >= 0))
-  assert.strictEqual(exhausted.dispatches.filter(({ payload }) => payload && payload.schedule !== undefined).slice(-1)[0].payload.schedule, -1)
+  assert.strictEqual(exhausted.sizes['/out/animation.webp'], 450000, 'one retry reaches the quality floor')
+  assert.strictEqual(result.warned.length, 0)
+  assert(exhausted.logs.some(line => line.indexOf('logGateProgressDone') >= 0 && line.indexOf('tries=1') >= 0))
+  assert.strictEqual(exhausted.dispatches.filter(({ payload }) => payload && payload.schedule !== undefined).slice(-1)[0].payload.schedule, 1)
 
   const noRetries = makeHarness(true, 0)
   const noRetryResult = await noRetries.api.enforceSizeLimit(noRetries.item, noRetries.store, {
@@ -173,13 +163,13 @@ async function main () {
     sizeLimitWarn: '超出大小阈值',
     sizeLimitQualityFloor: '{format} 已重压 {tries} 次并降至最低质量 {quality}，最终 {size}，仍高于阈值 {max}'
   })
-  assert.strictEqual(floorResult.triesUsed, 7, 'quality 80 with step 10 permits seven retries while keeping quality above zero')
+  assert.strictEqual(floorResult.triesUsed, 19, 'all configured retries run regardless of legacy step')
   assert.strictEqual(floor.item.options.quality.value, 80, 'retry quality must not overwrite the user configured baseline')
-  assert.strictEqual(floor.sizes['/out/animation.webp'], 570000, 'keep the last result even if it cannot meet the threshold')
+  assert.strictEqual(floor.sizes['/out/animation.webp'], 516000, 'keep the last result even if it cannot meet the threshold')
   const finalFloorStatus = floor.dispatches.filter(({ payload }) => payload && payload.schedule !== undefined).slice(-1)[0]
   assert.strictEqual(finalFloorStatus.payload.schedule, -1, 'an output still over the threshold must use the failed task state')
   assert.strictEqual(floorResult.succeeded, false, 'an unmet threshold must not report success')
-  assert(floor.logs.some(line => line.indexOf('logGateProgressWarn') >= 0 && line.indexOf('tries=7') >= 0), 'summarize the retry count when the threshold remains unmet')
+  assert(floor.logs.some(line => line.indexOf('logGateProgressWarn') >= 0 && line.indexOf('tries=19') >= 0), 'summarize the retry count when the threshold remains unmet')
   assert(floor.dispatches.some(({ payload }) => payload && payload.text && payload.text.indexOf('超出大小阈值') >= 0))
 
   console.log('size gate L1 OK')

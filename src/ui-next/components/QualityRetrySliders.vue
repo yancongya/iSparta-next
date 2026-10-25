@@ -3,22 +3,6 @@
     <p class="quality-retry-sliders__base">{{ $t('sizeLimitQualityBase', { quality: startQuality }) }}</p>
     <label class="quality-retry-slider">
       <span class="quality-retry-slider__head">
-        <span>{{ $t('sizeLimitStep') }}</span>
-        <span class="quality-retry-slider__value"><button type="button" class="is-info" :aria-label="$t('sizeLimitStep')" v-tip="$t('sizeLimitStepTip')"><is-icon name="info" size="sm" /></button><b>{{ displayStep }} <small>Q</small></b></span>
-      </span>
-      <input
-        type="range"
-        min="1"
-        :max="stepMax"
-        :value="displayStep"
-        :disabled="disabled"
-        :aria-label="$t('sizeLimitStep')"
-        @input="$emit('step-change', Number($event.target.value))"
-      />
-      <span class="quality-retry-slider__range"><span>1</span><span>{{ stepMax }}</span></span>
-    </label>
-    <label class="quality-retry-slider">
-      <span class="quality-retry-slider__head">
         <span>{{ $t('sizeLimitTries') }}</span>
         <span class="quality-retry-slider__value"><button type="button" class="is-info" :aria-label="$t('sizeLimitTries')" v-tip="$t('sizeLimitTriesTip')"><is-icon name="info" size="sm" /></button><b>{{ tries }} <small>{{ $t('sizeLimitUnitTimes') }}</small></b></span>
       </span>
@@ -37,23 +21,18 @@
 </template>
 
 <script>
-import { maxAdjustableQualityRetries, maxAdjustableQualityStep } from '../../util/sizeLimitConfig'
+import { automaticRetryCount } from '../../util/sizeLimitConfig'
 
 export default {
   name: 'QualityRetrySliders',
   props: {
     startQuality: { type: Number, required: true },
-    step: { type: Number, required: true },
     tries: { type: Number, required: true }
   },
   computed: {
     disabled () { return this.startQuality <= 1 },
-    // Keep one mapped increment available at a boundary pair so the user can
-    // adjust either slider; the setter remaps the paired value to a valid pair.
-    stepMax () { return maxAdjustableQualityStep(this.startQuality, this.tries, this.step) },
-    displayStep () { return Math.min(Number(this.step) || 1, this.stepMax) },
-    triesMax () { return maxAdjustableQualityRetries(this.startQuality, this.step, this.tries) },
-    displayTries () { return Math.min(Number(this.tries) || 0, this.triesMax) }
+    triesMax () { return Math.min(50, Math.max(0, this.startQuality - 1)) },
+    displayTries () { return automaticRetryCount(this.startQuality, this.tries) }
   }
 }
 </script>

@@ -268,9 +268,7 @@
             </div>
             <quality-retry-sliders
               :start-quality="minimumSelectedQuality"
-              :step="sizeStep"
               :tries="sizeMaxTries"
-              @step-change="sizeStep = $event"
               @tries-change="sizeMaxTries = $event"
             />
           </div>
@@ -323,7 +321,7 @@ import { tokenizeName, joinTokens } from '../../util/tokenizeName'
 import PathVars from '../../ui-next/components/PathVars.vue'
 import IsPresetBar from '../../ui-next/components/IsPresetBar.vue'
 import notice from '../../ui-next/notice'
-import { adjustQualityRetrySettings, effectiveQualityRetries, effectiveQualityStart } from '../../util/sizeLimitConfig'
+import { automaticRetryCount, effectiveQualityStart } from '../../util/sizeLimitConfig'
 import QualityRetrySliders from '../../ui-next/components/QualityRetrySliders.vue'
 
 export default {
@@ -541,38 +539,13 @@ export default {
     },
     qualityCheck: {
       get () { return this.curtSetting.quality.checked },
-      set (value) {
-        const limit = this.curtSetting && this.curtSetting.sizeLimit
-        const start = effectiveQualityStart(this.quality, value)
-        const retry = adjustQualityRetrySettings(
-          start,
-          limit && limit.step,
-          limit && limit.maxTries,
-          'quality'
-        )
-        this.writeOptions({
-          quality: { checked: value, value: this.quality },
-          sizeLimit: Object.assign({}, limit || {}, retry)
-        })
-      }
+      set (value) { this.writeOptions({ quality: { checked: value, value: this.quality } }) }
     },
     quality: {
       get () { return this.curtSetting.quality.value },
       set (value) {
-        if (!isFinite(Number(value)) || value > 100 || value < 0) {
-          return false
-        }
-        const limit = this.curtSetting && this.curtSetting.sizeLimit
-        const retry = adjustQualityRetrySettings(
-          effectiveQualityStart(value, this.qualityCheck),
-          limit && limit.step,
-          limit && limit.maxTries,
-          'quality'
-        )
-        this.writeOptions({
-          quality: { checked: this.qualityCheck, value: value },
-          sizeLimit: Object.assign({}, limit || {}, retry)
-        })
+        if (!isFinite(Number(value)) || value > 100 || value < 0) return false
+        this.writeOptions({ quality: { checked: this.qualityCheck, value: value } })
       }
     },
     sizeEnabled: {
@@ -601,37 +574,12 @@ export default {
         this.pushSizeLimit({ unit: value, maxBytes: bytes, maxMB: bytes / (1024 * 1024) })
       }
     },
-    sizeStep: {
-      get () {
-        const s = this.curtSetting && this.curtSetting.sizeLimit
-        return (s && s.step) || 5
-      },
-      set (value) {
-        const base = this.curtSetting && this.curtSetting.sizeLimit
-        const retry = adjustQualityRetrySettings(
-          this.minimumSelectedQuality,
-          value,
-          base && base.maxTries,
-          'step'
-        )
-        this.pushSizeLimit(retry)
-      }
-    },
     sizeMaxTries: {
       get () {
         const s = this.curtSetting && this.curtSetting.sizeLimit
-        return effectiveQualityRetries(this.minimumSelectedQuality, s && s.step, s && s.maxTries)
+        return automaticRetryCount(this.minimumSelectedQuality, s && s.maxTries)
       },
-      set (value) {
-        const base = this.curtSetting && this.curtSetting.sizeLimit
-        const retry = adjustQualityRetrySettings(
-          this.minimumSelectedQuality,
-          base && base.step,
-          value,
-          'tries'
-        )
-        this.pushSizeLimit(retry)
-      }
+      set (value) { this.pushSizeLimit({ maxTries: Number(value) }) }
     },
     outputToTemplate: {
       get () {

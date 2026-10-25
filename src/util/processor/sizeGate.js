@@ -6,18 +6,16 @@ import apng2webp from './apng2webp'
 import TYPE from '../../store/enum/type'
 import appLog from '../../ui-next/log'
 import i18n from '../../i18n'
-import { effectiveQualityRetries, effectiveQualityStart } from '../sizeLimitConfig'
+import { automaticRetryCount, automaticRetryQuality, effectiveQualityStart } from '../sizeLimitConfig'
 
 export function normalizeSizeLimit (options, quality) {
   const s = (options && options.sizeLimit) || {}
-  const step = Number(s.step)
   const maxTries = Number(s.maxTries)
   let maxBytes = Number(s.maxBytes)
   if (!isFinite(maxBytes) || maxBytes <= 0) {
     const maxMB = Number(s.maxMB)
     maxBytes = (isFinite(maxMB) && maxMB > 0) ? maxMB * 1024 * 1024 : 1024 * 1024
   }
-  const stepValue = isFinite(step) && step > 0 ? step : 5
   const configuredMaxTries = isFinite(maxTries) && maxTries >= 0 ? Math.floor(maxTries) : 10
   return {
     enabled: !!s.enabled,
@@ -27,9 +25,8 @@ export function normalizeSizeLimit (options, quality) {
     // final output. Legacy preferences are intentionally ignored.
     autoDelete: true,
     autoQuality: true,
-    step: stepValue,
     configuredMaxTries: configuredMaxTries,
-    maxTries: effectiveQualityRetries(quality, stepValue, configuredMaxTries)
+    maxTries: automaticRetryCount(quality, configuredMaxTries)
   }
 }
 
@@ -114,7 +111,7 @@ function reExportFormat (item, format, store, locale, opts, targetPath) {
 }
 
 /**
- * 逐格式检查输出大小；超限则按 step 降质量重压，直到达标或重试上限。
+ * 逐格式检查输出大小；超限则按尝试次数自动分配质量降幅，直到达标或重试上限。
  * 只保留最终结果；达到上限仍超限时保留产物并将任务标为失败。
  */
 export function enforceSizeLimit (item, store, locale) {
@@ -193,13 +190,17 @@ export function enforceSizeLimit (item, store, locale) {
       if (size <= maxBytes) {
         return Promise.resolve(null)
       }
+      if (format !== TYPE.WEBP && item.basic.apngQuantSkipped) {
+        warned.push({ format, size, compressionSkipped: true })
+        return Promise.resolve({ format, size, action: 'warn-quantization-skipped' })
+      }
       if (tries >= limit.maxTries) {
         warned.push({ format, size, tries })
         return Promise.resolve({ format, size, action: 'warn-after-tries', tries })
       }
       const startQ = isFinite(baseQuality.value) ? baseQuality.value : 80
       const attempt = tries + 1
-      const nextQ = Math.max(1, startQ - limit.step * attempt)
+      const nextQ = automaticRetryQuality(startQ, limit.maxTries, attempt)
       if (nextQ >= Number(item.options.quality.value)) {
         const quality = Number(item.options.quality.value)
         warned.push({ format, size, tries, quality, floor: true })

@@ -88,11 +88,6 @@
         </label>
 
         <label class="gate-range gate-range--wide">
-          <span>{{ $t('obGateStep') }} <b>{{ stepVal }} q</b></span>
-          <input type="range" min="1" :max="stepMax" :value="stepVal" :disabled="running" @input="setStep($event.target.value)">
-        </label>
-
-        <label class="gate-range gate-range--wide">
           <span>{{ $t('obGateTries') }} <b>{{ tries }} {{ $t('obGateTimes') }}</b></span>
           <input type="range" min="0" :max="triesMax" :value="tries" :disabled="running" @input="setTries($event.target.value)">
         </label>
@@ -116,10 +111,10 @@
  * 逻辑与 landing/main.js 的 sizeGate 一致：
  *   · sizeForQuality(q, fmt) 是纯函数，体积只由质量与格式推导；
  *   · 阈值单位 MB / KB 互转时同步换算输入值（1 MB = 1024 KB）；
- *   · 「自动重压」从 q=85 起按 step 递减，直到 ≤ 阈值、或达最多重试 / q 触底。
+ *   · 「自动重压」从当前质量起按尝试次数均匀分配质量降幅。
  * 动效只用 width / opacity / transform；颜色全走 token（暗色荧光绿、亮色砖橙）。
  */
-import { maxAdjustableQualityRetries, maxAdjustableQualityStep, adjustQualityRetrySettings } from '../../../util/sizeLimitConfig'
+import { automaticRetryCount, automaticRetryQuality } from '../../../util/sizeLimitConfig'
 
 const FORMATS = ['APNG', 'GIF', 'WEBP']
 const FMT_FACTOR = { APNG: 1, GIF: 0.72, WEBP: 0.55 }
@@ -135,7 +130,6 @@ export default {
       unit: 'MB',
       limitRaw: 1,
       enabled: true,
-      stepVal: 12,
       tries: 5,
       running: false,
       pop: false,
@@ -182,8 +176,7 @@ export default {
       const scale = Math.max(this.maxMB * 2.2, 1)
       return Math.min(100, (this.maxMB / scale) * 100)
     },
-    stepMax () { return maxAdjustableQualityStep(this.qualityBase, this.tries, this.stepVal) },
-    triesMax () { return maxAdjustableQualityRetries(this.qualityBase, this.stepVal, this.tries) }
+    triesMax () { return Math.min(50, Math.max(0, this.qualityBase - 1)) }
   },
   created () {
     this.reduceMotion = typeof window !== 'undefined' && typeof window.matchMedia === 'function' &&
@@ -207,21 +200,11 @@ export default {
       this.stop()
       this.qualityBase = Number(v) || 85
       this.q = this.qualityBase
-      const retry = adjustQualityRetrySettings(this.qualityBase, this.stepVal, this.tries, 'quality')
-      this.stepVal = retry.step
-      this.tries = retry.maxTries
-    },
-    setStep (v) {
-      this.stop()
-      const retry = adjustQualityRetrySettings(this.qualityBase, v, this.tries, 'step')
-      this.stepVal = retry.step
-      this.tries = retry.maxTries
+      this.tries = automaticRetryCount(this.qualityBase, this.tries)
     },
     setTries (v) {
       this.stop()
-      const retry = adjustQualityRetrySettings(this.qualityBase, this.stepVal, v, 'tries')
-      this.stepVal = retry.step
-      this.tries = retry.maxTries
+      this.tries = automaticRetryCount(this.qualityBase, v)
     },
     pickFmt (f) {
       this.stop()
@@ -279,7 +262,7 @@ export default {
 
         if (n - 1 >= this.tries) { this.finish(false); return }
 
-        q = Math.max(1, this.qualityBase - this.stepVal * n)
+        q = automaticRetryQuality(this.qualityBase, this.tries, n)
         this.timer = setTimeout(attempt, delay)
       }
 

@@ -80,10 +80,6 @@
           <is-input-number v-model="sizeLimit.maxKB" :min="1" :max="102400" :step="1" />
           <span class="cep-hint">KB</span>
         </is-form-item>
-        <is-form-item :label="$t('sizeLimitStep')">
-          <is-input-number v-model="sizeLimit.step" :min="1" :max="99" :step="1" />
-          <span class="cep-hint">Q</span>
-        </is-form-item>
         <is-form-item :label="$t('sizeLimitTries')">
           <is-input-number v-model="sizeLimit.maxTries" :min="0" :max="50" :step="1" />
         </is-form-item>
@@ -156,7 +152,6 @@ export default {
         unit: 'KB',
         autoDelete: true,
         autoQuality: true,
-        step: 5,
         maxTries: 10
       },
       fpsFromComp: true,
@@ -202,7 +197,9 @@ export default {
         seqModeReuse: t('seqModeReuse', '复用现有帧'),
         seqModeCancel: t('seqModeCancel', '取消'),
         sizeLimitRetry: t('sizeLimitRetry', '超限，质量降至'),
-        sizeLimitWarn: t('sizeLimitWarn', '超出大小阈值')
+        sizeLimitWarn: t('sizeLimitWarn', '超出大小阈值'),
+        sizeLimitQuantMemoryFallback: t('sizeLimitQuantMemoryFallback', '质量压缩内存不足，已跳过有损压缩并继续转换'),
+        sizeLimitFrameCountMismatch: t('sizeLimitFrameCountMismatch', '合成帧数不一致，请刷新合成列表后重试')
       }
     },
     toggleComp (index) {

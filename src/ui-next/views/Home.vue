@@ -526,6 +526,10 @@ export default {
     // CEP：任务条默认就是合成列表（不依赖先勾选）
     if (this.supportsCompImport) {
       this.loadAllCompsAsTasks()
+      this._compPollTimer = window.setInterval(() => {
+        if (!this.$store.state.locked) this.loadAllCompsAsTasks()
+      }, 60 * 1000)
+      document.addEventListener('visibilitychange', this.onCompPollVisibility)
     }
     // 启动延迟自动检查：失败静默，由 updateService 写日志
     updateService.bootstrapUpdateFromStorage()
@@ -540,6 +544,8 @@ export default {
     window.removeEventListener('keydown', this.onKeydown)
     window.removeEventListener('keyup', this.onKeyup)
     window.removeEventListener('blur', this.onWindowBlur)
+    if (this._compPollTimer) { window.clearInterval(this._compPollTimer); this._compPollTimer = null }
+    document.removeEventListener('visibilitychange', this.onCompPollVisibility)
     if (this.$root && this.$root.eventBus) {
       this.$root.eventBus.$off('open-task-setting', this.onOpenTaskSetting)
       this.$root.eventBus.$off('task-setting-started', this.onTaskSettingStarted)
@@ -551,6 +557,11 @@ export default {
     if (document.body) document.body.classList.remove('side-narrow')
   },
   methods: {
+    onCompPollVisibility () {
+      if (this.supportsCompImport && document.visibilityState === 'visible' && !this.$store.state.locked) {
+        this.loadAllCompsAsTasks()
+      }
+    },
     onUpdateLater () {
       updateService.markLater(this.updateResult && this.updateResult.latest)
     },
@@ -714,6 +725,7 @@ export default {
     loadAllCompsAsTasks () {
       var src = getSourceAdapter()
       if (!src || typeof src.list !== 'function') return Promise.resolve()
+      if (this.$store.state.locked || this._compRefreshInFlight) return Promise.resolve()
       var store = this.$store
       var self = this
       var statusFn = src.getProjectStatus
@@ -721,7 +733,7 @@ export default {
         ? Promise.resolve(statusFn()).catch(function () { return { ok: false, code: 'error' } })
         : Promise.resolve({ ok: true, code: 'ok' })
 
-      return statusP.then(function (st) {
+      var refreshPromise = statusP.then(function (st) {
         if (st && st.code && st.code !== 'ok') {
           if (st.code === 'noProject') self.projectStatusMsg = self.$t('projectNoOpen')
           else if (st.code === 'unsaved') self.projectStatusMsg = self.$t('projectUnsaved')
@@ -731,21 +743,31 @@ export default {
         self.projectStatusMsg = ''
         return src.list()
       }).then(function (comps) {
+        if (store.state.locked) return
         // CEP 实时同步：AE 当前合成列表整表替换 Comp 任务（含删除/重命名）；空列表也清空
         var gen = (comps && comps.length) ? src.toItems(comps) : []
         var selected = []
+        var activeProjectPath = comps && comps.length ? String(comps[0].projectPath || '') : null
         var beforeItems = store.getters.getterItems || []
         for (var k = 0; k < beforeItems.length; k++) {
           var it = beforeItems[k]
-          if (it && it.basic && it.basic.type === 'Comp' && it.isSelected) {
+          if (activeProjectPath !== null && it && it.basic && it.basic.type === 'Comp' && it.isSelected &&
+              String(it.basic.projectPath || '') === activeProjectPath) {
             selected.push(Number(it.basic.compIndex) + ':' + String(it.basic.compName || ''))
           }
         }
         store.dispatch('syncCompTasks', { items: gen, selectedKeys: selected })
         self.wakeCompThumbs()
+        if (self.compTreeOpen && self.$root && self.$root.eventBus) {
+          self.$root.eventBus.$emit('comp-tree-refresh', comps || [])
+        }
       }).catch(function () {
         self.projectStatusMsg = self.$t('compScanFailed')
+      }).then(function () {
+        if (self._compRefreshInFlight === refreshPromise) self._compRefreshInFlight = null
       })
+      this._compRefreshInFlight = refreshPromise
+      return refreshPromise
     },
     onCompTreeAdd (items) {
       if (!items || !items.length) return
@@ -882,6 +904,15 @@ export default {
       if (openFolder) {
         const opened = await hostAdapter.openPath(path.dirname(files[0]))
         if (!opened) { notice.error(this.$t('openOutputFolder'), this.$t('noticeOpenFailed')) }
+        return
+      }
+      if (supportsCompImport) {
+        const copied = await hostAdapter.copyFilesToClipboard(files)
+        if (copied) {
+          notice.success(this.$t('copyOutputSuccess', { count: files.length }))
+        } else {
+          notice.error(this.$t('copyOutputFailed'))
+        }
         return
       }
       const copyingNotice = notice.progress(this.$t('copyOutputWorking'))
