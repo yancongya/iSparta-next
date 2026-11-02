@@ -28,7 +28,7 @@
 ### Recent highlights
 
 - **AE panel:** one-button switch between comp tree and task list; right-click to open comp location / output folder / stop task; double-click to jump to a comp; pinned filter bar
-- **Tasks and output:** per-comp settings persist; completed rows show final output size; copying files reports progress and result
+- **Tasks and output:** per-comp settings persist; default output names come from composition names, while custom names are preserved; completed rows show final output size; copying files reports progress and result
 - **Output actions:** copy completed files; hold Alt while hovering the toolbar button to open the output folder
 - **Bundled install:** system-wide installation (UAC prompt, CEP under Common Files, a single copy per machine); auto-detects the AE version; version shown in both the desktop title bar and the AE panel
 - **Onboarding (7 pages):** Welcome → Import → Output → Naming → Path variables → AE → Done, covering import methods, output settings and naming rules in one pass

@@ -163,8 +163,9 @@ export function toCompItem (comp, optionsOverride) {
   temp.basic.compHeight = Number(node.height) || 0
   temp.basic.folderPath = String(node.folderPath || '').replace(/^\/+|\/+$/g, '')
 
-  // 初始输出名：合成名，经 tokenizeName/joinTokens 同规则 + outputSuffix
-  if (!temp.options.outputName) {
+  // 输出名属于单项任务，不能继承全局缓存里的其他任务名。
+  // 只有调用者明确传入的非空名称可覆盖合成名；后缀仍沿用全局设置。
+  if (!(optionsOverride && optionsOverride.outputName)) {
     temp.options.outputName = buildInitialOutputName(node.name, temp.options)
   }
 

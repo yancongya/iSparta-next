@@ -7,6 +7,7 @@ import * as types from './mutation-types'
 import { fs, storage, os, path, getProcessBridge, ipc } from '../util/node-env'
 import { MODE_SYSTEM } from '../util/system-locale'
 import { resolveOutputPath } from '../util/outputPath'
+import { buildInitialOutputName } from '../util/tokenizeName'
 import appLog from '../ui-next/log'
 import i18n from '../i18n'
 const _ = require("lodash");
@@ -590,6 +591,11 @@ const actions = {
       if (previous && previous.options) {
         // 新的 basic/process 来自 AE 当前状态；用户配置的单项输出选项继续保留。
         itemData.options = _.extend({}, itemData.options || {}, _.cloneDeep(previous.options))
+        // 合成改名时仅更新仍等于旧默认值的输出名，保留用户自定义名称。
+        if (previous.basic.compName !== g.basic.compName &&
+            previous.options.outputName === buildInitialOutputName(previous.basic.compName, previous.options)) {
+          itemData.options.outputName = buildInitialOutputName(g.basic.compName, itemData.options)
+        }
         itemData.basic.outputPath = resolveOutputPath(itemData, itemData.options)
       }
       if (previous && previous.process) {
