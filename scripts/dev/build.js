@@ -308,6 +308,11 @@ async function main () {
     process.exit(1)
   }
   const code = opt.mode === 'win' ? await buildWin(opt) : opt.mode === 'cep' ? await buildCep(opt) : await buildMacPkg(opt)
+  // 完整入口结束后清理中间载荷；npm 子阶段只清缓存，避免删掉下一阶段输入。
+  if (code === 0 && !opt.dry) {
+    const cleanup = await run(process.execPath, [path.join(__dirname, 'clean-build.js'), '--apply'], process.env)
+    if (cleanup.code !== 0) { reportFail(cleanup); process.exit(cleanup.code) }
+  }
   console.log('')
   process.exit(code)
 }

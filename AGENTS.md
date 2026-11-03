@@ -59,6 +59,12 @@ node scripts\dev\check.js all                # lint + pack + ports
 
 ## 2. Commit 与 Release 必须分开
 
+### 构建后清理（强制）
+
+- 必要构建完成后立即运行 `npm run clean:build:apply`；先用 `npm run clean:build` 预览固定清理范围。禁止整目录删除 `build/`，其中包含安装器源码。
+- `scripts/dev/build.js` 成功后自动清理；npm 构建子阶段通过 post 钩子清理 `node_modules/.cache`，完整 Windows 构建再清理中间载荷。失败保留现场，排查完成后执行清理。
+- 清理限于 `build/cep-payload`、已知 Electron 中间文件/解包目录和 `node_modules/.cache`。保留依赖本体、锁文件、受控 CEP 产物、最终安装包、更新清单和后续 pkg 仍需的 `.app`。不要在开发服务或其他构建使用这些目录时执行清理。
+
 **原则**：commit 说清「代码改了什么、为什么」；Release 说明面向用户「这个版本有什么变化」。两者文案独立撰写，不要把 commit 原文直接当成 Release 正文。
 
 ### 2.1 Commit 规范
