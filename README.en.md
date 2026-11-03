@@ -168,11 +168,17 @@ sudo apt-get install libpng16-dev
 ```bash
 git clone https://github.com/yancongya/iSparta-next.git
 cd iSparta-next
-npm install
-npm run dev
+node scripts/dev/mode.js web install
+node scripts/dev/mode.js web preview
 ```
 
+Local development defaults to browser UI previews without production builds. Replace `web` with `desktop` or `cep` for Electron desktop or CEP UI previews; desktop install restores the Electron runtime. See [AGENTS.md](AGENTS.md) for mode details.
+
+Stop preview services before running `node scripts/dev/mode.js web clean` to inspect cleanup targets; add `--apply` to delete them. Web/CEP cleanup removes build caches, intermediate outputs and the Electron runtime; desktop cleanup retains the runtime. Source files, other dependencies and final installers are preserved.
+
 ## Build
+
+Routine UI changes need previews, lint and relevant logic tests; CI handles production builds. Use the local commands below only when local artifacts are required, then run `npm run clean:build:apply`. Ordinary commits and pushes do not publish a release; Release requires a separate explicit dispatch.
 
 ```bash
 # mac + win + linux
@@ -318,7 +324,7 @@ UI language in settings (follows the system by default):
 Issues and PRs welcome.
 
 1. Fork and branch  
-2. `npm install && npm run dev`  
+2. Install with `node scripts/dev/mode.js web install`, then preview with `node scripts/dev/mode.js web preview`
 3. Keep `npm run lint` green  
 4. Describe motivation and how you verified  
 

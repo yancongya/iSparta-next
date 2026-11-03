@@ -189,14 +189,18 @@ sudo apt-get install libpng16-dev
 git clone https://github.com/yancongya/iSparta-next.git
 cd iSparta-next
 
-# 安装依赖
-npm install
-
-# 开发模式（Electron 调试窗口 + 开发服务器）
-npm run dev
+# 默认 Web UI 模式：跳过 Electron 下载
+node scripts/dev/mode.js web install
+node scripts/dev/mode.js web preview
 ```
 
+本地默认只在浏览器预览 UI，不执行生产构建。切换 Electron 桌面或 CEP 界面模式时，将命令中的 `web` 换为 `desktop` 或 `cep`；桌面 install 会恢复 Electron 运行时。完整模式约定见 [AGENTS.md](AGENTS.md)。
+
+停止预览服务后运行 `node scripts/dev/mode.js web clean` 查看清理范围，追加 `--apply` 执行。Web/CEP 模式会清理构建缓存、中间产物和 Electron 运行时；桌面模式保留运行时。源码、依赖本体和最终安装包保留。
+
 ## 构建
+
+日常 UI 修改只需预览、lint 和必要逻辑测试；正式构建交给 CI。下面的本地构建命令仅在明确需要本地产物时使用，完成后立即执行 `npm run clean:build:apply`。普通 commit/push 不发版，Release 需单独明确触发。
 
 ```bash
 # 三端（mac / win / linux）
@@ -368,7 +372,7 @@ iSparta-next/
 欢迎提交 Issue 与 Pull Request。
 
 1. Fork 本仓库并创建功能分支
-2. 本地 `npm install && npm run dev` 验证
+2. 使用 `node scripts/dev/mode.js web install` 安装依赖，再以 `node scripts/dev/mode.js web preview` 预览
 3. 保持 `npm run lint` 通过
 4. 描述清楚变更动机与验证方式
 

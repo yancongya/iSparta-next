@@ -57,8 +57,6 @@ node scripts\dev\check.js all                # lint + pack + ports
 - Web：`public/favicon.ico`、`public/favicon.svg`、`public/index.html` 引用
 - 落地页：`landing/assets/icon.png`（`landing/index.html` 的 `rel=icon`）
 
-## 2. Commit 与 Release 必须分开
-
 ### 本地开发模式（默认 Web UI）
 
 当前本地默认仅做浏览器 UI 预览，不做 Electron / AE 真机测试，不为日常源码修改执行生产构建。lint 与必要逻辑测试照常执行；正式构建和安装包由既有 CI 完成。
@@ -72,6 +70,7 @@ node scripts\dev\check.js all                # lint + pack + ports
 - 清理默认只预览；确认范围后追加 `--apply`。Web/CEP 清理额外删除 `node_modules/electron/dist` 和 `path.txt`；桌面模式保留 Electron 运行时。删除后切回桌面模式必须运行对应 install 命令恢复。
 - Web/CEP install 通过子进程环境跳过 Electron 二进制下载及原生依赖重建，不禁用其他依赖的安装脚本，不修改全局 npm 配置。普通 `npm install` 和 CI 保持完整安装行为，因此 UI 开发应使用上表入口。
 - CEP preview 只在浏览器看界面，不代表 AE 桥接可用；需要 AE 实机时另用 `npm run dev:cep`，关闭面板再打开刷新，收工执行 `npm run dev:cep:off`。
+- 浏览器 serve 与 lint 通过 `scripts/dev/ui-service.js` 加载 Vue CLI，排除 Electron 插件，确保删除运行时后仍可启动；桌面和生产构建保持原入口。
 - 日常预览无需 `build:cep`、`prepare:cep` 或 Electron 打包。浏览器预览不能替代合成读取、渲染、安装和更新的宿主验收。
 - 切换模式清理前停止正在使用这些目录的开发服务与桌面进程。脚本不会自动停止用户进程。
 
@@ -79,7 +78,9 @@ node scripts\dev\check.js all                # lint + pack + ports
 
 - 必要构建完成后立即运行 `npm run clean:build:apply`；先用 `npm run clean:build` 预览固定清理范围。禁止整目录删除 `build/`，其中包含安装器源码。
 - `scripts/dev/build.js` 成功后自动清理；npm 构建子阶段通过 post 钩子清理 `node_modules/.cache`，完整 Windows 构建再清理中间载荷。失败保留现场，排查完成后执行清理。
-- 清理限于 `build/cep-payload`、已知 Electron 中间文件/解包目录和 `node_modules/.cache`。保留依赖本体、锁文件、受控 CEP 产物、最终安装包、更新清单和后续 pkg 仍需的 `.app`。不要在开发服务或其他构建使用这些目录时执行清理。
+- 普通构建清理限于 `build/cep-payload`、已知 Electron 中间文件/解包目录和 `node_modules/.cache`。保留依赖本体、锁文件、受控 CEP 产物、最终安装包、更新清单和后续 pkg 仍需的 `.app`。不要在开发服务或其他构建使用这些目录时执行清理。
+
+## 2. Commit 与 Release 必须分开
 
 **原则**：commit 说清「代码改了什么、为什么」；Release 说明面向用户「这个版本有什么变化」。两者文案独立撰写，不要把 commit 原文直接当成 Release 正文。
 
