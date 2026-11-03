@@ -29,7 +29,7 @@
 ```powershell
 node scripts\dev\preview.js guide            # 引导页原型台
 node scripts\dev\build.js win                # 本机打 Windows 安装包
-node scripts\dev\build.js cep                # 改了 src/ 就重建 targets/cep/ui
+node scripts\dev\build.js cep                # 仅需要本地 CEP 产物时重建
 node scripts/dev/build.js mac-pkg             # macOS 从已构建 .app 打 pkg
 node scripts\dev\check.js all                # lint + pack + ports
 ```
@@ -39,7 +39,7 @@ node scripts\dev\check.js all                # lint + pack + ports
 **`build.js` 两种模式的差异**
 
 - `win` → `npm run build:windows`（NSIS 一键安装）。三件事自动化：① **注入 `CODEBUDDY_SAFE_DELETE_ENABLED=0`** —— `vue.config.js` 把 CEP 的 `outputDir` 指到 `targets/cep/ui`，构建会清空重建该目录，不豁免必撞安全删除守卫；② 构建前报告该目录的受控 / 未跟踪文件数（受控的可 git 恢复，未跟踪的一清就没，有未跟踪却没加 `--backup` 会提示）；③ 构建后直接给出最新 exe 的**绝对路径 / 体积 / 时间 / sha256**，失败则回显末尾日志。`--backup` 备份到 `.bak/`（已 gitignore），`--dry` 只打印将要执行的命令。
-- `cep` → `npm run build:cep`，只重建 `targets/cep/ui`（没有安装包，秒级）。**改了 `src/` 或 `shared/` 就要跑**，否则提交进去的产物会与源码悄悄脱节；脚本会打印与 HEAD 的漂移项。
+- `cep` → `npm run build:cep`，只重建 `targets/cep/ui`（没有安装包，秒级）。**仅在需要本地 CEP 产物或明确验收构建时执行**；纯 Web UI 开发不要求本地构建。正式发布由 CI 从源码重建共享 CEP 载荷，禁止直接交付未重建的旧产物；本地执行时脚本会打印与 HEAD 的漂移项。
 
 **两条刻意的设计**（改脚本时别退回旧写法）：① `preview.js` 的就绪判定以**子进程自己打印的地址**为准 —— vue-cli 端口被占会自动顺延，盲目扫端口会把邻近残留实例当成本次成果；② 只有能证明是自己的实例（页面标记命中）才复用，否则一律自己起。
 
@@ -58,6 +58,22 @@ node scripts\dev\check.js all                # lint + pack + ports
 - 落地页：`landing/assets/icon.png`（`landing/index.html` 的 `rel=icon`）
 
 ## 2. Commit 与 Release 必须分开
+
+### 本地开发模式（默认 Web UI）
+
+当前本地默认仅做浏览器 UI 预览，不做 Electron / AE 真机测试，不为日常源码修改执行生产构建。lint 与必要逻辑测试照常执行；正式构建和安装包由既有 CI 完成。
+
+| 模式 | 安装依赖 | 预览 | 清理预览 |
+| --- | --- | --- | --- |
+| Web UI（默认） | `node scripts/dev/mode.js web install` | `node scripts/dev/mode.js web preview` | `node scripts/dev/mode.js web clean` |
+| Electron 桌面 | `node scripts/dev/mode.js desktop install` | `node scripts/dev/mode.js desktop preview` | `node scripts/dev/mode.js desktop clean` |
+| CEP 界面 | `node scripts/dev/mode.js cep install` | `node scripts/dev/mode.js cep preview` | `node scripts/dev/mode.js cep clean` |
+
+- 清理默认只预览；确认范围后追加 `--apply`。Web/CEP 清理额外删除 `node_modules/electron/dist` 和 `path.txt`；桌面模式保留 Electron 运行时。删除后切回桌面模式必须运行对应 install 命令恢复。
+- Web/CEP install 通过子进程环境跳过 Electron 二进制下载及原生依赖重建，不禁用其他依赖的安装脚本，不修改全局 npm 配置。普通 `npm install` 和 CI 保持完整安装行为，因此 UI 开发应使用上表入口。
+- CEP preview 只在浏览器看界面，不代表 AE 桥接可用；需要 AE 实机时另用 `npm run dev:cep`，关闭面板再打开刷新，收工执行 `npm run dev:cep:off`。
+- 日常预览无需 `build:cep`、`prepare:cep` 或 Electron 打包。浏览器预览不能替代合成读取、渲染、安装和更新的宿主验收。
+- 切换模式清理前停止正在使用这些目录的开发服务与桌面进程。脚本不会自动停止用户进程。
 
 ### 构建后清理（强制）
 

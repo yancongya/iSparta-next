@@ -4,8 +4,9 @@ const path = require('path')
 const { execFileSync } = require('child_process')
 const root = path.resolve(__dirname, '../..')
 const args = process.argv.slice(2)
-if (args.some(a => !['--apply', '--cache-only'].includes(a))) throw new Error('仅支持 --apply / --cache-only')
+if (args.some(a => !['--apply', '--cache-only', '--without-electron'].includes(a))) throw new Error('仅支持 --apply / --cache-only / --without-electron')
 const targets = ['node_modules/.cache']
+if (args.includes('--without-electron')) targets.push('node_modules/electron/dist', 'node_modules/electron/path.txt')
 if (!args.includes('--cache-only')) {
   targets.push('build/cep-payload')
   // 保留 exe/pkg/zip/AppImage、更新清单及完整 .app：它们可能仍需交付或组装 pkg。
@@ -15,7 +16,8 @@ if (!args.includes('--cache-only')) {
 }
 function size (file) {
   const st = fs.lstatSync(file)
-  if (st.isSymbolicLink()) throw new Error('拒绝符号链接：' + file)
+  // 不遍历 Electron.app 内部的框架链接；删除目录时也只删除链接本身。
+  if (st.isSymbolicLink()) return st.size
   return st.isDirectory() ? fs.readdirSync(file).reduce((n, f) => n + size(path.join(file, f)), 0) : st.size
 }
 let total = 0
@@ -29,6 +31,7 @@ for (const rel of targets) {
     parent = path.dirname(parent)
   }
   if (!fs.existsSync(file)) continue
+  if (fs.lstatSync(file).isSymbolicLink()) throw new Error('拒绝链接目标：' + rel)
   const tracked = execFileSync('git', ['ls-files', '--', rel], { cwd: root, encoding: 'utf8' })
   if (tracked.trim()) throw new Error('拒绝删除受控文件：' + rel)
   const bytes = size(file)
