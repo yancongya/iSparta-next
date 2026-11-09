@@ -233,9 +233,16 @@ function emitRenderProgress (item, opts, payload) {
   const phase = (payload && payload.phase) || 'progress'
   let text
   let schedule
+  // 宿主渲染失败时若能带出引擎侧报错（message/error/reason），作为 hover 原因展示
+  let detail = ''
   if (phase === 'error') {
     text = loc.convertFail || 'Failed'
     schedule = -1
+    const reason = payload && (payload.message || payload.error || payload.reason)
+    if (reason) {
+      detail = String(reason).replace(/\r/g, '').trim()
+      if (detail.length > 600) { detail = '…' + detail.slice(detail.length - 600) }
+    }
   } else if (phase === 'done') {
     text = (loc.renderingComp || 'Rendering composition') + '...'
     schedule = RENDER_SCHEDULE_END
@@ -257,6 +264,7 @@ function emitRenderProgress (item, opts, payload) {
       opts.store.dispatch('editProcess', {
         index: item.index,
         text: text,
+        detail: detail,
         schedule: schedule
       })
     } catch (e2) { /* ignore */ }

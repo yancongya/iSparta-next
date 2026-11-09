@@ -36,7 +36,7 @@ const defaultItem = () => ({
     },
     outputTo: { mode: 'output', customPath: '', template: '{srcPath}' }
   },
-  process: { text: '', schedule: 0 },
+  process: { text: '', schedule: 0, detail: '' },
   isSelected: true
 })
 
@@ -64,13 +64,20 @@ const store = new Vuex.Store({
     SET_ITEMS (state, items) {
       state.items = items
     },
-    EDIT_PROCESS (state, { index, text, schedule }) {
+    EDIT_PROCESS (state, { index, text, schedule, detail }) {
       // 与桌面 store 一致：processor/Action 的 item.index 是「选中列表」下标，不是全列表
       const selected = state.items.filter((i) => i.isSelected)
       const it = selected[index]
       if (!it || !it.process) { return }
+      const prevSchedule = it.process.schedule
       if (text !== undefined) { it.process.text = text }
       if (schedule !== undefined) { it.process.schedule = schedule }
+      if (detail !== undefined) {
+        it.process.detail = detail
+      } else if (schedule !== undefined && schedule !== prevSchedule) {
+        // 与桌面同一规则：状态跃迁但没带新原因时清掉旧报错
+        it.process.detail = ''
+      }
     },
     SET_LOCK (state, v) {
       state.locked = !!v

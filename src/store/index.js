@@ -93,7 +93,10 @@ const defaultState = {
   },
   process: {
     text: '',
-    schedule: 0
+    schedule: 0,
+    // 失败/中止的具体原因（stderr 摘要等）；text 只放「生成失败」这类通用文案，
+    // 合成树状态列与 hover 用 detail 回答「为什么」
+    detail: ''
   },
   isSelected: true
 }
@@ -222,6 +225,8 @@ if (localData) {
       item.process = item.process || {}
       item.process.text = ''
       item.process.schedule = 0;
+      // 上次运行的原因与过程文案一样不跨会话保留；同时也是老数据的响应式兜底
+      item.process.detail = ''
       item.isSelected = !!item.isSelected
       // 老数据里每条 item 的 options 是独立副本，同样按出厂默认补齐缺失键，
       // 否则后续 _.extend 写入的是非响应式属性，界面不会跟着更新。
@@ -326,6 +331,8 @@ const mutations = {
       if (typeof s === 'number' && s > 0 && s < 1 && item.process) {
         item.process.schedule = -1
         item.process.text = abortedText
+        // 中止不是转换器报错：清掉上一轮的失败原因，hover 里只显示「已中止」
+        item.process.detail = ''
       }
     })
     // 进度不写 storage
@@ -381,7 +388,13 @@ const mutations = {
     if (!target || !target.process) {
       return
     }
+    var prevSchedule = target.process.schedule
     _.extend(target.process, keyValue)
+    // 状态跃迁但没给新原因：清掉上一轮的 detail，避免失败/重跑后还挂着旧报错
+    if (keyValue.detail === undefined && keyValue.schedule !== undefined &&
+      keyValue.schedule !== prevSchedule) {
+      target.process.detail = ''
+    }
   },
   [types.SINGLE_SELECT](state, index) {
     if (state.locked) {

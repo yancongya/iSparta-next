@@ -131,9 +131,14 @@ export default function (store, sameOutputPath, locale) {
         }).catch(function (err) {
           // Comp 渲序列失败：与 action.exec 失败一致（convertFail / -1）；桌面无渲染阶段不写
           if (willRender) {
+            // err.err 常带 stderr 全文（action.js 组装的），留末尾便于定位真正原因
+            var reason = err && (err.err || err.message)
+            var detail = reason ? String(reason).replace(/\r/g, '').trim() : ''
+            if (detail.length > 600) { detail = '…' + detail.slice(detail.length - 600) }
             store.dispatch('editProcess', {
               index: currentItem.index,
               text: locale.convertFail || 'Failed',
+              detail: detail,
               schedule: -1
             })
           }

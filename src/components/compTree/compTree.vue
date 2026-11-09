@@ -1,6 +1,7 @@
 <!--
   合成列表（CEP 特化）— 复用 PAG 列表式：表头全选/搜索 + 尺寸/帧率排序
-  无展开折叠；名称与搜索框同列；末列是任务运行状态（完成态带产物大小，点击复制产物）
+  无展开折叠；名称与搜索框同列；末列是任务运行状态：列内只显示最新一条
+  （失败/中止给原因、进行中给进度），完成态直接留给产物大小；hover 看全文，点击复制产物
   列溢出省略、hover 显示全文
 -->
 <template>
@@ -132,12 +133,12 @@
             :class="'is-' + stateOf(node)"
             :style="colStyle(col)"
             v-tip="stateTipOf(node)"
-            :aria-label="stateTextOf(node)"
+            :aria-label="stateAriaOf(node)"
             @click.stop="onStateClick(node)"
           >
             <is-icon class="mod-ct__state-ico" :name="stateIconOf(node)" size="xs" />
-            <span class="mod-ct__state-txt">{{ stateLabelOf(node) }}</span>
-            <span class="mod-ct__state-size">{{ stateSizeOf(node) }}</span>
+            <span v-if="stateLabelOf(node)" class="mod-ct__state-txt">{{ stateLabelOf(node) }}</span>
+            <span v-if="stateSizeOf(node)" class="mod-ct__state-size">{{ stateSizeOf(node) }}</span>
           </button>
         </template>
         <span class="mod-ct__c mod-ct__c--act">
@@ -162,7 +163,7 @@ import IsCheckbox from '../../ui-next/components/ui/IsCheckbox.vue'
 import rightMenu from '../projectList/menu'
 import {
   stateOf as taskStateOf, iconOfState, existingOutputFilesOf,
-  sizeTextOfFiles, sizeTipOfFiles
+  sizeTextOfFiles, sizeTipOfFiles, lastLineOf
 } from '../../util/task-output'
 import notice from '../../ui-next/notice'
 import hostAdapter from '../../util/host-env'
@@ -184,6 +185,23 @@ const FORMATS = [
 const MOCK_STATES = ['done', 'running', 'done', 'pending', 'fail', 'done']
 /** 完成态演示产物大小，与 MOCK_STATES 同索引；非完成态不显示 */
 const MOCK_SIZES = ['1.24 MB', '', '386.5 KB', '', '', '2.10 MB']
+/**
+ * 演示最新日志与失败原因，与 MOCK_STATES 同索引。
+ * 失败项的 detail 末行是编码器结论（真实面板同样把 stderr 末尾写进 detail），
+ * 列内只显示这一行，hover 才展开完整多行。
+ */
+const MOCK_LOGS = [
+  { text: '转换成功！', detail: '' },
+  { text: '正在渲染合成 7/24...', detail: '' },
+  { text: '转换成功！ APNG 质量 80 → 70（1.24 MB > 0.78 MB）', detail: '' },
+  { text: '', detail: '' },
+  {
+    text: '生成失败',
+    detail: 'Command failed: apngquant --quality 80-80 -o /tmp/out.apng\n' +
+      'stderr: apngquant: out of memory while quantizing frame 132/480'
+  },
+  { text: '转换成功！', detail: '' }
+]
 /** mockup 模式的演示初值：混排激活/未激活，便于一眼看出两态差异 */
 const MOCK_FORMATS = [
   ['APNG', 'GIF', 'WEBP'],
@@ -532,35 +550,77 @@ export default {
       const task = this.taskOf(node)
       return task ? sizeTextOfFiles(existingOutputFilesOf(task)) : ''
     },
-    /** 状态文案（不含产物大小）：列内文本与 hover 标题共用这一份 */
-    stateLabelOf (node) {
+    /** 状态名（成功 / 失败 / 进行中 / 待处理）：列内文本为空时的兜底与 hover 首行 */
+    stateNameOf (node) {
       const s = this.stateOf(node)
       if (s === 'done') return this.$t('statDone')
       if (s === 'fail') return this.$t('statFail')
       if (s === 'running') return this.$t('statRunning')
       return this.$t('compStatePending')
     },
-    /** 列内短文本：状态 + 完成态产物大小；过长由 CSS 省略，hover 看完整信息 */
-    stateTextOf (node) {
-      const label = this.stateLabelOf(node)
-      if (this.stateOf(node) !== 'done') return label
-      const size = this.stateSizeOf(node)
-      return size ? label + ' · ' + size : label
-    },
-    /** hover 完整信息：不省略的状态 + 进度文案 + 逐文件产物路径与精确字节数 + 复制提示 */
-    stateTipOf (node) {
-      const lines = [this.stateTextOf(node)]
+    /** 最新一条过程日志（渲染进度、成功文案等）：真实面板读 process.text */
+    stateLogOf (node) {
+      if (typeof window !== 'undefined' && window.__ispartaMockup) {
+        return MOCK_LOGS[Math.abs(Number(node && node.index) || 0) % MOCK_LOGS.length].text
+      }
       const task = this.taskOf(node)
-      if (task && task.process && task.process.text) lines.push(String(task.process.text))
-      if (this.stateOf(node) === 'done') {
-        if (typeof window !== 'undefined' && window.__ispartaMockup) {
-          lines.push('/mock/output/' + String((node && node.name) || 'comp') + ' — ' + this.stateSizeOf(node))
+      return String((task && task.process && task.process.text) || '')
+    },
+    /** 失败 / 中止的具体原因（stderr 摘要等）：真实面板读 process.detail */
+    stateDetailOf (node) {
+      if (typeof window !== 'undefined' && window.__ispartaMockup) {
+        return MOCK_LOGS[Math.abs(Number(node && node.index) || 0) % MOCK_LOGS.length].detail
+      }
+      const task = this.taskOf(node)
+      return String((task && task.process && task.process.detail) || '')
+    },
+    /**
+     * 列内文本：完成态不再重复「成功」，把位置直接留给产物大小；
+     * 失败 / 中止 / 进行中显示最新一条日志（原因优先），列宽不够时省略，hover 看全文。
+     */
+    stateLabelOf (node) {
+      if (this.stateOf(node) === 'done') return ''
+      return lastLineOf(this.stateDetailOf(node)) ||
+        lastLineOf(this.stateLogOf(node)) ||
+        this.stateNameOf(node)
+    },
+    /** 无障碍名称：状态 + 原因/进度 + 产物大小（读屏不依赖 hover） */
+    stateAriaOf (node) {
+      const name = this.stateNameOf(node)
+      const parts = [name]
+      const label = this.stateLabelOf(node)
+      if (label && label !== name) parts.push(label)
+      const size = this.stateSizeOf(node)
+      if (size) parts.push(size)
+      return parts.join(' · ')
+    },
+    /** hover 完整信息：状态 + 完整原因（多行不省略）+ 逐文件产物路径与精确字节数 + 复制提示 */
+    stateTipOf (node) {
+      const state = this.stateOf(node)
+      const size = this.stateSizeOf(node)
+      const lines = [state === 'done' && size
+        ? this.stateNameOf(node) + ' · ' + size
+        : this.stateNameOf(node)]
+      if (state !== 'done') {
+        const detail = String(this.stateDetailOf(node) || '').replace(/\r/g, '').trim()
+        // 失败原因常是 stderr 多行原文，hover 给全文；没有原因时退回最近一条过程文案
+        if (detail) {
+          lines.push(detail)
         } else {
+          const log = lastLineOf(this.stateLogOf(node))
+          if (log) lines.push(log)
+        }
+      }
+      if (state === 'done') {
+        if (typeof window !== 'undefined' && window.__ispartaMockup) {
+          lines.push('/mock/output/' + String((node && node.name) || 'comp') + ' — ' + size)
+        } else {
+          const task = this.taskOf(node)
           const tip = task ? sizeTipOfFiles(existingOutputFilesOf(task)) : ''
           if (tip) lines.push(tip)
         }
+        lines.push(this.$t('compStateCopy'))
       }
-      lines.push(this.$t('compStateCopy'))
       return lines.join('\n')
     },
     /** 点击状态列复制产物：复用顶栏同一套宿主桥与通知文案 */
@@ -1082,17 +1142,18 @@ export default {
 .mod-ct__c--state.is-running { color: var(--is-warn, #ffc857); }
 .mod-ct__c--state.is-fail { color: var(--is-bad, #ff5c5c); }
 .mod-ct__state-txt {
-  flex: 0 0 auto;
+  /* 可收缩：原因/进度往往长于列宽，省略号交给它，别把产物大小挤出列 */
+  flex: 0 1 auto;
+  min-width: 0;
   max-width: 100%;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
-/* 产物大小贴右：与只读数字列同一套等宽数字，行行对齐 */
+/* 产物大小紧跟图标（第二段起点与其它行的原因/进度一致），不再贴右留空 */
 .mod-ct__state-size {
   flex: 0 1 auto;
   min-width: 0;
-  margin-left: auto;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;

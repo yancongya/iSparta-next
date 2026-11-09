@@ -26,6 +26,20 @@ function fsSyncExists (p) {
 /** CEP 扩展 Id（装机目录名）；getSystemPath 有时只给到 CEP\extensions */
 const CEP_EXT_ID = 'io.github.isparta-next'
 
+/**
+ * 失败原因摘要（写进 process.detail，供任务/合成树 hover 看「为什么」）。
+ * 编码器的真正结论通常在 stderr 末尾；整段可能上千行，只留末尾几行并限长。
+ */
+function errorDetailOf (stderr, stdout, fallback) {
+  var raw = String(stderr || '').trim() || String(stdout || '').trim() || String(fallback || '').trim()
+  if (!raw) { return '' }
+  var lines = raw.replace(/\r/g, '').split('\n')
+    .map(function (line) { return line.trim() })
+    .filter(function (line) { return !!line })
+  var tail = lines.slice(-6).join('\n')
+  return tail.length > 600 ? '…' + tail.slice(tail.length - 600) : tail
+}
+
 function toolSearchBases () {
   var bases = []
   function push (p) {
@@ -154,11 +168,14 @@ export default class Action {
         // silent：探测性命令（如 webpmux 取帧到末尾）的预期失败，不写 convertFail、不解锁
         // markFail:false：网关阈值重压的子步骤失败由调用方吞掉并重试，不把任务标红「生成失败」
         if (!(options && options.silent) && !(options && options.markFail === false)) {
+          var cancelled = !!(result && result.cancelled)
           store.dispatch('editProcess', {
             index: item.index,
-            text: result && result.cancelled
+            text: cancelled
               ? (locale.noticeConvertAborted || 'Conversion aborted')
               : locale.convertFail,
+            // 只说「生成失败」无法定位；带上 stderr 末尾作为可读原因（中止除外）
+            detail: cancelled ? '' : errorDetailOf(result && result.stderr, result && result.stdout, result && result.error),
             schedule: -1
           })
         }

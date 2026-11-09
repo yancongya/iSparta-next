@@ -20,6 +20,29 @@ export function stateOf (process) {
   return 'pending'
 }
 
+/**
+ * 多行文本取最后一个非空行并压缩空白。
+ * 合成树状态列宽度有限，只显示「最新一条」：process.detail 常是 stderr 多行，
+ * 结论在末尾；hover 才给完整多行。
+ */
+export function lastLineOf (text) {
+  const lines = String(text == null ? '' : text).replace(/\r/g, '').split('\n')
+  for (let i = lines.length - 1; i >= 0; i--) {
+    const line = lines[i].replace(/\s+/g, ' ').trim()
+    if (line) return line
+  }
+  return ''
+}
+
+/**
+ * 任务的最新一条状态文本（不含状态名兜底）。
+ * detail 是失败/中止的具体原因（stderr 等），text 是过程文案（渲染进度、成功提示）；
+ * 有 detail 时它才是用户最想看的「为什么」。
+ */
+export function latestStateTextOf (process) {
+  return lastLineOf(process && process.detail) || lastLineOf(process && process.text)
+}
+
 /** 状态 → 图标（任务列表状态点与合成树状态列共用） */
 export function iconOfState (state) {
   switch (state) {
