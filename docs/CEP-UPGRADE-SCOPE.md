@@ -52,6 +52,7 @@
 
 - CEP 当前工程合成会同步为任务列表项；合成树勾选联动任务选择，双击行调用 AE 定位/打开合成。
 - 合成树列布局的唯一真相源是 `src/util/compTreeColumns.js`：可配置列（尺寸 / 帧率 / 运行状态）的顺序与宽度持久化在 `storage` 的 `compTree.columns`，表头与数据行共用同一份 `columnOrder` / `columnWidths`。名字 + 三个输出格式图标是同一个 pinned 首列（表头即搜索栏），勾选列与齿轮列也固定，均不参与拖拽或重排；名字列宽度自动填充剩余空间。
+- 运行状态列只显示最新一条：失败/中止取 `process.detail`（stderr 摘要），进行中取 `process.text`（渲染进度），完成态只留产物大小；详细多行原因与逐文件产物在 hover 中展开。
 - 合成树行会写入自定义拖拽数据，`comp-source.js` 保留 drop/paste 适配方法；但 `Home.vue` 当前 drop/paste 事件只处理文件导入，没有接入合成数据。不要将拖拽/粘贴合成当成已支持的 UI 操作。
 - 桌面文件导入 / 拖放 / 粘贴、删除任务、Ctrl+Delete、逐帧 delay（`supportsFrameDelay`）、Electron 原生右键菜单（`menu:popup` / `menu:clicked`）和更新策略 `full` 仍走原桌面路径（CEP 更新策略为 `none`）。
 

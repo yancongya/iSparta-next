@@ -54,7 +54,7 @@ node scripts/dev/preview.js cep --mock   # 打开 http://127.0.0.1:8082/?mock=1
 | --- | --- |
 | 生效条件 | `NODE_ENV=development` **且** URL 带 `?mock=1`（或 `?mockup=1`）；`serve:cep` 专用 |
 | 假数据 | 6 条示例合成（含超长名）+ 工程树 + 工程状态；`src/util/mock-bridge.js` 另播种 5 条示例任务 |
-| 可验范围 | 任务列表、合成树交互、名字列 APNG / GIF / WEBP 三格式开关、长名省略、视图切换 |
+| 可验范围 | 任务列表、合成树交互、名字列 APNG / GIF / WEBP 三格式开关、长名省略、视图切换、状态列最新日志（进行中进度 / 失败原因 / 完成态产物大小）与 hover 全文 |
 | 不验范围 | 真实合成读取、PNG 序列渲染、编码、安装与更新；这些必须走 AE 实机（见 `docs/ACCEPTANCE-RUNBOOK.md`） |
 | 重置 | 控制台 `__ispartaMockReset()` 清空后刷新 |
 | 生产影响 | `installMockup()` 的 `NODE_ENV` 判断在构建期被折叠；`targets/cep/ui` 生产载荷与真实面板不带参数、不启用 |
