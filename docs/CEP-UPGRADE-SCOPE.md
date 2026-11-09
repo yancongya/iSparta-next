@@ -44,12 +44,14 @@
 | 输出工具栏 | 选中已完成任务后复制输出文件；悬停切换为打开输出目录 | 共享 Home + hostAdapter；桌面走 Electron IPC，CEP 用 Node 子进程复制、AE JSX `Folder.execute()` 打开 | 本轮 |
 | 双击定位 | 打开 AE 合成 | `openSource` / type=Comp | `7212885` |
 | 合成树同名消歧 | folderPath 后缀 | 合成树组件 | `7212885` |
+| 合成树列布局 | 名字+输出格式 pinned 首列、表头拖动改列宽（双击恢复）、长按拖动重排列顺序；短点击仍切换数据排序 | `supportsCompImport` / 合成树组件 | 本轮 |
 | 小屏断点 | shell/列表/底栏降档 | `body.is-cep` + JS 门控 | `2c4d7b1` + 断点统一轮 |
 | UI 适配 | 隐藏 Comp 胶囊、隐藏输出路径、CEP 覆盖层设置 | `showOutPath` 等 | `38124a3` 等 |
 
 ## 3. 当前合成输入交互与桌面保持原样
 
 - CEP 当前工程合成会同步为任务列表项；合成树勾选联动任务选择，双击行调用 AE 定位/打开合成。
+- 合成树列布局的唯一真相源是 `src/util/compTreeColumns.js`：可配置列（尺寸 / 帧率 / 运行状态）的顺序与宽度持久化在 `storage` 的 `compTree.columns`，表头与数据行共用同一份 `columnOrder` / `columnWidths`。名字 + 三个输出格式图标是同一个 pinned 首列（表头即搜索栏），勾选列与齿轮列也固定，均不参与拖拽或重排；名字列宽度自动填充剩余空间。
 - 合成树行会写入自定义拖拽数据，`comp-source.js` 保留 drop/paste 适配方法；但 `Home.vue` 当前 drop/paste 事件只处理文件导入，没有接入合成数据。不要将拖拽/粘贴合成当成已支持的 UI 操作。
 - 桌面文件导入 / 拖放 / 粘贴、删除任务、Ctrl+Delete、逐帧 delay（`supportsFrameDelay`）、Electron 原生右键菜单（`menu:popup` / `menu:clicked`）和更新策略 `full` 仍走原桌面路径（CEP 更新策略为 `none`）。
 
