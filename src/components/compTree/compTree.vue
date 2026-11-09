@@ -38,7 +38,11 @@
       <button type="button" class="mod-ct__c mod-ct__c--num" @click="sortBy('fps')">
         {{ $t('compColFps') }}{{ sortMark('fps') }}
       </button>
-      <span class="mod-ct__c mod-ct__c--state mod-ct__c--state-head">{{ $t('compColState') }}</span>
+      <!-- 与行内图标等宽的占位，让表头文字对齐到状态文本的起点 -->
+      <span class="mod-ct__c mod-ct__c--state mod-ct__c--state-head">
+        <span class="mod-ct__state-ico" aria-hidden="true"></span>
+        <span class="mod-ct__state-txt">{{ $t('compColState') }}</span>
+      </span>
       <span class="mod-ct__c mod-ct__c--act"></span>
     </div>
 
@@ -89,8 +93,9 @@
           :aria-label="stateTextOf(node)"
           @click.stop="onStateClick(node)"
         >
-          <is-icon :name="stateIconOf(node)" size="xs" />
-          <span class="mod-ct__state-txt">{{ stateTextOf(node) }}</span>
+          <is-icon class="mod-ct__state-ico" :name="stateIconOf(node)" size="xs" />
+          <span class="mod-ct__state-txt">{{ stateLabelOf(node) }}</span>
+          <span class="mod-ct__state-size">{{ stateSizeOf(node) }}</span>
         </button>
         <span class="mod-ct__c mod-ct__c--act">
           <button type="button" class="iconbtn" :title="$t('outputConfig')" @click.stop="$emit('configure', node)">
@@ -458,13 +463,18 @@ export default {
       const task = this.taskOf(node)
       return task ? sizeTextOfFiles(existingOutputFilesOf(task)) : ''
     },
+    /** 状态文案（不含产物大小）：列内文本与 hover 标题共用这一份 */
+    stateLabelOf (node) {
+      const s = this.stateOf(node)
+      if (s === 'done') return this.$t('statDone')
+      if (s === 'fail') return this.$t('statFail')
+      if (s === 'running') return this.$t('statRunning')
+      return this.$t('compStatePending')
+    },
     /** 列内短文本：状态 + 完成态产物大小；过长由 CSS 省略，hover 看完整信息 */
     stateTextOf (node) {
-      const s = this.stateOf(node)
-      const label = s === 'done' ? this.$t('statDone')
-        : s === 'fail' ? this.$t('statFail')
-          : s === 'running' ? this.$t('statRunning') : this.$t('compStatePending')
-      if (s !== 'done') return label
+      const label = this.stateLabelOf(node)
+      if (this.stateOf(node) !== 'done') return label
       const size = this.stateSizeOf(node)
       return size ? label + ' · ' + size : label
     },
@@ -789,23 +799,31 @@ export default {
   opacity: 0.8;
   text-decoration: underline;
 }
-/* 运行状态列（替代原帧数列）：完成态显示产物大小，整格可点击复制 */
+/* 运行状态列（替代原帧数列）：完成态显示产物大小，整格可点击复制
+ * 三段固定对齐：图标定宽靠左、状态文本左对齐、产物大小贴右并 tabular-nums，
+ * 保证每行图标/文案/尺寸三个起点都是一条竖线（原先是整串右对齐，图标随文字宽度浮动）。 */
 .mod-ct__c--state {
-  width: 104px;
-  flex: 0 1 104px;
-  min-width: 72px;
+  width: 112px;
+  flex: 0 1 112px;
+  min-width: 84px;
   padding-right: 8px;
   display: inline-flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: flex-start;
   gap: 4px;
-  text-align: right;
+  text-align: left;
   background: transparent;
   border: 0;
   color: var(--is-text-2, #8a8f8c);
   font: inherit;
   cursor: pointer;
   white-space: nowrap;
+}
+.mod-ct__state-ico {
+  flex: 0 0 12px;
+  width: 12px;
+  height: 12px;
+  display: block;
 }
 .mod-ct__c--state > :first-child { flex: 0 0 auto; }
 .mod-ct__c--state-head {
@@ -823,10 +841,23 @@ export default {
 .mod-ct__c--state.is-running { color: var(--is-warn, #ffc857); }
 .mod-ct__c--state.is-fail { color: var(--is-bad, #ff5c5c); }
 .mod-ct__state-txt {
-  min-width: 0;
+  flex: 0 0 auto;
+  max-width: 100%;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+/* 产物大小贴右：与只读数字列同一套等宽数字，行行对齐 */
+.mod-ct__state-size {
+  flex: 0 1 auto;
+  min-width: 0;
+  margin-left: auto;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.85;
 }
 .mod-ct__txt {
   flex: 1 1 0;
