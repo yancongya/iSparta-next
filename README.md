@@ -308,6 +308,8 @@ iSparta-next/
 | `node scripts/dev/build.js cep` | 只重建 AE / CEP 面板产物 `targets/cep/ui` |
 | `node scripts/dev/check.js lint\|pack\|ports\|all` | 体检：lint / 出包自检 / 端口占用与归属识别 |
 
+**浏览器 mockup（仅开发预览）**：桌面 Web（:8081）启动即由 `src/util/mock-bridge.js` 注入假桥与 5 条种子任务；CEP Web（:8082）需显式开关，用 `node scripts/dev/preview.js cep --mock`（等价访问 `http://127.0.0.1:8082/?mock=1`），由 `src/cep/mockup.js` 提供示例合成树 + 假任务，用于脱离 AE 调 UI。两者都只在 `NODE_ENV=development` 生效，真实桌面 / CEP 面板与生产构建不受影响；控制台 `__ispartaMockReset()` 可重置假数据。详见 [`AGENTS.md`](AGENTS.md)。
+
 `scripts/dev/` 下另有双击友好包装：`run-all-dev` / `run-dev-cep` / `run-landing` / `run-preview` / `run-build-win` / `run-build-cep` / `run-check`。开发约定与完整脚本索引见 [`AGENTS.md`](AGENTS.md)。
 
 ## 文档导航

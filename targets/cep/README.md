@@ -28,6 +28,7 @@
 npm run dev:cep      # HMR：MainPath=./dev-hmr.html → :8082
 npm run dev:cep:off  # 出包前切回 ./ui/index.html
 npm run build:cep    # 仅出包
+node scripts/dev/preview.js cep --mock   # 浏览器 mockup：:8082/?mock=1（不开 AE）
 ```
 
 ### CEP 铁律（必读）
@@ -36,10 +37,29 @@ npm run build:cep    # 仅出包
 |------|------|
 | **无 Ctrl+R** | 刷新只能 **关面板再开**；改 `src/**` HMR 自动热更 |
 | **MainPath 禁 http://** | 否则 **重启 AE 扩展消失**；HMR 用 `dev-hmr.html` |
-| **禁 mock** | 否则任务列表全是假数据 |
+| **真机 / 生产禁 mock** | 否则任务列表全是假数据；dev 浏览器预览的 `?mock=1` 是唯一例外，见下 |
 | **桥加载** | HMR `/lib/`（`public/lib`），静态 `../lib/`；勿打进 bundle |
 | **外链** | `cep.util.openURLInDefaultBrowser`，非 `window.open` |
 | **jsx/manifest** | 不热更；关面板再开（manifest 需重启 AE） |
+
+### 浏览器 mockup（dev-only，不进扩展包）
+
+纯浏览器预览（`:8082`）没有 AE 宿主，`cep-bridge` 拿不到工程数据，任务列表 / 合成树都是空的。显式开关后由 `src/cep/mockup.js` 提供假应答：
+
+```powershell
+node scripts/dev/preview.js cep --mock   # 打开 http://127.0.0.1:8082/?mock=1
+```
+
+| 项 | 内容 |
+| --- | --- |
+| 生效条件 | `NODE_ENV=development` **且** URL 带 `?mock=1`（或 `?mockup=1`）；`serve:cep` 专用 |
+| 假数据 | 6 条示例合成（含超长名）+ 工程树 + 工程状态；`src/util/mock-bridge.js` 另播种 5 条示例任务 |
+| 可验范围 | 任务列表、合成树交互、名字列 APNG / GIF / WEBP 三格式开关、长名省略、视图切换 |
+| 不验范围 | 真实合成读取、PNG 序列渲染、编码、安装与更新；这些必须走 AE 实机（见 `docs/ACCEPTANCE-RUNBOOK.md`） |
+| 重置 | 控制台 `__ispartaMockReset()` 清空后刷新 |
+| 生产影响 | `installMockup()` 的 `NODE_ENV` 判断在构建期被折叠；`targets/cep/ui` 生产载荷与真实面板不带参数、不启用 |
+
+不带 `?mock=1` 的 `:8082` 预览保持原行为（空列表，仅看界面布局）。桌面 Web（:8081）的 mock 桥无需开关、自动生效，见 `AGENTS.md` §1.1。
 
 打包 payload / 独立 zip：
 

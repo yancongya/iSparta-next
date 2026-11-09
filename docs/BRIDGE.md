@@ -7,12 +7,14 @@
 ## 1. 分层
 
 ```
-processor/*  →  node-env.js（稳定导出）  →  window.ispartaAPI（preload / 未来 CEP adapter）
+processor/*  →  node-env.js（稳定导出）  →  window.ispartaAPI（preload / CEP adapter）
                       ↑
-              mock-bridge.js（纯浏览器 dev，同构语义）
+              mock-bridge.js（纯浏览器 dev，同构语义：桌面自动 / CEP mockup 强制接管）
+              src/cep/mockup.js（CEP dev `?mock=1`：伪造 ispartaCS 的 AE 侧应答，不改 ispartaAPI 形状）
 ```
 
 - **ispartaAPI**：环境注入的完整能力面（桌面 = `src/preload.js`）。
+- **浏览器 mockup**：桌面 Web（:8081）由 `src/util/mock-bridge.js` 自动注入；CEP Web（:8082）需显式 `?mock=1`，由 `src/cep/mockup.js` 伪造 `ispartaCS.evalJson` 返回工程树 / 合成列表，再让 `mock-bridge.js` 强制接管 `ispartaAPI`。两者都只在 `NODE_ENV=development` 生效，不改变本文冻结的桥契约；命令与边界见 `AGENTS.md` §1.1。
 - **node-env**：渲染侧唯一取能力入口；导出 `fs/path/os/storage/ipc` 包装 + `get*` 原样访问。
 - **processor**：只 import `../node-env`，不感知 Electron / CEP。
 
@@ -214,4 +216,4 @@ W2 adapter 只跑转换核时，至少实现本节方法。文件行号为当前
 
 ---
 
-维护约定：改 `preload.js` / `node-env.js` / `processor/*` 任一处桥形状时，同步本文与 `mock-bridge.js` 语义注释。
+维护约定：改 `preload.js` / `node-env.js` / `processor/*` 任一处桥形状时，同步本文与 `mock-bridge.js` 语义注释；改 `src/cep/mockup.js` 的假应答形状或预览开关时，同步 `AGENTS.md` §1.1、`targets/cep/README.md` 与 `scripts/dev/preview.js` 的用法说明。

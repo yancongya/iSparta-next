@@ -10,7 +10,7 @@
 | 一键开发预览 | `npm run dev:all`（落地页 8080 + Web 8081 + CEP 8082）；`dev:all:electron` 再加 Electron；或 `scripts\dev\run-all-dev.cmd` |
 | 依赖安装 | `scripts\dev\run-npm-install.cmd` / `run-clean-install.cmd` / `run-electron-install.cmd` |
 | AE CEP 开发（**默认 HMR**） | `npm run dev:cep`（MainPath=`./dev-hmr.html`→8082）；刷新=**关面板再开（无 Ctrl+R）**。收工 `dev:cep:off`。出包才 `build:cep` |
-| CEP 铁律 | MainPath **禁 http://**；**禁 mock**；桥 `/lib/`|`../lib/`；外链 `cep.util.openURLInDefaultBrowser` |
+| CEP 铁律 | MainPath **禁 http://**；**真机 / 生产禁 mock**（dev 浏览器预览可显式 `?mock=1`，见下）；桥 `/lib/`|`../lib/`；外链 `cep.util.openURLInDefaultBrowser` |
 | CEP 载荷/扩展 zip | `npm run prepare:cep`（`build/cep-payload/`，含 `install/` 安装辅助）；`npm run pack:cep:win` / `pack:cep:mac`（`dist/*-cep-*-{win,mac}-x64.zip`，**安装辅助按平台取子集**，见下） |
 | 更新逻辑测试 | `node scripts\updateCheck.l1.js`；fixture：`scripts\fixture-github.js` |
 | 图标再生 | 见 `scripts\build-app-icons.js`、`scripts\make-icons-from-png.py`、`scripts\make-installer-images.py`（勿手改位图当源） |
@@ -22,12 +22,13 @@
 
 | 入口 | 子命令 / 目标 | 用途 |
 |------|---------------|------|
-| `scripts\dev\preview.js`<br>`scripts\dev\run-preview.cmd` | `guide` :8090 · `landing` :8080 · `web` :8081 · `desktop` :8081 · `cep` :8082 | 起服务 → **按页面独有标记确认「应答方确实是我们」** → 打开默认浏览器。`--port N` 指定端口，`--no-open` 只起服务 |
+| `scripts\dev\preview.js`<br>`scripts\dev\run-preview.cmd` | `guide` :8090 · `landing` :8080 · `web` :8081 · `desktop` :8081 · `cep` :8082 | 起服务 → **按页面独有标记确认「应答方确实是我们」** → 打开默认浏览器。`--port N` 指定端口，`--no-open` 只起服务，`--mock`（仅 `cep`）自动附加 `?mock=1` 打开 CEP mockup |
 | `scripts\dev\build.js`<br>`scripts\dev\run-build-win.cmd`<br>`scripts\dev\run-build-cep.cmd` | `win` · `cep` · `mac-pkg`；`--backup` · `--dry`(`-n`) | 构建入口。mac-pkg 从已构建 `.app` 生成系统级安装包。 |
 | `scripts\dev\check.js`<br>`scripts\dev\run-check.cmd` | `lint` · `pack` · `ports` · `all` | 体检：lint / `doctor:pack` 出包自检 / 8080–8099 端口占用与**归属识别**（附可复制 `taskkill`） |
 
 ```powershell
 node scripts\dev\preview.js guide            # 引导页原型台
+node scripts\dev\preview.js cep --mock        # CEP 浏览器 mockup：:8082/?mock=1（假任务 + 合成树）
 node scripts\dev\build.js win                # 本机打 Windows 安装包
 node scripts\dev\build.js cep                # 仅需要本地 CEP 产物时重建
 node scripts/dev/build.js mac-pkg             # macOS 从已构建 .app 打 pkg
@@ -35,6 +36,18 @@ node scripts\dev\check.js all                # lint + pack + ports
 ```
 
 预览入口内部调用的就是仓库原有的服务脚本（`landing` → `npm run landing:serve`、`web` → `npm run serve`、`cep` → `npm run serve:cep`、`guide` → `npm run preview:guide`（:8090 原型台）、`desktop` → `npm run dev`）—— 单独调试服务本身时仍可直接跑它们，日常预览走 `preview.js` 以便拿到标记校验与真实端口提示。
+
+**浏览器 mockup 对照**（都是 dev-only，进不了生产包；改 UI 前先选对入口）：
+
+| 目标 | 入口 | 开关 | 假数据来源 |
+| --- | --- | --- | --- |
+| 桌面 Web `web` :8081 | `node scripts/dev/preview.js web` | 无：`src/util/mock-bridge.js` 检测到 `!window.ispartaAPI` 自动注入 | 内存 fs / storage 假桥 + 5 条种子任务 |
+| CEP Web `cep` :8082 | `node scripts/dev/preview.js cep --mock` | 必须显式 `?mock=1`（`--mock` 只负责把参数附加到打开与打印的地址） | `src/cep/mockup.js` → 6 条示例合成 + 工程树假应答；`mock-bridge.js` → 5 条任务 |
+
+- CEP 铁律「禁 mock」针对**真机 / 生产**：`?mock=1` 只在 `NODE_ENV=development` 的 `serve:cep` 下生效；真实 AE 面板加载 `targets/cep/ui/index.html`（生产构建），不带参数也不启用。
+- `src/cep/main.js` 首位 `import './mockup'` 必须保留：`ensure-bridge` 与 store 在模块顶层读桥，顺序错了假数据接不上。
+- 控制台 `__ispartaMockReset()` 清空 mock 数据；`?mock=1` 页面可顺带验合成树名字列的 APNG / GIF / WEBP 三格式图标与长名省略。
+- 桌面 Web 的 mock 桥、CEP mockup 都只能验 UI 交互，**不能替代**合成读取 / 渲染 / 安装 / 更新的宿主验收（见 `docs/ACCEPTANCE-RUNBOOK.md`）。
 
 **`build.js` 两种模式的差异**
 
@@ -69,7 +82,7 @@ node scripts\dev\check.js all                # lint + pack + ports
 
 - 清理默认只预览；确认范围后追加 `--apply`。Web/CEP 清理额外删除 `node_modules/electron/dist` 和 `path.txt`；桌面模式保留 Electron 运行时。删除后切回桌面模式必须运行对应 install 命令恢复。
 - Web/CEP install 通过子进程环境跳过 Electron 二进制下载及原生依赖重建，不禁用其他依赖的安装脚本，不修改全局 npm 配置。普通 `npm install` 和 CI 保持完整安装行为，因此 UI 开发应使用上表入口。
-- CEP preview 只在浏览器看界面，不代表 AE 桥接可用；需要 AE 实机时另用 `npm run dev:cep`，关闭面板再打开刷新，收工执行 `npm run dev:cep:off`。
+- CEP preview 只在浏览器看界面，不代表 AE 桥接可用；要看假任务 / 合成树用 `node scripts/dev/preview.js cep --mock`（dev-only，见 §1.1）；需要 AE 实机时另用 `npm run dev:cep`，关闭面板再打开刷新，收工执行 `npm run dev:cep:off`。
 - 浏览器 serve 与 lint 通过 `scripts/dev/ui-service.js` 加载 Vue CLI，排除 Electron 插件，确保删除运行时后仍可启动；桌面和生产构建保持原入口。
 - 日常预览无需 `build:cep`、`prepare:cep` 或 Electron 打包。浏览器预览不能替代合成读取、渲染、安装和更新的宿主验收。
 - 切换模式清理前停止正在使用这些目录的开发服务与桌面进程。脚本不会自动停止用户进程。

@@ -129,6 +129,10 @@ frontend-redesign 工作树 Electron 已升级至 **28.3.3（Chromium 120）**�
 
 浏览器测不了：真实文件拖入（fs 路径）、转换执行（childProcess）、目录选择（ipc）、窗口行为。每个里程碑在真实 Electron 过一遍。注意仓库两棵树同时跑 dev 会撞端口（serve 默认 8080），错开或指定端口。
 
+### 6.4 CEP 侧对照（2026-11-09 补，桌面 M0 的后续）
+
+桌面 Web 的 mock 桥是**自动**的（检测到 `!window.ispartaAPI` 即注入）；CEP Web（:8082）因外链 `cep-bridge.js` 挂着 `ispartaCS`，会被误判成 CEP 宿主，任务列表与合成树两边都空。因此 CEP mockup 采用**显式开关**：`node scripts/dev/preview.js cep --mock`（等价 `?mock=1`），由 `src/cep/mockup.js` 伪造 AE 侧应答、`src/util/mock-bridge.js` 强制接管 `ispartaAPI` 并播种 5 条任务。两者都只在 dev 生效，生产载荷与真实 AE 面板不受影响。当前命令与边界以 `AGENTS.md` §1.1、`targets/cep/README.md` 为准（本文是历史规格，不作现行实现说明）。
+
 ## 7. 技术坑清单
 
 1. **`.is-input{width:100%}` 特异度坑**（ui.scss:375）：定宽必须写复合选择器（先例 `.is-input.num`、`.pv .is-input`）

@@ -7,7 +7,7 @@ set PATH=C:\nvm4w\nodejs;C:\Users\Administrator\.local\bin;C:\WINDOWS\system32;C
 set NODE_OPTIONS=--openssl-legacy-provider
 cd /d F:\iSparta
 if "%~1"=="" (
-  echo Usage: run-preview.cmd guide^|landing^|web^|desktop^|cep  [--port N] [--no-open]
+  echo Usage: run-preview.cmd guide^|landing^|web^|desktop^|cep  [--port N] [--no-open] [--mock]
   echo.
   call node scripts\dev\preview.js --help
   goto :eof

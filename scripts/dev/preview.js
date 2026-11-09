@@ -7,6 +7,7 @@
  *   node scripts/dev/preview.js web                # 桌面 Web，纯浏览器（:8081）
  *   node scripts/dev/preview.js desktop            # 桌面端 electron:serve（:8081，会拉起窗口）
  *   node scripts/dev/preview.js cep                # CEP Web（:8082，不动 CEP 清单开关）
+ *   node scripts/dev/preview.js cep --mock          # CEP Web + mockup 假数据（自动打开 ?mock=1）
  *   node scripts/dev/preview.js landing --port 8085 --no-open
  *
  * 为什么不等「进程起来了」就算成功：
@@ -72,16 +73,18 @@ const TARGETS = {
     port: 8082,
     marker: '<title>iSparta</title>',
     cmd: [npmCmd, 'run', 'serve:cep'],
-    note: '只预览界面，不改 CEP 清单；要真面板 HMR 用 scripts/dev/run-all-dev.cmd'
+    note: '只预览界面，不改 CEP 清单；加 --mock 显示假任务/合成树；真面板 HMR 用 run-all-dev.cmd'
   }
 }
 
 function parseArgv (argv) {
-  const out = { target: null, port: null, open: true, help: false }
+  const out = { target: null, port: null, open: true, help: false, mock: false }
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i]
     if (a === '--no-open') { out.open = false; continue }
     if (a === '--open') { out.open = true; continue }
+    // CEP mockup：桌面 Web/dev 的 mock 桥本来就自动生效，无需开关
+    if (a === '--mock') { out.mock = true; continue }
     if (a === '--port' || a === '-p') { out.port = Number(argv[++i]) || null; continue }
     if (a === '-h' || a === '--help') { out.help = true; continue }
     if (!out.target && TARGETS[a]) { out.target = a; continue }
@@ -93,13 +96,15 @@ function usage () {
   console.log('')
   console.log('  iSparta-next · 预览台入口')
   console.log('')
-  console.log('  用法：node scripts/dev/preview.js <目标> [--port N] [--no-open]')
+  console.log('  用法：node scripts/dev/preview.js <目标> [--port N] [--no-open] [--mock]')
   console.log('')
   Object.keys(TARGETS).forEach(function (k) {
     const t = TARGETS[k]
     console.log('    ' + k.padEnd(9) + ':' + String(t.port).padEnd(6) + t.label + '  —— ' + t.note)
   })
   console.log('')
+  console.log('  --mock       仅 cep：打开时自动附加 ?mock=1（dev-only 假任务 / 合成树）')
+  console.log('               桌面 Web 的 mock 桥自动生效，不需要此开关')
   console.log('  默认自动打开浏览器；--no-open 只起服务。Ctrl+C 结束。')
   console.log('')
 }
@@ -203,6 +208,13 @@ async function main () {
   }
 
   const target = TARGETS[opt.target]
+  if (opt.mock && opt.target !== 'cep') {
+    console.log('  [preview] --mock 仅对 cep 生效；桌面 Web / desktop 的 mock 桥本就自动启用')
+  }
+  // CEP mockup 靠 URL 参数开关：打印与打开的地址都带参，避免「服务起来了但列表是空的」
+  function openUrl (port) {
+    return 'http://127.0.0.1:' + port + '/' + (opt.mock && opt.target === 'cep' ? '?mock=1' : '')
+  }
   const base = opt.port || target.port
   // 显式 --port 时只在「那一个端口」上复用，不做邻近扫描 ——
   // 否则请求 :8096 会被 :8097 上残留的实例吸走，与用户意图不符。
@@ -221,8 +233,9 @@ async function main () {
     if (!hit) { continue }
     if (canReuse && isOurs(target, hit)) {
       console.log('  :' + p + ' 已经有同一个预览台在跑 → 直接打开，不再起第二个')
+      console.log('  地址：' + openUrl(p))
       console.log('')
-      if (opt.open) { openBrowser('http://127.0.0.1:' + p + '/') }
+      if (opt.open) { openBrowser(openUrl(p)) }
       process.exit(0)
     }
     console.log('  ! :' + p + ' 被别的服务占用（' + describe(hit) + '），起服务时可能自动顺延')
@@ -293,7 +306,7 @@ async function main () {
   }
 
   console.log('')
-  console.log('  ✔ 就绪：http://127.0.0.1:' + port + '/')
+  console.log('  ✔ 就绪：' + openUrl(port))
   if (viaFallback) {
     console.log('    （服务没打印地址，端口是按探活推出来的）')
   } else if (port !== base) {
@@ -302,7 +315,7 @@ async function main () {
   console.log('    ' + target.note)
   console.log('    Ctrl+C 结束')
   console.log('')
-  if (opt.open) { openBrowser('http://127.0.0.1:' + port + '/') }
+  if (opt.open) { openBrowser(openUrl(port)) }
 }
 
 main().catch(function (e) {

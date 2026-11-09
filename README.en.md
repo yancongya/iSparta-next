@@ -262,6 +262,8 @@ iSparta-next/
 | `node scripts/dev/build.js cep` | Rebuild the AE / CEP panel bundle `targets/cep/ui` only |
 | `node scripts/dev/check.js lint\|pack\|ports\|all` | Health check: lint / packaging gate / port occupancy & owner |
 
+**Browser mockup (dev preview only)**: the Desktop Web target (:8081) auto-installs `src/util/mock-bridge.js` with 5 seeded tasks. The CEP Web target (:8082) is opt-in — run `node scripts/dev/preview.js cep --mock` (equivalent to `http://127.0.0.1:8082/?mock=1`); `src/cep/mockup.js` then supplies a sample composition tree plus seeded tasks so CEP UI can be tuned without After Effects. Both are gated on `NODE_ENV=development`; real desktop/CEP panels and production builds are untouched. Run `__ispartaMockReset()` in the console to reset mock data. See [`AGENTS.md`](AGENTS.md).
+
 Double-click friendly wrappers under `scripts/dev/`: `run-all-dev`, `run-dev-cep`, `run-landing`, `run-preview`, `run-build-win`, `run-build-cep`, and `run-check`. See [`AGENTS.md`](AGENTS.md) for development conventions and the full script index (Chinese).
 
 ## Docs map

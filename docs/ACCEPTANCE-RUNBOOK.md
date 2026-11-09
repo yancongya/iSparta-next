@@ -18,7 +18,7 @@
 | 0.5 | 出包才：`dev:cep:off` + `build:cep` + `prepare:cep` | `build/cep-payload/…` |
 
 > **CEP 无 Ctrl+R**：刷新=**关面板再开**；改 `src/**` HMR 自动热更。  
-> **MainPath 禁 http://**；**禁 mock**；开发服后台常驻。
+> **MainPath 禁 http://**；**真机验收禁 mock**（浏览器 dev 预览的 `?mock=1` 只在 `serve:cep` 下生效，不能代替本手册的 AE 实机验收）；开发服后台常驻。
 
 ---
 

@@ -48,6 +48,7 @@
 | 任务 | 命令 |
 | --- | --- |
 | CEP 面板预览 | `node scripts/dev/preview.js cep` |
+| CEP 面板预览（mockup 假数据，dev-only） | `node scripts/dev/preview.js cep --mock`（`:8082/?mock=1`） |
 | CEP 源码变更后构建 | `node scripts/dev/build.js cep` |
 | 打包前检查 | `node scripts/dev/check.js pack` |
 | 完整体检 | `node scripts/dev/check.js all` |
