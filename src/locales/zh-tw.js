@@ -37,6 +37,8 @@ module.exports = {
     "loopInfinite":"0 次，無限循環",
     "outputName": "輸出名字",
     "outputFormat": "輸出格式",
+    "defaultOutputFormat": "預設輸出格式",
+    "defaultOutputFormatTip": "新建任務時預設勾選的格式；已加入的任務保留各自的設定。",
     "compressionQuality": "壓縮質量",
     "qualityEnable": "啟用",
     "floyd": "抖動",

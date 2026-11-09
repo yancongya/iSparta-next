@@ -37,6 +37,8 @@ module.exports = {
     "loopInfinite":"0 = infinite loop",
     "outputName": "Output name",
     "outputFormat": "Output format",
+    "defaultOutputFormat": "Default output formats",
+    "defaultOutputFormatTip": "Formats checked by default for new tasks; existing tasks keep their own selection.",
     "compressionQuality": "Compression quality",
     "qualityEnable": "Enable",
     "floyd": "Dithering",

@@ -66,6 +66,14 @@
           </div>
         </div>
 
+        <!-- 默认输出格式：与右侧输出设置同一组控件，写回 globalSetting.options.outputFormat -->
+        <is-form-item :label="$t('defaultOutputFormat')">
+          <is-checkbox-group v-model="defaultFormats" class="gs-formats">
+            <is-checkbox v-for="f in formatStatic" :key="f" :label="f" />
+          </is-checkbox-group>
+          <p class="gs-hint">{{ $t('defaultOutputFormatTip') }}</p>
+        </is-form-item>
+
         <div class="gs-split"></div>
 
         <is-form-item :label="$t('outputTo')">
@@ -228,6 +236,9 @@ import { MODE_SYSTEM, resolveLocale } from '../../util/system-locale'
 import { APP_NAME, LANDING_URL } from '../../brand'
 import { isReallyNewer } from '../../util/updateCheck'
 import { automaticRetryCount, effectiveQualityStart } from '../../util/sizeLimitConfig'
+import {
+  OUTPUT_FORMATS, normalizeOutputFormats, invalidateDefaultOutputFormats
+} from '../../util/outputFormats'
 import QualityRetrySliders from '../../ui-next/components/QualityRetrySliders.vue'
 
 const DEFAULT_SIZE_LIMIT = {
@@ -299,6 +310,30 @@ export default {
           enabled: !!current.enabled,
           targetFrameRate: Math.min(this.frameRateMax, target)
         })
+      }
+    },
+    formatStatic () {
+      return OUTPUT_FORMATS.slice()
+    },
+    /** 默认输出格式：存储字段本就存在，这里补上编辑入口 */
+    defaultFormats: {
+      get () {
+        const o = this.setting && this.setting.options
+        return o ? normalizeOutputFormats(o.outputFormat) : OUTPUT_FORMATS.slice()
+      },
+      set (value) {
+        if (!this.setting || !this.setting.options) return
+        const list = Array.isArray(value) ? value : []
+        const picked = OUTPUT_FORMATS.filter(function (key) { return list.indexOf(key) >= 0 })
+        // 至少留一种：全不选会让之后新建的所有任务都无法开始
+        if (!picked.length) {
+          notice.warning(this.$t('needOneFormat'))
+          // DOM 上的复选框刚被点成未选中；不产生一次响应式回填的话，
+          // 它会停在「未选」而数据仍是已选。用同值新数组触发重渲染复位。
+          this.$set(this.setting.options, 'outputFormat', this.defaultFormats.slice())
+          return
+        }
+        this.$set(this.setting.options, 'outputFormat', picked)
       }
     },
     qualityChecked: {
@@ -541,6 +576,8 @@ export default {
         if (!setting.options.outputTo) {
           setting.options.outputTo = Object.assign({}, DEFAULT_OUTPUT_TO)
         }
+        // 历史配置可能缺 outputFormat 或残留非法值；归一后勾选组才有确定初值
+        setting.options.outputFormat = normalizeOutputFormats(setting.options.outputFormat)
       }
       return setting
     },
@@ -582,6 +619,7 @@ export default {
     },
     resetVarible () {
       this.setting = this.loadSetting()
+      invalidateDefaultOutputFormats()
       this.sizeDraft = null
       this.themeMode = ThemeManager.getMode()
       this.updateEnabled = updateService.loadUpdatePrefs().enabled !== false
@@ -596,6 +634,13 @@ export default {
     changeVarible () {
       const prev = this._lastSaved || null
       storage.setItem('globalSetting', JSON.stringify(this.setting))
+      // 合成树的格式图标初值缓存要跟着新默认失效，否则要等下次启动才生效
+      invalidateDefaultOutputFormats()
+      try {
+        if (this.$root && this.$root.eventBus) {
+          this.$root.eventBus.$emit('default-formats-changed')
+        }
+      } catch (eBus) { /* ignore */ }
       updateService.setUpdateEnabled(this.updateEnabled)
       this._lastSaved = JSON.parse(JSON.stringify(this.setting.options))
       this.dialogFormVisible = false

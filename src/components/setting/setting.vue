@@ -322,6 +322,7 @@ import PathVars from '../../ui-next/components/PathVars.vue'
 import IsPresetBar from '../../ui-next/components/IsPresetBar.vue'
 import notice from '../../ui-next/notice'
 import { automaticRetryCount, effectiveQualityStart } from '../../util/sizeLimitConfig'
+import { OUTPUT_FORMATS } from '../../util/outputFormats'
 import QualityRetrySliders from '../../ui-next/components/QualityRetrySliders.vue'
 
 export default {
@@ -436,16 +437,16 @@ export default {
     },
     formatStatic () {
       if (!this.selectedList.length) {
-        return ['APNG', 'GIF', 'WEBP']
+        return OUTPUT_FORMATS.slice()
       }
       // 源全是 GIF 时不提供 GIF 输出；混合类型保留完整选项
       var allGif = this.selectedList.every(function (it) {
         return it.basic && it.basic.type === 'GIF'
       })
       if (allGif) {
-        return ['APNG', 'WEBP']
+        return OUTPUT_FORMATS.filter(function (f) { return f !== 'GIF' })
       }
-      return ['APNG', 'GIF', 'WEBP']
+      return OUTPUT_FORMATS.slice()
     },
     // ---------- 输出路径：模板是唯一真相源 ----------
     // 预设条渲染数据：内置（含被改过的模板）+ 用户自定义

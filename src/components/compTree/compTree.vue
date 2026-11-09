@@ -118,6 +118,7 @@ import {
 } from '../../util/task-output'
 import notice from '../../ui-next/notice'
 import hostAdapter from '../../util/host-env'
+import { OUTPUT_FORMATS, defaultOutputFormats } from '../../util/outputFormats'
 
 /** 渲染后合成的三种动图格式，顺序与 store 默认 outputFormat 一致 */
 const FORMATS = [
@@ -125,7 +126,6 @@ const FORMATS = [
   { key: 'GIF', label: 'G' },
   { key: 'WEBP', label: 'W' }
 ]
-const DEFAULT_FORMATS = FORMATS.map(function (f) { return f.key })
 /** mockup 模式的运行状态演示初值：完成 / 进行中 / 失败 / 待处理混排 */
 const MOCK_STATES = ['done', 'running', 'done', 'pending', 'fail', 'done']
 /** 完成态演示产物大小，与 MOCK_STATES 同索引；非完成态不显示 */
@@ -244,6 +244,7 @@ export default {
       this.$root.eventBus.$on('comp-tree-add-selected', this.emitAdd)
       this.$root.eventBus.$on('comp-tree-select-all', this.selectAll)
       this.$root.eventBus.$on('comp-tree-clear', this.clearSelection)
+      this.$root.eventBus.$on('default-formats-changed', this.onDefaultFormatsChanged)
     }
   },
   beforeDestroy () {
@@ -253,9 +254,14 @@ export default {
       this.$root.eventBus.$off('comp-tree-add-selected', this.emitAdd)
       this.$root.eventBus.$off('comp-tree-select-all', this.selectAll)
       this.$root.eventBus.$off('comp-tree-clear', this.clearSelection)
+      this.$root.eventBus.$off('default-formats-changed', this.onDefaultFormatsChanged)
     }
   },
   methods: {
+    /** 默认设置保存后，未加入任务的合成格式图标初值跟着新默认刷新 */
+    onDefaultFormatsChanged () {
+      this.$forceUpdate()
+    },
     storeItems () {
       try {
         return (this.$store && this.$store.getters && this.$store.getters.getterItems) || []
@@ -598,11 +604,12 @@ export default {
     },
     /**
      * 该合成渲染后要输出的动图格式。
-     * 优先级：树内切换过的本地状态 > 已加入任务的 options.outputFormat > 出厂默认。
+     * 优先级：树内切换过的本地状态 > 已加入任务的 options.outputFormat > 全局默认勾选。
+     * 默认值走 util/outputFormats 的同一份 globalSetting 接口，与默认设置面板联动。
      * 与右键菜单共用 taskIndexOf 的「index:name」匹配键，不另写一套判定。
      */
     formatsOf (node) {
-      if (!node) { return DEFAULT_FORMATS }
+      if (!node) { return defaultOutputFormats() }
       const local = this.formatMap[node.id]
       if (local) { return local }
       // mockup 模式给一组确定性演示初值（含全关/单选/多选），真实面板不走这里
@@ -615,7 +622,7 @@ export default {
         const fmt = it && it.options && it.options.outputFormat
         if (Array.isArray(fmt)) { return fmt }
       }
-      return DEFAULT_FORMATS
+      return defaultOutputFormats()
     },
     isFormatOn (node, key) {
       return this.formatsOf(node).indexOf(key) >= 0
@@ -629,7 +636,7 @@ export default {
       const at = cur.indexOf(key)
       if (at >= 0) { cur.splice(at, 1) } else { cur.push(key) }
       // 固定 APNG → GIF → WEBP 顺序，不按点击先后乱排
-      const next = DEFAULT_FORMATS.filter(function (k) { return cur.indexOf(k) >= 0 })
+      const next = OUTPUT_FORMATS.filter(function (k) { return cur.indexOf(k) >= 0 })
       this.$set(this.formatMap, node.id, next)
       const i = this.taskIndexOf(node)
       if (i >= 0 && this.$store && this.$store.dispatch) {

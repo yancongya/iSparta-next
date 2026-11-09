@@ -155,6 +155,9 @@
     .is-check { flex: none; }
   }
 
+  // 默认输出格式：勾选组与左侧标签等高，说明文字由 .gs-hint 的 100% 宽换到下一行
+  .gs-formats { min-height: 30px; }
+
   // 阈值：输入框左、单位切换右对齐
   .gs-size-row {
     display: flex;
