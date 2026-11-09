@@ -46,7 +46,7 @@ node scripts\dev\check.js all                # lint + pack + ports
 
 - CEP 铁律「禁 mock」针对**真机 / 生产**：`?mock=1` 只在 `NODE_ENV=development` 的 `serve:cep` 下生效；真实 AE 面板加载 `targets/cep/ui/index.html`（生产构建），不带参数也不启用。
 - `src/cep/main.js` 首位 `import './mockup'` 必须保留：`ensure-bridge` 与 store 在模块顶层读桥，顺序错了假数据接不上。
-- 控制台 `__ispartaMockReset()` 清空 mock 数据；`?mock=1` 页面可顺带验合成树名字列的 APNG / GIF / WEBP 三格式图标与长名省略。
+- 控制台 `__ispartaMockReset()` 清空 mock 数据；`__ispartaMockComplete(n)` 把前 n 条示例任务标成完成态（产物已由种子写入 mock fs），用于验收完成态卡片、产物大小与格式角标；`?mock=1` 页面可顺带验合成树名字列的 APNG / GIF / WEBP 三格式图标与长名省略。
 - 桌面 Web 的 mock 桥、CEP mockup 都只能验 UI 交互，**不能替代**合成读取 / 渲染 / 安装 / 更新的宿主验收（见 `docs/ACCEPTANCE-RUNBOOK.md`）。
 
 **`build.js` 两种模式的差异**
@@ -161,6 +161,7 @@ CI：`release.yml` 校验版本化 Release 文案、负责 bump、打包、挂 R
 - 可配置列只有 **尺寸 / 帧率 / 运行状态**：表头右缘**拖动**改列宽（双击恢复默认）、**长按 ~320ms 后拖动**重排列顺序；**短点击**仍是数据升降序排序，长按且拖动过必须抑制补发的 `click`；表头不参与框选/空白选择
 - 列定义、宽度钳制、重排算法与 `storage` 持久化（`compTree.columns`）统一在 `src/util/compTreeColumns.js`；表头与行共用 `columnOrder` / `columnWidths`，禁止在组件里复制列定义或在 CSS 里写死列宽
 - **运行状态列只给「最新一条」**：失败/中止显示 `process.detail`（stderr 摘要等具体原因），进行中显示 `process.text`（渲染进度），完成态只留产物大小（不再重复「成功」）；列内省略、hover 展开完整多行原因与逐文件产物。**新增失败分支必须写 `process.detail`**——只写 `text: convertFail` 等于让用户在界面上看不到原因
+- **完成态卡片格式角标**（桌面 / CEP 共用 `src/components/projectList`）：任务完成后，每种已产出格式一枚角标并排显示在卡片右侧顶部；hover 给「产物名 — 大小」（阈值重试版本逐行），点击只复制该格式的产物并 toast。格式分组只走 `util/task-output.js` 的 `outputGroupsOf`（内部复用 `existingOutputFilesOf`），复制只走 `hostAdapter.copyFilesToClipboard`——禁止在组件里另建扩展名映射或第二套剪贴板实现
 
 ## 5. 输出设置（产品约定）
 
