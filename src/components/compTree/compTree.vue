@@ -32,17 +32,26 @@
           <span v-for="f in formats" :key="f.key" class="mod-ct__fmt-slot"></span>
         </span>
       </span>
-      <button type="button" class="mod-ct__c mod-ct__c--num" @click="sortBy('width')">
-        {{ $t('compColSize') }}{{ sortMark('width') }}
-      </button>
-      <button type="button" class="mod-ct__c mod-ct__c--num" @click="sortBy('fps')">
-        {{ $t('compColFps') }}{{ sortMark('fps') }}
-      </button>
-      <!-- 与行内图标等宽的占位，让表头文字对齐到状态文本的起点 -->
-      <span class="mod-ct__c mod-ct__c--state mod-ct__c--state-head">
-        <span class="mod-ct__state-ico" aria-hidden="true"></span>
-        <span class="mod-ct__state-txt">{{ $t('compColState') }}</span>
-      </span>
+      <!-- 可配置列：顺序与宽度由 util/compTreeColumns 统一驱动，表头/行共用同一份 -->
+      <div
+        v-for="col in columns"
+        :key="col.key"
+        class="mod-ct__c mod-ct__c--h"
+        :class="'mod-ct__c--h--' + col.key"
+        :style="colStyle(col)"
+        :data-col="col.key"
+      >
+        <button
+          v-if="col.sortKey"
+          type="button"
+          class="mod-ct__h-btn"
+          @click="onHeadClick(col)"
+        >{{ $t(col.labelKey) }}{{ sortMark(col.sortKey) }}</button>
+        <span v-else class="mod-ct__h-label">
+          <span class="mod-ct__state-ico" aria-hidden="true"></span>
+          <span class="mod-ct__state-txt">{{ $t(col.labelKey) }}</span>
+        </span>
+      </div>
       <span class="mod-ct__c mod-ct__c--act"></span>
     </div>
 
@@ -83,20 +92,37 @@
             >{{ f.label }}</button>
           </span>
         </span>
-        <span class="mod-ct__c mod-ct__c--num" :title="sizeText(node)">{{ sizeText(node) }}</span>
-        <span class="mod-ct__c mod-ct__c--num" :title="String(node.fps)">{{ node.fps | fps }}</span>
-        <button
-          type="button"
-          class="mod-ct__c mod-ct__c--state"
-          :class="'is-' + stateOf(node)"
-          v-tip="stateTipOf(node)"
-          :aria-label="stateTextOf(node)"
-          @click.stop="onStateClick(node)"
-        >
-          <is-icon class="mod-ct__state-ico" :name="stateIconOf(node)" size="xs" />
-          <span class="mod-ct__state-txt">{{ stateLabelOf(node) }}</span>
-          <span class="mod-ct__state-size">{{ stateSizeOf(node) }}</span>
-        </button>
+        <template v-for="col in columns">
+          <span
+            v-if="col.key === 'size'"
+            :key="col.key"
+            class="mod-ct__c mod-ct__c--num"
+            :style="colStyle(col)"
+            :title="sizeText(node)"
+          >{{ sizeText(node) }}</span>
+          <span
+            v-if="col.key === 'fps'"
+            :key="col.key"
+            class="mod-ct__c mod-ct__c--num"
+            :style="colStyle(col)"
+            :title="String(node.fps)"
+          >{{ node.fps | fps }}</span>
+          <button
+            v-if="col.key === 'state'"
+            :key="col.key"
+            type="button"
+            class="mod-ct__c mod-ct__c--state"
+            :class="'is-' + stateOf(node)"
+            :style="colStyle(col)"
+            v-tip="stateTipOf(node)"
+            :aria-label="stateTextOf(node)"
+            @click.stop="onStateClick(node)"
+          >
+            <is-icon class="mod-ct__state-ico" :name="stateIconOf(node)" size="xs" />
+            <span class="mod-ct__state-txt">{{ stateLabelOf(node) }}</span>
+            <span class="mod-ct__state-size">{{ stateSizeOf(node) }}</span>
+          </button>
+        </template>
         <span class="mod-ct__c mod-ct__c--act">
           <button type="button" class="iconbtn" :title="$t('outputConfig')" @click.stop="$emit('configure', node)">
             <is-icon name="settings" size="sm" />
@@ -124,6 +150,9 @@ import {
 import notice from '../../ui-next/notice'
 import hostAdapter from '../../util/host-env'
 import { OUTPUT_FORMATS, defaultOutputFormats } from '../../util/outputFormats'
+import {
+  columnOf, clampColumnWidth, loadColumnLayout
+} from '../../util/compTreeColumns'
 
 /** 渲染后合成的三种动图格式，顺序与 store 默认 outputFormat 一致 */
 const FORMATS = [
@@ -157,6 +186,7 @@ export default {
   data () {
     const http = typeof location !== 'undefined' &&
       (location.protocol === 'http:' || location.protocol === 'https:')
+    const layout = loadColumnLayout()
     return {
       busy: false,
       nodes: [],
@@ -164,6 +194,9 @@ export default {
       keyword: '',
       sortKey: '',
       sortDir: 1,
+      /** 可配置列的顺序与宽度（名字+格式 / 勾选 / 齿轮是固定列，不入此表） */
+      columnOrder: layout.order,
+      columnWidths: layout.widths,
       marquee: { active: false, moved: false, x: 0, y: 0, w: 0, h: 0, startX: 0, startY: 0 },
       suppressBlankClick: false,
       formats: FORMATS,
@@ -173,6 +206,10 @@ export default {
     }
   },
   computed: {
+    /** 表头与每一行共用同一份列模型，保证顺序与宽度永远一致 */
+    columns () {
+      return this.columnOrder.map(columnOf).filter(Boolean)
+    },
     marqueeStyle () {
       return {
         left: this.marquee.x + 'px',
@@ -542,6 +579,16 @@ export default {
       lines.push('#' + (Number(node && node.index) + 1))
       return lines.join('\n')
     },
+    /** 列宽 inline style：width 与 flex-basis 同步，表头和行取同一个值 */
+    colStyle (col) {
+      const w = clampColumnWidth(col.key, this.columnWidths[col.key])
+      return { width: w + 'px', flex: '0 1 ' + w + 'px', minWidth: col.min + 'px' }
+    },
+    /** 表头点击仍走原有的数据排序；长按重排时抑制这次 click */
+    onHeadClick (col) {
+      if (this._suppressHeadClick) return
+      if (col && col.sortKey) this.sortBy(col.sortKey)
+    },
     sortMark (key) {
       if (this.sortKey !== key) return ''
       return this.sortDir > 0 ? ' ↑' : ' ↓'
@@ -784,28 +831,49 @@ export default {
   padding-right: 8px;
 }
 .mod-ct__c--num {
-  width: 64px;
-  flex: 0 1 64px;
-  min-width: 40px;
-  text-align: right;
   padding-right: 8px;
-  background: transparent;
+  text-align: right;
+}
+/* 表头可配置列：宽度由 colStyle 注入，表头与行共用；右缘留给列宽分隔条 */
+.mod-ct__c--h {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 8px;
+  font-weight: 600;
+}
+.mod-ct__c--h--state { justify-content: flex-start; }
+.mod-ct__h-btn {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0;
   border: 0;
+  background: transparent;
   color: inherit;
   font: inherit;
+  font-weight: inherit;
+  text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   cursor: pointer;
 }
-.mod-ct__c--num:hover {
+.mod-ct__h-btn:hover {
   opacity: 0.8;
   text-decoration: underline;
+}
+.mod-ct__h-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  cursor: default;
 }
 /* 运行状态列（替代原帧数列）：完成态显示产物大小，整格可点击复制
  * 三段固定对齐：图标定宽靠左、状态文本左对齐、产物大小贴右并 tabular-nums，
  * 保证每行图标/文案/尺寸三个起点都是一条竖线（原先是整串右对齐，图标随文字宽度浮动）。 */
 .mod-ct__c--state {
-  width: 112px;
-  flex: 0 1 112px;
-  min-width: 84px;
   padding-right: 8px;
   display: inline-flex;
   align-items: center;
@@ -826,11 +894,7 @@ export default {
   display: block;
 }
 .mod-ct__c--state > :first-child { flex: 0 0 auto; }
-.mod-ct__c--state-head {
-  cursor: default;
-  color: inherit;
-}
-.mod-ct__c--state:not(.mod-ct__c--state-head):hover {
+.mod-ct__c--state:hover {
   color: var(--is-accent, #c8f542);
 }
 .mod-ct__c--state:focus-visible {
