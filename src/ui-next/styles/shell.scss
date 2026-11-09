@@ -921,11 +921,13 @@ body.is-theme-light .ib-drop .keyboard-key {
 .ib-rail__btn--output {
   color: var(--is-ok);
 }
-.ib-rail__btn--output:hover:not(:disabled) {
+.ib-rail__btn--output:hover:not(:disabled):not(.is-disabled) {
   color: var(--is-ok-fg);
   background: var(--is-ok-bg);
 }
-.ib-rail__btn--output:disabled {
+/* 空态保留禁用视觉但按钮仍可点击，点击时给 toast 说明原因 */
+.ib-rail__btn--output:disabled,
+.ib-rail__btn--output.is-disabled {
   opacity: 0.35;
   cursor: not-allowed;
 }

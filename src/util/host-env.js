@@ -116,7 +116,12 @@ export const hostAdapter = {
       const ip = ipc()
       return ip ? ip.invoke('clipboard:copyFiles', paths).then(function (r) { return !!(r && r.ok) }).catch(() => false) : Promise.resolve(false)
     }
-    if (isCep) { return copyFilesFromCep(paths).catch(() => false) }
+    // copyFilesFromCep 取宿主桥时可能同步抛错；折成 false 让调用方照常出 toast
+    if (isCep) {
+      return Promise.resolve()
+        .then(function () { return copyFilesFromCep(paths) })
+        .catch(() => false)
+    }
     return Promise.resolve(false)
   },
   reveal (target) {

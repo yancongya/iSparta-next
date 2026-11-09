@@ -186,7 +186,8 @@
           type="button"
           class="ib-rail__btn ib-rail__btn--output"
           :title="outputActionTitle"
-          :disabled="!selectedCompletedItems.length"
+          :aria-disabled="!selectedCompletedItems.length ? 'true' : 'false'"
+          :class="{ 'is-disabled': !selectedCompletedItems.length }"
           @mouseenter="outputActionHover = true"
           @mouseleave="outputActionHover = false"
           @click="onOutputActionClick"
@@ -876,32 +877,40 @@ export default {
       return files
     },
     async onOutputActionClick () {
+      // 按钮原先是 disabled，点上去完全没反馈；改为可点并说明为什么暂不可用
+      if (!this.selectedCompletedItems.length) {
+        notice.info(this.$t('selectCompletedOutput'))
+        return
+      }
       const openFolder = this.isOutputFolderMode
-      const files = this.selectedCompletedOutputFiles()
-      if (!files.length) {
-        notice.warning(this.$t('copyOutputFailed'), this.$t('noCompletedOutputFiles'))
-        return
-      }
-      if (openFolder) {
-        const opened = await hostAdapter.openPath(path.dirname(files[0]))
-        if (!opened) { notice.error(this.$t('openOutputFolder'), this.$t('noticeOpenFailed')) }
-        return
-      }
-      if (supportsCompImport) {
-        const copied = await hostAdapter.copyFilesToClipboard(files)
-        if (copied) {
-          notice.success(this.$t('copyOutputSuccess', { count: files.length }))
-        } else {
-          notice.error(this.$t('copyOutputFailed'))
+      let copyingNotice = null
+      try {
+        const files = this.selectedCompletedOutputFiles()
+        if (!files.length) {
+          notice.warning(this.$t('copyOutputFailed'), this.$t('noCompletedOutputFiles'))
+          return
         }
-        return
-      }
-      const copyingNotice = notice.progress(this.$t('copyOutputWorking'))
-      const copied = await hostAdapter.copyFilesToClipboard(files)
-      if (copied) {
-        copyingNotice.done('success', this.$t('copyOutputSuccess', { count: files.length }))
-      } else {
-        copyingNotice.done('error', this.$t('copyOutputFailed'))
+        if (openFolder) {
+          const opened = await hostAdapter.openPath(path.dirname(files[0]))
+          if (!opened) { notice.error(this.$t('openOutputFolder'), this.$t('noticeOpenFailed')) }
+          return
+        }
+        // CEP 分支不弹进度条：系统剪贴板调用很快，避免多余气泡
+        if (!this.supportsCompImport) copyingNotice = notice.progress(this.$t('copyOutputWorking'))
+        const copied = await hostAdapter.copyFilesToClipboard(files)
+        const title = this.$t('copyOutputSuccess', { count: files.length })
+        if (copied) {
+          if (copyingNotice) copyingNotice.done('success', title)
+          else notice.success(title)
+        } else {
+          if (copyingNotice) copyingNotice.done('error', this.$t('copyOutputFailed'))
+          else notice.error(this.$t('copyOutputFailed'))
+        }
+      } catch (e) {
+        // 旧实现没有兜底：任一同步/异步异常都会让 async 静默 reject，
+        // 表现为「点了没反应、没有 toast 也没复制」；这里统一收敛成错误提示
+        if (copyingNotice) copyingNotice.done('error', this.$t('copyOutputFailed'))
+        else notice.error(this.$t('copyOutputFailed'), (e && e.message) || '')
       }
     },
 
