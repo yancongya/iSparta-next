@@ -112,6 +112,12 @@ export const hostAdapter = {
   copyFilesToClipboard (files) {
     const paths = Array.from(new Set((files || []).map(function (p) { return String(p || '') }).filter(Boolean)))
     if (!paths.length) { return Promise.resolve(false) }
+    // 浏览器 mockup 没有真实剪贴板（CEP 分支也缺宿主 Node 桥）：由 mock-bridge 注入
+    // 调试钩子模拟成功，否则预览里点复制只会看到失败 toast，无法验收交互。
+    if (typeof window !== 'undefined' && typeof window.__ispartaMockClipboard === 'function') {
+      window.__ispartaMockClipboard(paths)
+      return Promise.resolve(true)
+    }
     if (isElectron) {
       const ip = ipc()
       return ip ? ip.invoke('clipboard:copyFiles', paths).then(function (r) { return !!(r && r.ok) }).catch(() => false) : Promise.resolve(false)

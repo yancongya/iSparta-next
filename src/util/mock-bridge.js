@@ -371,8 +371,16 @@ function installMockBridge () {
     return done
   }
 
-  // 浏览器调试：注入更新状态，用于预览右下角 Dock / 进度 UI
-  //   window.__updateStub     — Result（state/latest/notes…）
+  /**
+   * 仅 dev：模拟系统剪贴板写入。host-env.copyFilesToClipboard 检测到该钩子即返回成功，
+   * 供纯浏览器验收「复制 + toast」；真实剪贴板不会被改动。
+   */
+  window.__ispartaMockClipboard = function (paths) {
+    // eslint-disable-next-line no-console
+    console.info('[mock] 已模拟复制 ' + paths.length + ' 个文件：', paths)
+  }
+
+  // 浏览器调试：注入更新状态，用于预览右下角 Dock / 进度 UI  //   window.__updateStub     — Result（state/latest/notes…）
   //   window.__updateAutoStub — electron-updater 状态快照
   //   window.__updateSimulate('available'|'download'|'done'|'error'|'clear')
   window.__updateSimulate = function (mode) {

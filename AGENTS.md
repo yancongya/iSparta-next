@@ -46,7 +46,7 @@ node scripts\dev\check.js all                # lint + pack + ports
 
 - CEP 铁律「禁 mock」针对**真机 / 生产**：`?mock=1` 只在 `NODE_ENV=development` 的 `serve:cep` 下生效；真实 AE 面板加载 `targets/cep/ui/index.html`（生产构建），不带参数也不启用。
 - `src/cep/main.js` 首位 `import './mockup'` 必须保留：`ensure-bridge` 与 store 在模块顶层读桥，顺序错了假数据接不上。
-- 控制台 `__ispartaMockReset()` 清空 mock 数据；`__ispartaMockComplete(n)` 把前 n 条示例任务标成完成态（产物已由种子写入 mock fs），用于验收完成态卡片、产物大小与格式角标；`?mock=1` 页面可顺带验合成树名字列的 APNG / GIF / WEBP 三格式图标与长名省略。
+- 控制台 `__ispartaMockReset()` 清空 mock 数据；`__ispartaMockComplete(n)` 把前 n 条示例任务标成完成态（产物已由种子写入 mock fs），用于验收完成态卡片、产物大小与格式角标；预览内的复制经 `__ispartaMockClipboard` 模拟成功，不会真的写系统剪贴板；`?mock=1` 页面可顺带验合成树名字列的 APNG / GIF / WEBP 三格式图标与长名省略。
 - 桌面 Web 的 mock 桥、CEP mockup 都只能验 UI 交互，**不能替代**合成读取 / 渲染 / 安装 / 更新的宿主验收（见 `docs/ACCEPTANCE-RUNBOOK.md`）。
 
 **`build.js` 两种模式的差异**
