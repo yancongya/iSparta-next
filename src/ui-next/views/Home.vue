@@ -307,7 +307,8 @@ import { f as fsOperate } from '../../components/drag/file.js'
 import { naturalSort } from '../../util/sort'
 import ThemeManager from '../theme'
 import { BP_NARROW, BP_WIDE } from '../styles/breakpoints'
-import { storage, fs, path } from '../../util/node-env'
+import { storage, path } from '../../util/node-env'
+import { existingOutputFilesOf } from '../../util/task-output'
 import notice from '../notice'
 import { APP_NAME, APP_VERSION } from '../../brand'
 import updateService from '../../util/updateService'
@@ -864,32 +865,12 @@ export default {
       if (this.isLocked || !this.selectedCount) return
       this.$store.dispatch('removeSelectedForce')
     },
+    /** 与合成树状态列共用 util/task-output 的候选 + 存在性过滤，再按任务去重 */
     selectedCompletedOutputFiles () {
-      const extensions = { APNG: '.png', GIF: '.gif', WEBP: '.webp' }
       const files = []
       this.selectedCompletedItems.forEach(function (item) {
-        const basic = item.basic || {}
-        const options = item.options || {}
-        const dir = basic.outputPath || ''
-        const name = options.outputName || ''
-        if (!dir || !name) return
-        const sizeLimit = options.sizeLimit || {}
-        const keepRetryVersions = !sizeLimit.autoDelete && sizeLimit.autoQuality !== false
-        const retryCount = keepRetryVersions
-          ? Math.max(0, Math.floor(Number(sizeLimit.maxTries) || 0))
-          : 0
-        ;(Array.isArray(options.outputFormat) ? options.outputFormat : []).forEach(function (format) {
-          const ext = extensions[String(format).toUpperCase()]
-          if (!ext) return
-          const candidates = [path.join(dir, name + ext)]
-          for (let version = 2; version <= retryCount + 1; version++) {
-            candidates.push(path.join(dir, name + '_v' + version + ext))
-          }
-          candidates.forEach(function (file) {
-            try {
-              if (fs.existsSync(file) && files.indexOf(file) < 0) files.push(file)
-            } catch (e) { /* 跳过已被移动或删除的输出 */ }
-          })
+        existingOutputFilesOf(item).forEach(function (file) {
+          if (files.indexOf(file) < 0) files.push(file)
         })
       })
       return files

@@ -233,7 +233,10 @@
   </section>
 </template>
 <script>
-import { fs, path, ipc } from '../../util/node-env'
+import { ipc } from '../../util/node-env'
+import {
+  stateOf, statusIcon, outputFilesOf, sizeBytesOfFiles, outputSizeOf, outputSizeTip
+} from '../../util/task-output'
 import rightMenu from './menu'
 import DelayDialog from '../delayDialog/index.vue'
 import CompareDialog from '../compareDialog/index.vue'
@@ -581,57 +584,14 @@ export default {
       if (!fmt || !fmt.length) return this.$t('noFormat')
       return fmt.join('+')
     },
-    outputFilesOf (project) {
-      var basic = (project && project.basic) || {}
-      var options = (project && project.options) || {}
-      var formats = options.outputFormat || []
-      if (!basic.outputPath || !options.outputName || !formats.length) return []
-      return formats.map(function (format) {
-        var ext = format === 'GIF' ? '.gif' : format === 'WEBP' ? '.webp' : '.png'
-        return path.join(basic.outputPath, options.outputName + ext)
-      })
-    },
-    outputSizeBytesOf (project) {
-      var files = this.outputFilesOf(project)
-      if (!files.length) return -1
-      var sizes = files.map(function (file) {
-        var size = fs.statSize(file)
-        return size >= 0 ? size : -1
-      })
-      if (sizes.some(function (size) { return size < 0 })) return -1
-      return sizes.reduce(function (sum, size) { return sum + size }, 0)
-    },
-    outputSizeOf (project) {
-      var bytes = this.outputSizeBytesOf(project)
-      if (bytes <= 0) return ''
-      return bytes < 1024 * 1024
-        ? (bytes / 1024).toFixed(1) + ' KB'
-        : (bytes / 1024 / 1024).toFixed(2) + ' MB'
-    },
-    outputSizeTip (project) {
-      var files = this.outputFilesOf(project)
-      var rows = files.map(function (file) {
-        var size = fs.statSize(file)
-        return file + ' — ' + (size >= 0 ? size.toLocaleString() + ' B' : '不可读取')
-      })
-      return rows.join('\n')
-    },
-    // schedule: 0/undefined 待处理，(0,1) 进行中，1 成功，-1 失败
-    stateOf (process) {
-      var s = process && process.schedule
-      if (s === 1) return 'done'
-      if (s === -1) return 'fail'
-      if (s > 0 && s < 1) return 'running'
-      return 'pending'
-    },
-    statusIcon (process) {
-      switch (this.stateOf(process)) {
-        case 'done': return 'check-circle'
-        case 'fail': return 'x-circle'
-        case 'running': return 'loader'
-        default: return 'clock'
-      }
-    },
+    // 运行状态 / 产物路径 / 大小统一走 util/task-output：
+    // 顶栏复制与合成树状态列复用同一份语义，不在组件里再写一套。
+    stateOf,
+    statusIcon,
+    outputFilesOf,
+    outputSizeBytesOf (project) { return sizeBytesOfFiles(this.outputFilesOf(project)) },
+    outputSizeOf,
+    outputSizeTip,
     // 待处理且无文案时不占位，让列表安静下来
     showMeta (project) {
       var state = this.stateOf(project.process)
