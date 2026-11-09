@@ -13,6 +13,9 @@
 
 export default function ensureBridge () {
   if (typeof window === 'undefined') { return false }
+  // mockup 模式：浏览器里 cep-bridge 没有 Node / AE 能力，合并进 ispartaAPI 只会让
+  // store 顶层 fs/storage 拿到空实现。让位给随后的 mock-bridge 完整接管。
+  if (window.__ispartaMockup) { return false }
   var b = window.ispartaCepBridge || {}
   var api = window.ispartaAPI || {}
   // 不能「有对象就 return」：HMR 后可能是残缺 ispartaAPI，store 顶层 fs/storage 会抛错

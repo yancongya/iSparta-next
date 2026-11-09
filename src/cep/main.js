@@ -8,6 +8,8 @@
  * 禁止精简 CepApp 作终态：CepApp 仅保留为可选 demo，不在此挂载。
  * AE 特殊化只经 host-env / sourceAdapter 注入，不另维护平行面板。
  */
+// mockup 必须最先求值：ensure-bridge / store 都在模块顶层读 window 桥
+import './mockup'
 import './ensure-bridge'
 import '../util/mock-bridge'
 import Vue from 'vue'

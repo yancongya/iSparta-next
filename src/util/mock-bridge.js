@@ -318,10 +318,12 @@ function installMockBridge () {
   }
   // host-env 识别纯浏览器 mock（kind: 'browser-mock'）
   window.__ispartaMockBridge = true
-  // host-env 识别纯浏览器 mock（kind: 'browser-mock'）
-  window.__ispartaMockBridge = true
 
   seedItems(fs, path, storage)
+  if (window.__ispartaMockup) {
+    // eslint-disable-next-line no-console
+    console.info('[mock-bridge] 已为 CEP mockup 注入 5 条示例任务；__ispartaMockReset() 可重置')
+  }
 
   // 调试工具：控制台执行可清空 mock 数据（含 localStorage）后刷新重来
   window.__ispartaMockReset = () => {
@@ -457,10 +459,14 @@ function installMockBridge () {
   console.info('[mock-bridge] 更新 UI 预览：先 window.__updateSimulate("available")，再在应用内触发检查，或调用 updateService')
 }
 
-// 生产构建或 Electron（preload 已注入）时不做任何事
+// 生产构建或 Electron（preload 已注入）时不做任何事。
+// 例外：CEP 浏览器 mockup（?mock=1）虽然挂着 cep-bridge / ispartaCS，
+// 但没有 AE 宿主，必须强制启用 mock 桥才能显示任务；仅 dev 生效。
+const forceMockup = typeof window !== 'undefined' && !!window.__ispartaMockup
 if (process.env.NODE_ENV === 'development' &&
     typeof window !== 'undefined' &&
-    !window.__adobe_cep__ && !window.cep && !window.ispartaCS && !window.ispartaCepBridge &&
-    !window.ispartaAPI) {
+    (forceMockup ||
+      (!window.__adobe_cep__ && !window.cep && !window.ispartaCS && !window.ispartaCepBridge &&
+        !window.ispartaAPI))) {
   installMockBridge()
 }
