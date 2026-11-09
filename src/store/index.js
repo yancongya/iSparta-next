@@ -757,4 +757,13 @@ store.watch(
   { deep: true }
 )
 
+/* ---------- dev-only：给纯浏览器 mock 预览挂一个 store 入口 ----------
+ * mock-bridge 的 __ispartaMockComplete() 需要改任务状态来演示完成态卡片
+ * （产物大小 / 格式角标 / 复制 toast）。NODE_ENV 判断在构建期折叠，
+ * 生产载荷不暴露该全局。
+ */
+if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined') {
+  window.__ispartaStore = store
+}
+
 export default store

@@ -258,6 +258,8 @@ module.exports = {
     "selectCompletedOutput":"Select completed task(s) to enable",
     "copyOutputSuccess":"Copied {count} output file(s) to the clipboard",
     "copyOutputFailed":"Could not copy output files",
+    "outputBadgeCopy":"Click to copy {format} output",
+    "outputBadgeCopied":"Copied {format} output ({count} files)",
     "noCompletedOutputFiles":"No output files found for the completed task(s)",
     "noticeConvertAborted":"Conversion aborted",
     "noticeDone":"Conversion finished",

@@ -108,6 +108,35 @@ export function existingOutputFilesOf (item) {
   return files
 }
 
+const FORMAT_BY_EXT = [['.webp', 'WEBP'], ['.gif', 'GIF'], ['.png', 'APNG']]
+
+/**
+ * 已存在产物按输出格式分组（任务卡片右上角「格式角标」用）。
+ * 顺序跟随 `options.outputFormat`（outputCandidatesOf 已按该顺序产出），
+ * 同一格式的重试版本（name_v2…）归到同一组，点击角标一次复制全组。
+ */
+export function outputGroupsOf (item) {
+  const groups = []
+  const at = {}
+  existingOutputFilesOf(item).forEach(function (file) {
+    const lower = String(file).toLowerCase()
+    let format = ''
+    for (let i = 0; i < FORMAT_BY_EXT.length; i++) {
+      if (lower.slice(-FORMAT_BY_EXT[i][0].length) === FORMAT_BY_EXT[i][0]) {
+        format = FORMAT_BY_EXT[i][1]
+        break
+      }
+    }
+    if (!format) return
+    if (at[format] === undefined) {
+      at[format] = groups.length
+      groups.push({ format: format, files: [] })
+    }
+    groups[at[format]].files.push(file)
+  })
+  return groups
+}
+
 /** 汇总字节数；任一文件不可读返回 -1（不把缺文件当成 0 字节） */
 export function sizeBytesOfFiles (files) {
   if (!files || !files.length) return -1
@@ -121,10 +150,11 @@ export function sizeBytesOfFiles (files) {
   return sizes.reduce(function (sum, size) { return sum + size }, 0)
 }
 
-/** 与任务列表原 outputSizeOf 同一格式：KB / MB */
+/** 与任务列表原 outputSizeOf 同一格式：B / KB / MB（<1KB 不再显示成 0.0 KB） */
 export function sizeTextOfFiles (files) {
   const bytes = sizeBytesOfFiles(files)
   if (bytes <= 0) return ''
+  if (bytes < 1024) return bytes + ' B'
   return bytes < 1024 * 1024
     ? (bytes / 1024).toFixed(1) + ' KB'
     : (bytes / 1024 / 1024).toFixed(2) + ' MB'

@@ -254,18 +254,27 @@ function seedItems (fs, path, storage) {
   storage.setStoragePath(storagePath)
   if (storage.getItem('iSparta-item')) { return }
 
-  const mk = (type, fileList, outputName, isSelected) => {
+  const EXT_OF_FORMAT = { APNG: '.png', GIF: '.gif', WEBP: '.webp' }
+  const mk = (type, fileList, outputName, isSelected, formats) => {
     fileList.forEach((p) => fs.writeFileSync(p, 'mock'))
-    // 与新版预设 1 保持一致：直接输出到源目录，不再建 output 子目录
-    const outputPath = path.join(path.dirname(fileList[0]), outputName + '.png')
-    // 输出文件也写入 mock fs：done 条目的前后对比弹窗才有「输出侧」图可读
-    fs.writeFileSync(outputPath, 'mock')
+    // outputPath 是**目录**（与 processor 的 resolveOutputPath 语义一致）。
+    // 之前误写成输出文件名，task-output 再 join 一次名字后永远读不到文件，
+    // 产物大小/格式角标在纯浏览器预览里就一直为空。
+    const outputDir = path.dirname(fileList[0])
+    const list = (formats && formats.length) ? formats : ['APNG']
+    list.forEach((format) => {
+      const ext = EXT_OF_FORMAT[format]
+      if (!ext) return
+      // 内容做成 KB 级：产物大小 / 角标 hover 才有可读的数字（mock fs 按字符串长度算大小）
+      const body = ('mock-' + format + '-' + outputName + '\n').repeat(160)
+      fs.writeFileSync(path.join(outputDir, outputName + ext), body)
+    })
     return {
       basic: {
         type,
-        inputPath: path.dirname(fileList[0]) + '/' + path.basename(fileList[0]).split('.')[0],
+        inputPath: outputDir + '/' + path.basename(fileList[0]).split('.')[0],
         fileList,
-        outputPath
+        outputPath: outputDir
       },
       options: {
         frameRate: 25,
@@ -273,7 +282,7 @@ function seedItems (fs, path, storage) {
         loop: 0,
         outputSuffix: '',
         outputName,
-        outputFormat: ['APNG'],
+        outputFormat: list,
         floyd: { checked: true, value: 0.35 },
         quality: { checked: false, value: 80 },
         sizeLimit: { enabled: false, maxMB: 1, maxBytes: 1048576, unit: 'MB', autoDelete: false, autoQuality: true, step: 5, maxTries: 10 },
@@ -285,7 +294,8 @@ function seedItems (fs, path, storage) {
   }
 
   const items = [
-    mk('APNG', ['/mock-assets/banner.apng'], 'banner', true),
+    // 首条seed 三格式齐全：用来演示完成态的三枚格式角标
+    mk('APNG', ['/mock-assets/banner.apng'], 'banner', true, ['APNG', 'GIF', 'WEBP']),
     mk('APNG', ['/mock-assets/loading.apng'], 'loading', false),
     mk('PNGs', ['/mock-assets/frames/walk_001.png', '/mock-assets/frames/walk_002.png', '/mock-assets/frames/walk_003.png'], 'walk', false),
     mk('GIF', ['/mock-assets/emotion.gif'], 'emotion', false),
@@ -330,6 +340,35 @@ function installMockBridge () {
     window.localStorage.removeItem(FS_LS_KEY)
     // eslint-disable-next-line no-console
     console.info('[mock] 已清空，刷新页面将重新播种')
+  }
+
+  /**
+   * 仅 dev：把前 N 条示例任务标成完成态（产物已由种子写入 mock fs），
+   * 用于在纯浏览器里验收「产物大小 / 格式角标 / 点击复制 toast」。
+   *   __ispartaMockComplete()    // 默认前 2 条
+   *   __ispartaMockComplete(5)   // 全部
+   * 依赖 store 挂出的 window.__ispartaStore（同样仅 dev）。
+   */
+  window.__ispartaMockComplete = function (count) {
+    const store = window.__ispartaStore
+    if (!store) {
+      // eslint-disable-next-line no-console
+      console.warn('[mock] store 尚未挂载；刷新页面后再执行')
+      return 0
+    }
+    const items = (store.state && store.state.items) || []
+    const n = Math.max(1, Math.min(items.length, Number(count) || 2))
+    let done = 0
+    items.slice(0, n).forEach(function (it) {
+      if (!it || !it.process) { return }
+      it.process.text = '转换成功！'
+      it.process.detail = ''
+      it.process.schedule = 1
+      done++
+    })
+    // eslint-disable-next-line no-console
+    console.info('[mock] 已标记 ' + done + ' 条任务为完成态')
+    return done
   }
 
   // 浏览器调试：注入更新状态，用于预览右下角 Dock / 进度 UI

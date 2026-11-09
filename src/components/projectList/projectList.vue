@@ -156,35 +156,53 @@
           </div>
         </div>
 
-        <!-- 右侧：输出设置（单选打开）+ 帧预览/延时（二者独立，勿合并） -->
+        <!-- 右侧：完成态格式角标 + 输出设置（单选打开）+ 帧预览/延时（二者独立，勿合并） -->
         <div class="side">
-          <!-- 状态点靠左；按钮组始终贴右，避免有无状态时左右跳动 -->
-          <div v-if="showMeta(project)" class="meta">
-            <span class="status" :class="'is-' + stateOf(project.process)">
-              <is-pacman
-                v-if="stateOf(project.process) === 'running'"
-                size="xs"
-                :dot-count="2"
-                :label="$t('statRunning')"
-              />
-              <is-icon v-else :name="statusIcon(project.process)" size="sm" />
-            </span>
+          <!-- 每种输出格式一个角标（并排）：hover 看产物名与大小，点击复制该格式产物 -->
+          <div v-if="outputBadges[index].length" class="side__badges">
+            <button
+              v-for="badge in outputBadges[index]"
+              :key="badge.format"
+              type="button"
+              class="fmt-badge"
+              :class="'is-' + badge.format.toLowerCase()"
+              v-tip="badgeTipOf(badge)"
+              :aria-label="$t('outputBadgeCopy', { format: badge.format })"
+              @click.stop="copyFormatOutput(badge)"
+            >
+              <span class="fmt-badge__dot" aria-hidden="true"></span>
+              <span class="fmt-badge__name">{{ badge.format }}</span>
+            </button>
           </div>
-          <div class="side__btns">
-            <button
-              type="button"
-              class="iconbtn ib-rail__btn--settings"
-              :title="$t('tipTaskSetting')"
-              :disabled="isLocked"
-              @click.stop="onTaskSetting(project, index)"
-            ><is-icon name="settings" size="sm" /></button>
-            <button
-              v-if="canOpenFramePanel(project)"
-              type="button"
-              class="iconbtn"
-              :title="framePanelTitle(project)"
-              @click.stop="onDelaySetting(project)"
-            ><is-icon name="play" size="sm" /></button>
+          <div class="side__row">
+            <!-- 状态点靠左；按钮组始终贴右，避免有无状态时左右跳动 -->
+            <div v-if="showMeta(project)" class="meta">
+              <span class="status" :class="'is-' + stateOf(project.process)">
+                <is-pacman
+                  v-if="stateOf(project.process) === 'running'"
+                  size="xs"
+                  :dot-count="2"
+                  :label="$t('statRunning')"
+                />
+                <is-icon v-else :name="statusIcon(project.process)" size="sm" />
+              </span>
+            </div>
+            <div class="side__btns">
+              <button
+                type="button"
+                class="iconbtn ib-rail__btn--settings"
+                :title="$t('tipTaskSetting')"
+                :disabled="isLocked"
+                @click.stop="onTaskSetting(project, index)"
+              ><is-icon name="settings" size="sm" /></button>
+              <button
+                v-if="canOpenFramePanel(project)"
+                type="button"
+                class="iconbtn"
+                :title="framePanelTitle(project)"
+                @click.stop="onDelaySetting(project)"
+              ><is-icon name="play" size="sm" /></button>
+            </div>
           </div>
         </div>
         <div
@@ -235,7 +253,8 @@
 <script>
 import { ipc } from '../../util/node-env'
 import {
-  stateOf, statusIcon, outputFilesOf, sizeBytesOfFiles, outputSizeOf, outputSizeTip
+  stateOf, statusIcon, outputFilesOf, sizeBytesOfFiles, outputSizeOf, outputSizeTip,
+  outputGroupsOf, sizeTextOfFiles
 } from '../../util/task-output'
 import rightMenu from './menu'
 import DelayDialog from '../delayDialog/index.vue'
@@ -282,6 +301,8 @@ export default {
   },
 
   created () {
+    // 角标数据缓存：产物存在性/大小要走 fs，进度更新引起重渲染时不该反复打盘
+    this._badgeCache = new Map()
     // 回应修改输出目录的操作
     ipc.on('change-item-fold', (path, order) => {
       if (path[0]) {
@@ -316,8 +337,34 @@ export default {
     // 重渲染会报「访问已销毁实例」
     this.stopThumbPlay()
     this.unbindMarquee()
+    if (this._badgeCache) this._badgeCache.clear()
   },
   computed: {
+    /**
+     * 每个完成任务的「格式角标」分组（与 projectList 同序，模板按渲染下标取用）。
+     * 产物存在性与大小要打盘，按「任务对象 + schedule」缓存：动画/进度重渲染不重复读盘，
+     * 重新转换（schedule 变化）后自动失效；已移出列表的条目从缓存里清掉。
+     */
+    outputBadges () {
+      const cache = this._badgeCache
+      const alive = new Set()
+      const list = this.projectList.map((project) => {
+        alive.add(project)
+        if (this.stateOf(project.process) !== 'done') return []
+        const stamp = project.process && project.process.schedule
+        const hit = cache && cache.get(project)
+        if (hit && hit.stamp === stamp) return hit.groups
+        const groups = outputGroupsOf(project)
+        if (cache) cache.set(project, { stamp: stamp, groups: groups })
+        return groups
+      })
+      if (cache) {
+        cache.forEach(function (v, key) {
+          if (!alive.has(key)) cache.delete(key)
+        })
+      }
+      return list
+    },
     storeItems () {
       return this.$store.getters.getterItems || []
     },
@@ -592,6 +639,39 @@ export default {
     outputSizeBytesOf (project) { return sizeBytesOfFiles(this.outputFilesOf(project)) },
     outputSizeOf,
     outputSizeTip,
+    /**
+     * 角标 hover：格式 + 该格式总大小，逐文件列「产物名 — 大小」（重试版本也列出），
+     * 末行说明点击行为。只显示 basename——要看全路径用 hover 卡片的产物大小。
+     */
+    badgeTipOf (badge) {
+      const total = sizeTextOfFiles(badge.files)
+      const lines = [badge.format + (total ? ' · ' + total : '')]
+      badge.files.forEach((file) => {
+        const size = sizeTextOfFiles([file])
+        lines.push(this.baseNameOf(file) + ' — ' + (size || '—'))
+      })
+      lines.push(this.$t('outputBadgeCopy', { format: badge.format }))
+      return lines.join('\n')
+    },
+    /** 点击角标：只复制该格式（含阈值重试版本）的产物，与顶栏复制同一套接口与 toast */
+    async copyFormatOutput (badge) {
+      const files = (badge && badge.files) || []
+      if (!files.length) return
+      try {
+        const copied = await hostAdapter.copyFilesToClipboard(files)
+        if (copied) {
+          notice.success(this.$t('outputBadgeCopied', {
+            format: badge.format,
+            count: files.length
+          }))
+        } else {
+          notice.error(this.$t('copyOutputFailed'))
+        }
+      } catch (e) {
+        // 与顶栏复制同样兜底：CEP 剪贴板桥可能同步抛错，不能让点击静默失败
+        notice.error(this.$t('copyOutputFailed'), (e && e.message) || '')
+      }
+    },
     // 待处理且无文案时不占位，让列表安静下来
     showMeta (project) {
       var state = this.stateOf(project.process)

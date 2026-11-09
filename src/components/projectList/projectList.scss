@@ -472,14 +472,81 @@
     }
   }
 
-  // ---------- 右侧：齿轮 + 状态 ----------
+  // ---------- 右侧：格式角标 + 齿轮 + 状态 ----------
   .side {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 5px;
+    min-width: 0;
+    overflow: visible;
+  }
+
+  .side__row {
     display: flex;
     align-items: center;
     justify-content: flex-end;
     gap: var(--is-s-1);
     min-width: 0;
-    overflow: visible;
+  }
+
+  // ---------- 完成态格式角标 ----------
+  // 每种输出格式一枚，并排成一行放在右侧栏顶部：不覆盖标题，点击复制该格式产物。
+  // 格式色只落在 5px 色点上，正文保持中性 —— 整排染色会与完成态的绿色语义打架。
+  .side__badges {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    flex-wrap: nowrap;
+  }
+
+  .fmt-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    height: 15px;
+    padding: 0 5px;
+    border: 1px solid var(--is-border);
+    border-radius: var(--is-r-pill);
+    background: var(--is-card-hi);
+    color: var(--is-text-3);
+    font-family: inherit;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    line-height: 1;
+    cursor: copy;
+    // 完成瞬间淡入：角标是「产出可复制」的提示，出现时给一点存在感
+    animation: fmt-badge-in var(--is-dur-base) var(--is-ease-out) both;
+    transition: color var(--is-dur-fast) var(--is-ease-std),
+      border-color var(--is-dur-fast) var(--is-ease-std),
+      background-color var(--is-dur-fast) var(--is-ease-std);
+
+    &:nth-child(2) { animation-delay: 30ms; }
+    &:nth-child(3) { animation-delay: 60ms; }
+
+    &__name { display: block; }
+
+    &__dot {
+      width: 5px;
+      height: 5px;
+      flex: none;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    &.is-apng .fmt-badge__dot { background: var(--is-accent); }
+    &.is-gif .fmt-badge__dot { background: var(--is-warn); }
+    &.is-webp .fmt-badge__dot { background: var(--is-ok); }
+
+    &:hover,
+    &:focus-visible {
+      color: var(--is-text);
+      border-color: var(--is-border-hi);
+      background: var(--is-accent-soft);
+      outline: none;
+    }
   }
 
   .side__btns {
@@ -695,6 +762,17 @@
       min-height: 36px;
     }
 
+    // 角标压到最小：色点 + 三字母仍保留，点击复制的入口不能因窄屏消失
+    .side { gap: 3px; }
+    .side__badges { gap: 2px; }
+    .fmt-badge {
+      height: 13px;
+      padding: 0 4px;
+      gap: 2px;
+      font-size: 8px;
+    }
+    .fmt-badge__dot { width: 4px; height: 4px; }
+
     .thumb {
       width: 28px;
       height: 28px;
@@ -717,4 +795,10 @@
 
     .progress { width: 40px; }
   }
+}
+
+// 完成态格式角标入场：从卡片边缘轻微上浮，避免三枚同时硬切出现
+@keyframes fmt-badge-in {
+  from { opacity: 0; transform: translateY(2px) scale(0.96); }
+  to { opacity: 1; transform: none; }
 }

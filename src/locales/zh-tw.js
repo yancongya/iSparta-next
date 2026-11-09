@@ -258,6 +258,8 @@ module.exports = {
     "selectCompletedOutput":"選擇已完成的任務後可用",
     "copyOutputSuccess":"已複製 {count} 個輸出檔案到剪貼簿",
     "copyOutputFailed":"複製輸出檔案失敗",
+    "outputBadgeCopy":"點擊複製 {format} 產物",
+    "outputBadgeCopied":"已複製 {format} 產物（{count} 個檔案）",
     "noCompletedOutputFiles":"找不到已完成任務的輸出檔案",
     "noticeConvertAborted":"轉換中斷",
     "noticeDone":"轉換結束",
