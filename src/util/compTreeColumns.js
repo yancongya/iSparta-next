@@ -34,7 +34,9 @@ export function clampColumnWidth (key, value) {
   const col = BY_KEY[key]
   if (!col) return 0
   const n = Number(value)
-  if (!isFinite(n)) return col.width
+  // null / undefined / '' / 0 / NaN 都是「没有有效宽度」，回退出厂值；
+  // 否则 Number(null)===0 会被钳到 min，首次进入（无存储记录）时列宽全变最窄。
+  if (!value || !isFinite(n)) return col.width
   return Math.max(col.min, Math.min(col.max, Math.round(n)))
 }
 
