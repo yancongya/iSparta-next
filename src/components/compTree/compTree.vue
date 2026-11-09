@@ -20,13 +20,9 @@
           <is-checkbox :value="allSelected" :readonly="true" />
         </span>
       </span>
+      <!-- 名字 + 输出格式：一只撑满整列的搜索框，宽度永远自适应剩余空间（不可拖） -->
       <span
         class="mod-ct__c mod-ct__c--name mod-ct__c--name-h"
-        :class="{
-          'is-resizing': pinnedResizing,
-          'is-at-limit': pinnedResizing && !!colLimit
-        }"
-        :style="nameColStyle"
         :title="$t('compColPinnedHint')"
       >
         <input
@@ -36,15 +32,9 @@
           :placeholder="$t('compTree') + ' / ' + $t('search')"
           spellcheck="false"
         />
-        <!-- 固定列不能拖顺序，但宽度可调：把手与普通列同一套（跨在边界上） -->
-        <span
-          class="mod-ct__resizer"
-          :title="$t('compColResizeHint')"
-          @mousedown.stop.prevent="startPinnedResize"
-          @dblclick.stop.prevent="resetPinnedWidth"
-        ></span>
       </span>
-      <!-- 可配置列：顺序与宽度由 util/compTreeColumns 统一驱动，表头/行共用同一份 -->
+      <!-- 可配置列：顺序与宽度由 util/compTreeColumns 统一驱动，表头/行共用同一份。
+           表头只做两件事：点击排序、拖右缘改宽；列顺序走右键菜单 -->
       <div
         v-for="col in columns"
         :key="col.key"
@@ -53,16 +43,13 @@
           'mod-ct__c--h--' + col.key,
           {
             'is-resizing': resizingCol === col.key,
-            'is-at-limit': resizingCol === col.key && !!colLimit,
-            'is-dragging': dragCol === col.key,
-            'is-drop-before': dropTarget && dropTarget.key === col.key && dropTarget.side === 'before',
-            'is-drop-after': dropTarget && dropTarget.key === col.key && dropTarget.side === 'after'
+            'is-at-limit': resizingCol === col.key && !!colLimit
           }
         ]"
         :style="colStyle(col)"
         :data-col="col.key"
-        :title="$t('compColOrderHint')"
-        @mousedown="onHeadMouseDown($event, col)"
+        :title="$t('compColResizeHint')"
+        @contextmenu.prevent.stop="onHeadContext($event, col)"
       >
         <button
           v-if="col.sortKey"
@@ -73,12 +60,10 @@
         <span v-else class="mod-ct__h-label">
           <span class="mod-ct__state-txt">{{ $t(col.labelKey) }}</span>
         </span>
-        <!-- 右缘分隔条：拖动改列宽，双击恢复默认；stop 防止触发表头长按重排 -->
+        <!-- 右缘把手：只负责拖动改列宽 -->
         <span
           class="mod-ct__resizer"
-          :title="$t('compColResizeHint')"
           @mousedown.stop.prevent="startColumnResize($event, col)"
-          @dblclick.stop.prevent="resetColumnWidth(col)"
         ></span>
       </div>
       <span class="mod-ct__c mod-ct__c--act"></span>
@@ -104,7 +89,7 @@
             <is-checkbox :value="!!selectedMap[node.id]" :readonly="true" />
           </span>
         </span>
-        <span class="mod-ct__c mod-ct__c--name" :style="nameColStyle" :title="titleOf(node)">
+        <span class="mod-ct__c mod-ct__c--name" :title="titleOf(node)">
           <img class="mod-ct__ico" :src="compIcon" alt="" width="16" height="16" />
           <span class="mod-ct__txt">{{ displayNameOf(node) }}</span>
           <!-- 名字列右对齐的三个输出格式子列：固定宽度、不可压缩，名字先让位省略；
@@ -166,6 +151,38 @@
       :style="marqueeStyle"
       aria-hidden="true"
     ></div>
+    <!-- 表头右键：列顺序与恢复默认宽度。拖拽只留给「改宽度」一件事 -->
+    <div
+      v-if="headMenu.open"
+      class="mod-ct__menu"
+      :style="headMenuStyle"
+      role="menu"
+      @mousedown.stop
+      @click.stop
+      @contextmenu.prevent.stop
+    >
+      <button
+        type="button"
+        class="mod-ct__menu-item"
+        role="menuitem"
+        :disabled="!canShiftHead(-1)"
+        @click="shiftHeadCol(-1)"
+      >{{ $t('compColMenuLeft') }}</button>
+      <button
+        type="button"
+        class="mod-ct__menu-item"
+        role="menuitem"
+        :disabled="!canShiftHead(1)"
+        @click="shiftHeadCol(1)"
+      >{{ $t('compColMenuRight') }}</button>
+      <span class="mod-ct__menu-sep" aria-hidden="true"></span>
+      <button
+        type="button"
+        class="mod-ct__menu-item"
+        role="menuitem"
+        @click="resetHeadColWidth"
+      >{{ $t('compColMenuReset') }}</button>
+    </div>
   </section>
 </template>
 
@@ -181,12 +198,8 @@ import notice from '../../ui-next/notice'
 import hostAdapter from '../../util/host-env'
 import { OUTPUT_FORMATS, defaultOutputFormats } from '../../util/outputFormats'
 import {
-  columnOf, clampColumnWidth, clampPinnedWidth, CT_PINNED_MIN,
-  loadColumnLayout, saveColumnLayout, moveColumn
+  columnOf, clampColumnWidth, loadColumnLayout, saveColumnLayout
 } from '../../util/compTreeColumns'
-
-/** 表头长按进入列重排的阈值（ms） */
-const LONG_PRESS_MS = 320
 
 /** 渲染后合成的三种动图格式，顺序与 store 默认 outputFormat 一致 */
 const FORMATS = [
@@ -248,15 +261,11 @@ export default {
       /** 可配置列的顺序与宽度（名字+格式 / 勾选 / 齿轮是固定列，不入此表） */
       columnOrder: layout.order,
       columnWidths: layout.widths,
-      /** pinned 首列显式宽度（null = 自适应剩余空间）；只影响宽度，不影响顺序 */
-      nameWidth: layout.name,
       resizingCol: '',
-      pinnedResizing: false,
       /** 拖动中已顶到 min / max：把分隔线换成警示色，避免「拖了没反应」 */
       colLimit: '',
-      /** 长按拖拽中的列与落点（表头与行都按 columnOrder 渲染，重排即时生效） */
-      dragCol: '',
-      dropTarget: null,
+      /** 表头右键菜单：只放「左移 / 右移 / 恢复默认宽度」，不再占用拖拽手势 */
+      headMenu: { open: false, x: 0, y: 0, key: '' },
       marquee: { active: false, moved: false, x: 0, y: 0, w: 0, h: 0, startX: 0, startY: 0 },
       suppressBlankClick: false,
       formats: FORMATS,
@@ -271,14 +280,19 @@ export default {
       return this.columnOrder.map(columnOf).filter(Boolean)
     },
     /**
-     * pinned 首列（名字 + 输出格式）宽度：未拖过就吃满剩余空间；
-     * 拖过按显式宽度渲染。窗口变窄时**先压这列**（shrink 权重 100），
-     * 尺寸/帧率/状态保持用户设的宽度，压到下限后才轮到它们收窄。
+     * 名字 + 输出格式这列永远自适应：宽度 = 剩余空间，不需要记宽度，
+     * 也不会出现「设了宽度之后窗口变窄被压坏」的补偿逻辑。
      */
     nameColStyle () {
-      const w = clampPinnedWidth(this.nameWidth)
-      if (w == null) return { flex: '1 1 0' }
-      return { width: w + 'px', flex: '0 100 ' + w + 'px', minWidth: CT_PINNED_MIN + 'px' }
+      return { flex: '1 1 0' }
+    },
+    headMenuStyle () {
+      const vw = typeof window !== 'undefined' ? window.innerWidth : 1200
+      const vh = typeof window !== 'undefined' ? window.innerHeight : 800
+      return {
+        left: Math.max(4, Math.min(this.headMenu.x, vw - 170)) + 'px',
+        top: Math.max(4, Math.min(this.headMenu.y, vh - 110)) + 'px'
+      }
     },
     marqueeStyle () {
       return {
@@ -351,9 +365,6 @@ export default {
   },
   created () {
     this.refresh()
-    if (typeof window !== 'undefined') {
-      window.addEventListener('blur', this.cancelHeadPress)
-    }
     if (this.$root && this.$root.eventBus) {
       this.$root.eventBus.$on('comp-tree-refresh', this.refresh)
       this.$root.eventBus.$on('comp-tree-add-selected', this.emitAdd)
@@ -365,10 +376,7 @@ export default {
   beforeDestroy () {
     this.unbindMarquee()
     this.stopColumnResize()
-    this.cancelHeadPress()
-    if (typeof window !== 'undefined') {
-      window.removeEventListener('blur', this.cancelHeadPress)
-    }
+    this.closeHeadMenu()
     if (this.$root && this.$root.eventBus) {
       this.$root.eventBus.$off('comp-tree-refresh', this.refresh)
       this.$root.eventBus.$off('comp-tree-add-selected', this.emitAdd)
@@ -704,73 +712,15 @@ export default {
       const w = clampColumnWidth(col.key, this.columnWidths[col.key])
       return { width: w + 'px', flex: '0 1 ' + w + 'px', minWidth: col.min + 'px' }
     },
-    /** 持久化整份布局（列顺序 + 各列宽度 + pinned 显式宽度） */
+    /** 持久化整份布局（列顺序 + 各列宽度） */
     saveLayout () {
       saveColumnLayout({
         order: this.columnOrder,
-        widths: this.columnWidths,
-        name: this.nameWidth
+        widths: this.columnWidths
       })
     },
-    /**
-     * pinned 首列能拉到多宽：当前宽度 + 表头剩余空闲。
-     * 拖动过程中 pinned 列与空闲空间此消彼长，该值保持不变，故只需在按下时算一次。
-     */
-    maxPinnedWidth () {
-      const head = this.$el && this.$el.querySelector('.mod-ct__head')
-      const cell = head && head.querySelector('.mod-ct__c--name')
-      if (!head || !cell) return CT_PINNED_MIN
-      const rect = head.getBoundingClientRect()
-      const cs = typeof window !== 'undefined' ? window.getComputedStyle(head) : null
-      const inner = rect.width - (cs ? (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0) : 0)
-      let used = 0
-      const kids = head.children
-      for (let i = 0; i < kids.length; i++) used += kids[i].getBoundingClientRect().width
-      return Math.round(cell.getBoundingClientRect().width + Math.max(0, inner - used))
-    },
-    /** pinned 首列拖宽：与普通列同一套 document 监听 + body class，松手才落盘 */
-    startPinnedResize (e) {
-      if (e.button !== 0) return
-      const cell = e.currentTarget && e.currentTarget.parentElement
-      const startX = e.clientX
-      const startW = cell ? cell.getBoundingClientRect().width : 0
-      if (!startW) return
-      const max = this.maxPinnedWidth()
-      this.pinnedResizing = true
-      this.resizingCol = ''
-      this.colLimit = ''
-      document.body.classList.add('is-column-resizing')
-      // 自适应状态下 nameWidth 是 null，用它当基准会把宽度算成 0，这里统一用实测宽
-      let last = startW
-      const onMove = (ev) => {
-        const next = clampPinnedWidth(startW + ev.clientX - startX, max)
-        const w = next == null ? startW : next
-        const pushed = Math.abs(ev.clientX - startX) > 1
-        this.colLimit = pushed && Math.round(w) === Math.round(last)
-          ? (ev.clientX < startX ? 'min' : 'max')
-          : ''
-        this.nameWidth = next
-        last = w
-      }
-      this._colResizeCleanup = () => {
-        window.removeEventListener('mousemove', onMove)
-        window.removeEventListener('mouseup', this.stopColumnResize)
-        document.body.classList.remove('is-column-resizing')
-        this.pinnedResizing = false
-        this.colLimit = ''
-        this.saveLayout()
-      }
-      window.addEventListener('mousemove', onMove)
-      window.addEventListener('mouseup', this.stopColumnResize)
-    },
-    /** 双击 pinned 把手：恢复自适应（重新吃满剩余空间） */
-    resetPinnedWidth () {
-      this.nameWidth = null
-      this.saveLayout()
-    },
-    /** 表头点击仍走原有的数据排序；长按重排时抑制这次 click */
+    /** 表头短点击：数据升 / 降序排序（表头唯一的手势） */
     onHeadClick (col) {
-      if (this._suppressHeadClick) return
       if (col && col.sortKey) this.sortBy(col.sortKey)
     },
     /**
@@ -811,83 +761,46 @@ export default {
       this._colResizeCleanup = null
       if (cleanup) cleanup()
     },
-    /** 双击分隔条：恢复该列出厂宽度 */
+    /** 恢复该列出厂宽度（表头右键菜单入口） */
     resetColumnWidth (col) {
       const def = columnOf(col.key)
       if (!def) return
       this.$set(this.columnWidths, col.key, def.width)
       this.saveLayout()
     },
-    /** 表头长按 ~320ms 进入列重排；短点击仍由 onHeadClick 走数据排序 */
-    onHeadMouseDown (e, col) {
-      if (e.button !== 0 || this._headPress) return
-      const press = { col: col, x: e.clientX, y: e.clientY, active: false, moved: false, timer: null }
-      press.timer = window.setTimeout(() => {
-        press.active = true
-        this.dragCol = col.key
-        document.body.classList.add('is-ct-col-dragging')
-      }, LONG_PRESS_MS)
-      this._headPress = press
-      window.addEventListener('mousemove', this.onHeadMouseMove)
-      window.addEventListener('mouseup', this.onHeadMouseUp)
+    /** 表头右键：列顺序与恢复默认宽度的唯一入口（拖拽只留给「改宽度」） */
+    onHeadContext (ev, col) {
+      if (!col) return
+      this.headMenu = { open: true, x: ev.clientX, y: ev.clientY, key: col.key }
+      if (typeof window !== 'undefined') window.addEventListener('mousedown', this.closeHeadMenu)
     },
-    onHeadMouseMove (e) {
-      const p = this._headPress
-      if (!p) return
-      const dx = Math.abs(e.clientX - p.x)
-      const dy = Math.abs(e.clientY - p.y)
-      if (!p.active) {
-        // 未到长按阈值就移动：普通拖动，取消长按，避免与列宽手柄/框选抢事件
-        if (dx > 4 || dy > 4) this.cancelHeadPress()
-        return
-      }
-      if (dx > 4 || dy > 4) p.moved = true
-      if (e.preventDefault) e.preventDefault()
-      this.dropTarget = this.findDropTarget(e.clientX)
+    closeHeadMenu () {
+      if (!this.headMenu.open) return
+      this.headMenu.open = false
+      if (typeof window !== 'undefined') window.removeEventListener('mousedown', this.closeHeadMenu)
     },
-    onHeadMouseUp () {
-      const p = this._headPress
-      if (!p) return
-      const reorder = !!(p.active && p.moved)
-      const from = p.col.key
-      const target = this.dropTarget
-      if (reorder) {
-        // mouseup 之后浏览器补发 click；抑制掉，别把一次重排变成数据排序
-        this._suppressHeadClick = true
-        window.setTimeout(() => { this._suppressHeadClick = false }, 0)
-      }
-      this.cancelHeadPress()
-      if (reorder && target && target.key !== from) {
-        this.columnOrder = moveColumn(this.columnOrder, from, target.key, target.side)
-        this.saveLayout()
-      }
+    /** step=-1 左移一列，+1 右移一列；到头了菜单项直接禁用 */
+    canShiftHead (step) {
+      const i = this.columnOrder.indexOf(this.headMenu.key)
+      const j = i + step
+      return i >= 0 && j >= 0 && j < this.columnOrder.length
     },
-    cancelHeadPress () {
-      const p = this._headPress
-      this._headPress = null
-      if (p && p.timer) window.clearTimeout(p.timer)
-      if (typeof window !== 'undefined') {
-        window.removeEventListener('mousemove', this.onHeadMouseMove)
-        window.removeEventListener('mouseup', this.onHeadMouseUp)
-      }
-      this.dragCol = ''
-      this.dropTarget = null
-      if (typeof document !== 'undefined') document.body.classList.remove('is-ct-col-dragging')
+    shiftHeadCol (step) {
+      const i = this.columnOrder.indexOf(this.headMenu.key)
+      const j = i + step
+      if (i < 0 || j < 0 || j >= this.columnOrder.length) return
+      const order = this.columnOrder.slice()
+      const tmp = order[i]
+      order[i] = order[j]
+      order[j] = tmp
+      this.columnOrder = order
+      this.saveLayout()
+      this.closeHeadMenu()
     },
-    /** 光标所在可配置列：左半边插到前面、右半边插到后面；名字列区域归到首列前 */
-    findDropTarget (clientX) {
-      const heads = this.$el.querySelectorAll('.mod-ct__c--h[data-col]')
-      if (!heads.length) return null
-      for (let i = 0; i < heads.length; i++) {
-        const r = heads[i].getBoundingClientRect()
-        if (clientX <= r.right) {
-          return {
-            key: heads[i].getAttribute('data-col'),
-            side: clientX < r.left + r.width / 2 ? 'before' : 'after'
-          }
-        }
-      }
-      return { key: heads[heads.length - 1].getAttribute('data-col'), side: 'after' }
+    resetHeadColWidth () {
+      const col = columnOf(this.headMenu.key)
+      if (col) this.resetColumnWidth(col)
+      this.closeHeadMenu()
     },
     sortMark (key) {
       if (this.sortKey !== key) return ''
@@ -1132,9 +1045,8 @@ export default {
 }
 /* 表头那格要露出跨边界的列宽把手（名字列同样可拖宽，只是不能拖顺序） */
 .mod-ct__c--name-h {
-  /* 定位基准：把手按本格右缘 -5px 摆放，不能落到 .mod-ct 上 */
-  position: relative;
-  overflow: visible;
+  /* 只负责「搜索框撑满这一列」：宽度 flex 自适应，没有把手 */
+  overflow: hidden;
 }
 .mod-ct__c--num {
   padding-right: 8px;
@@ -1180,55 +1092,39 @@ export default {
   cursor: default;
 }
 /* 列宽分隔条：跨在列边界上（左右各半），从哪一侧靠近都给 col-resize 光标 */
+/* 列宽把手：16px 宽、跨在边界上（左右各 8px），比一格文字还宽，容易抓准 */
 .mod-ct__resizer {
   position: absolute;
   z-index: 3;
   top: 0;
-  right: -5px;
+  right: -8px;
   bottom: 0;
-  width: 11px;
+  width: 16px;
   cursor: col-resize;
 }
 .mod-ct__resizer::after {
   content: '';
   position: absolute;
-  top: 4px;
-  bottom: 4px;
-  right: 5px;
+  top: 3px;
+  bottom: 3px;
+  right: 7px;
   width: 2px;
   border-radius: 1px;
   background: var(--is-accent, #c8f542);
   opacity: 0;
 }
 .mod-ct__c--h:hover .mod-ct__resizer::after,
-.mod-ct__c--h.is-resizing .mod-ct__resizer::after,
-.mod-ct__c--name-h:hover .mod-ct__resizer::after,
-.mod-ct__c--name-h.is-resizing .mod-ct__resizer::after {
+.mod-ct__c--h.is-resizing .mod-ct__resizer::after {
   opacity: 0.75;
 }
 .mod-ct__resizer:hover::after {
   opacity: 1;
 }
 /* 已顶到最小 / 最大宽度：分隔线转警示色，明确「到头了」，不是拖拽失灵 */
-.mod-ct__c--h.is-at-limit .mod-ct__resizer::after,
-.mod-ct__c--name-h.is-at-limit .mod-ct__resizer::after {
+.mod-ct__c--h.is-at-limit .mod-ct__resizer::after {
   opacity: 1;
   background: var(--is-warn, #ffc857);
 }
-/* 长按重排：源列淡化，落点列显示插入竖线 */
-.mod-ct__c--h.is-dragging { opacity: 0.45; }
-.mod-ct__c--h.is-drop-before::before,
-.mod-ct__c--h.is-drop-after::after {
-  content: '';
-  position: absolute;
-  z-index: 4;
-  top: 0;
-  bottom: 0;
-  width: 2px;
-  background: var(--is-accent, #c8f542);
-}
-.mod-ct__c--h.is-drop-before::before { left: 0; }
-.mod-ct__c--h.is-drop-after::after { right: 0; }
 /* 运行状态列（替代原帧数列）：完成态显示产物大小，整格可点击复制
  * 与尺寸 / 帧率同为「数值列」：整列（表头 + 内容）右对齐，右缘对齐成一条竖线，
  * 长原因由省略号截断，hover 看全文。 */
@@ -1412,5 +1308,44 @@ export default {
   padding: 16px;
   text-align: center;
   opacity: 0.55;
+}
+
+/* 表头右键菜单：列顺序 / 恢复默认宽度 */
+.mod-ct__menu {
+  position: fixed;
+  z-index: 30;
+  min-width: 152px;
+  padding: 4px;
+  border: 1px solid var(--is-line, rgba(128, 128, 128, 0.3));
+  border-radius: 6px;
+  background: var(--is-card, #1a201c);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45);
+  font-weight: 400;
+}
+.mod-ct__menu-item {
+  display: block;
+  width: 100%;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.mod-ct__menu-item:hover:not(:disabled) {
+  background: var(--is-card-hi, #222a24);
+}
+.mod-ct__menu-item:disabled {
+  opacity: 0.38;
+  cursor: default;
+}
+.mod-ct__menu-sep {
+  display: block;
+  height: 1px;
+  margin: 4px 6px;
+  background: var(--is-line, rgba(128, 128, 128, 0.25));
 }
 </style>
