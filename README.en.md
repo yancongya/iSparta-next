@@ -27,8 +27,8 @@
 
 ### Recent highlights
 
-- **AE panel:** one-button switch between comp tree and task list; right-click to open comp location / output folder / stop task; double-click to jump to a comp; pinned filter bar
-- **Tasks and output:** per-comp settings persist; default output names come from composition names, while custom names are preserved; completed rows show final output size; copying files reports progress and result
+- **AE panel:** one-button switch between comp tree and task list; the comp tree shows run status and output size, supports draggable column widths and per-comp output formats; right-click to open comp location / output folder / stop task; double-click to jump to a comp; pinned filter bar
+- **Tasks and output:** per-comp settings persist; default output names come from composition names, while custom names are preserved; completed rows show final output size plus clickable format badges; copying files reports progress and result
 - **Output actions:** copy completed files; hold Alt while hovering the toolbar button to open the output folder
 - **Bundled install:** system-wide installation (UAC prompt, CEP under Common Files, a single copy per machine); auto-detects the AE version; version shown in both the desktop title bar and the AE panel
 - **Onboarding (7 pages):** Welcome → Import → Output → Naming → Path variables → AE → Done, covering import methods, output settings and naming rules in one pass
@@ -110,7 +110,7 @@ See [`docs/CHANGELOG.md`](docs/CHANGELOG.md), [`docs/PLAN-DUAL-TARGET.md`](docs/
 
 | Comp list | Comp tree |
 | :---: | :---: |
-| <img src="docs/screenshots/cep-task-list.webp" alt="AE extension: comp task list with selection, fps and frame count" width="480"> | <img src="docs/screenshots/cep-comp-tree.webp" alt="AE extension: comp tree with size, fps and frame count" width="480"> |
+| <img src="docs/screenshots/cep-task-list.webp" alt="AE extension: comp task list with selection, fps and frame count" width="480"> | <img src="docs/screenshots/cep-comp-tree.webp" alt="AE extension: comp tree with size, fps and run status" width="480"> |
 
 | Output settings (path vars + size cap) |
 | :---: |
