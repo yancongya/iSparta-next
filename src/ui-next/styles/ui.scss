@@ -199,6 +199,9 @@
   cursor: pointer;
   user-select: none;
   vertical-align: middle;
+  // 标签一律不折行：窄面板里「启用」等短标签曾因 min-content 只剩一个字宽，
+  // 被 flex 压成上下两行。nowrap 让 min-content 等于整词宽度，flex 就不会再压缩它。
+  white-space: nowrap;
 
   &__input {
     position: absolute;
@@ -271,7 +274,7 @@
     }
   }
 
-  &__label { line-height: 1.4; }
+  &__label { line-height: 1.4; white-space: nowrap; }
 
   &.is-disabled {
     opacity: 0.42;

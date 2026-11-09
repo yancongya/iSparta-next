@@ -146,8 +146,13 @@
     min-width: 0;
     display: flex;
     align-items: center;
+    // 双列窄面板（CEP 铺满时每列不足 240px）挤不下「启用 + 数值框」时，
+    // 让整组控件换行而不是把复选框压成竖排文字
+    flex-wrap: wrap;
     justify-content: flex-end;
     gap: var(--is-s-2);
+
+    .is-check { flex: none; }
   }
 
   // 阈值：输入框左、单位切换右对齐
