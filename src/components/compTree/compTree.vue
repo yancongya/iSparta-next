@@ -20,10 +20,17 @@
           <is-checkbox :value="allSelected" :readonly="true" />
         </span>
       </span>
-      <!-- 名字 + 输出格式：一只撑满整列的搜索框，宽度永远自适应剩余空间（不可拖） -->
+      <!-- 名字 + 输出格式：一只撑满整列的搜索框。默认吃满剩余空间（宽度=0），
+           拖右缘可以钉一个固定宽度，右键「恢复自适应」再放回来 -->
       <span
         class="mod-ct__c mod-ct__c--name mod-ct__c--name-h"
-        :title="$t('compColPinnedHint')"
+        :class="{
+          'is-resizing': resizingCol === 'name',
+          'is-at-limit': resizingCol === 'name' && !!colLimit
+        }"
+        :style="nameColStyle"
+        :title="$t('compColNameHint')"
+        @contextmenu.prevent.stop="onNameHeadContext($event)"
       >
         <input
           v-model="keyword"
@@ -32,7 +39,15 @@
           :placeholder="$t('compTree') + ' / ' + $t('search')"
           spellcheck="false"
         />
+        <!-- 与数值列一致的右缘把手：名字列/状态列交界处同样能按下拖宽 -->
+        <span
+          class="mod-ct__resizer"
+          @mousedown.stop.prevent="startNameResize"
+        ></span>
       </span>
+      <!-- 名字列被拖成固定宽度后，多出来的空间留在这里：数值列依旧贴右，
+           等价于「名字列窄一点，中间空一段」，而不是把整排数据列往左拽 -->
+      <span v-if="nameFixed" class="mod-ct__gap" aria-hidden="true"></span>
       <!-- 可配置列：顺序与宽度由 util/compTreeColumns 统一驱动，表头/行共用同一份。
            表头只做两件事：点击排序、拖右缘改宽；列顺序走右键菜单 -->
       <div
@@ -89,7 +104,7 @@
             <is-checkbox :value="!!selectedMap[node.id]" :readonly="true" />
           </span>
         </span>
-        <span class="mod-ct__c mod-ct__c--name" :title="titleOf(node)">
+        <span class="mod-ct__c mod-ct__c--name" :style="nameColStyle" :title="titleOf(node)">
           <img class="mod-ct__ico" :src="compIcon" alt="" width="16" height="16" />
           <span class="mod-ct__txt">{{ displayNameOf(node) }}</span>
           <!-- 名字列右对齐的三个输出格式子列：固定宽度、不可压缩，名字先让位省略；
@@ -107,6 +122,7 @@
             >{{ f.label }}</button>
           </span>
         </span>
+        <span v-if="nameFixed" class="mod-ct__gap" aria-hidden="true"></span>
         <template v-for="col in columns">
           <span
             v-if="col.key === 'size'"
@@ -162,6 +178,7 @@
       @contextmenu.prevent.stop
     >
       <button
+        v-if="!isNameHead"
         type="button"
         class="mod-ct__menu-item"
         role="menuitem"
@@ -169,19 +186,20 @@
         @click="shiftHeadCol(-1)"
       >{{ $t('compColMenuLeft') }}</button>
       <button
+        v-if="!isNameHead"
         type="button"
         class="mod-ct__menu-item"
         role="menuitem"
         :disabled="!canShiftHead(1)"
         @click="shiftHeadCol(1)"
       >{{ $t('compColMenuRight') }}</button>
-      <span class="mod-ct__menu-sep" aria-hidden="true"></span>
+      <span v-if="!isNameHead" class="mod-ct__menu-sep" aria-hidden="true"></span>
       <button
         type="button"
         class="mod-ct__menu-item"
         role="menuitem"
         @click="resetHeadColWidth"
-      >{{ $t('compColMenuReset') }}</button>
+      >{{ isNameHead ? $t('compColMenuFit') : $t('compColMenuReset') }}</button>
     </div>
   </section>
 </template>
@@ -198,7 +216,8 @@ import notice from '../../ui-next/notice'
 import hostAdapter from '../../util/host-env'
 import { OUTPUT_FORMATS, defaultOutputFormats } from '../../util/outputFormats'
 import {
-  columnOf, clampColumnWidth, loadColumnLayout, saveColumnLayout
+  columnOf, clampColumnWidth, clampNameWidth, loadColumnLayout, saveColumnLayout,
+  CT_NAME_KEY, CT_NAME_MIN
 } from '../../util/compTreeColumns'
 
 /** 渲染后合成的三种动图格式，顺序与 store 默认 outputFormat 一致 */
@@ -261,6 +280,8 @@ export default {
       /** 可配置列的顺序与宽度（名字+格式 / 勾选 / 齿轮是固定列，不入此表） */
       columnOrder: layout.order,
       columnWidths: layout.widths,
+      /** 名字列宽度：0 = 自适应剩余空间，>0 = 用户拖出来的固定宽度 */
+      nameWidth: layout.widths[CT_NAME_KEY] || 0,
       resizingCol: '',
       /** 拖动中已顶到 min / max：把分隔线换成警示色，避免「拖了没反应」 */
       colLimit: '',
@@ -280,11 +301,22 @@ export default {
       return this.columnOrder.map(columnOf).filter(Boolean)
     },
     /**
-     * 名字 + 输出格式这列永远自适应：宽度 = 剩余空间，不需要记宽度，
-     * 也不会出现「设了宽度之后窗口变窄被压坏」的补偿逻辑。
+     * 名字 + 输出格式列：不拖时 flex:1 吃满剩余空间（宽度存 0）；
+     * 拖过之后用实测像素宽固定，剩余空间交给齿轮列的 margin-left:auto 吸收。
+     * min-width 兜住格式按钮（A/G/W）+ 图标，再窄也还能认出是哪一列。
      */
     nameColStyle () {
-      return { flex: '1 1 0' }
+      const w = clampNameWidth(this.nameWidth)
+      if (!w) return { flex: '1 1 0' }
+      // shrink 权重给足：窗口变窄时先压名字列（它可以省略号），别去压数值列
+      return { width: w + 'px', flex: '0 100 ' + w + 'px', minWidth: CT_NAME_MIN + 'px' }
+    },
+    /** 名字列是否已从「自适应」变成「固定宽度」（固定时才需要中间那段弹性留白） */
+    nameFixed () {
+      return clampNameWidth(this.nameWidth) > 0
+    },
+    isNameHead () {
+      return this.headMenu.key === CT_NAME_KEY
     },
     headMenuStyle () {
       const vw = typeof window !== 'undefined' ? window.innerWidth : 1200
@@ -712,11 +744,11 @@ export default {
       const w = clampColumnWidth(col.key, this.columnWidths[col.key])
       return { width: w + 'px', flex: '0 1 ' + w + 'px', minWidth: col.min + 'px' }
     },
-    /** 持久化整份布局（列顺序 + 各列宽度） */
+    /** 持久化整份布局（列顺序 + 各列宽度 + 名字列宽度） */
     saveLayout () {
       saveColumnLayout({
         order: this.columnOrder,
-        widths: this.columnWidths
+        widths: Object.assign({}, this.columnWidths, { name: this.nameWidth })
       })
     },
     /** 表头短点击：数据升 / 降序排序（表头唯一的手势） */
@@ -761,6 +793,56 @@ export default {
       this._colResizeCleanup = null
       if (cleanup) cleanup()
     },
+    /**
+     * 名字列能拖到多宽：容器宽度扣掉勾选列、齿轮列和三个数值列当前占位，
+     * 剩下的全给它 —— 再宽就把数据列挤出可视区了。
+     */
+    nameMaxWidth () {
+      const host = this.$el ? this.$el.clientWidth : 0
+      if (!host) return 0
+      const used = this.columnOrder.reduce((sum, key) => {
+        return sum + clampColumnWidth(key, this.columnWidths[key])
+      }, 28 + 32 + 8)
+      return Math.max(CT_NAME_MIN, host - used)
+    },
+    /**
+     * 名字列右缘拖宽：和数值列同一套手法，只是它多一个「自适应」状态（宽度 0）。
+     * 起点取实测宽度，避免自适应态下没有存储值可依。
+     */
+    startNameResize (e) {
+      if (e.button !== 0) return
+      const startX = e.clientX
+      const cell = e.currentTarget && e.currentTarget.parentElement
+      const measuredOf = () => (cell ? Math.round(cell.getBoundingClientRect().width) : 0)
+      const measured = measuredOf()
+      const startW = measured > 0 ? measured : (clampNameWidth(this.nameWidth) || CT_NAME_MIN)
+      const maxW = this.nameMaxWidth()
+      const curOf = () => clampNameWidth(this.nameWidth) || measuredOf()
+      this.resizingCol = CT_NAME_KEY
+      this.colLimit = ''
+      document.body.classList.add('is-column-resizing')
+      const onMove = (ev) => {
+        const cur = curOf()
+        const next = clampNameWidth(startW + ev.clientX - startX, maxW)
+        const pushed = Math.abs(ev.clientX - startX) > 1
+        this.colLimit = pushed && next === cur ? (ev.clientX < startX ? 'min' : 'max') : ''
+        this.nameWidth = next
+      }
+      this._colResizeCleanup = () => {
+        window.removeEventListener('mousemove', onMove)
+        window.removeEventListener('mouseup', this.stopColumnResize)
+        document.body.classList.remove('is-column-resizing')
+        this.resizingCol = ''
+        this.colLimit = ''
+        this.saveLayout()
+      }
+      window.addEventListener('mousemove', onMove)
+      window.addEventListener('mouseup', this.stopColumnResize)
+    },
+    /** 名字列表头右键：它没有列顺序，只给「恢复自适应宽度」 */
+    onNameHeadContext (ev) {
+      this.onHeadContext(ev, { key: CT_NAME_KEY })
+    },
     /** 恢复该列出厂宽度（表头右键菜单入口） */
     resetColumnWidth (col) {
       const def = columnOf(col.key)
@@ -798,6 +880,12 @@ export default {
       this.closeHeadMenu()
     },
     resetHeadColWidth () {
+      if (this.headMenu.key === CT_NAME_KEY) {
+        this.nameWidth = 0
+        this.saveLayout()
+        this.closeHeadMenu()
+        return
+      }
       const col = columnOf(this.headMenu.key)
       if (col) this.resetColumnWidth(col)
       this.closeHeadMenu()
@@ -1045,8 +1133,9 @@ export default {
 }
 /* 表头那格要露出跨边界的列宽把手（名字列同样可拖宽，只是不能拖顺序） */
 .mod-ct__c--name-h {
-  /* 只负责「搜索框撑满这一列」：宽度 flex 自适应，没有把手 */
-  overflow: hidden;
+  /* 相对定位给把手当基准；overflow 可见让把手跨到右侧列边界上 */
+  position: relative;
+  overflow: visible;
 }
 .mod-ct__c--num {
   padding-right: 8px;
@@ -1114,14 +1203,17 @@ export default {
   opacity: 0;
 }
 .mod-ct__c--h:hover .mod-ct__resizer::after,
-.mod-ct__c--h.is-resizing .mod-ct__resizer::after {
+.mod-ct__c--name-h:hover .mod-ct__resizer::after,
+.mod-ct__c--h.is-resizing .mod-ct__resizer::after,
+.mod-ct__c--name-h.is-resizing .mod-ct__resizer::after {
   opacity: 0.75;
 }
 .mod-ct__resizer:hover::after {
   opacity: 1;
 }
 /* 已顶到最小 / 最大宽度：分隔线转警示色，明确「到头了」，不是拖拽失灵 */
-.mod-ct__c--h.is-at-limit .mod-ct__resizer::after {
+.mod-ct__c--h.is-at-limit .mod-ct__resizer::after,
+.mod-ct__c--name-h.is-at-limit .mod-ct__resizer::after {
   opacity: 1;
   background: var(--is-warn, #ffc857);
 }
@@ -1237,6 +1329,11 @@ export default {
   border-color: var(--is-accent, #c8f542);
   background: var(--is-accent-soft, rgba(200, 245, 66, 0.15));
   color: var(--is-accent, #c8f542);
+}
+/* 名字列固定宽度后吸收剩余空间：数值列仍然贴右，只是名字与尺寸之间空一段 */
+.mod-ct__gap {
+  flex: 1 1 0;
+  min-width: 0;
 }
 /* 操作列固定不压缩，overflow:visible 防止齿轮被行裁掉；
  * margin-left:auto 让齿轮始终贴右 —— 名字列拖窄后多出的空间留在状态列之后，不会把齿轮挤到中间 */
