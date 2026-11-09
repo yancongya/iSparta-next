@@ -37,7 +37,7 @@
         v-for="col in columns"
         :key="col.key"
         class="mod-ct__c mod-ct__c--h"
-        :class="'mod-ct__c--h--' + col.key"
+        :class="['mod-ct__c--h--' + col.key, { 'is-resizing': resizingCol === col.key }]"
         :style="colStyle(col)"
         :data-col="col.key"
       >
@@ -51,6 +51,13 @@
           <span class="mod-ct__state-ico" aria-hidden="true"></span>
           <span class="mod-ct__state-txt">{{ $t(col.labelKey) }}</span>
         </span>
+        <!-- 右缘分隔条：拖动改列宽，双击恢复默认；stop 防止触发表头长按重排 -->
+        <span
+          class="mod-ct__resizer"
+          :title="$t('compColResizeHint')"
+          @mousedown.stop.prevent="startColumnResize($event, col)"
+          @dblclick.stop.prevent="resetColumnWidth(col)"
+        ></span>
       </div>
       <span class="mod-ct__c mod-ct__c--act"></span>
     </div>
@@ -151,7 +158,7 @@ import notice from '../../ui-next/notice'
 import hostAdapter from '../../util/host-env'
 import { OUTPUT_FORMATS, defaultOutputFormats } from '../../util/outputFormats'
 import {
-  columnOf, clampColumnWidth, loadColumnLayout
+  columnOf, clampColumnWidth, loadColumnLayout, saveColumnLayout
 } from '../../util/compTreeColumns'
 
 /** 渲染后合成的三种动图格式，顺序与 store 默认 outputFormat 一致 */
@@ -197,6 +204,7 @@ export default {
       /** 可配置列的顺序与宽度（名字+格式 / 勾选 / 齿轮是固定列，不入此表） */
       columnOrder: layout.order,
       columnWidths: layout.widths,
+      resizingCol: '',
       marquee: { active: false, moved: false, x: 0, y: 0, w: 0, h: 0, startX: 0, startY: 0 },
       suppressBlankClick: false,
       formats: FORMATS,
@@ -291,6 +299,7 @@ export default {
   },
   beforeDestroy () {
     this.unbindMarquee()
+    this.stopColumnResize()
     if (this.$root && this.$root.eventBus) {
       this.$root.eventBus.$off('comp-tree-refresh', this.refresh)
       this.$root.eventBus.$off('comp-tree-add-selected', this.emitAdd)
@@ -589,6 +598,41 @@ export default {
       if (this._suppressHeadClick) return
       if (col && col.sortKey) this.sortBy(col.sortKey)
     },
+    /**
+     * 表头右缘拖宽：与 Home.vue 面板分隔条同一范式（document 监听 + body class），
+     * 拖动只改内存宽度，松手才持久化，避免每帧写 storage。
+     */
+    startColumnResize (e, col) {
+      if (e.button !== 0) return
+      const startX = e.clientX
+      const startW = clampColumnWidth(col.key, this.columnWidths[col.key])
+      this.resizingCol = col.key
+      document.body.classList.add('is-column-resizing')
+      const onMove = (ev) => {
+        this.$set(this.columnWidths, col.key, clampColumnWidth(col.key, startW + ev.clientX - startX))
+      }
+      this._colResizeCleanup = () => {
+        window.removeEventListener('mousemove', onMove)
+        window.removeEventListener('mouseup', this.stopColumnResize)
+        document.body.classList.remove('is-column-resizing')
+        this.resizingCol = ''
+        saveColumnLayout({ order: this.columnOrder, widths: this.columnWidths })
+      }
+      window.addEventListener('mousemove', onMove)
+      window.addEventListener('mouseup', this.stopColumnResize)
+    },
+    stopColumnResize () {
+      const cleanup = this._colResizeCleanup
+      this._colResizeCleanup = null
+      if (cleanup) cleanup()
+    },
+    /** 双击分隔条：恢复该列出厂宽度 */
+    resetColumnWidth (col) {
+      const def = columnOf(col.key)
+      if (!def) return
+      this.$set(this.columnWidths, col.key, def.width)
+      saveColumnLayout({ order: this.columnOrder, widths: this.columnWidths })
+    },
     sortMark (key) {
       if (this.sortKey !== key) return ''
       return this.sortDir > 0 ? ' ↑' : ' ↓'
@@ -869,6 +913,31 @@ export default {
   gap: 4px;
   min-width: 0;
   cursor: default;
+}
+/* 列宽分隔条：默认隐形，hover / 拖拽中显示品牌色竖线 */
+.mod-ct__resizer {
+  position: absolute;
+  z-index: 3;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 7px;
+  cursor: col-resize;
+}
+.mod-ct__resizer::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  right: 2px;
+  width: 2px;
+  border-radius: 1px;
+  background: var(--is-accent, #c8f542);
+  opacity: 0;
+}
+.mod-ct__c--h:hover .mod-ct__resizer::after,
+.mod-ct__c--h.is-resizing .mod-ct__resizer::after {
+  opacity: 0.75;
 }
 /* 运行状态列（替代原帧数列）：完成态显示产物大小，整格可点击复制
  * 三段固定对齐：图标定宽靠左、状态文本左对齐、产物大小贴右并 tabular-nums，

@@ -220,6 +220,7 @@ module.exports = {
     "compColFps":"FPS",
     "compColFrames":"Frames",
     "compFormatToggle":"{fmt} output · click to toggle",
+    "compColResizeHint":"Drag to resize · double-click to reset",
     "compColState":"Status",
     "compStatePending":"Pending",
     "compStateCopy":"Click to copy output files (full paths above)",

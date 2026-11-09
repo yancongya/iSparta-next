@@ -220,6 +220,7 @@ module.exports = {
     "compColFps":"幀率",
     "compColFrames":"幀數",
     "compFormatToggle":"{fmt} 輸出 · 點擊切換",
+    "compColResizeHint":"拖動調整欄寬 · 雙擊恢復預設",
     "compColState":"狀態",
     "compStatePending":"待處理",
     "compStateCopy":"點擊複製產物（完整路徑見上方）",

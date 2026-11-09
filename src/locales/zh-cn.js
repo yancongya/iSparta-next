@@ -220,6 +220,7 @@ module.exports = {
     "compColFps":"帧率",
     "compColFrames":"帧数",
     "compFormatToggle":"{fmt} 输出 · 点击切换",
+    "compColResizeHint":"拖动调整列宽 · 双击恢复默认",
     "compColState":"状态",
     "compStatePending":"待处理",
     "compStateCopy":"点击复制产物（完整路径见上方）",
