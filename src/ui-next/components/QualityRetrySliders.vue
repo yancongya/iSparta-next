@@ -1,38 +1,74 @@
 <template>
   <div class="quality-retry-sliders">
     <p class="quality-retry-sliders__base">{{ $t('sizeLimitQualityBase', { quality: startQuality }) }}</p>
-    <label class="quality-retry-slider">
-      <span class="quality-retry-slider__head">
-        <span>{{ $t('sizeLimitTries') }}</span>
-        <span class="quality-retry-slider__value"><button type="button" class="is-info" :aria-label="$t('sizeLimitTries')" v-tip="$t('sizeLimitTriesTip')"><is-icon name="info" size="sm" /></button><b>{{ tries }} <small>{{ $t('sizeLimitUnitTimes') }}</small></b></span>
-      </span>
-      <input
-        type="range"
-        min="0"
+    <div class="quality-retry-sliders__row">
+      <span class="quality-retry-sliders__label">{{ $t('sizeLimitTries') }}</span>
+      <is-input
+        class="quality-retry-sliders__input"
+        type="number"
+        :value="draft !== null ? draft : displayTries"
+        :min="0"
         :max="triesMax"
-        :value="displayTries"
+        :step="1"
         :disabled="disabled"
         :aria-label="$t('sizeLimitTries')"
-        @input="$emit('tries-change', Number($event.target.value))"
+        @input="onDraftInput"
+        @blur="commitDraft"
+        @keyup.enter="commitDraft"
       />
-      <span class="quality-retry-slider__range"><span>0</span><span>{{ triesMax }}</span></span>
-    </label>
+      <span class="quality-retry-sliders__unit">{{ $t('sizeLimitUnitTimes') }}</span>
+      <span class="quality-retry-sliders__range">0–{{ triesMax }}</span>
+      <button type="button" class="is-info" :aria-label="$t('sizeLimitTries')" v-tip="$t('sizeLimitTriesTip')">
+        <is-icon name="info" size="sm" />
+      </button>
+    </div>
   </div>
 </template>
 
 <script>
 import { automaticRetryCount } from '../../util/sizeLimitConfig'
 
+/**
+ * 文件名沿用早期「范围滑块」时期的命名，现已改为纯整数输入框；
+ * 为避免牵连右侧输出设置与默认设置两处引用，不重命名文件。
+ * 数值范围始终由 sizeLimitConfig 的基准质量推导，不在组件内另写一套。
+ */
 export default {
   name: 'QualityRetrySliders',
   props: {
     startQuality: { type: Number, required: true },
     tries: { type: Number, required: true }
   },
+  data () {
+    return { draft: null }
+  },
+  watch: {
+    // 压缩质量一变，允许范围与显示值都要重算，旧草稿不能留到下次失焦提交
+    startQuality () { this.draft = null }
+  },
   computed: {
     disabled () { return this.startQuality <= 1 },
+    // 上限沿用原有逻辑：可降质的档位数 = 基准质量 - 1，最多 50。
+    // 基准由 effectiveQualityStart 给出（启用压缩取压缩质量，未启用取 100）。
     triesMax () { return Math.min(50, Math.max(0, this.startQuality - 1)) },
+    // 质量变化后旧次数可能越界，同一函数负责收敛到合法显示值
     displayTries () { return automaticRetryCount(this.startQuality, this.tries) }
+  },
+  methods: {
+    // 与大小阈值输入框同款草稿输入：允许清空/半成品，失焦或回车才提交
+    onDraftInput (raw) {
+      this.draft = String(raw == null ? '' : raw)
+    },
+    commitDraft () {
+      const raw = this.draft
+      this.draft = null
+      if (raw === null) return
+      const n = Number(String(raw).trim())
+      if (!isFinite(n)) return
+      // 纯整数 + 0…triesMax 的钳制全部交给已有的 automaticRetryCount，不另写一套范围判定
+      const next = automaticRetryCount(this.startQuality, Math.round(n))
+      if (next !== this.displayTries) this.$emit('tries-change', next)
+    }
   }
 }
 </script>
@@ -41,76 +77,48 @@ export default {
 .quality-retry-sliders {
   display: flex;
   flex-direction: column;
-  gap: var(--is-s-3);
+  gap: var(--is-s-2);
   width: 100%;
   min-width: 0;
 
   &__base {
-    grid-column: 1 / -1;
     margin: 0;
     color: var(--is-text-3);
     font-size: var(--is-fs-xs);
     line-height: 1.4;
   }
-}
 
-.quality-retry-slider {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  gap: var(--is-s-1);
-
-  &__head,
-  &__value,
-  &__range {
+  &__row {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    flex-wrap: wrap;
     gap: var(--is-s-2);
     min-width: 0;
   }
 
-  &__value { flex: none; }
-
-  &__head {
+  &__label {
     color: var(--is-text-2);
     font-size: var(--is-fs-sm);
-
-    b {
-      flex: none;
-      color: var(--is-accent);
-      font-family: var(--is-font-mono, ui-monospace, monospace);
-      font-size: var(--is-fs-base);
-      font-weight: var(--is-fw-semi);
-    }
-
-    small {
-      font-size: var(--is-fs-xs);
-      font-weight: var(--is-fw-regular);
-    }
+    font-weight: var(--is-fw-medium);
+    white-space: nowrap;
   }
 
-  &__head > span:first-child { font-weight: var(--is-fw-medium); }
+  // 纯整数输入框：定宽，避免被全局 .is-input 的 100% 宽拉成通栏
+  &__input {
+    width: 72px;
+    flex: none;
+  }
 
+  &__unit,
   &__range {
-    color: var(--is-text-3);
-    font-family: var(--is-font-mono, ui-monospace, monospace);
+    white-space: nowrap;
     font-size: var(--is-fs-xs);
+    color: var(--is-text-3);
   }
 
-  input[type='range'] {
-    display: block;
-    width: 100%;
-    min-width: 0;
-    margin: var(--is-s-1) 0;
-    accent-color: var(--is-accent);
-    cursor: pointer;
-
-    &:disabled {
-      cursor: not-allowed;
-      opacity: 0.45;
-    }
+  // 范围上限来自压缩质量基准，随设置实时变化
+  &__range {
+    font-family: var(--is-font-mono, ui-monospace, monospace);
   }
-
 }
 </style>
