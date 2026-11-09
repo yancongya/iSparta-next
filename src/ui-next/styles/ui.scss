@@ -2200,6 +2200,12 @@ body.is-column-resizing {
   user-select: none !important;
 }
 
+// CEP 合成树长按表头重排列顺序时的全局拖拽态（body 类必须落在全局样式里）
+body.is-ct-col-dragging {
+  cursor: grabbing !important;
+  user-select: none !important;
+}
+
 // 拖拽进行中关掉右栏 width 过渡，避免跟不上手
 body.is-column-resizing .ib-side {
   transition: none !important;

@@ -221,6 +221,8 @@ module.exports = {
     "compColFrames":"Frames",
     "compFormatToggle":"{fmt} output · click to toggle",
     "compColResizeHint":"Drag to resize · double-click to reset",
+    "compColOrderHint":"Long-press and drag to reorder · click to sort",
+    "compColPinnedHint":"Name & output formats (pinned column)",
     "compColState":"Status",
     "compStatePending":"Pending",
     "compStateCopy":"Click to copy output files (full paths above)",
