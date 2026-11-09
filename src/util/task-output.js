@@ -20,14 +20,18 @@ export function stateOf (process) {
   return 'pending'
 }
 
-/** 与任务列表状态点同一套图标 */
-export function statusIcon (process) {
-  switch (stateOf(process)) {
+/** 状态 → 图标（任务列表状态点与合成树状态列共用） */
+export function iconOfState (state) {
+  switch (state) {
     case 'done': return 'check-circle'
     case 'fail': return 'x-circle'
     case 'running': return 'loader'
     default: return 'clock'
   }
+}
+
+export function statusIcon (process) {
+  return iconOfState(stateOf(process))
 }
 
 /** 主产物路径（与 projectList 原 outputFilesOf 同语义，不含重试版本） */

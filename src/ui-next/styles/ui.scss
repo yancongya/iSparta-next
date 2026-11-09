@@ -1140,6 +1140,8 @@ body.is-scroll-locked {
   font-size: var(--is-fs-xs);
   line-height: 1.5;
   text-align: left;
+  /* 多行明细（产物路径逐行列出）保留换行，不再被折叠成一行 */
+  white-space: pre-line;
   white-space: pre-wrap;
   word-break: break-all;
   box-shadow: var(--is-shadow-md);

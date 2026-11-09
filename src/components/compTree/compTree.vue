@@ -1,6 +1,7 @@
 <!--
-  合成列表（CEP 特化）— 复用 PAG 列表式：表头全选/搜索 + 尺寸/帧率/帧数排序
-  无展开折叠；名称与搜索框同列；列溢出省略、hover 显示全文
+  合成列表（CEP 特化）— 复用 PAG 列表式：表头全选/搜索 + 尺寸/帧率排序
+  无展开折叠；名称与搜索框同列；末列是任务运行状态（完成态带产物大小，点击复制产物）
+  列溢出省略、hover 显示全文
 -->
 <template>
   <section
@@ -37,9 +38,7 @@
       <button type="button" class="mod-ct__c mod-ct__c--num" @click="sortBy('fps')">
         {{ $t('compColFps') }}{{ sortMark('fps') }}
       </button>
-      <button type="button" class="mod-ct__c mod-ct__c--num" @click="sortBy('frames')">
-        {{ $t('compColFrames') }}{{ sortMark('frames') }}
-      </button>
+      <span class="mod-ct__c mod-ct__c--state mod-ct__c--state-head">{{ $t('compColState') }}</span>
       <span class="mod-ct__c mod-ct__c--act"></span>
     </div>
 
@@ -82,7 +81,17 @@
         </span>
         <span class="mod-ct__c mod-ct__c--num" :title="sizeText(node)">{{ sizeText(node) }}</span>
         <span class="mod-ct__c mod-ct__c--num" :title="String(node.fps)">{{ node.fps | fps }}</span>
-        <span class="mod-ct__c mod-ct__c--num" :title="String(node.frames || 0)">{{ node.frames || 0 }}</span>
+        <button
+          type="button"
+          class="mod-ct__c mod-ct__c--state"
+          :class="'is-' + stateOf(node)"
+          v-tip="stateTipOf(node)"
+          :aria-label="stateTextOf(node)"
+          @click.stop="onStateClick(node)"
+        >
+          <is-icon :name="stateIconOf(node)" size="xs" />
+          <span class="mod-ct__state-txt">{{ stateTextOf(node) }}</span>
+        </button>
         <span class="mod-ct__c mod-ct__c--act">
           <button type="button" class="iconbtn" :title="$t('outputConfig')" @click.stop="$emit('configure', node)">
             <is-icon name="settings" size="sm" />
@@ -103,6 +112,12 @@
 import sourceAdapter, { normalizeCompNode } from '../../cep/comp-source'
 import IsCheckbox from '../../ui-next/components/ui/IsCheckbox.vue'
 import rightMenu from '../projectList/menu'
+import {
+  stateOf as taskStateOf, iconOfState, existingOutputFilesOf,
+  sizeTextOfFiles, sizeTipOfFiles
+} from '../../util/task-output'
+import notice from '../../ui-next/notice'
+import hostAdapter from '../../util/host-env'
 
 /** 渲染后合成的三种动图格式，顺序与 store 默认 outputFormat 一致 */
 const FORMATS = [
@@ -111,6 +126,10 @@ const FORMATS = [
   { key: 'WEBP', label: 'W' }
 ]
 const DEFAULT_FORMATS = FORMATS.map(function (f) { return f.key })
+/** mockup 模式的运行状态演示初值：完成 / 进行中 / 失败 / 待处理混排 */
+const MOCK_STATES = ['done', 'running', 'done', 'pending', 'fail', 'done']
+/** 完成态演示产物大小，与 MOCK_STATES 同索引；非完成态不显示 */
+const MOCK_SIZES = ['1.24 MB', '', '386.5 KB', '', '', '2.10 MB']
 /** mockup 模式的演示初值：混排激活/未激活，便于一眼看出两态差异 */
 const MOCK_FORMATS = [
   ['APNG', 'GIF', 'WEBP'],
@@ -405,6 +424,84 @@ export default {
         this._onMarqueeUp = null
       }
     },
+    /** 该合成对应的 store 任务；未加入任务返回 null */
+    taskOf (node) {
+      const i = this.taskIndexOf(node)
+      return i >= 0 ? this.storeItems()[i] : null
+    },
+    /**
+     * 运行状态：真实面板一律读 store 任务的 process.schedule（与任务列表同一判据），
+     * 未加入任务即待处理；仅 dev mockup 给确定性演示态，便于脱离 AE 看四种状态。
+     */
+    stateOf (node) {
+      if (typeof window !== 'undefined' && window.__ispartaMockup) {
+        const at = Math.abs(Number(node && node.index) || 0) % MOCK_STATES.length
+        return MOCK_STATES[at]
+      }
+      const task = this.taskOf(node)
+      return task ? taskStateOf(task.process) : 'pending'
+    },
+    stateIconOf (node) {
+      return iconOfState(this.stateOf(node))
+    },
+    stateSizeOf (node) {
+      if (typeof window !== 'undefined' && window.__ispartaMockup) {
+        const at = Math.abs(Number(node && node.index) || 0) % MOCK_SIZES.length
+        return MOCK_SIZES[at]
+      }
+      const task = this.taskOf(node)
+      return task ? sizeTextOfFiles(existingOutputFilesOf(task)) : ''
+    },
+    /** 列内短文本：状态 + 完成态产物大小；过长由 CSS 省略，hover 看完整信息 */
+    stateTextOf (node) {
+      const s = this.stateOf(node)
+      const label = s === 'done' ? this.$t('statDone')
+        : s === 'fail' ? this.$t('statFail')
+          : s === 'running' ? this.$t('statRunning') : this.$t('compStatePending')
+      if (s !== 'done') return label
+      const size = this.stateSizeOf(node)
+      return size ? label + ' · ' + size : label
+    },
+    /** hover 完整信息：不省略的状态 + 进度文案 + 逐文件产物路径与精确字节数 + 复制提示 */
+    stateTipOf (node) {
+      const lines = [this.stateTextOf(node)]
+      const task = this.taskOf(node)
+      if (task && task.process && task.process.text) lines.push(String(task.process.text))
+      if (this.stateOf(node) === 'done') {
+        if (typeof window !== 'undefined' && window.__ispartaMockup) {
+          lines.push('/mock/output/' + String((node && node.name) || 'comp') + ' — ' + this.stateSizeOf(node))
+        } else {
+          const tip = task ? sizeTipOfFiles(existingOutputFilesOf(task)) : ''
+          if (tip) lines.push(tip)
+        }
+      }
+      lines.push(this.$t('compStateCopy'))
+      return lines.join('\n')
+    },
+    /** 点击状态列复制产物：复用顶栏同一套宿主桥与通知文案 */
+    async onStateClick (node) {
+      if (this.stateOf(node) !== 'done') {
+        notice.info(this.$t('compStateNoOutput'))
+        return
+      }
+      // dev mockup 没有真实产物文件，只回放成功反馈以验证交互与文案
+      if (typeof window !== 'undefined' && window.__ispartaMockup) {
+        notice.success(this.$t('copyOutputSuccess', { count: 1 }))
+        return
+      }
+      const task = this.taskOf(node)
+      const files = task ? existingOutputFilesOf(task) : []
+      if (!files.length) {
+        notice.warning(this.$t('copyOutputFailed'), this.$t('noCompletedOutputFiles'))
+        return
+      }
+      let copied = false
+      try {
+        copied = await hostAdapter.copyFilesToClipboard(files)
+      } catch (e) { copied = false }
+      if (copied) notice.success(this.$t('copyOutputSuccess', { count: files.length }))
+      else notice.error(this.$t('copyOutputFailed'))
+    },
     sizeText (n) {
       return (n.width || 0) + '×' + (n.height || 0)
     },
@@ -684,6 +781,45 @@ export default {
 .mod-ct__c--num:hover {
   opacity: 0.8;
   text-decoration: underline;
+}
+/* 运行状态列（替代原帧数列）：完成态显示产物大小，整格可点击复制 */
+.mod-ct__c--state {
+  width: 104px;
+  flex: 0 1 104px;
+  min-width: 72px;
+  padding-right: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  text-align: right;
+  background: transparent;
+  border: 0;
+  color: var(--is-text-2, #8a8f8c);
+  font: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.mod-ct__c--state > :first-child { flex: 0 0 auto; }
+.mod-ct__c--state-head {
+  cursor: default;
+  color: inherit;
+}
+.mod-ct__c--state:not(.mod-ct__c--state-head):hover {
+  color: var(--is-accent, #c8f542);
+}
+.mod-ct__c--state:focus-visible {
+  outline: 1px solid var(--is-accent, #c8f542);
+  outline-offset: -2px;
+}
+.mod-ct__c--state.is-done { color: var(--is-ok, #3ddc97); }
+.mod-ct__c--state.is-running { color: var(--is-warn, #ffc857); }
+.mod-ct__c--state.is-fail { color: var(--is-bad, #ff5c5c); }
+.mod-ct__state-txt {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 .mod-ct__txt {
   flex: 1 1 0;
