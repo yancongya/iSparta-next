@@ -28,9 +28,14 @@
           :placeholder="$t('compTree') + ' / ' + $t('search')"
           spellcheck="false"
         />
-        <!-- 与行内三个格式子列等宽的占位，保证表头与数据列对齐 -->
-        <span class="mod-ct__fmts mod-ct__fmts--head" aria-hidden="true">
-          <span v-for="f in formats" :key="f.key" class="mod-ct__fmt-slot"></span>
+        <!-- 输出格式子列的表头：与行内 A/G/W 同宽同位，读作「名字列 + 格式」同一固定列 -->
+        <span class="mod-ct__fmts mod-ct__fmts--head" :title="$t('compColFormatHint')">
+          <span
+            v-for="f in formats"
+            :key="f.key"
+            class="mod-ct__fmt-slot"
+            aria-hidden="true"
+          >{{ f.label }}</span>
         </span>
       </span>
       <!-- 可配置列：顺序与宽度由 util/compTreeColumns 统一驱动，表头/行共用同一份 -->
@@ -59,7 +64,6 @@
           @click="onHeadClick(col)"
         >{{ $t(col.labelKey) }}{{ sortMark(col.sortKey) }}</button>
         <span v-else class="mod-ct__h-label">
-          <span class="mod-ct__state-ico" aria-hidden="true"></span>
           <span class="mod-ct__state-txt">{{ $t(col.labelKey) }}</span>
         </span>
         <!-- 右缘分隔条：拖动改列宽，双击恢复默认；stop 防止触发表头长按重排 -->
@@ -1032,16 +1036,17 @@ export default {
   padding-right: 8px;
   text-align: right;
 }
-/* 表头可配置列：宽度由 colStyle 注入，表头与行共用；右缘留给列宽分隔条 */
+/* 表头可配置列：宽度由 colStyle 注入，表头与行共用；右缘留给列宽分隔条。
+ * overflow 必须可见：分隔条要跨在列边界上（左右各半），否则被裁掉一半。 */
 .mod-ct__c--h {
   position: relative;
+  overflow: visible;
   display: inline-flex;
   align-items: center;
   justify-content: flex-end;
   padding-right: 8px;
   font-weight: 600;
 }
-.mod-ct__c--h--state { justify-content: flex-start; }
 .mod-ct__h-btn {
   flex: 1 1 auto;
   min-width: 0;
@@ -1066,16 +1071,18 @@ export default {
   align-items: center;
   gap: 4px;
   min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
   cursor: default;
 }
-/* 列宽分隔条：默认隐形，hover / 拖拽中显示品牌色竖线 */
+/* 列宽分隔条：跨在列边界上（左右各半），从哪一侧靠近都给 col-resize 光标 */
 .mod-ct__resizer {
   position: absolute;
   z-index: 3;
   top: 0;
-  right: 0;
+  right: -5px;
   bottom: 0;
-  width: 7px;
+  width: 11px;
   cursor: col-resize;
 }
 .mod-ct__resizer::after {
@@ -1083,7 +1090,7 @@ export default {
   position: absolute;
   top: 4px;
   bottom: 4px;
-  right: 2px;
+  right: 5px;
   width: 2px;
   border-radius: 1px;
   background: var(--is-accent, #c8f542);
@@ -1092,6 +1099,9 @@ export default {
 .mod-ct__c--h:hover .mod-ct__resizer::after,
 .mod-ct__c--h.is-resizing .mod-ct__resizer::after {
   opacity: 0.75;
+}
+.mod-ct__resizer:hover::after {
+  opacity: 1;
 }
 /* 长按重排：源列淡化，落点列显示插入竖线 */
 .mod-ct__c--h.is-dragging { opacity: 0.45; }
@@ -1108,15 +1118,15 @@ export default {
 .mod-ct__c--h.is-drop-before::before { left: 0; }
 .mod-ct__c--h.is-drop-after::after { right: 0; }
 /* 运行状态列（替代原帧数列）：完成态显示产物大小，整格可点击复制
- * 三段固定对齐：图标定宽靠左、状态文本左对齐、产物大小贴右并 tabular-nums，
- * 保证每行图标/文案/尺寸三个起点都是一条竖线（原先是整串右对齐，图标随文字宽度浮动）。 */
+ * 与尺寸 / 帧率同为「数值列」：整列（表头 + 内容）右对齐，右缘对齐成一条竖线，
+ * 长原因由省略号截断，hover 看全文。 */
 .mod-ct__c--state {
   padding-right: 8px;
   display: inline-flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: flex-end;
   gap: 4px;
-  text-align: left;
+  text-align: right;
   background: transparent;
   border: 0;
   color: var(--is-text-2, #8a8f8c);
@@ -1191,8 +1201,17 @@ export default {
   height: 18px;
   border-radius: 4px;
 }
+/* 表头里的格式子列：与行内按钮同尺寸，虚线框 + 弱化字重，标明下面三枚 A/G/W */
 .mod-ct__fmt-slot {
-  display: block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed var(--is-line, rgba(128, 128, 128, 0.35));
+  color: var(--is-text-2, #8a8f8c);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  opacity: 0.6;
 }
 .mod-ct__fmt {
   display: inline-flex;

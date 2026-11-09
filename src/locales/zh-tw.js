@@ -223,6 +223,7 @@ module.exports = {
     "compColResizeHint":"拖動調整欄寬 · 雙擊恢復預設",
     "compColOrderHint":"長按表頭拖動可調整欄順序 · 點擊切換排序",
     "compColPinnedHint":"名稱與輸出格式（固定欄，不參與調整）",
+    "compColFormatHint":"輸出格式子欄（隨名稱欄固定；行內 A / G / W 可點擊切換）",
     "compColState":"狀態",
     "compStatePending":"待處理",
     "compStateCopy":"點擊複製產物（完整路徑見上方）",

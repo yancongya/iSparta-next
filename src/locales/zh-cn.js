@@ -223,6 +223,7 @@ module.exports = {
     "compColResizeHint":"拖动调整列宽 · 双击恢复默认",
     "compColOrderHint":"长按表头拖动可调整列顺序 · 点击切换排序",
     "compColPinnedHint":"名称与输出格式（固定列，不参与调整）",
+    "compColFormatHint":"输出格式子列（随名称列固定；行内 A / G / W 可点击切换）",
     "compColState":"状态",
     "compStatePending":"待处理",
     "compStateCopy":"点击复制产物（完整路径见上方）",

@@ -223,6 +223,7 @@ module.exports = {
     "compColResizeHint":"Drag to resize · double-click to reset",
     "compColOrderHint":"Long-press and drag to reorder · click to sort",
     "compColPinnedHint":"Name & output formats (pinned column)",
+    "compColFormatHint":"Output format sub-columns (pinned with the name column; click A / G / W in a row to toggle)",
     "compColState":"Status",
     "compStatePending":"Pending",
     "compStateCopy":"Click to copy output files (full paths above)",
