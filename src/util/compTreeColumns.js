@@ -20,10 +20,13 @@ export const CT_PINNED_MIN = 180
 export const CT_PINNED_MAX = 2000
 
 export const CT_COLUMNS = [
-  { key: 'size', labelKey: 'compColSize', sortKey: 'width', width: 64, min: 48, max: 180 },
-  { key: 'fps', labelKey: 'compColFps', sortKey: 'fps', width: 64, min: 48, max: 180 },
-  // 状态列有三段内容（图标 / 文案 / 产物大小），下限按不挤掉状态文案来定
-  { key: 'state', labelKey: 'compColState', sortKey: '', width: 112, min: 84, max: 240 }
+  // 下限按「还能读出内容」的最小值给：尺寸列 36px 够放「1920…」的省略形式，
+  // 帧率列 32px 够放两位数，状态列 56px 够放图标 + 两三个字。
+  // 之前 48 / 48 / 84 的下限太宽，拖窄时指针走了 40px 列只动 16px，
+  // 手感像「压不动」，只剩「拖宽」有反应。
+  { key: 'size', labelKey: 'compColSize', sortKey: 'width', width: 64, min: 36, max: 180 },
+  { key: 'fps', labelKey: 'compColFps', sortKey: 'fps', width: 64, min: 32, max: 180 },
+  { key: 'state', labelKey: 'compColState', sortKey: '', width: 112, min: 56, max: 240 }
 ]
 
 const BY_KEY = {}

@@ -22,7 +22,10 @@
       </span>
       <span
         class="mod-ct__c mod-ct__c--name mod-ct__c--name-h"
-        :class="{ 'is-resizing': pinnedResizing }"
+        :class="{
+          'is-resizing': pinnedResizing,
+          'is-at-limit': pinnedResizing && !!colLimit
+        }"
         :style="nameColStyle"
         :title="$t('compColPinnedHint')"
       >
@@ -33,15 +36,6 @@
           :placeholder="$t('compTree') + ' / ' + $t('search')"
           spellcheck="false"
         />
-        <!-- 输出格式子列的表头：与行内 A/G/W 同宽同位，读作「名字列 + 格式」同一固定列 -->
-        <span class="mod-ct__fmts mod-ct__fmts--head" :title="$t('compColFormatHint')">
-          <span
-            v-for="f in formats"
-            :key="f.key"
-            class="mod-ct__fmt-slot"
-            aria-hidden="true"
-          >{{ f.label }}</span>
-        </span>
         <!-- 固定列不能拖顺序，但宽度可调：把手与普通列同一套（跨在边界上） -->
         <span
           class="mod-ct__resizer"
@@ -59,6 +53,7 @@
           'mod-ct__c--h--' + col.key,
           {
             'is-resizing': resizingCol === col.key,
+            'is-at-limit': resizingCol === col.key && !!colLimit,
             'is-dragging': dragCol === col.key,
             'is-drop-before': dropTarget && dropTarget.key === col.key && dropTarget.side === 'before',
             'is-drop-after': dropTarget && dropTarget.key === col.key && dropTarget.side === 'after'
@@ -112,8 +107,9 @@
         <span class="mod-ct__c mod-ct__c--name" :style="nameColStyle" :title="titleOf(node)">
           <img class="mod-ct__ico" :src="compIcon" alt="" width="16" height="16" />
           <span class="mod-ct__txt">{{ displayNameOf(node) }}</span>
-          <!-- 名字列右对齐的三个输出格式子列：固定宽度、不可压缩，名字先让位省略 -->
-          <span class="mod-ct__fmts">
+          <!-- 名字列右对齐的三个输出格式子列：固定宽度、不可压缩，名字先让位省略；
+               与名字同属表头搜索栏那一列，不单独成列 -->
+          <span class="mod-ct__fmts" :title="$t('compColFormatHint')">
             <button
               v-for="f in formats"
               :key="f.key"
@@ -256,6 +252,8 @@ export default {
       nameWidth: layout.name,
       resizingCol: '',
       pinnedResizing: false,
+      /** 拖动中已顶到 min / max：把分隔线换成警示色，避免「拖了没反应」 */
+      colLimit: '',
       /** 长按拖拽中的列与落点（表头与行都按 columnOrder 渲染，重排即时生效） */
       dragCol: '',
       dropTarget: null,
@@ -740,15 +738,26 @@ export default {
       const max = this.maxPinnedWidth()
       this.pinnedResizing = true
       this.resizingCol = ''
+      this.colLimit = ''
       document.body.classList.add('is-column-resizing')
+      // 自适应状态下 nameWidth 是 null，用它当基准会把宽度算成 0，这里统一用实测宽
+      let last = startW
       const onMove = (ev) => {
-        this.nameWidth = clampPinnedWidth(startW + ev.clientX - startX, max)
+        const next = clampPinnedWidth(startW + ev.clientX - startX, max)
+        const w = next == null ? startW : next
+        const pushed = Math.abs(ev.clientX - startX) > 1
+        this.colLimit = pushed && Math.round(w) === Math.round(last)
+          ? (ev.clientX < startX ? 'min' : 'max')
+          : ''
+        this.nameWidth = next
+        last = w
       }
       this._colResizeCleanup = () => {
         window.removeEventListener('mousemove', onMove)
         window.removeEventListener('mouseup', this.stopColumnResize)
         document.body.classList.remove('is-column-resizing')
         this.pinnedResizing = false
+        this.colLimit = ''
         this.saveLayout()
       }
       window.addEventListener('mousemove', onMove)
@@ -771,17 +780,27 @@ export default {
     startColumnResize (e, col) {
       if (e.button !== 0) return
       const startX = e.clientX
-      const startW = clampColumnWidth(col.key, this.columnWidths[col.key])
+      const cell = e.currentTarget && e.currentTarget.parentElement
+      // 基准取实测宽度：列被 flex 压过时存储值会大于实际，用存储值会让指针与列宽脱节
+      const measured = cell ? Math.round(cell.getBoundingClientRect().width) : 0
+      const startW = measured > 0 ? measured : clampColumnWidth(col.key, this.columnWidths[col.key])
       this.resizingCol = col.key
+      this.colLimit = ''
       document.body.classList.add('is-column-resizing')
       const onMove = (ev) => {
-        this.$set(this.columnWidths, col.key, clampColumnWidth(col.key, startW + ev.clientX - startX))
+        const cur = clampColumnWidth(col.key, this.columnWidths[col.key])
+        const next = clampColumnWidth(col.key, startW + ev.clientX - startX)
+        const pushed = Math.abs(ev.clientX - startX) > 1
+        // 已到边界还在同方向推：给出「到底了」的视觉反馈，而不是静默无变化
+        this.colLimit = pushed && next === cur ? (ev.clientX < startX ? 'min' : 'max') : ''
+        this.$set(this.columnWidths, col.key, next)
       }
       this._colResizeCleanup = () => {
         window.removeEventListener('mousemove', onMove)
         window.removeEventListener('mouseup', this.stopColumnResize)
         document.body.classList.remove('is-column-resizing')
         this.resizingCol = ''
+        this.colLimit = ''
         this.saveLayout()
       }
       window.addEventListener('mousemove', onMove)
@@ -1190,6 +1209,12 @@ export default {
 .mod-ct__resizer:hover::after {
   opacity: 1;
 }
+/* 已顶到最小 / 最大宽度：分隔线转警示色，明确「到头了」，不是拖拽失灵 */
+.mod-ct__c--h.is-at-limit .mod-ct__resizer::after,
+.mod-ct__c--name-h.is-at-limit .mod-ct__resizer::after {
+  opacity: 1;
+  background: var(--is-warn, #ffc857);
+}
 /* 长按重排：源列淡化，落点列显示插入竖线 */
 .mod-ct__c--h.is-dragging { opacity: 0.45; }
 .mod-ct__c--h.is-drop-before::before,
@@ -1280,25 +1305,12 @@ export default {
   margin-left: auto;
   padding-left: 6px;
 }
-.mod-ct__fmt,
-.mod-ct__fmt-slot {
+.mod-ct__fmt {
   box-sizing: border-box;
   flex: 0 0 auto;
   width: 18px;
   height: 18px;
   border-radius: 4px;
-}
-/* 表头里的格式子列：与行内按钮同尺寸，虚线框 + 弱化字重，标明下面三枚 A/G/W */
-.mod-ct__fmt-slot {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px dashed var(--is-line, rgba(128, 128, 128, 0.35));
-  color: var(--is-text-2, #8a8f8c);
-  font-size: 10px;
-  font-weight: 700;
-  line-height: 1;
-  opacity: 0.6;
 }
 .mod-ct__fmt {
   display: inline-flex;
