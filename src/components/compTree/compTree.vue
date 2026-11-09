@@ -20,7 +20,12 @@
           <is-checkbox :value="allSelected" :readonly="true" />
         </span>
       </span>
-      <span class="mod-ct__c mod-ct__c--name" :title="$t('compColPinnedHint')">
+      <span
+        class="mod-ct__c mod-ct__c--name mod-ct__c--name-h"
+        :class="{ 'is-resizing': pinnedResizing }"
+        :style="nameColStyle"
+        :title="$t('compColPinnedHint')"
+      >
         <input
           v-model="keyword"
           type="search"
@@ -37,6 +42,13 @@
             aria-hidden="true"
           >{{ f.label }}</span>
         </span>
+        <!-- 固定列不能拖顺序，但宽度可调：把手与普通列同一套（跨在边界上） -->
+        <span
+          class="mod-ct__resizer"
+          :title="$t('compColResizeHint')"
+          @mousedown.stop.prevent="startPinnedResize"
+          @dblclick.stop.prevent="resetPinnedWidth"
+        ></span>
       </span>
       <!-- 可配置列：顺序与宽度由 util/compTreeColumns 统一驱动，表头/行共用同一份 -->
       <div
@@ -97,7 +109,7 @@
             <is-checkbox :value="!!selectedMap[node.id]" :readonly="true" />
           </span>
         </span>
-        <span class="mod-ct__c mod-ct__c--name" :title="titleOf(node)">
+        <span class="mod-ct__c mod-ct__c--name" :style="nameColStyle" :title="titleOf(node)">
           <img class="mod-ct__ico" :src="compIcon" alt="" width="16" height="16" />
           <span class="mod-ct__txt">{{ displayNameOf(node) }}</span>
           <!-- 名字列右对齐的三个输出格式子列：固定宽度、不可压缩，名字先让位省略 -->
@@ -173,7 +185,8 @@ import notice from '../../ui-next/notice'
 import hostAdapter from '../../util/host-env'
 import { OUTPUT_FORMATS, defaultOutputFormats } from '../../util/outputFormats'
 import {
-  columnOf, clampColumnWidth, loadColumnLayout, saveColumnLayout, moveColumn
+  columnOf, clampColumnWidth, clampPinnedWidth, CT_PINNED_MIN,
+  loadColumnLayout, saveColumnLayout, moveColumn
 } from '../../util/compTreeColumns'
 
 /** 表头长按进入列重排的阈值（ms） */
@@ -239,7 +252,10 @@ export default {
       /** 可配置列的顺序与宽度（名字+格式 / 勾选 / 齿轮是固定列，不入此表） */
       columnOrder: layout.order,
       columnWidths: layout.widths,
+      /** pinned 首列显式宽度（null = 自适应剩余空间）；只影响宽度，不影响顺序 */
+      nameWidth: layout.name,
       resizingCol: '',
+      pinnedResizing: false,
       /** 长按拖拽中的列与落点（表头与行都按 columnOrder 渲染，重排即时生效） */
       dragCol: '',
       dropTarget: null,
@@ -255,6 +271,16 @@ export default {
     /** 表头与每一行共用同一份列模型，保证顺序与宽度永远一致 */
     columns () {
       return this.columnOrder.map(columnOf).filter(Boolean)
+    },
+    /**
+     * pinned 首列（名字 + 输出格式）宽度：未拖过就吃满剩余空间；
+     * 拖过按显式宽度渲染。窗口变窄时**先压这列**（shrink 权重 100），
+     * 尺寸/帧率/状态保持用户设的宽度，压到下限后才轮到它们收窄。
+     */
+    nameColStyle () {
+      const w = clampPinnedWidth(this.nameWidth)
+      if (w == null) return { flex: '1 1 0' }
+      return { width: w + 'px', flex: '0 100 ' + w + 'px', minWidth: CT_PINNED_MIN + 'px' }
     },
     marqueeStyle () {
       return {
@@ -680,6 +706,59 @@ export default {
       const w = clampColumnWidth(col.key, this.columnWidths[col.key])
       return { width: w + 'px', flex: '0 1 ' + w + 'px', minWidth: col.min + 'px' }
     },
+    /** 持久化整份布局（列顺序 + 各列宽度 + pinned 显式宽度） */
+    saveLayout () {
+      saveColumnLayout({
+        order: this.columnOrder,
+        widths: this.columnWidths,
+        name: this.nameWidth
+      })
+    },
+    /**
+     * pinned 首列能拉到多宽：当前宽度 + 表头剩余空闲。
+     * 拖动过程中 pinned 列与空闲空间此消彼长，该值保持不变，故只需在按下时算一次。
+     */
+    maxPinnedWidth () {
+      const head = this.$el && this.$el.querySelector('.mod-ct__head')
+      const cell = head && head.querySelector('.mod-ct__c--name')
+      if (!head || !cell) return CT_PINNED_MIN
+      const rect = head.getBoundingClientRect()
+      const cs = typeof window !== 'undefined' ? window.getComputedStyle(head) : null
+      const inner = rect.width - (cs ? (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0) : 0)
+      let used = 0
+      const kids = head.children
+      for (let i = 0; i < kids.length; i++) used += kids[i].getBoundingClientRect().width
+      return Math.round(cell.getBoundingClientRect().width + Math.max(0, inner - used))
+    },
+    /** pinned 首列拖宽：与普通列同一套 document 监听 + body class，松手才落盘 */
+    startPinnedResize (e) {
+      if (e.button !== 0) return
+      const cell = e.currentTarget && e.currentTarget.parentElement
+      const startX = e.clientX
+      const startW = cell ? cell.getBoundingClientRect().width : 0
+      if (!startW) return
+      const max = this.maxPinnedWidth()
+      this.pinnedResizing = true
+      this.resizingCol = ''
+      document.body.classList.add('is-column-resizing')
+      const onMove = (ev) => {
+        this.nameWidth = clampPinnedWidth(startW + ev.clientX - startX, max)
+      }
+      this._colResizeCleanup = () => {
+        window.removeEventListener('mousemove', onMove)
+        window.removeEventListener('mouseup', this.stopColumnResize)
+        document.body.classList.remove('is-column-resizing')
+        this.pinnedResizing = false
+        this.saveLayout()
+      }
+      window.addEventListener('mousemove', onMove)
+      window.addEventListener('mouseup', this.stopColumnResize)
+    },
+    /** 双击 pinned 把手：恢复自适应（重新吃满剩余空间） */
+    resetPinnedWidth () {
+      this.nameWidth = null
+      this.saveLayout()
+    },
     /** 表头点击仍走原有的数据排序；长按重排时抑制这次 click */
     onHeadClick (col) {
       if (this._suppressHeadClick) return
@@ -703,7 +782,7 @@ export default {
         window.removeEventListener('mouseup', this.stopColumnResize)
         document.body.classList.remove('is-column-resizing')
         this.resizingCol = ''
-        saveColumnLayout({ order: this.columnOrder, widths: this.columnWidths })
+        this.saveLayout()
       }
       window.addEventListener('mousemove', onMove)
       window.addEventListener('mouseup', this.stopColumnResize)
@@ -718,7 +797,7 @@ export default {
       const def = columnOf(col.key)
       if (!def) return
       this.$set(this.columnWidths, col.key, def.width)
-      saveColumnLayout({ order: this.columnOrder, widths: this.columnWidths })
+      this.saveLayout()
     },
     /** 表头长按 ~320ms 进入列重排；短点击仍由 onHeadClick 走数据排序 */
     onHeadMouseDown (e, col) {
@@ -761,7 +840,7 @@ export default {
       this.cancelHeadPress()
       if (reorder && target && target.key !== from) {
         this.columnOrder = moveColumn(this.columnOrder, from, target.key, target.side)
-        saveColumnLayout({ order: this.columnOrder, widths: this.columnWidths })
+        this.saveLayout()
       }
     },
     cancelHeadPress () {
@@ -1032,6 +1111,12 @@ export default {
   gap: 6px;
   padding-right: 8px;
 }
+/* 表头那格要露出跨边界的列宽把手（名字列同样可拖宽，只是不能拖顺序） */
+.mod-ct__c--name-h {
+  /* 定位基准：把手按本格右缘 -5px 摆放，不能落到 .mod-ct 上 */
+  position: relative;
+  overflow: visible;
+}
 .mod-ct__c--num {
   padding-right: 8px;
   text-align: right;
@@ -1097,7 +1182,9 @@ export default {
   opacity: 0;
 }
 .mod-ct__c--h:hover .mod-ct__resizer::after,
-.mod-ct__c--h.is-resizing .mod-ct__resizer::after {
+.mod-ct__c--h.is-resizing .mod-ct__resizer::after,
+.mod-ct__c--name-h:hover .mod-ct__resizer::after,
+.mod-ct__c--name-h.is-resizing .mod-ct__resizer::after {
   opacity: 0.75;
 }
 .mod-ct__resizer:hover::after {
@@ -1243,10 +1330,12 @@ export default {
   background: var(--is-accent-soft, rgba(200, 245, 66, 0.15));
   color: var(--is-accent, #c8f542);
 }
-/* 操作列固定不压缩，overflow:visible 防止齿轮被行裁掉 */
+/* 操作列固定不压缩，overflow:visible 防止齿轮被行裁掉；
+ * margin-left:auto 让齿轮始终贴右 —— 名字列拖窄后多出的空间留在状态列之后，不会把齿轮挤到中间 */
 .mod-ct__c--act {
   width: 32px;
   flex: 0 0 32px;
+  margin-left: auto;
   overflow: visible;
   display: flex;
   align-items: center;
