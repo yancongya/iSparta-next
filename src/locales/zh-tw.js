@@ -217,6 +217,7 @@ module.exports = {
     "compColSize":"尺寸",
     "compColFps":"幀率",
     "compColFrames":"幀數",
+    "compFormatToggle":"{fmt} 輸出 · 點擊切換",
     "search":"搜尋",
     "compTreeOpen":"合成樹",
     "compTreeAdd":"加入任務（{n}）",

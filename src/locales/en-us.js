@@ -217,6 +217,7 @@ module.exports = {
     "compColSize":"Size",
     "compColFps":"FPS",
     "compColFrames":"Frames",
+    "compFormatToggle":"{fmt} output · click to toggle",
     "search":"Search",
     "compTreeOpen":"Comps",
     "compTreeAdd":"Add to list ({n})",

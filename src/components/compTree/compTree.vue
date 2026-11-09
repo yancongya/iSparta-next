@@ -26,6 +26,10 @@
           :placeholder="$t('compTree') + ' / ' + $t('search')"
           spellcheck="false"
         />
+        <!-- 与行内三个格式子列等宽的占位，保证表头与数据列对齐 -->
+        <span class="mod-ct__fmts mod-ct__fmts--head" aria-hidden="true">
+          <span v-for="f in formats" :key="f.key" class="mod-ct__fmt-slot"></span>
+        </span>
       </span>
       <button type="button" class="mod-ct__c mod-ct__c--num" @click="sortBy('width')">
         {{ $t('compColSize') }}{{ sortMark('width') }}
@@ -62,6 +66,19 @@
         <span class="mod-ct__c mod-ct__c--name" :title="titleOf(node)">
           <img class="mod-ct__ico" :src="compIcon" alt="" width="16" height="16" />
           <span class="mod-ct__txt">{{ displayNameOf(node) }}</span>
+          <!-- 名字列右对齐的三个输出格式子列：固定宽度、不可压缩，名字先让位省略 -->
+          <span class="mod-ct__fmts">
+            <button
+              v-for="f in formats"
+              :key="f.key"
+              type="button"
+              class="mod-ct__fmt"
+              :class="{ 'is-on': isFormatOn(node, f.key) }"
+              :title="$t('compFormatToggle', { fmt: f.key })"
+              :aria-pressed="isFormatOn(node, f.key) ? 'true' : 'false'"
+              @click.stop="toggleFormat(node, f.key)"
+            >{{ f.label }}</button>
+          </span>
         </span>
         <span class="mod-ct__c mod-ct__c--num" :title="sizeText(node)">{{ sizeText(node) }}</span>
         <span class="mod-ct__c mod-ct__c--num" :title="String(node.fps)">{{ node.fps | fps }}</span>
@@ -87,6 +104,23 @@ import sourceAdapter, { normalizeCompNode } from '../../cep/comp-source'
 import IsCheckbox from '../../ui-next/components/ui/IsCheckbox.vue'
 import rightMenu from '../projectList/menu'
 
+/** 渲染后合成的三种动图格式，顺序与 store 默认 outputFormat 一致 */
+const FORMATS = [
+  { key: 'APNG', label: 'A' },
+  { key: 'GIF', label: 'G' },
+  { key: 'WEBP', label: 'W' }
+]
+const DEFAULT_FORMATS = FORMATS.map(function (f) { return f.key })
+/** mockup 模式的演示初值：混排激活/未激活，便于一眼看出两态差异 */
+const MOCK_FORMATS = [
+  ['APNG', 'GIF', 'WEBP'],
+  ['APNG'],
+  ['APNG', 'WEBP'],
+  ['GIF'],
+  [],
+  ['APNG', 'GIF']
+]
+
 export default {
   name: 'CompTree',
   components: { IsCheckbox },
@@ -108,6 +142,9 @@ export default {
       sortDir: 1,
       marquee: { active: false, moved: false, x: 0, y: 0, w: 0, h: 0, startX: 0, startY: 0 },
       suppressBlankClick: false,
+      formats: FORMATS,
+      /** 未加入任务（或用户刚切换）的格式状态，键为 node.id */
+      formatMap: {},
       compIcon: (http ? '/icons/' : './icons/') + 'pag-comp.png',
     }
   },
@@ -462,8 +499,55 @@ export default {
       this.$set(this.selectedMap, node.id, !this.selectedMap[node.id])
       this.emitSelection()
     },
+    /**
+     * 该合成渲染后要输出的动图格式。
+     * 优先级：树内切换过的本地状态 > 已加入任务的 options.outputFormat > 出厂默认。
+     * 与右键菜单共用 taskIndexOf 的「index:name」匹配键，不另写一套判定。
+     */
+    formatsOf (node) {
+      if (!node) { return DEFAULT_FORMATS }
+      const local = this.formatMap[node.id]
+      if (local) { return local }
+      // mockup 模式给一组确定性演示初值（含全关/单选/多选），真实面板不走这里
+      if (typeof window !== 'undefined' && window.__ispartaMockup) {
+        return MOCK_FORMATS[Math.abs(Number(node.index) || 0) % MOCK_FORMATS.length]
+      }
+      const i = this.taskIndexOf(node)
+      if (i >= 0) {
+        const it = this.storeItems()[i]
+        const fmt = it && it.options && it.options.outputFormat
+        if (Array.isArray(fmt)) { return fmt }
+      }
+      return DEFAULT_FORMATS
+    },
+    isFormatOn (node, key) {
+      return this.formatsOf(node).indexOf(key) >= 0
+    },
+    /** 点击小图标切换该格式的激活态；已加入任务时同步写回 store */
+    toggleFormat (node, key) {
+      try {
+        if (this.$store && this.$store.getters && this.$store.getters.getterLocked) { return }
+      } catch (e) { /* 无 store 时只维护本地状态 */ }
+      const cur = this.formatsOf(node).slice()
+      const at = cur.indexOf(key)
+      if (at >= 0) { cur.splice(at, 1) } else { cur.push(key) }
+      // 固定 APNG → GIF → WEBP 顺序，不按点击先后乱排
+      const next = DEFAULT_FORMATS.filter(function (k) { return cur.indexOf(k) >= 0 })
+      this.$set(this.formatMap, node.id, next)
+      const i = this.taskIndexOf(node)
+      if (i >= 0 && this.$store && this.$store.dispatch) {
+        this.$store.dispatch('editOptionsAt', { index: i, patch: { outputFormat: next.slice() } })
+      }
+      this.$emit('format-change', { node: node, formats: next.slice() })
+    },
     emitAdd () {
-      const items = sourceAdapter.toItems(this.selectedNodes)
+      const nodes = this.selectedNodes
+      const items = sourceAdapter.toItems(nodes)
+      // 树里切换过的格式要带进任务，避免加入后被全局默认覆盖
+      for (let i = 0; i < items.length; i++) {
+        if (!items[i].options) { items[i].options = {} }
+        items[i].options.outputFormat = this.formatsOf(nodes[i]).slice()
+      }
       this.$emit('add', items)
     },
     /** 双击合成行：在 AE 中定位/打开该合成 */
@@ -614,6 +698,56 @@ export default {
   flex: 0 0 auto;
   display: block;
 }
+/* 名字列右侧的三个输出格式子列：固定宽度、右对齐、名字再长也不挤占 */
+.mod-ct__fmts {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  padding-left: 6px;
+}
+.mod-ct__fmt,
+.mod-ct__fmt-slot {
+  box-sizing: border-box;
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+}
+.mod-ct__fmt-slot {
+  display: block;
+}
+.mod-ct__fmt {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid var(--is-line, rgba(128, 128, 128, 0.35));
+  background: transparent;
+  color: var(--is-text-2, #8a8f8c);
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  opacity: 0.42;
+  cursor: pointer;
+  user-select: none;
+}
+.mod-ct__fmt:hover {
+  opacity: 0.85;
+  border-color: var(--is-border-hi, rgba(128, 128, 128, 0.6));
+}
+.mod-ct__fmt:focus-visible {
+  outline: 1px solid var(--is-accent, #c8f542);
+  outline-offset: 1px;
+}
+.mod-ct__fmt.is-on {
+  opacity: 1;
+  border-color: var(--is-accent, #c8f542);
+  background: var(--is-accent-soft, rgba(200, 245, 66, 0.15));
+  color: var(--is-accent, #c8f542);
+}
 /* 操作列固定不压缩，overflow:visible 防止齿轮被行裁掉 */
 .mod-ct__c--act {
   width: 32px;
@@ -644,7 +778,9 @@ export default {
   color: var(--is-accent);
 }
 .mod-ct__search {
-  width: 100%;
+  /* 表头右侧也有等宽的格式占位，搜索框必须可收缩 */
+  flex: 1 1 0;
+  width: auto;
   min-width: 0;
   height: 22px;
   border: 1px solid var(--is-line, rgba(128, 128, 128, 0.35));
