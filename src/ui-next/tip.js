@@ -66,7 +66,9 @@ function show (el, binding) {
 export default {
   bind (el, binding) {
     el._tip = {
-      enter: () => show(el, binding),
+      // 存引用而非闭包捕获初次 binding：文案会随任务状态/产物大小变化
+      binding: binding,
+      enter: () => show(el, el._tip.binding),
       leave: hide
     }
     el.addEventListener('mouseenter', el._tip.enter)
@@ -75,6 +77,8 @@ export default {
     el.addEventListener('focusout', el._tip.leave)
   },
   componentUpdated (el, binding) {
+    // 更新 binding：否则 hover 一直显示首帧文案（合成树状态列会一直停在「待处理」）
+    if (el._tip) el._tip.binding = binding
     // 文案变化时若正显示则重算位置
     if (host && host.classList.contains(NS + '--show')) hide()
   },
