@@ -42,7 +42,9 @@ commits: e100612..0d232bb
 3. 从有效质量开始重压（质量压缩关闭时为 100，开启时为设置值），按尝试次数将质量均匀分配到 Q1 → 恢复母版 → `apngCompress`（WEBP 只重新运行 cwebp）→ 重导出该格式 → 再测。
 4. 重试过程覆盖旧结果并清理历史重试版本；达标任务以成功状态结束。达到 `maxTries` 仍超限时保留最后产物、显示超限信息，并以失败状态结束。
 
-**UI**：`setting.vue` 单任务面板 + `globalSetting.vue` 默认值；阈值区只显示大小上限和两个联动滑块；三语文案。单任务修改必须保留到 CEP 转换阶段，不能被全局默认值覆盖。
+**UI**：`setting.vue` 单任务面板 + `globalSetting.vue` 默认值；阈值区显示大小上限（数字输入 + MB/KB 切换）与「最多重试」**纯整数输入框**，不再使用滑块。输入框上限由 `effectiveQualityStart` 给出的基准质量推导（`startQuality - 1`，封顶 50），越界与小数一律由 `automaticRetryCount` 收敛；两处面板共用 `QualityRetrySliders.vue`（历史命名，实为整数输入框）。三语文案。单任务修改必须保留到 CEP 转换阶段，不能被全局默认值覆盖。
+
+**默认输出格式**：`globalSetting.options.outputFormat` 是唯一真相源，`src/util/outputFormats.js` 负责常量、归一化、读取与缓存失效。默认设置面板在输出路径上方提供 APNG / GIF / WEBP 勾选（至少保留一种），保存后广播 `default-formats-changed` 让 CEP 合成树图标初值即时刷新；桌面新任务、拖拽导入、CEP 合成任务都克隆该字段，已有任务保留各自选择。
 
 ## [S3] Out of Scope
 
