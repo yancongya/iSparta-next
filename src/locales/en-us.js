@@ -226,6 +226,7 @@ module.exports = {
     "compColMenuReset":"Reset column width",
     "compColMenuFit":"Fit to remaining space",
     "compColNameHint":"Drag the right edge to resize the name column · right-click to fit again",
+    "compRowDblHint":"Double-click to open output settings",
     "compColPinnedHint":"Name & output formats (auto width, not adjustable)",
     "compColFormatHint":"Output format sub-columns (pinned with the name column; click A / G / W in a row to toggle)",
     "compColState":"Status",

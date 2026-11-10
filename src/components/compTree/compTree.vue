@@ -2,7 +2,7 @@
   合成列表（CEP 特化）— 复用 PAG 列表式：表头全选/搜索 + 尺寸/帧率排序
   无展开折叠；名称与搜索框同列；末列是任务运行状态：列内只显示最新一条
   （失败/中止给原因、进行中给进度），完成态直接留给产物大小；hover 看全文，点击复制产物
-  列溢出省略、hover 显示全文
+  行末不再有齿轮列：双击整行打开该合成的输出设置（定位合成在右键菜单里）
 -->
 <template>
   <section
@@ -81,7 +81,6 @@
           @mousedown.stop.prevent="startColumnResize($event, col)"
         ></span>
       </div>
-      <span class="mod-ct__c mod-ct__c--act"></span>
     </div>
 
     <div v-if="!rows.length" class="mod-ct__empty">
@@ -154,11 +153,6 @@
             <span v-if="stateSizeOf(node)" class="mod-ct__state-size">{{ stateSizeOf(node) }}</span>
           </button>
         </template>
-        <span class="mod-ct__c mod-ct__c--act">
-          <button type="button" class="iconbtn" :title="$t('outputConfig')" @click.stop="$emit('configure', node)">
-            <is-icon name="settings" size="sm" />
-          </button>
-        </span>
       </li>
     </ul>
     <div
@@ -731,12 +725,13 @@ export default {
       if (folder) return name + ' · ' + folder
       return name + ' · #' + (Number(node && node.index) + 1)
     },
-    /** tooltip 始终给全信息：名称 / 文件夹 / index */
+    /** tooltip 始终给全信息：名称 / 文件夹 / index，并提示双击可开输出设置 */
     titleOf (node) {
       var lines = [String((node && node.name) || '')]
       var folder = String((node && node.folderPath) || '').replace(/^\/+|\/+$/g, '')
       if (folder) lines.push(folder)
       lines.push('#' + (Number(node && node.index) + 1))
+      lines.push(this.$t('compRowDblHint'))
       return lines.join('\n')
     },
     /** 列宽 inline style：width 与 flex-basis 同步，表头和行取同一个值 */
@@ -794,7 +789,7 @@ export default {
       if (cleanup) cleanup()
     },
     /**
-     * 名字列能拖到多宽：容器宽度扣掉勾选列、齿轮列和三个数值列当前占位，
+     * 名字列能拖到多宽：容器宽度扣掉勾选列和三个数值列当前占位，
      * 剩下的全给它 —— 再宽就把数据列挤出可视区了。
      */
     nameMaxWidth () {
@@ -802,7 +797,7 @@ export default {
       if (!host) return 0
       const used = this.columnOrder.reduce((sum, key) => {
         return sum + clampColumnWidth(key, this.columnWidths[key])
-      }, 28 + 32 + 8)
+      }, 28 + 8)
       return Math.max(CT_NAME_MIN, host - used)
     },
     /**
@@ -1012,20 +1007,21 @@ export default {
       }
       this.$emit('add', items)
     },
-    /** 双击合成行：在 AE 中定位/打开该合成 */
+    /**
+     * 双击合成行：打开该合成的输出设置（取代原来的齿轮列）。
+     * 落在勾选框 / 格式开关 / 状态列等按钮上时不算，避免与它们自己的点击冲突；
+     * 「在 AE 中定位合成」移到右键菜单，双击不再抢这个手势。
+     */
     onRowDblclick (ev, node) {
       if (ev && ev.target && ev.target.closest) {
-        if (ev.target.closest('.mod-ct__cb, .iconbtn, button, input, a')) return
+        if (ev.target.closest('.mod-ct__cb, button, input, a')) return
       }
-      try {
-        sourceAdapter.openSource({
-          basic: {
-            type: 'Comp',
-            compIndex: node.index,
-            compName: node.name
-          }
-        })
-      } catch (e) { /* 定位失败不打断 */ }
+      // 进入「单项设置」＝把编辑目标收成这一条（与原来点齿轮一致）：
+      // 先同步树内勾选，避免树里看着多选、实际只编辑一条
+      this.selectedMap = {}
+      this.$set(this.selectedMap, node.id, true)
+      this.emitSelection()
+      this.$emit('configure', node)
     },
     onRowContext (ev, node) {
       if (ev && ev.preventDefault) ev.preventDefault()
@@ -1334,37 +1330,6 @@ export default {
 .mod-ct__gap {
   flex: 1 1 0;
   min-width: 0;
-}
-/* 操作列固定不压缩，overflow:visible 防止齿轮被行裁掉；
- * margin-left:auto 让齿轮始终贴右 —— 名字列拖窄后多出的空间留在状态列之后，不会把齿轮挤到中间 */
-.mod-ct__c--act {
-  width: 32px;
-  flex: 0 0 32px;
-  margin-left: auto;
-  overflow: visible;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-}
-/* 与 projectList / ib-iconbtn 同一套设置钮 */
-.iconbtn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: none;
-  width: 24px;
-  height: 24px;
-  padding: 0;
-  border: 1px solid var(--is-border);
-  border-radius: var(--is-r-xs, 6px);
-  background: var(--is-card);
-  color: var(--is-text-2);
-  cursor: pointer;
-}
-.iconbtn:hover {
-  border-color: var(--is-border-hi);
-  background: var(--is-accent-soft, var(--is-accent-dim));
-  color: var(--is-accent);
 }
 .mod-ct__search {
   /* 表头右侧也有等宽的格式占位，搜索框必须可收缩 */

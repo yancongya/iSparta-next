@@ -226,6 +226,7 @@ module.exports = {
     "compColMenuReset":"恢復預設寬度",
     "compColMenuFit":"恢復自適應寬度",
     "compColNameHint":"拖動右緣調整名稱欄寬度 · 右鍵恢復自適應",
+    "compRowDblHint":"雙擊開啟輸出設定",
     "compColPinnedHint":"名稱與輸出格式（寬度自適應，不參與調整）",
     "compColFormatHint":"輸出格式子欄（隨名稱欄固定；行內 A / G / W 可點擊切換）",
     "compColState":"狀態",

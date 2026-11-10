@@ -8,6 +8,7 @@ import { fs, storage, os, path, getProcessBridge, ipc } from '../util/node-env'
 import { MODE_SYSTEM } from '../util/system-locale'
 import { resolveOutputPath } from '../util/outputPath'
 import { buildInitialOutputName } from '../util/tokenizeName'
+import { existingOutputFilesOf } from '../util/task-output'
 import appLog from '../ui-next/log'
 import i18n from '../i18n'
 const _ = require("lodash");
@@ -626,9 +627,27 @@ const actions = {
     state.items = remain
     persistItems()
   },
-  /** 合成树勾选：只改 Comp 任务的 isSelected（index:name 复合键） */
-  syncCompSelected(context, selectedCompKeys) {
+  /**
+   * 切换视图时清掉「上一轮失败/中止」的残留（只在视图切换调用，不参与定时刷新）：
+   * - 产物已存在：说明上次其实已经写出文件（或用户重跑成功），改判完成，状态列直接显示产物大小
+   * - 仍无产物：清空上一轮的原因与文案，回到待处理，等下一次真正运行再记录
+   * 运行中的任务（0 < schedule < 1）一律不动。
+   */
+  refreshFailedCompTasks(context) {
     if (context.rootState.locked) { return }
+    _.each(state.items, function (it) {
+      if (!it || !it.basic || it.basic.type !== 'Comp') { return }
+      var p = it.process
+      if (!p || p.schedule !== -1) { return }
+      var files = existingOutputFilesOf(it)
+      p.schedule = files.length ? 1 : 0
+      p.text = ''
+      p.detail = ''
+    })
+    persistItems()
+  },
+  /** 合成树勾选：只改 Comp 任务的 isSelected（index:name 复合键） */
+  syncCompSelected(context, selectedCompKeys) {    if (context.rootState.locked) { return }
     var set = {}
     _.each(selectedCompKeys || [], function (k) {
       if (k && typeof k === 'object') {

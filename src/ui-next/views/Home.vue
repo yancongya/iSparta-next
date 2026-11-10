@@ -51,7 +51,11 @@
 
         <!-- 合成树占任务列表区；不与空态画框嵌套 -->
         <div v-if="supportsCompImport && compTreeOpen" class="ib-main__list">
-          <comp-tree @add="onCompTreeAdd" @close="compTreeOpen = false" />
+          <comp-tree
+            @add="onCompTreeAdd"
+            @close="compTreeOpen = false"
+            @configure="onCompConfigure"
+          />
         </div>
         <!-- 空态：CEP 点击刷新合成；桌面点击/拖入导入文件 -->
         <div
@@ -781,15 +785,29 @@ export default {
       }
       this.compTreeOpen = false
     },
+    /**
+     * 切视图时刷新一次「上一轮失败/中止」的残留：
+     * 同步完 AE 当前合成后，让 store 复查这些任务的产物 —— 齐全的改判完成，
+     * 仍缺产物的清掉旧原因回到待处理，避免合成树/任务列表一直挂着上一次的失败。
+     */
+    refreshFailedCompTasksAfterSync () {
+      var store = this.$store
+      var run = function () {
+        try { store.dispatch('refreshFailedCompTasks') } catch (e) { /* 状态刷新失败不影响视图切换 */ }
+      }
+      var pending = this.loadAllCompsAsTasks()
+      if (pending && typeof pending.then === 'function') pending.then(run, run)
+      else run()
+    },
     /** 选中合成 → 同步为桌面「任务选中」，供右栏设置/底栏计数 */
     toggleCompTree () {
       if (this.compTreeOpen) {
         this.compTreeOpen = false
         // 切回任务列表：刷新为 AE 当前合成
-        this.loadAllCompsAsTasks()
+        this.refreshFailedCompTasksAfterSync()
       } else {
         // 打开树前也刷新，两边都是实时列表
-        this.loadAllCompsAsTasks()
+        this.refreshFailedCompTasksAfterSync()
         this.onPickComps()
       }
     },
@@ -797,14 +815,14 @@ export default {
     toggleView () {
       this.compTreeOpen = !this.compTreeOpen
       if (this.compTreeOpen) {
-        this.loadAllCompsAsTasks()
+        this.refreshFailedCompTasksAfterSync()
         this.$nextTick(() => {
           if (this.$root && this.$root.eventBus) {
             this.$root.eventBus.$emit('comp-tree-refresh')
           }
         })
       } else {
-        this.loadAllCompsAsTasks()
+        this.refreshFailedCompTasksAfterSync()
       }
     },
     /** PAG 式：独立 OS 窗口（不撑开侧栏） */
@@ -818,6 +836,20 @@ export default {
         this.onCompSelect([node])
         this._noSidePanel = false
       }
+      // 双击行 = 「只编辑这一条」：把编辑目标收成该合成，
+      // 避免设置面板里混进别处已选中的任务（如桌面的 APNG 任务）
+      var items = this.$store.getters.getterItems || []
+      var target = -1
+      for (var i = 0; i < items.length; i++) {
+        var b = (items[i] && items[i].basic) || {}
+        if (b.type === 'Comp' &&
+            Number(b.compIndex) === Number(node && node.index) &&
+            String(b.compName || '') === String((node && node.name) || '')) {
+          target = i
+          break
+        }
+      }
+      if (target >= 0) { this.$store.dispatch('setMultiSelected', [target]) }
       this.openSettingsWindow()
     },
     openSettingsWindow () {

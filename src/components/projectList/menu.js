@@ -130,7 +130,9 @@ function showDomMenu (payload, x, y) {
   const items = []
 
   if (isComp) {
-    // CEP/合成任务：打开合成位置 · 打开输出目录 · 终止任务
+    // CEP/合成任务：定位合成 · 打开合成位置 · 打开输出目录 · 终止任务
+    // 「定位合成」原先靠双击合成树行触发，双击改作「打开输出设置」后落到这里
+    items.push({ id: 'openSourceComp', label: locale.openSourceComp || '定位合成' })
     items.push({ id: 'openCompLoc', label: locale.openCompLoc || '打开合成位置' })
   } else {
     items.push({ id: 'openOriginal', label: locale.openOriginal || '打开文件目录' })
@@ -193,6 +195,24 @@ function bindMenuClicked () {
     if (!msg || msg.menuId !== 'project-item') { return }
     const payload = msg.payload || {}
     switch (msg.action) {
+      case 'openSourceComp': {
+        // 定位合成：让 AE 打开/跳到该合成（合成树双击原来的行为）
+        try {
+          const hostEnv = require('../../util/host-env')
+          const src = hostEnv.getSourceAdapter && hostEnv.getSourceAdapter()
+          if (src && typeof src.openSource === 'function') {
+            src.openSource({
+              basic: {
+                type: 'Comp',
+                compIndex: payload.compIndex,
+                compName: payload.compName,
+                inputPath: payload.inputPath
+              }
+            })
+          }
+        } catch (e) { /* 定位失败不打断菜单 */ }
+        break
+      }
       case 'openCompLoc': {
         // 打开合成位置：工程文件所在目录
         const dir = dirnameOf(payload.projectPath) || dirnameOf(payload.inputPath)
