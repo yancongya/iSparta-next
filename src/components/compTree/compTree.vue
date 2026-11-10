@@ -3,6 +3,8 @@
   无展开折叠；名称与搜索框同列；末列是任务运行状态：列内只显示最新一条
   （失败/中止给原因、进行中给进度），完成态直接留给产物大小；hover 看全文，点击复制产物
   行末不再有齿轮列：双击整行打开该合成的输出设置（定位合成在右键菜单里）
+  列宽拖动采用「跟手挤压」：改被拖列的同时反向调整右邻列，数值列组总宽不变，
+  名字列就不会被 flex 反向吸收、分隔线才会跟着指针走；最后一列右缘没有把手
 -->
 <template>
   <section
@@ -75,8 +77,9 @@
         <span v-else class="mod-ct__h-label">
           <span class="mod-ct__state-txt">{{ $t(col.labelKey) }}</span>
         </span>
-        <!-- 右缘把手：只负责拖动改列宽 -->
+        <!-- 右缘把手：只负责拖动改列宽。最后一列右缘是面板边、没有右邻列可挤，不设把手 -->
         <span
+          v-if="col.key !== lastColumnKey"
           class="mod-ct__resizer"
           @mousedown.stop.prevent="startColumnResize($event, col)"
         ></span>
@@ -188,6 +191,23 @@
         @click="shiftHeadCol(1)"
       >{{ $t('compColMenuRight') }}</button>
       <span v-if="!isNameHead" class="mod-ct__menu-sep" aria-hidden="true"></span>
+      <!-- 列宽档位：拖拽之外的离散入口；最后一列右缘没有把手，全靠这一排调宽 -->
+      <template v-if="!isNameHead">
+        <div class="mod-ct__menu-presets" role="group" :aria-label="$t('compColWidth')">
+          <span class="mod-ct__menu-cap">{{ $t('compColWidth') }}</span>
+          <button
+            v-for="p in widthPresets"
+            :key="p.key"
+            type="button"
+            class="mod-ct__menu-preset"
+            :class="{ 'is-on': isPresetOn(p.key) }"
+            role="menuitemradio"
+            :aria-checked="isPresetOn(p.key) ? 'true' : 'false'"
+            @click="setHeadColPreset(p.key)"
+          >{{ $t(p.labelKey) }}</button>
+        </div>
+        <span class="mod-ct__menu-sep" aria-hidden="true"></span>
+      </template>
       <button
         type="button"
         class="mod-ct__menu-item"
@@ -210,8 +230,8 @@ import notice from '../../ui-next/notice'
 import hostAdapter from '../../util/host-env'
 import { OUTPUT_FORMATS, defaultOutputFormats } from '../../util/outputFormats'
 import {
-  columnOf, clampColumnWidth, clampNameWidth, loadColumnLayout, saveColumnLayout,
-  CT_NAME_KEY, CT_NAME_MIN
+  columnOf, clampColumnWidth, clampNameWidth, presetColumnWidth,
+  loadColumnLayout, saveColumnLayout, CT_NAME_KEY, CT_NAME_MIN
 } from '../../util/compTreeColumns'
 
 /** 渲染后合成的三种动图格式，顺序与 store 默认 outputFormat 一致 */
@@ -219,6 +239,12 @@ const FORMATS = [
   { key: 'APNG', label: 'A' },
   { key: 'GIF', label: 'G' },
   { key: 'WEBP', label: 'W' }
+]
+/** 表头右键菜单的列宽档位（最后一列右缘无把手，靠它改宽度） */
+const WIDTH_PRESETS = [
+  { key: 'narrow', labelKey: 'compColWidthNarrow' },
+  { key: 'normal', labelKey: 'compColWidthNormal' },
+  { key: 'wide', labelKey: 'compColWidthWide' }
 ]
 /** mockup 模式的运行状态演示初值：完成 / 进行中 / 失败 / 待处理混排 */
 const MOCK_STATES = ['done', 'running', 'done', 'pending', 'fail', 'done']
@@ -279,8 +305,9 @@ export default {
       resizingCol: '',
       /** 拖动中已顶到 min / max：把分隔线换成警示色，避免「拖了没反应」 */
       colLimit: '',
-      /** 表头右键菜单：只放「左移 / 右移 / 恢复默认宽度」，不再占用拖拽手势 */
+      /** 表头右键菜单：只放顺序 / 列宽档位 / 恢复默认，不占用拖拽手势 */
       headMenu: { open: false, x: 0, y: 0, key: '' },
+      widthPresets: WIDTH_PRESETS,
       marquee: { active: false, moved: false, x: 0, y: 0, w: 0, h: 0, startX: 0, startY: 0 },
       suppressBlankClick: false,
       formats: FORMATS,
@@ -293,6 +320,10 @@ export default {
     /** 表头与每一行共用同一份列模型，保证顺序与宽度永远一致 */
     columns () {
       return this.columnOrder.map(columnOf).filter(Boolean)
+    },
+    /** 最后一列右缘是面板边，不是两列交界，不给拖拽把手 */
+    lastColumnKey () {
+      return this.columnOrder[this.columnOrder.length - 1] || ''
     },
     /**
      * 名字 + 输出格式列：不拖时 flex:1 吃满剩余空间（宽度存 0）；
@@ -316,8 +347,8 @@ export default {
       const vw = typeof window !== 'undefined' ? window.innerWidth : 1200
       const vh = typeof window !== 'undefined' ? window.innerHeight : 800
       return {
-        left: Math.max(4, Math.min(this.headMenu.x, vw - 170)) + 'px',
-        top: Math.max(4, Math.min(this.headMenu.y, vh - 110)) + 'px'
+        left: Math.max(4, Math.min(this.headMenu.x, vw - 220)) + 'px',
+        top: Math.max(4, Math.min(this.headMenu.y, vh - 150)) + 'px'
       }
     },
     marqueeStyle () {
@@ -751,26 +782,64 @@ export default {
       if (col && col.sortKey) this.sortBy(col.sortKey)
     },
     /**
-     * 表头右缘拖宽：与 Home.vue 面板分隔条同一范式（document 监听 + body class），
-     * 拖动只改内存宽度，松手才持久化，避免每帧写 storage。
+     * 表头右缘拖宽：与 Home.vue 面板分隔条同一范式（document 监听 + body class）。
+     *
+     * 关键：宽度变化必须由**紧邻右侧列**反向吸收，让「数值列组总宽」保持不变。
+     * 否则名字列的 flex:1 会反向吃掉这次变化 —— 被拖列的左缘等量左移，
+     * 右缘（也就是用户按住的那根分隔线）数学上恒定不动，看起来像「拖了没反应、
+     * 反而是左边搜索框在缩」。总宽不变时右缘 = 左缘 + 自身宽度，才会跟着指针走。
+     *
+     * 右邻列顶到 min/max 时继续往更右侧传递；全都到极限就把被拖列回退到能兑现的
+     * 幅度并给橙色提示。拖动只改内存宽度，松手才持久化。
      */
     startColumnResize (e, col) {
       if (e.button !== 0) return
+      const order = this.columnOrder.slice()
+      const idx = order.indexOf(col.key)
+      // 最后一列没有右邻列可挤，它的右缘是面板边，把手在模板里就不渲染
+      if (idx < 0 || idx >= order.length - 1) return
+      const rightKeys = order.slice(idx + 1)
+      // clampColumnWidth 把 0 视为「没有有效宽度」回退出厂值，拖动中会产生 0，
+      // 所以这里直接用列定义的 min/max 钳制，避免吸收量算错
+      const clampW = (key, v) => {
+        const def = columnOf(key)
+        return Math.max(def.min, Math.min(def.max, Math.round(v)))
+      }
+      // 起点取实测宽度：列被 flex 压过时存储值会大于实际，用存储值会让指针与列宽脱节
+      const startW = {}
+      const head = this.$el && this.$el.querySelector('.mod-ct__head')
+      order.forEach((key) => {
+        const el = head && head.querySelector('[data-col="' + key + '"]')
+        const measured = el ? Math.round(el.getBoundingClientRect().width) : 0
+        startW[key] = measured > 0 ? measured : clampW(key, this.columnWidths[key])
+      })
       const startX = e.clientX
-      const cell = e.currentTarget && e.currentTarget.parentElement
-      // 基准取实测宽度：列被 flex 压过时存储值会大于实际，用存储值会让指针与列宽脱节
-      const measured = cell ? Math.round(cell.getBoundingClientRect().width) : 0
-      const startW = measured > 0 ? measured : clampColumnWidth(col.key, this.columnWidths[col.key])
       this.resizingCol = col.key
       this.colLimit = ''
       document.body.classList.add('is-column-resizing')
       const onMove = (ev) => {
-        const cur = clampColumnWidth(col.key, this.columnWidths[col.key])
-        const next = clampColumnWidth(col.key, startW + ev.clientX - startX)
-        const pushed = Math.abs(ev.clientX - startX) > 1
-        // 已到边界还在同方向推：给出「到底了」的视觉反馈，而不是静默无变化
-        this.colLimit = pushed && next === cur ? (ev.clientX < startX ? 'min' : 'max') : ''
-        this.$set(this.columnWidths, col.key, next)
+        const dx = ev.clientX - startX
+        const wanted = clampW(col.key, startW[col.key] + dx)
+        const delta = wanted - startW[col.key]
+        // 每帧都从「起始快照」重算整组宽度：来回拖动必须完全可逆，不能只写这一帧
+        // 变动的列（否则右邻列还回宽度后，更右侧的列会停在上一帧的值上）
+        const next = {}
+        order.forEach((key) => { next[key] = startW[key] })
+        let left = delta
+        // 依次从右邻列「借 / 还」宽度：先紧邻列，到极限再往右传
+        rightKeys.forEach((key) => {
+          if (!left) return
+          const w = clampW(key, startW[key] - left)
+          next[key] = w
+          left -= (startW[key] - w)
+        })
+        const applied = delta - left
+        next[col.key] = clampW(col.key, startW[col.key] + applied)
+        const ownLimit = Math.abs(dx) > 1 && Math.round(startW[col.key] + dx) !== wanted
+        this.colLimit = (ownLimit || (Math.abs(dx) > 1 && applied !== delta))
+          ? (dx < 0 ? 'min' : 'max')
+          : ''
+        Object.keys(next).forEach((key) => this.$set(this.columnWidths, key, next[key]))
       }
       this._colResizeCleanup = () => {
         window.removeEventListener('mousemove', onMove)
@@ -789,39 +858,35 @@ export default {
       if (cleanup) cleanup()
     },
     /**
-     * 名字列能拖到多宽：容器宽度扣掉勾选列和三个数值列当前占位，
-     * 剩下的全给它 —— 再宽就把数据列挤出可视区了。
-     */
-    nameMaxWidth () {
-      const host = this.$el ? this.$el.clientWidth : 0
-      if (!host) return 0
-      const used = this.columnOrder.reduce((sum, key) => {
-        return sum + clampColumnWidth(key, this.columnWidths[key])
-      }, 28 + 8)
-      return Math.max(CT_NAME_MIN, host - used)
-    },
-    /**
-     * 名字列右缘拖宽：和数值列同一套手法，只是它多一个「自适应」状态（宽度 0）。
-     * 起点取实测宽度，避免自适应态下没有存储值可依。
+     * 名字列右缘拖宽：默认「自适应吃满」，只允许拖窄留出空白，再把空白原路吃回来。
+     * 上限用**实测**（数值列组左缘 − 名字列左缘），不能用「容器宽 − 存储列宽」估算：
+     * 估算值比实测小几像素时，第一次 mousemove 就被钳住，表现为「一拖就卡死」。
+     * 拖窄后 .mod-ct__gap 自动吸收多出来的空间，数值列组始终贴右，分隔线跟着指针走。
      */
     startNameResize (e) {
       if (e.button !== 0) return
       const startX = e.clientX
       const cell = e.currentTarget && e.currentTarget.parentElement
-      const measuredOf = () => (cell ? Math.round(cell.getBoundingClientRect().width) : 0)
-      const measured = measuredOf()
-      const startW = measured > 0 ? measured : (clampNameWidth(this.nameWidth) || CT_NAME_MIN)
-      const maxW = this.nameMaxWidth()
-      const curOf = () => clampNameWidth(this.nameWidth) || measuredOf()
+      if (!cell) return
+      const head = cell.parentElement
+      const firstCol = head && head.querySelector('[data-col]')
+      const rect = cell.getBoundingClientRect()
+      const startW = Math.round(rect.width)
+      // 名字列能宽到「刚好贴住数值列组」；再宽就得去挤数值列，会破坏贴右布局
+      const groupLeft = firstCol ? firstCol.getBoundingClientRect().left : rect.right
+      const maxW = Math.max(CT_NAME_MIN, Math.round(groupLeft - rect.left))
       this.resizingCol = CT_NAME_KEY
       this.colLimit = ''
       document.body.classList.add('is-column-resizing')
       const onMove = (ev) => {
-        const cur = curOf()
-        const next = clampNameWidth(startW + ev.clientX - startX, maxW)
-        const pushed = Math.abs(ev.clientX - startX) > 1
-        this.colLimit = pushed && next === cur ? (ev.clientX < startX ? 'min' : 'max') : ''
-        this.nameWidth = next
+        const raw = startW + ev.clientX - startX
+        const next = clampNameWidth(raw, maxW)
+        const atMax = next >= maxW - 1
+        // 原路拖回吃满就自动回到自适应：不钉一个像素宽，窗口变宽时名字列还能跟着长
+        this.nameWidth = atMax ? 0 : next
+        this.colLimit = Math.abs(ev.clientX - startX) > 1 && Math.round(raw) !== next
+          ? (ev.clientX < startX ? 'min' : 'max')
+          : ''
       }
       this._colResizeCleanup = () => {
         window.removeEventListener('mousemove', onMove)
@@ -844,6 +909,21 @@ export default {
       if (!def) return
       this.$set(this.columnWidths, col.key, def.width)
       this.saveLayout()
+    },
+    /** 右键菜单档位的高亮态：宽度恰好等于档位值才算选中 */
+    isPresetOn (preset) {
+      const key = this.headMenu.key
+      if (!columnOf(key)) return false
+      return clampColumnWidth(key, this.columnWidths[key]) === presetColumnWidth(key, preset)
+    },
+    /** 离散档位改宽：不追求跟手，宽度变化交给名字列 / 留白自然吸收 */
+    setHeadColPreset (preset) {
+      const key = this.headMenu.key
+      if (columnOf(key)) {
+        this.$set(this.columnWidths, key, presetColumnWidth(key, preset))
+        this.saveLayout()
+      }
+      this.closeHeadMenu()
     },
     /** 表头右键：列顺序与恢复默认宽度的唯一入口（拖拽只留给「改宽度」） */
     onHeadContext (ev, col) {
@@ -1409,5 +1489,34 @@ export default {
   height: 1px;
   margin: 4px 6px;
   background: var(--is-line, rgba(128, 128, 128, 0.25));
+}
+/* 列宽档位：一行三格，避免菜单被六七个条目撑得过长 */
+.mod-ct__menu-presets {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 6px 4px;
+}
+.mod-ct__menu-cap {
+  flex: 1 1 auto;
+  color: var(--is-text-3, #8a8f8c);
+  white-space: nowrap;
+}
+.mod-ct__menu-preset {
+  padding: 3px 7px;
+  border: 1px solid var(--is-line, rgba(128, 128, 128, 0.3));
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.mod-ct__menu-preset:hover {
+  border-color: var(--is-border-hi, rgba(128, 128, 128, 0.6));
+}
+.mod-ct__menu-preset.is-on {
+  border-color: var(--is-accent, #c8f542);
+  color: var(--is-accent, #c8f542);
 }
 </style>
