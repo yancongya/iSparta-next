@@ -190,6 +190,9 @@ module.exports = {
     "framePanelTip":"播放设置",
     "tipChangeOutput":"修改输出目录",
     "tipTaskSetting":"输出设置（仅本任务）",
+    "tipTaskSettingMulti":"输出设置（已选 {n} 项，共享编辑）",
+    "taskSettingSingleHint":"该任务未在多选中，已切换为单项设置",
+    "batchOutputSetting":"批量输出设置（已选 {n} 项）",
     // 外观与主题
     "appearance":"外观",
     "themeLight":"亮色",

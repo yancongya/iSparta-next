@@ -190,6 +190,9 @@ module.exports = {
     "framePanelTip":"播放設定",
     "tipChangeOutput":"修改輸出目錄",
     "tipTaskSetting":"輸出設置（僅本任務）",
+    "tipTaskSettingMulti":"輸出設置（已選 {n} 項，共用編輯）",
+    "taskSettingSingleHint":"此任務不在多選中，已切換為單項設置",
+    "batchOutputSetting":"批量輸出設置（已選 {n} 項）",
     // appearance
     "appearance":"外觀",
     "themeLight":"亮色",

@@ -191,7 +191,7 @@
               <button
                 type="button"
                 class="iconbtn ib-rail__btn--settings"
-                :title="$t('tipTaskSetting')"
+                :title="isCepHost && isMultiItems && project.isSelected ? $t('tipTaskSettingMulti', { n: selectedCount }) : $t('tipTaskSetting')"
                 :disabled="isLocked"
                 @click.stop="onTaskSetting(project, index)"
               ><is-icon name="settings" size="sm" /></button>
@@ -330,6 +330,7 @@ export default {
   mounted () {
     // 封面持续播放：列表进入即播，不必先悬停
     this.$nextTick(function () { this.startThumbPlay() })
+    this.bindHostBlankEvents()
   },
   beforeDestroy () {
     this.stopHover()
@@ -337,6 +338,7 @@ export default {
     // 重渲染会报「访问已销毁实例」
     this.stopThumbPlay()
     this.unbindMarquee()
+    this.unbindHostBlankEvents()
     if (this._badgeCache) this._badgeCache.clear()
   },
   computed: {
@@ -421,6 +423,10 @@ export default {
     },
     showFilterBar () {
       // CEP / 合成任务列表显示过滤条；桌面文件任务保持原样
+      return !!(hostAdapter && (hostAdapter.supportsCompImport || hostAdapter.kind === 'cep'))
+    },
+    // 仅 CEP 需要「行尾设置保留多选」；桌面右栏常驻、空间充足，维持历史单项语义
+    isCepHost () {
       return !!(hostAdapter && (hostAdapter.supportsCompImport || hostAdapter.kind === 'cep'))
     },
     isLocked () {
@@ -878,6 +884,40 @@ export default {
       if (t.closest('.item, .open-folder, input, button, .check, .is-check')) return
       this.$store.dispatch('allSelect')
     },
+    /**
+     * 短列表时「打开目录」按钮下方的空白可能仍落在外层滚动容器上
+     * （壳层样式覆盖、窗口尺寸变化都会让 min-height:100% 失效），
+     * 只绑在 .mod-list 上的 @click/@dblclick 收不到那里的事件。
+     * 这里在外层兜一层：组件外的空白同样走取消 / 全选；组件内的事件
+     * 由自身监听处理，outOfList 判断避免重复触发。
+     */
+    bindHostBlankEvents () {
+      var host = this.$el && this.$el.parentElement
+      if (!host || host === this.$el) return
+      this._blankHost = host
+      var self = this
+      var outOfList = function (e) {
+        var t = e.target
+        return !!(t && t.closest && !t.closest('.mod-list'))
+      }
+      this._onHostBlankClick = function (e) {
+        if (outOfList(e)) self.onBlankClick(e)
+      }
+      this._onHostBlankDblclick = function (e) {
+        if (outOfList(e)) self.onBlankDblclick(e)
+      }
+      host.addEventListener('click', this._onHostBlankClick)
+      host.addEventListener('dblclick', this._onHostBlankDblclick)
+    },
+    unbindHostBlankEvents () {
+      var host = this._blankHost
+      if (!host) return
+      if (this._onHostBlankClick) host.removeEventListener('click', this._onHostBlankClick)
+      if (this._onHostBlankDblclick) host.removeEventListener('dblclick', this._onHostBlankDblclick)
+      this._onHostBlankClick = null
+      this._onHostBlankDblclick = null
+      this._blankHost = null
+    },
     // 空白处按下 → 拖拽框选
     onListMouseDown (e) {
       if (this.isLocked || !this.projectList.length) return
@@ -1074,13 +1114,20 @@ export default {
       this.dialogFormVisible = true
     },
     /**
-     * 输出设置入口：先 singleSelect 只留该条，再打开设置。
+     * 输出设置入口：
+     * - 桌面：右栏常驻、空间充足，始终 singleSelect 只编辑本任务（历史行为，不改）
+     * - CEP：覆盖层默认关闭，多选时需要能进共享设置。与 menu.js 的 stopItem / delItem
+     *   同一约定 —— 只有该行未选中才 singleSelect，原本是多选时给一条提示
      * 桌面右栏由选中态驱动展示；CEP 覆盖层靠 open-task-setting（Home 监听）。
      */
     onTaskSetting (project, index) {
       if (this.isLocked) return
       var si = this.storeIndexOf(project)
-      if (si >= 0) this.$store.dispatch('selectOnlyAt', si)
+      var multi = this.isCepHost && this.isMultiItems
+      if (si >= 0 && !(multi && project.isSelected)) {
+        this.$store.dispatch('selectOnlyAt', si)
+        if (multi) notice.info(this.$t('taskSettingSingleHint'))
+      }
       if (this.$root && this.$root.eventBus) {
         this.$root.eventBus.$emit('open-task-setting')
       }

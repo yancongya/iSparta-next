@@ -5,7 +5,10 @@
 @import "../../ui-next/styles/bp";
 
 .mod-list {
-  // 撑满滚动区，条目下方的空白才落在本容器上（供取消全选判定）
+  // 撑满滚动区，条目下方的空白才落在本容器上（供空白单击/双击/框选判定）。
+  // 注意：Home.vue 壳层的 `.ib-main__list > * { min-height: 0 }` 会盖掉这里，
+  // 已在该文件用 `.ib-main__list > .mod-list { min-height: 100% }` 显式恢复；
+  // 两条需一起维护，否则短列表时「打开目录」下方的空白点不动。
   min-height: 100%;
   position: relative;
   // 框选时避免选中列表里的文字/缩略图

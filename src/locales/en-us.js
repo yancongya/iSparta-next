@@ -190,6 +190,9 @@ module.exports = {
     "framePanelTip":"Playback settings",
     "tipChangeOutput":"Change output folder",
     "tipTaskSetting":"Output settings (this task only)",
+    "tipTaskSettingMulti":"Output settings ({n} selected, shared)",
+    "taskSettingSingleHint":"This task was not in the selection — switched to single-task settings",
+    "batchOutputSetting":"Batch output settings ({n} selected)",
     // appearance
     "appearance":"Appearance",
     "themeLight":"Light",

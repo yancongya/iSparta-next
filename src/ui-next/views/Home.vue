@@ -212,6 +212,21 @@
           <span v-if="selectedCount" class="ib-rail__count" aria-hidden="true">{{ selectedCount }}</span>
         </button>
 
+        <!-- CEP 多选：显式批量输出设置入口。与右端「展开输出设置」箭头指向同一个
+             setting 组件；箭头是 toggle，这里只打开不关闭，且全程不碰选中态 -->
+        <button
+          v-if="supportsCompImport && selectedCount > 1"
+          type="button"
+          class="ib-rail__btn ib-rail__btn--batch"
+          :class="{ 'is-active': settingsDialogOpen }"
+          :title="$t('batchOutputSetting', { n: selectedCount })"
+          :disabled="isLocked"
+          @click="openSettingsWindow"
+        >
+          <is-icon name="sliders" size="sm" />
+          <span class="ib-rail__count" aria-hidden="true">{{ selectedCount }}</span>
+        </button>
+
         <!-- 运行日志：未读时右上角亮小点，warn/error 才计数，普通 info 不打扰 -->
         <button
           type="button"
@@ -1164,5 +1179,12 @@ export default {
 }
 .ib-main__list > * {
   min-height: 0;
+}
+/* 任务列表必须撑满滚动区：短列表时「打开目录」按钮下方的空白要落在
+   .mod-list 上，空白单击取消 / 双击全选 / 拖拽框选才会冒泡到组件。
+   projectList.scss 的基础 min-height:100% 会被上面的 min-height:0 盖掉，
+   这里按子元素显式恢复（合成树根节点 .mod-ct 不受影响）。 */
+.ib-main__list > .mod-list {
+  min-height: 100%;
 }
 </style>

@@ -843,6 +843,21 @@ body.is-theme-light .ib-drop .keyboard-key {
   color: var(--is-bad-fg);
 }
 
+/* CEP 多选批量设置：只开覆盖层、不改选中态；角标显示已选条数 */
+.ib-rail__btn--batch {
+  position: relative;
+  color: var(--is-accent);
+}
+.ib-rail__btn--batch:hover,
+.ib-rail__btn--batch.is-active {
+  color: var(--is-accent);
+  background: var(--is-accent-soft);
+}
+.ib-rail__btn--batch:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
 // --------------------------------------------------------------------------
 // 工具条图标异色（桌面 / CEP 共用；亮暗随 token 自适配）
 // 色值全部取自 tokens.css 语义色，禁止在此硬编码十六进制

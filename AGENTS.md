@@ -172,6 +172,8 @@ CI：`release.yml` 校验版本化 Release 文案、负责 bump、打包、挂 R
 ## 5. 输出设置（产品约定）
 
 - 多选：右侧仍显示完整设置；顶部横幅「已选 N 项」；路径/质量/格式/阈值等**共享**写入所有选中项
+- **设置入口按端分流，桌面保持历史行为**：桌面右栏常驻、空间充足，任务列表行尾「输出设置」始终 `selectOnlyAt` 只编辑本任务（**不得改动**）；**仅 CEP** 因覆盖层默认关闭，才启用「该行已在选中集内就保持整组、进共享批量设置；未选中才收成一条并提示」，与 `menu.js` 的 `stopItem` / `delItem` 同约定。`onTaskSetting` 必须用 `isCepHost` 门控，禁止把 CEP 规则套到桌面。合成树双击仍按既有手势收成单项（用户裁决「保持现状」）
+- **CEP 批量入口**：顶栏 `ib-rail__btn--batch` 只在 `supportsCompImport && selectedCount > 1` 出现，带已选数角标；点击只调 `openSettingsWindow()`（只开不关、**不 dispatch 任何 select**），复用 `.ib-set-overlay` 里同一个 `setting.vue` 的多选态。右端 `ib-rail__btn--end` 箭头仍是 toggle 开关，两者不冲突；禁止让批量按钮走 `toggleSettings`、禁止在按钮里改选中态，也不要为它新建第二个设置面板
 - 输出名：多选时**多行**分别编辑，支持与单选相同的**拆词**与「只留文字」
 - 参数区尽量**两列对齐**（label / 输入 / info 图标同一节奏）
 - **默认输出格式**：`globalSetting.options.outputFormat` 为唯一真相源，读写统一走 `src/util/outputFormats.js`；默认设置面板勾选、新建任务继承，禁止另建存储键或复制一份格式常量
@@ -197,6 +199,7 @@ CI：`release.yml` 校验版本化 Release 文案、负责 bump、打包、挂 R
 
 ## 8. Agent 行为
 
+- **固定约束（用户明示，强制）：禁止新建脚本**。启动任何服务 / 预览 / 体检一律只用仓库已有脚本与 `npm run *`，不得为了启动服务或调试验证落地新的 `.js` / `.ps1` / `.cmd` / `.bat` 文件（含临时脚本）。预览统一走 `node scripts/dev/preview.js <web|cep|landing|guide|desktop> [--mock] [--no-open]`（入口清单见 §1.1），其余用 `npm run dev:all` / `serve` / `serve:cep` / `lint` 等现成 scripts；浏览器 / CDP 验证复用既有调试工具，表达式内联传入，不另写脚本文件。已有脚本不覆盖的场景先问用户，不要自己造一个绕过
 - 先搜代码/文档/脚本再改；架构与交互以本文、`docs/CHANGELOG.md`（版本记录 + 应用内更新机制）、`docs/RELEASE.md` 为准
 - 优先 `scripts\` 与 `npm run *`；不要为 lint/发版/图标另起临时流程
 - **未经用户明确要求，禁止 commit 以外的发版/release**（见 §2.2）
