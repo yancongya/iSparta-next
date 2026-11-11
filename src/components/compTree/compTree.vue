@@ -3,8 +3,9 @@
   无展开折叠；名称与搜索框同列；末列是任务运行状态：列内只显示最新一条
   （失败/中止给原因、进行中给进度），完成态直接留给产物大小；hover 看全文，点击复制产物
   行末不再有齿轮列：双击整行打开该合成的输出设置（定位合成在右键菜单里）
-  列宽拖动采用「跟手挤压」：改被拖列的同时反向调整右邻列，数值列组总宽不变，
-  名字列就不会被 flex 反向吸收、分隔线才会跟着指针走；最后一列右缘没有把手
+  列宽拖动采用「跟手挤压」：改被拖列的同时反向调整右邻列（数值列之间总宽不变），
+  名字列就不会被 flex 反向吸收、分隔线才会跟着指针走；最后一列右缘没有把手。
+  名字列右缘是两段式：左拖留白、右拖挤窄数值列，恰好吃满自动回自适应
 -->
 <template>
   <section
@@ -327,7 +328,7 @@ export default {
     },
     /**
      * 名字 + 输出格式列：不拖时 flex:1 吃满剩余空间（宽度存 0）；
-     * 拖过之后用实测像素宽固定，剩余空间交给齿轮列的 margin-left:auto 吸收。
+     * 拖过之后用实测像素宽固定，多余空间由 .mod-ct__gap 吸收（或由右侧数值列让出）。
      * min-width 兜住格式按钮（A/G/W）+ 图标，再窄也还能认出是哪一列。
      */
     nameColStyle () {
@@ -858,10 +859,18 @@ export default {
       if (cleanup) cleanup()
     },
     /**
-     * 名字列右缘拖宽：默认「自适应吃满」，只允许拖窄留出空白，再把空白原路吃回来。
-     * 上限用**实测**（数值列组左缘 − 名字列左缘），不能用「容器宽 − 存储列宽」估算：
-     * 估算值比实测小几像素时，第一次 mousemove 就被钳住，表现为「一拖就卡死」。
-     * 拖窄后 .mod-ct__gap 自动吸收多出来的空间，数值列组始终贴右，分隔线跟着指针走。
+     * 名字列右缘拖宽：两段式，保证分隔线始终跟手。
+     *
+     * ① 拖窄 / 吃回留白：名字列收窄，多出来的空间由 .mod-ct__gap 吸收（数值列不动）。
+     *    从留白态往右拖时先把空白吃回来，回到「吃满」宽度就写回 0 恢复自适应。
+     * ② 继续往右拖（默认态一开始就在这里）：名字列还要变宽，就按 startColumnResize
+     *    同一套规则从右侧数值列依次借宽度（被拖列 +dx、右邻列 −dx），数值列组总宽
+     *    随之减小但右缘仍贴右 —— 名字列右缘与数值组左缘始终重合，分隔线跟着指针走。
+     *    以前这里把上限写死成「数值组左缘」，默认已吃满时往右拖第一帧就被钳住，
+     *    表现为「搜索栏拖不动宽度」。
+     *
+     * 「吃满宽度」用实测（数值组左缘 − 名字列左缘），不能用「容器宽 − 存储列宽」估算；
+     * 每帧从起始快照重算整组宽度，来回拖动完全可逆。
      */
     startNameResize (e) {
       if (e.button !== 0) return
@@ -872,21 +881,49 @@ export default {
       const firstCol = head && head.querySelector('[data-col]')
       const rect = cell.getBoundingClientRect()
       const startW = Math.round(rect.width)
-      // 名字列能宽到「刚好贴住数值列组」；再宽就得去挤数值列，会破坏贴右布局
-      const groupLeft = firstCol ? firstCol.getBoundingClientRect().left : rect.right
-      const maxW = Math.max(CT_NAME_MIN, Math.round(groupLeft - rect.left))
+      // 吃满宽度 = 名字列宽 + 当前留白，实测才不会在 flex 压过后错几像素
+      const fitW = firstCol
+        ? Math.max(startW, Math.round(firstCol.getBoundingClientRect().left - rect.left))
+        : startW
+      const order = this.columnOrder.slice()
+      // 与 startColumnResize 一致：拖动中直接用列定义的 min/max，别走 clampColumnWidth
+      // （它把 0 当「无有效宽度」回退出厂值，会让借还量算错）
+      const clampW = (key, v) => {
+        const def = columnOf(key)
+        return Math.max(def.min, Math.min(def.max, Math.round(v)))
+      }
+      const startColW = {}
+      order.forEach((key) => {
+        const el = head && head.querySelector('[data-col="' + key + '"]')
+        const measured = el ? Math.round(el.getBoundingClientRect().width) : 0
+        startColW[key] = measured > 0 ? measured : clampW(key, this.columnWidths[key])
+      })
       this.resizingCol = CT_NAME_KEY
       this.colLimit = ''
       document.body.classList.add('is-column-resizing')
       const onMove = (ev) => {
-        const raw = startW + ev.clientX - startX
-        const next = clampNameWidth(raw, maxW)
-        const atMax = next >= maxW - 1
-        // 原路拖回吃满就自动回到自适应：不钉一个像素宽，窗口变宽时名字列还能跟着长
-        this.nameWidth = atMax ? 0 : next
-        this.colLimit = Math.abs(ev.clientX - startX) > 1 && Math.round(raw) !== next
-          ? (ev.clientX < startX ? 'min' : 'max')
+        const dx = ev.clientX - startX
+        const raw = startW + dx
+        // 超过「吃满」的部分才是需要右侧列让出的挤压缩
+        const squeeze = Math.max(0, raw - fitW)
+        const baseW = squeeze > 0 ? fitW : Math.max(CT_NAME_MIN, Math.round(raw))
+        const next = {}
+        order.forEach((key) => { next[key] = startColW[key] })
+        let left = squeeze
+        order.forEach((key) => {
+          if (!left) return
+          const w = clampW(key, startColW[key] - left)
+          next[key] = w
+          left -= (startColW[key] - w)
+        })
+        const applied = squeeze - left
+        // 恰好回到吃满且没有挤压过：写 0，窗口变宽时名字列还能跟着长
+        this.nameWidth = (baseW === fitW && applied === 0) ? 0 : baseW + applied
+        const atMin = raw < CT_NAME_MIN
+        this.colLimit = Math.abs(dx) > 1 && (atMin || applied < squeeze)
+          ? (dx < 0 ? 'min' : 'max')
           : ''
+        Object.keys(next).forEach((key) => this.$set(this.columnWidths, key, next[key]))
       }
       this._colResizeCleanup = () => {
         window.removeEventListener('mousemove', onMove)
