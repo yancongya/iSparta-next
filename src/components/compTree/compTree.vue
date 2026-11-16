@@ -155,6 +155,11 @@
             <is-icon class="mod-ct__state-ico" :name="stateIconOf(node)" size="xs" />
             <span v-if="stateLabelOf(node)" class="mod-ct__state-txt">{{ stateLabelOf(node) }}</span>
             <span v-if="stateSizeOf(node)" class="mod-ct__state-size">{{ stateSizeOf(node) }}</span>
+            <span
+              v-if="estimateOf(node)"
+              class="mod-ct__est"
+              v-tip="estimateTipOf(node)"
+            >Q{{ estimateOf(node).quality }}</span>
           </button>
         </template>
       </li>
@@ -234,6 +239,13 @@ import {
   columnOf, clampColumnWidth, clampNameWidth, presetColumnWidth,
   loadColumnLayout, saveColumnLayout, CT_NAME_KEY, CT_NAME_MIN
 } from '../../util/compTreeColumns'
+import { fs } from '../../util/node-env'
+import { estimateQuality, estimateSourceBytes, humanSize } from '../../util/qualityEstimate'
+
+/** 合成节点的估算源字节：转换前序列未渲染，按 宽×高×帧数 估一个量级 */
+function nodeEstimateBytes (node) {
+  return estimateSourceBytes(node && node.width, node && node.height, node && node.frames)
+}
 
 /** 渲染后合成的三种动图格式，顺序与 store 默认 outputFormat 一致 */
 const FORMATS = [
@@ -422,6 +434,8 @@ export default {
     }
   },
   created () {
+    // 预估角标缓存：按 node.id + 配置签名，滚动/进度重渲染不重复算
+    this._estimateCache = new Map()
     this.refresh()
     if (this.$root && this.$root.eventBus) {
       this.$root.eventBus.$on('comp-tree-refresh', this.refresh)
@@ -435,6 +449,7 @@ export default {
     this.unbindMarquee()
     this.stopColumnResize()
     this.closeHeadMenu()
+    if (this._estimateCache) this._estimateCache.clear()
     if (this.$root && this.$root.eventBus) {
       this.$root.eventBus.$off('comp-tree-refresh', this.refresh)
       this.$root.eventBus.$off('comp-tree-add-selected', this.emitAdd)
@@ -740,6 +755,52 @@ export default {
       } catch (e) { copied = false }
       if (copied) notice.success(this.$t('copyOutputSuccess', { count: files.length }))
       else notice.error(this.$t('copyOutputFailed'))
+    },
+    /**
+     * 常驻预估角标：目标大小启用时按 宽×高×帧数 估算源字节，反推建议起始质量。
+     * 合成转换前序列未渲染，拿不到真实源字节，故一律为估算值（estimated=true，UI 标仅供参考）。
+     * 已加入任务的合成用其真实 options，未加入的用全局默认 options。
+     * 按 node.id + 配置签名缓存，滚动/重渲染不重复计算。
+     */
+    estimateOf (node) {
+      if (!node) return null
+      const bytes = nodeEstimateBytes(node)
+      if (!(bytes > 0)) return null
+      const task = this.taskOf(node)
+      let opts = task && task.options
+      if (!opts) {
+        try {
+          const raw = window.storage && window.storage.getItem('globalSetting')
+          const gs = raw ? JSON.parse(raw) : null
+          opts = gs && gs.options
+        } catch (e) { opts = null }
+      }
+      if (!opts || !opts.sizeLimit || !opts.sizeLimit.enabled) return null
+      const fmt = (opts.outputFormat && opts.outputFormat.length)
+        ? opts.outputFormat
+        : this.formatsOf(node)
+      const useOpts = Object.assign({}, opts, { outputFormat: fmt })
+      const stamp = [node.id, bytes, (fmt || []).join(','),
+        opts.sizeLimit.maxBytes, opts.sizeLimit.maxMB,
+        opts.quality && opts.quality.value, opts.quality && opts.quality.checked].join('|')
+      const cache = this._estimateCache
+      const hit = cache && cache.get(node.id)
+      if (hit && hit.stamp === stamp) return hit.value
+      const value = estimateQuality(useOpts, bytes, true)
+      if (cache) cache.set(node.id, { stamp: stamp, value: value })
+      return value
+    },
+    /** 角标 hover：预估质量 + 尺寸估算的量级 + 仅供参考声明 */
+    estimateTipOf (node) {
+      const e = this.estimateOf(node)
+      if (!e) return ''
+      const source = humanSize(e.sourceBytes)
+      const target = humanSize(e.maxBytes)
+      const line = e.changed
+        ? this.$t('estimateChanged', { base: e.baseline, q: e.quality })
+        : this.$t('estimateSame', { q: e.quality })
+      return line + '\n' + this.$t('estimateDetail', { source: source, target: target }) +
+        '\n' + this.$t('estimateDisclaimerEstimated')
     },
     sizeText (n) {
       return (n.width || 0) + '×' + (n.height || 0)
@@ -1382,6 +1443,22 @@ export default {
   text-overflow: ellipsis;
   font-size: 11px;
   font-variant-numeric: tabular-nums;
+  opacity: 0.85;
+}
+/* 常驻预估角标：尺寸估算值，虚线边框提示「仅供参考」；不占新列 */
+.mod-ct__est {
+  flex: 0 0 auto;
+  height: 14px;
+  padding: 0 4px;
+  border: 1px dashed var(--is-var-3, var(--is-accent));
+  border-radius: var(--is-r-pill, 8px);
+  color: rgb(var(--is-var-3, 160, 130, 220));
+  font-family: var(--is-font-mono, monospace);
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 12px;
+  white-space: nowrap;
+  cursor: help;
   opacity: 0.85;
 }
 .mod-ct__txt {

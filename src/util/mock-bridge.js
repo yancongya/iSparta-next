@@ -252,7 +252,11 @@ function createMockChildProcess () {
 function seedItems (fs, path, storage) {
   const storagePath = path.join('/isparta-mock-tmp', 'iSparta/localstorage-dev.json')
   storage.setStoragePath(storagePath)
-  if (storage.getItem('iSparta-item')) { return }
+  // 种子结构变更（如演示字段）时升 SEED_VERSION，旧浏览器缓存自动重种，
+  // 不必手动清 localStorage。只在 dev mock 生效，不碰真实数据。
+  const SEED_VERSION = '2'
+  if (storage.getItem('iSparta-item') && storage.getItem('iSparta-seed-v') === SEED_VERSION) { return }
+  storage.setItem('iSparta-seed-v', SEED_VERSION)
 
   const EXT_OF_FORMAT = { APNG: '.png', GIF: '.gif', WEBP: '.webp' }
   const mk = (type, fileList, outputName, isSelected, formats) => {
@@ -285,7 +289,7 @@ function seedItems (fs, path, storage) {
         outputFormat: list,
         floyd: { checked: true, value: 0.35 },
         quality: { checked: false, value: 80 },
-        sizeLimit: { enabled: false, maxMB: 1, maxBytes: 1048576, unit: 'MB', autoDelete: false, autoQuality: true, step: 5, maxTries: 10 },
+        sizeLimit: { enabled: true, maxMB: 1, maxBytes: 1048576, unit: 'MB', autoDelete: false, autoQuality: true, step: 5, maxTries: 10 },
         outputTo: { mode: 'output', customPath: '', template: '' }
       },
       process: { text: '', schedule: 0 },
@@ -302,6 +306,24 @@ function seedItems (fs, path, storage) {
     mk('WEBP', ['/mock-assets/photo.webp'], 'photo', false)
   ]
   storage.setItem('iSparta-item', JSON.stringify(items))
+
+  // 全局设置种子：真实环境由 store 初始化；浏览器预览补一份，
+  // 让「未加入任务的合成」也能读到默认目标大小，驱动合成树的预估角标。
+  if (!storage.getItem('globalSetting')) {
+    storage.setItem('globalSetting', JSON.stringify({
+      language: 'zh-cn',
+      options: {
+        outputFormat: ['APNG', 'GIF', 'WEBP'],
+        quality: { checked: true, value: 80 },
+        sizeLimit: {
+          enabled: true, maxMB: 2, maxBytes: 2097152, unit: 'MB',
+          autoDelete: true, autoQuality: true, step: 5, maxTries: 10
+        },
+        frameRate: 25,
+        loop: 0
+      }
+    }))
+  }
 }
 
 /* ---------- 安装 ---------- */
