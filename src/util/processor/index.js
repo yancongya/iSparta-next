@@ -248,6 +248,13 @@ function remapApng (item, store, locale) {
 
 function apng2other (item, store, locale) {
   var funcArr = []
+  // 输出模板可能展开出一个尚不存在的新目录（如 {srcPath}/输出）。CEP 桥的 fs.copy
+  // 走 link/copyFile 异步快路径，不自动建父目录，目标缺失则 ENOENT copyfile；
+  // 默认 {srcPath} 指向已建好的序列帧目录才一直没暴露。写入前先确保目录存在。
+  // 桌面端 fs:copy 本就自动建父目录，此处幂等无副作用。
+  if (item.basic.outputPath) {
+    fs.ensureDirSync(item.basic.outputPath)
+  }
   // 中间产物 ASCII 名 out.*；最终输出仍用用户 outputName
   item.basic.fileList[0] = path.join(item.basic.tmpOutputDir, 'out.png')
   item.options.outputFormat.forEach((el) => {
