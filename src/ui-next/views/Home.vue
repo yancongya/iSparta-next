@@ -1119,7 +1119,11 @@ export default {
       if (!this.supportsFileImport) return
       return fsOperate.readerFiles(list).then((ars) => {
         if (!ars || !ars.length) {
-          appLog.warn(this.$t('noticeNothingFound'), list.join(', '))
+          // list 可能是 FileList（拖拽/粘贴），没有 .join()；用通用类数组遍历并取可读文件名
+          var srcNames = Array.prototype.map.call(list || [], function (f) {
+            return (f && (f.name || f.path)) || String(f)
+          })
+          appLog.warn(this.$t('noticeNothingFound'), srcNames.join(', '))
           notice.warning(this.$t('noticeNothingFound'), this.$t('noticeNothingFoundTip'))
           return
         }
