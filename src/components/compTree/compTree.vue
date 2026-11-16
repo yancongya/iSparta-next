@@ -152,8 +152,11 @@
             :aria-label="stateAriaOf(node)"
             @click.stop="onStateClick(node)"
           >
-            <is-icon class="mod-ct__state-ico" :name="stateIconOf(node)" size="xs" />
-            <span v-if="stateLabelOf(node)" class="mod-ct__state-txt">{{ stateLabelOf(node) }}</span>
+            <!-- 待处理态只留预估大小：状态图标/文字让位，避免与预估挤在同一列 -->
+            <template v-if="showStateMark(node)">
+              <is-icon class="mod-ct__state-ico" :name="stateIconOf(node)" size="xs" />
+              <span v-if="stateLabelOf(node)" class="mod-ct__state-txt">{{ stateLabelOf(node) }}</span>
+            </template>
             <!-- 完成态显示真实产物大小；否则（默认/待处理）显示预估产物大小 -->
             <span v-if="stateSizeOf(node)" class="mod-ct__state-size">{{ stateSizeOf(node) }}</span>
             <span
@@ -672,6 +675,14 @@ export default {
       }
       const task = this.taskOf(node)
       return task ? sizeTextOfFiles(existingOutputFilesOf(task)) : ''
+    },
+    /**
+     * 是否显示状态图标/文字。待处理态若已有预估大小，就让位只显示预估——
+     * 待处理是绝大多数合成的默认态，重复的状态标记只是噪音；
+     * 没有预估（未开目标大小）时才保留状态，避免整列空白。
+     */
+    showStateMark (node) {
+      return !(this.stateOf(node) === 'pending' && this.estimateOf(node))
     },
     /** 状态名（成功 / 失败 / 进行中 / 待处理）：列内文本为空时的兜底与 hover 首行 */
     stateNameOf (node) {

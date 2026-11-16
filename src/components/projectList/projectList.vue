@@ -157,7 +157,8 @@
         </div>
 
         <!-- 右侧：完成态格式角标 + 输出设置（单选打开）+ 帧预览/延时（二者独立，勿合并） -->
-        <div class="side">
+        <!-- has-est：角标绝对定位到卡片右上角后脱离侧栏流，补一段顶部间距保持其余按钮原位 -->
+        <div class="side" :class="{ 'has-est': !!estimateOf(project) }">
           <!-- 右上角常驻：预估产物大小（≈xx KB/MB）；超目标用警告态，hover 看明细 -->
           <span
             v-if="estimateOf(project)"

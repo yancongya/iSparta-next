@@ -484,6 +484,10 @@
     gap: 5px;
     min-width: 0;
     overflow: visible;
+
+    // 角标绝对定位到 item 右上角、脱离本流后，补回它原本占的高度，
+    // 让格式角标/按钮组位置不跳（桌面高卡片与 CEP 矮卡片统一）。
+    &.has-est { padding-top: 21px; }
   }
 
   .side__row {
@@ -572,16 +576,18 @@
   // 做成「贴角标牌」——实底亮字、无描边、紧凑单侧圆角，区别于可点击的胶囊按钮；
   // hover 走 v-tip 显示预估明细与「非实际产物」声明。
   .est-badge {
+    position: absolute;
+    top: 0;
+    right: 0;
+    z-index: 3;
     display: inline-flex;
     align-items: center;
     gap: 2px;
-    flex: none;
-    align-self: flex-end;
     height: 16px;
     padding: 0 5px;
     border: 0;
-    // 右侧贴卡片边：只圆左侧两角，读起来像钉在右上角的标牌，而非按钮
-    border-radius: var(--is-r-xs, 3px) 0 0 var(--is-r-xs, 3px);
+    // 钉在卡片右上角：外角跟卡片圆角一致，内角小圆角，读起来像角标而非按钮
+    border-radius: 0 var(--is-r-md, 8px) 0 var(--is-r-xs, 3px);
     background: rgb(var(--is-var-3, 160, 130, 220));
     // var-3 暗色主题取浅橙、亮色主题取深橙；on-accent 恰好反向，两套主题对比度都够
     color: var(--is-on-accent);
