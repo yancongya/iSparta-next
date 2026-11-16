@@ -165,7 +165,7 @@
             :class="{ 'is-estimated': estimateOf(project).estimated, 'is-over': estimateOf(project).over }"
             v-tip="estimateTipOf(project)"
             :aria-label="$t('estimateHover', { size: estimateOf(project).text, q: estimateOf(project).quality })"
-          ><is-icon name="box" size="xs" />{{ estimateOf(project).text }}</span>
+          ><is-icon name="box" size="xs" />≈{{ estimateOf(project).text }}</span>
           <!-- 每种输出格式一个角标（并排）：hover 看产物名与大小，点击复制该格式产物 -->
           <div v-if="outputBadges[index].length" class="side__badges">
             <button

@@ -568,20 +568,23 @@
     flex: none;
   }
 
-  // 右上角常驻：预估产物大小（≈xx KB/MB）。实线=真实源；虚线=合成估算（仅供参考）。
-  // 超目标（is-over）转警告色，提醒按当前设置可能压不到目标。
+  // 右上角常驻角标：预估产物大小（≈xx KB/MB）。
+  // 做成「贴角标牌」——实底亮字、无描边、紧凑单侧圆角，区别于可点击的胶囊按钮；
+  // hover 走 v-tip 显示预估明细与「非实际产物」声明。
   .est-badge {
     display: inline-flex;
     align-items: center;
-    gap: 3px;
+    gap: 2px;
     flex: none;
     align-self: flex-end;
-    height: 17px;
-    padding: 0 6px;
-    border: 1px solid var(--is-var-3, var(--is-accent));
-    border-radius: var(--is-r-pill, 8px);
-    background: rgba(var(--is-var-3-rgb, 160, 130, 220), 0.1);
-    color: rgb(var(--is-var-3, 160, 130, 220));
+    height: 16px;
+    padding: 0 5px;
+    border: 0;
+    // 右侧贴卡片边：只圆左侧两角，读起来像钉在右上角的标牌，而非按钮
+    border-radius: var(--is-r-xs, 3px) 0 0 var(--is-r-xs, 3px);
+    background: rgb(var(--is-var-3, 160, 130, 220));
+    // var-3 暗色主题取浅橙、亮色主题取深橙；on-accent 恰好反向，两套主题对比度都够
+    color: var(--is-on-accent);
     font-family: var(--is-font-mono, monospace);
     font-size: 10px;
     font-weight: 700;
@@ -590,11 +593,12 @@
     white-space: nowrap;
     cursor: help;
   }
-  .est-badge.is-estimated { border-style: dashed; opacity: 0.85; }
+  // 合成估算（CEP 无真实源字节）：同色实底，靠前置 ≈ 与 hover 提示说明「仅供参考」，
+  // 不再用虚线描边——那是按钮语言，角标要用实底。
+  .est-badge.is-estimated { background: rgba(var(--is-var-3, 160, 130, 220), 0.88); }
   .est-badge.is-over {
-    border-color: var(--is-warn, #ffc857);
-    background: rgba(var(--is-warn-rgb, 255, 200, 87), 0.1);
-    color: rgb(var(--is-warn, 255, 200, 87));
+    background: var(--is-warn, #ffc857);
+    color: var(--is-on-accent);
   }
 
   /* 进度：覆在任务条底边，不占横向布局（小屏不溢出） */
