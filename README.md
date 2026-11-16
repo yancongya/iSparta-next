@@ -327,6 +327,7 @@ iSparta-next/
 | [`docs/ACCEPTANCE-RUNBOOK.md`](docs/ACCEPTANCE-RUNBOOK.md) | 手册 | 双端真机验收步骤 |
 | [`docs/PLAN-DUAL-TARGET.md`](docs/PLAN-DUAL-TARGET.md) | 现状 | 双端共享实现、宿主边界与当前状态 |
 | [`docs/maintenance/optimization-log.md`](docs/maintenance/optimization-log.md) | 记录 | 文档/目录梳理记录与验收边界 |
+| [`docs/TODO-toolchain-and-sizing.md`](docs/TODO-toolchain-and-sizing.md) | 待办 | 工具链完整性校验与目标大小前置规划（尚未实现） |
 | [`targets/cep/README.md`](targets/cep/README.md) | 手册 | CEP 开发、构建与安全挂载 |
 | [`targets/cep/bin/README.md`](targets/cep/bin/README.md) | 手册 | CEP 编码器工具的准备与运行要求 |
 | [`AGENTS.md`](AGENTS.md) | 约定 | 开发 / commit / release 约定（人与 Agent 共用） |

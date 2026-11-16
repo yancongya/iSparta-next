@@ -281,6 +281,7 @@ Double-click friendly wrappers under `scripts/dev/`: `run-all-dev`, `run-dev-cep
 | [`docs/ACCEPTANCE-RUNBOOK.md`](docs/ACCEPTANCE-RUNBOOK.md) | Guide | Dual-target on-device acceptance steps |
 | [`docs/PLAN-DUAL-TARGET.md`](docs/PLAN-DUAL-TARGET.md) | Current | Shared desktop/CEP implementation, host boundaries, and status |
 | [`docs/maintenance/optimization-log.md`](docs/maintenance/optimization-log.md) | Log | Documentation/layout maintenance and verification boundaries |
+| [`docs/TODO-toolchain-and-sizing.md`](docs/TODO-toolchain-and-sizing.md) | Planned | Toolchain integrity checks and upfront target-size planning (not yet implemented) |
 | [`targets/cep/README.md`](targets/cep/README.md) | Guide | CEP development, build, and safe local mounting |
 | [`targets/cep/bin/README.md`](targets/cep/bin/README.md) | Guide | CEP encoder tools and runtime requirements |
 | [`AGENTS.md`](AGENTS.md) | Convention | Dev / commit / release conventions (humans and agents) |
