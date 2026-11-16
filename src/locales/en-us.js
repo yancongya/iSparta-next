@@ -21,6 +21,15 @@ module.exports = {
     "language":"Language",
     "languageSystem":"System default",
     "filenameSuffix":"Filename suffix",
+    // setting / global setting top tabs
+    "settingTabBasic": "Basic",
+    "settingTabOutput": "Path",
+    "settingTabAnimation": "Animation",
+    "settingTabCompression": "Compression",
+    "globalTabGeneral": "General",
+    "globalTabOutput": "Output",
+    "globalTabCompression": "Compression",
+    "globalTabAbout": "About",
     //setting
     "outputConfig": "Output settings",
     "animationSettings":"Animation settings",

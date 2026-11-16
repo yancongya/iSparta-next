@@ -21,6 +21,15 @@ module.exports = {
     "language":"語言",
     "languageSystem":"跟隨系統",
     "filenameSuffix":"文件名後綴",
+    // setting / global setting 頂部固定分類
+    "settingTabBasic": "基礎",
+    "settingTabOutput": "路徑",
+    "settingTabAnimation": "動畫",
+    "settingTabCompression": "壓縮",
+    "globalTabGeneral": "一般",
+    "globalTabOutput": "輸出",
+    "globalTabCompression": "壓縮",
+    "globalTabAbout": "關於",
     //setting
     "outputConfig": "輸出設置",
     "animationSettings":"動畫設置",

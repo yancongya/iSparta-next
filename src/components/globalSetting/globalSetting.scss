@@ -6,6 +6,29 @@
 // ==========================================================================
 
 .globalsetting {
+  // 顶部固定分类条：贴住弹窗 body 顶部滚动（sticky），切 tab 不跳回顶部
+  .gs-tabs-bar {
+    position: sticky;
+    top: calc(var(--is-s-5) * -1);
+    z-index: 1;
+    margin: calc(var(--is-s-5) * -1) calc(var(--is-s-5) * -1) var(--is-s-4);
+    padding: var(--is-s-3) var(--is-s-5);
+    border-bottom: 1px solid var(--is-divider);
+    background: var(--is-elevated);
+
+    .gs-tabs {
+      display: flex;
+      width: 100%;
+
+      .is-segmented__item {
+        flex: 1 1 0;
+        min-width: 0;
+      }
+    }
+  }
+
+  .gs-pane { min-width: 0; }
+
   .gs-split {
     height: 1px;
     margin: var(--is-s-4) 0;
@@ -188,6 +211,16 @@
   .pv__label { display: none; }
 
   &__vars { margin-top: 0; }
+}
+
+// CEP 窄面板：分类条只留图标，标签隐藏（仍在 DOM 供屏幕阅读器使用）
+html.is-cep .globalsetting .gs-tabs-bar .is-segmented__item {
+  gap: 0;
+  min-width: 0;
+  padding: 0 var(--is-s-2);
+
+  // IsIcon 根元素也是 span.is-icon，只隐藏文字标签，保留图标
+  > span:not(.is-icon) { display: none; }
 }
 
 // --------------------------------------------------------------------------

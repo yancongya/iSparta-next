@@ -20,8 +20,20 @@
       <span>{{ $t('multiBanner', { n: selectedList.length }) }}</span>
     </div>
 
+    <!-- 顶部固定分类：CEP 窄面板自动切成纯图标（样式见 setting.scss） -->
+    <nav v-if="curtSetting" class="mod-tabs-bar" :aria-label="$t('outputConfig')">
+      <is-segmented
+        v-model="activeTab"
+        class="mod-tabs"
+        size="sm"
+        :options="tabOptions"
+      />
+    </nav>
+
     <!-- 完整输出配置：单选/多选共用；多选时写入所有选中项 -->
     <section v-if="curtSetting" class="mod-form">
+      <!-- 基础分类 -->
+      <div v-show="activeTab === 'basic'" class="mod-pane">
       <!-- 输出名：单选整段拆词；多选每项同样支持拆词与漏斗 -->
       <div class="mod-form__group">
         <p class="mod-form__caption">
@@ -105,7 +117,10 @@
           />
         </is-checkbox-group>
       </div>
+      </div><!-- /基础 -->
 
+      <!-- 路径分类 -->
+      <div v-show="activeTab === 'output'" class="mod-pane">
       <!-- 输出路径：展示真实路径；CEP 无「选目录/输出到目录」（固定为项目旁合成子目录） -->
       <div class="mod-form__group">
         <div class="mod-form__capline">
@@ -182,7 +197,10 @@
           </transition>
         </div>
       </div>
+      </div><!-- /路径 -->
 
+      <!-- 动画分类 -->
+      <div v-show="activeTab === 'animation'" class="mod-pane">
       <!-- 动画参数：帧率与循环次数 -->
       <div v-if="showFrame || canRemapFrames" class="mod-form__group animation-settings">
         <p class="mod-form__caption">{{ $t('animationSettings') }}</p>
@@ -204,7 +222,10 @@
           </div>
         </div>
       </div>
+      </div><!-- /动画 -->
 
+      <!-- 压缩分类 -->
+      <div v-show="activeTab === 'compression'" class="mod-pane">
       <!-- 压缩设置：质量与抽帧并排，阈值设置放在下方 -->
       <div class="mod-form__group compression-settings">
         <p class="mod-form__caption">{{ $t('compressionSettings') }}</p>
@@ -235,10 +256,6 @@
             </button>
           </div>
         </div>
-        <p v-if="hasUnsupportedRemapItems" class="frame-remap-note">
-          {{ $t('frameRemapUnsupported') }}
-        </p>
-
         <div class="compression-settings__threshold">
           <div class="mod-form__capline">
             <p class="mod-form__caption mod-form__caption--flush">{{ $t("sizeLimit") }}</p>
@@ -274,6 +291,17 @@
           </div>
         </div>
       </div>
+      </div><!-- /压缩 -->
+    </section>
+
+    <!-- 固定底部：跨分类提示常驻，切到任一 tab 都看得见 -->
+    <div v-if="curtSetting" class="mod-form__footer">
+      <p v-if="hasUnsupportedRemapItems" class="frame-remap-note">
+        <is-icon name="info" size="sm" /> {{ $t('frameRemapUnsupported') }}
+      </p>
+      <p v-if="!canStart" class="mod-form__warn">
+        <is-icon name="alert" size="sm" /> {{ $t('needOneFormat') }}
+      </p>
 
       <is-button
         type="primary"
@@ -292,11 +320,7 @@
         :disabled="isStarted"
         @click="changeOutput"
       >{{ $t("outputTofolder") }}</is-button>
-
-      <p v-if="!canStart" class="mod-form__warn">
-        <is-icon name="alert" size="sm" /> {{ $t('needOneFormat') }}
-      </p>
-    </section>
+    </div>
 
     <!-- 底部工具条已迁至中栏（设置/删除所选），避免双入口 -->
   </section>
@@ -332,6 +356,8 @@ export default {
   components: { PathVars, IsPresetBar, QualityRetrySliders },
   data () {
     return {
+      // 顶部固定分类；任务切换时不重置（不写进 selectedList 的 watcher）
+      activeTab: 'basic',
       sizeDraft: null,
       // 「真实路径」行的展开结果
       pathPreviewUI: '',
@@ -349,6 +375,15 @@ export default {
     }
   },
   computed: {
+    // 顶部固定分类：CEP 窄面板只显示图标，标签仍用于无障碍与桌面 tooltip
+    tabOptions () {
+      return [
+        { value: 'basic', label: this.$t('settingTabBasic'), icon: 'edit' },
+        { value: 'output', label: this.$t('settingTabOutput'), icon: 'folder' },
+        { value: 'animation', label: this.$t('settingTabAnimation'), icon: 'film' },
+        { value: 'compression', label: this.$t('settingTabCompression'), icon: 'sliders' }
+      ]
+    },
     selectedList () {
       return this.$store.getters.getterSelected
     },
@@ -599,6 +634,13 @@ export default {
   // 按「后者覆盖前者」的规则把这里的 selectedList / curtSetting 监听整块吃掉了，
   // 导致切换选中项后路径预览停留在上一个项目。
   watch: {
+    // 切换分类后把表单滚动区带回顶部，避免沿用上一分类的滚动位置
+    activeTab () {
+      this.$nextTick(() => {
+        const el = this.$el && this.$el.querySelector && this.$el.querySelector('.mod-form')
+        if (el) { el.scrollTop = 0 }
+      })
+    },
     variablesExpanded (expanded) {
       if (!expanded) { this.bookmarkOpen = false }
     },

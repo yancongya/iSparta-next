@@ -10,6 +10,18 @@
       @open="resetVarible"
     >
       <is-form v-if="setting">
+        <!-- 顶部固定分类条：CEP 窄面板自动切成纯图标（样式见 globalSetting.scss） -->
+        <div class="gs-tabs-bar">
+          <is-segmented
+            v-model="activeTab"
+            class="gs-tabs"
+            size="sm"
+            :options="tabOptions"
+          />
+        </div>
+
+        <!-- 常规 -->
+        <div v-show="activeTab === 'general'" class="gs-pane">
         <is-form-item :label="$t('language')">
           <is-segmented v-model="setting.language" :options="languages" size="sm" />
         </is-form-item>
@@ -17,9 +29,10 @@
         <is-form-item :label="$t('appearance')">
           <is-segmented v-model="themeMode" :options="themeOptions" size="sm" @change="applyThemeMode" />
         </is-form-item>
+        </div><!-- /常规 -->
 
-        <div class="gs-split"></div>
-
+        <!-- 压缩 -->
+        <div v-show="activeTab === 'compression'" class="gs-pane">
         <is-form-item :label="$t('fps')">
           <is-input v-model="setting.options.frameRate" type="number" class="w-80" :max="100" :min="0" number />
           <em class="hint">0-100</em>
@@ -36,9 +49,6 @@
           <is-input v-model="setting.options.loop" type="number" class="w-80" number />
           <span class="unit">{{ $t('times') }}</span>
           <em class="hint">{{ $t('loopTips') }}</em>
-        </is-form-item>
-        <is-form-item :label="$t('filenameSuffix')">
-          <is-input v-model="setting.options.outputSuffix" class="is-input--fluid" :maxlength="10" />
         </is-form-item>
         <div class="gs-pair">
           <div class="gs-pair__cell">
@@ -73,8 +83,13 @@
           </is-checkbox-group>
           <p class="gs-hint">{{ $t('defaultOutputFormatTip') }}</p>
         </is-form-item>
+        </div><!-- /压缩 -->
 
-        <div class="gs-split"></div>
+        <!-- 输出 -->
+        <div v-show="activeTab === 'output'" class="gs-pane">
+        <is-form-item :label="$t('filenameSuffix')">
+          <is-input v-model="setting.options.outputSuffix" class="is-input--fluid" :maxlength="10" />
+        </is-form-item>
 
         <is-form-item :label="$t('outputTo')">
           <div class="gs-path">
@@ -161,8 +176,10 @@
           :tries="sizeLimitMaxTries"
           @tries-change="sizeLimitMaxTries = $event"
         />
+        </div><!-- /输出 -->
 
-        <div class="gs-split"></div>
+        <!-- 关于 -->
+        <div v-show="activeTab === 'about'" class="gs-pane">
 
         <!-- 关于 / 更新检查：应用级信息，不放在任务输出设置面板 -->
         <div class="gs-pair">
@@ -204,6 +221,7 @@
           </div>
           <is-button size="sm" icon="globe" @click="openSite">{{ $t('aboutSite') }}</is-button>
         </div>
+        </div><!-- /关于 -->
       </is-form>
 
       <template #footer>
@@ -262,6 +280,8 @@ export default {
   components: { PathVars, IsPresetBar, QualityRetrySliders },
   data () {
     return {
+      // 顶部固定分类；重开弹窗不重置（resetVarible 不动它）
+      activeTab: 'general',
       setting: this.loadSetting(),
       dialogFormVisible: false,
       sizeDraft: null,
@@ -277,6 +297,15 @@ export default {
     }
   },
   computed: {
+    // 顶部固定分类：CEP 窄面板只显示图标
+    tabOptions () {
+      return [
+        { value: 'general', label: this.$t('globalTabGeneral'), icon: 'settings' },
+        { value: 'output', label: this.$t('globalTabOutput'), icon: 'folder' },
+        { value: 'compression', label: this.$t('globalTabCompression'), icon: 'sliders' },
+        { value: 'about', label: this.$t('globalTabAbout'), icon: 'info' }
+      ]
+    },
     // CEP：铺满（IsDialog 内联 width 会盖 CSS，必须在 prop 层给）；桌面 560px
     dialogWidth () {
       return (hostAdapter && hostAdapter.supportsCompImport) ? '100%' : '560px'
@@ -463,6 +492,15 @@ export default {
         this.$set(this.setting.options.sizeLimit, 'maxBytes', bytes)
         this.$set(this.setting.options.sizeLimit, 'maxMB', bytes / (1024 * 1024))
       }
+    }
+  },
+  watch: {
+    // 切换分类后把弹窗滚动区带回顶部
+    activeTab () {
+      this.$nextTick(() => {
+        const root = this.$el && this.$el.closest ? this.$el.closest('.is-dialog__body') : null
+        if (root) { root.scrollTop = 0 }
+      })
     }
   },
   mounted () {

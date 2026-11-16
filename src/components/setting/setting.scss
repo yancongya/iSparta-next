@@ -31,7 +31,7 @@
     letter-spacing: 0.02em;
   }
 
-  // 表单整体可滚动，工具条固定在右下角
+  // 表单整体可滚动；底部操作区已独立成 .mod-form__footer，不再预留 60px
   .mod-form,
   .mod-multi,
   .mod-empty {
@@ -40,8 +40,53 @@
     min-width: 0;
     overflow-x: hidden;
     overflow-y: auto;
-    padding: var(--is-s-2) var(--is-s-3) 60px;
+    padding: var(--is-s-2) var(--is-s-3) var(--is-s-3);
   }
+
+  // 顶部固定分类条：不随表单滚动
+  .mod-tabs-bar {
+    flex: none;
+    padding: var(--is-s-2) var(--is-s-3) 0;
+    border-bottom: 1px solid var(--is-divider);
+
+    .mod-tabs {
+      display: flex;
+      width: 100%;
+
+      .is-segmented__item {
+        flex: 1 1 0;
+        min-width: 0;
+      }
+    }
+  }
+
+  // 固定底部：跨分类提示 + 开始按钮常驻
+  &__footer {
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    gap: var(--is-s-2);
+    padding: var(--is-s-3);
+    border-top: 1px solid var(--is-divider);
+    background: var(--is-panel);
+
+    .is-btn--lg { margin-top: 0; }
+
+    .frame-remap-note {
+      display: flex;
+      align-items: center;
+      gap: var(--is-s-1);
+      margin: 0;
+      color: var(--is-text-3);
+      font-size: var(--is-fs-xs);
+      line-height: 1.4;
+    }
+
+    .mod-form__warn { margin-top: 0; }
+  }
+
+  // 分类内容：v-show 切换，仅作布局容器
+  .mod-pane { min-width: 0; }
 
   .animation-settings__row {
     display: grid;
@@ -125,6 +170,19 @@
     flex: none;
   }
 
+}
+
+// CEP 覆盖层固定窄 / 桌面侧栏拖窄：分类条只留图标，标签隐藏；
+// 标签仍在 DOM 里供屏幕阅读器使用（IsSegmented 已带 role=tablist/tab）。
+// 由宿主环境类与 JS 维护的宽度类触发，等效响应式断点。
+html.is-cep .mod-setting .mod-tabs-bar .is-segmented__item,
+body.side-narrow .mod-setting .mod-tabs-bar .is-segmented__item {
+  gap: 0;
+  min-width: 0;
+  padding: 0 var(--is-s-2);
+
+  // IsIcon 根元素也是 span.is-icon，只隐藏文字标签，保留图标
+  > span:not(.is-icon) { display: none; }
 }
 
 
