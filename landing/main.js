@@ -187,7 +187,6 @@
   const gateEnabled = document.getElementById("gate-enabled");
   const gateMax = document.getElementById("gate-max");
   const gateAutoQ = document.getElementById("gate-auto-q");
-  const gateStep = document.getElementById("gate-step");
   const gateTries = document.getElementById("gate-tries");
   const btnAuto = document.getElementById("btn-auto");
   const qSlider = document.getElementById("q-slider");
@@ -226,8 +225,8 @@
       enabled: !gateEnabled || gateEnabled.checked,
       maxMB: limitMB(),
       autoQuality: !gateAutoQ || gateAutoQ.checked,
-      step: Math.max(1, Number(gateStep && gateStep.value) || 5),
-      maxTries: Math.min(8, Math.max(3, Number(gateTries && gateTries.value) || 5)),
+      // 与应用 sizeLimitConfig.automaticRetryCount 一致：0–50，由次数自动分配降幅，没有手动步长
+      maxTries: Math.min(50, Math.max(0, Number(gateTries && gateTries.value) || 0)),
     };
   }
 
@@ -236,6 +235,16 @@
     const base = Math.max(0.18, 2.85 * Math.pow(1 - t * 0.88, 1.7) + 0.1);
     const factor = FMT_FACTOR[fmt || activeFmt] || 1;
     return base * factor;
+  }
+
+  // 与应用 sizeLimitConfig.automaticRetryQuality 同构：把降幅按次数均匀摊到 Q1，
+  // 没有手动步长。attempt 从 1 起算第几档；0 次表示不降。
+  function retryQuality(start, tries, attempt) {
+    const s = Math.max(0, Math.min(100, Number(start) || 80));
+    const t = Math.min(tries, Math.max(0, s - 1));
+    if (!t || attempt <= 0) return s;
+    const i = Math.max(1, Math.min(attempt, t));
+    return Math.max(1, Math.floor(s - (s - 1) * i / t));
   }
 
   function clearLog() {
@@ -314,7 +323,8 @@
   function runGateDemo() {
     stopGate();
     clearLog();
-    let q = 85;
+    const startQ = Number(qSlider && qSlider.value) || 85;
+    let q = startQ;
     let tryN = 0;
     if (btnAuto) btnAuto.disabled = true;
     gateRunning = true;
@@ -354,12 +364,12 @@
         finish(false);
         return;
       }
-      if (tryN >= st.cfg.maxTries || q <= 10) {
+      if (tryN >= st.cfg.maxTries || q <= 1) {
         addLog("<span>" + (isEn() ? "Max retries" : "达最大重试") + "</span>", "is-over");
         finish(false);
         return;
       }
-      q = Math.max(10, q - st.cfg.step);
+      q = retryQuality(startQ, st.cfg.maxTries, tryN);
       gateTimer = setTimeout(attempt, delay);
     }
 
@@ -424,7 +434,7 @@
   });
 
   if (btnAuto) btnAuto.addEventListener("click", runGateDemo);
-  [gateEnabled, gateMax, gateAutoQ, gateStep, gateTries].forEach(function (el) {
+  [gateEnabled, gateMax, gateAutoQ, gateTries].forEach(function (el) {
     if (!el) return;
     el.addEventListener("change", function () {
       stopGate();

@@ -595,16 +595,9 @@
           <input type="checkbox" id="gate-auto-q" checked class="gate-check" />
         </label>
         <label class="gate-field">
-          <span data-i18n="play.step">每次降</span>
-          <span class="gate-field__row">
-            <input type="number" id="gate-step" min="1" max="20" step="1" value="12" />
-            <span class="mono">q</span>
-          </span>
-        </label>
-        <label class="gate-field">
           <span data-i18n="play.tries">最多试</span>
           <span class="gate-field__row">
-            <input type="number" id="gate-tries" min="3" max="8" step="1" value="5" />
+            <input type="number" id="gate-tries" min="0" max="50" step="1" value="10" />
             <span class="mono" data-i18n="play.times">次</span>
           </span>
         </label>
@@ -913,7 +906,7 @@
                 <p class="cep-cap" data-i18n="ae.pToLbl">输出到</p>
                 <div class="cep-input is-ro">…/ae-comp/Logo_Loop</div>
                 <p class="cep-vars">
-                  <button type="button">{comp}</button><button type="button">{fmt}</button><button type="button">{proj}</button><button type="button">{n}</button>
+                  <button type="button">{srcPath}</button><button type="button">{srcName}</button><button type="button">{parent}</button><button type="button">{date}</button>
                 </p>
                 <button class="cep-go" id="ae-go" type="button"><span data-i18n="ae.pStart">开始</span></button>
               </div>
@@ -939,7 +932,7 @@
             </span>
               <h3 data-i18n="ae.f2t">两种视图，随意切换</h3>
             </div>
-            <p data-i18n="ae.f2d">任务列表与合成树视图一键切换，双击合成即可在 AE 里直接定位它，管理一整个工程也不费劲。</p>
+            <p data-i18n="ae.f2d">任务列表与合成树视图一键切换，右键合成可在 AE 里直接定位，双击则打开输出设置，管理一整个工程也不费劲。</p>
           </article>
           <article class="ae-card">
             <div class="ae-card-head">
@@ -948,7 +941,7 @@
             </span>
               <h3 data-i18n="ae.f3t">变量输出路径，归档不乱</h3>
             </div>
-            <p data-i18n="ae.f3d">输出目录支持 <code>{comp}</code>、<code>{fmt}</code> 等变量模板，按合成名与格式自动分文件夹，批量导出后依然条理清晰。</p>
+            <p data-i18n="ae.f3d">输出目录支持 <code>{srcPath}</code>、<code>{srcName}</code>、<code>{parent}</code>、<code>{date}</code> 等变量模板，按源目录与工程目录自动归档，批量导出后依然条理清晰。</p>
           </article>
           <article class="ae-card">
             <div class="ae-card-head">

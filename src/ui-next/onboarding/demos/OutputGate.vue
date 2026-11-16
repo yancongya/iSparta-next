@@ -87,9 +87,24 @@
           <span>{{ $t('obGateEnable') }}</span>
         </label>
 
-        <label class="gate-range gate-range--wide">
-          <span>{{ $t('obGateTries') }} <b>{{ tries }} {{ $t('obGateTimes') }}</b></span>
-          <input type="range" min="0" :max="triesMax" :value="tries" :disabled="running" @input="setTries($event.target.value)">
+        <label class="gate-field gate-field--wide">
+          <span>{{ $t('obGateTries') }}</span>
+          <span class="gate-field__row">
+            <input
+              class="gate-num gate-num--tries"
+              type="number"
+              min="0"
+              :max="triesMax"
+              :step="1"
+              :value="draft !== null ? draft : tries"
+              :disabled="running"
+              :aria-label="$t('obGateTries')"
+              @input="onDraftInput($event.target.value)"
+              @blur="commitDraft"
+              @keyup.enter="commitDraft"
+            />
+            <span class="mono">{{ $t('obGateTimes') }}</span>
+          </span>
         </label>
       </div>
 
@@ -131,12 +146,17 @@ export default {
       limitRaw: 1,
       enabled: true,
       tries: 5,
+      draft: null,
       running: false,
       pop: false,
       log: [],
       timer: null,
       logSeq: 0
     }
+  },
+  watch: {
+    // 质量一变，上限与合法次数都会重算，旧草稿不能留到下次失焦提交
+    qualityBase () { this.draft = null }
   },
   computed: {
     maxMB () {
@@ -201,10 +221,21 @@ export default {
       this.qualityBase = Number(v) || 85
       this.q = this.qualityBase
       this.tries = automaticRetryCount(this.qualityBase, this.tries)
+      this.draft = null
     },
-    setTries (v) {
+    // 与应用 QualityRetrySliders 同款草稿输入：允许清空/半成品，失焦或回车才提交
+    onDraftInput (raw) {
+      this.draft = String(raw == null ? '' : raw)
+    },
+    commitDraft () {
+      const raw = this.draft
+      this.draft = null
+      if (raw === null) return
+      const n = Number(String(raw).trim())
+      if (!isFinite(n)) return
       this.stop()
-      this.tries = automaticRetryCount(this.qualityBase, v)
+      // 纯整数 + 0…triesMax 的钳制交给已有的 automaticRetryCount，不另写一套范围判定
+      this.tries = automaticRetryCount(this.qualityBase, Math.round(n))
     },
     pickFmt (f) {
       this.stop()
@@ -573,35 +604,6 @@ export default {
   flex: 0 0 auto;
 }
 
-.gate-range {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  gap: var(--is-s-1);
-  font-size: var(--is-fs-xs);
-  color: var(--is-text-2);
-}
-
-.gate-range--wide { grid-column: 1 / -1; }
-
-.gate-range > span {
-  display: flex;
-  justify-content: space-between;
-  gap: var(--is-s-1);
-}
-
-.gate-range b {
-  color: var(--is-accent);
-  font-family: var(--is-mono);
-}
-
-.gate-range input[type='range'] {
-  width: 100%;
-  min-width: 0;
-  margin: 0;
-  accent-color: var(--is-accent);
-}
-
 .gate-toggle {
   display: flex;
   align-items: center;
@@ -645,6 +647,7 @@ export default {
 }
 
 .gate-num--limit { width: 64px; }
+.gate-num--tries { width: 52px; }
 
 .gate-num:hover { border-color: var(--is-border-strong); }
 
