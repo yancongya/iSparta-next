@@ -8,8 +8,15 @@ on:
       # 截图唯一真相源在 docs/screenshots/：改了它落地页也要跟着更新
       - 'docs/screenshots/**'
       - 'scripts/sync-screenshots.js'
+      # 烘焙脚本改了也要重跑，保证静态兜底值与最新 Release 同步
+      - 'scripts/bake-landing.js'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
+  # 发版成功后重新部署：把最新版本号/日期烘焙进静态兜底，避免限流时倒退到旧版本
+  workflow_run:
+    workflows: ["Release"]
+    types: [completed]
+    branches: [master]
 
 permissions:
   contents: read
@@ -22,6 +29,8 @@ concurrency:
 
 jobs:
   deploy:
+    # workflow_run 触发时仅在发版成功才重烘焙；push / 手动触发不受影响
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -42,6 +51,14 @@ jobs:
 
       - name: Sync screenshots
         run: node scripts/sync-screenshots.js
+
+      # 烘焙最新 Release 到 index.html 静态兜底值 + sitemap lastmod。
+      # 用 GITHUB_TOKEN 认证（不受匿名 60 次/小时限流）；失败不阻塞部署（运行时仍有实时 API + 缓存兜底）。
+      - name: Bake latest release into HTML fallback
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/bake-landing.js
 
       - name: Upload landing
         uses: actions/upload-pages-artifact@v3

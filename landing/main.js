@@ -1228,19 +1228,24 @@
     if (relReleases[0]) applyHeroVersion(relReleases[0].tag, relReleases[0].publishedAt);
   }
 
-  /** 完全实时：只打 GitHub API，不读 releases.json / 不依赖构建期 bake */
-  // 同一访客短期内缓存，避免狂刷或共享出口 IP 撞 GitHub 匿名 60 次/小时
-  var LIVE_CACHE_TTL_MS = 15 * 60 * 1000
+  /** 实时优先：只打 GitHub API，不读 releases.json；失败时回退本地成功缓存兜底 */
+  // 同一访客缓存到 localStorage（跨会话保留），既避免共享出口 IP 撞 GitHub 匿名 60 次/小时，
+  // 也让限流时能回退到上次成功拉取的数据，而不是倒退到可能过时的 HTML 静态兜底。
+  var LIVE_CACHE_TTL_MS = 6 * 60 * 60 * 1000            // 新鲜期 6h，覆盖匿名限流窗口；成功请求会刷新
+  var LIVE_CACHE_STALE_MAX_MS = 7 * 24 * 60 * 60 * 1000 // stale-while-error 最多容忍 7 天的数据
   var LIVE_CACHE_PREFIX = "isparta-gh-rel:"
 
-  function liveCacheGet (key) {
+  // allowStale=true 时返回过期但未超上限的缓存（仅在 API 失败时用于兜底）
+  function liveCacheGet (key, allowStale) {
     try {
-      var raw = window.sessionStorage.getItem(LIVE_CACHE_PREFIX + key)
+      var raw = window.localStorage.getItem(LIVE_CACHE_PREFIX + key)
       if (!raw) return null
       var obj = JSON.parse(raw)
       if (!obj || !obj.t || !obj.data) return null
-      if (Date.now() - obj.t > LIVE_CACHE_TTL_MS) return null
-      return obj.data
+      var age = Date.now() - obj.t
+      if (age <= LIVE_CACHE_TTL_MS) return obj.data
+      if (allowStale && age <= LIVE_CACHE_STALE_MAX_MS) return obj.data
+      return null
     } catch (e) {
       return null
     }
@@ -1248,7 +1253,7 @@
 
   function liveCacheSet (key, data) {
     try {
-      window.sessionStorage.setItem(
+      window.localStorage.setItem(
         LIVE_CACHE_PREFIX + key,
         JSON.stringify({ t: Date.now(), data: data })
       )
@@ -1337,6 +1342,12 @@
           liveCacheSet(cacheKey, json)
           return json
         })
+      }).catch(function (err) {
+        // 限流/网络失败：退回上次成功拉取的缓存（哪怕已过期），
+        // 保证 hero 版本与下载数仍显示最近真实数据，而非静态兜底的旧版本。
+        var stale = liveCacheGet(cacheKey, true)
+        if (stale) return stale
+        throw err
       })
     }
 

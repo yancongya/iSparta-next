@@ -113,11 +113,19 @@ function bakeHtmlFallbacks (latest) {
   const ver = (latest.tag || '').replace(/^v/i, '') || '3.3.6'
   const date = formatDate(latest.publishedAt) || '2026-09-18'
   html = html.replace(/"softwareVersion"\s*:\s*"[^"]*"/, '"softwareVersion": "' + ver + '"')
-  // 整段替换 hero li 内部，兼容纯文本或已含日期 span 的旧结构
-  const heroInner = 'v' + ver + '<span class="hero-version-date mono"> · ' + date + '</span>'
+  // 外层实际是 <span id="hero-version">（不是 li），内部可能嵌套一个 date span。
+  // 兼容「纯版本号」与「版本号 + 嵌套 date span」两种结构，避免再次因标签不符而静默失效。
   html = html.replace(
-    /(<li id="hero-version"[^>]*>)[\s\S]*?(<\/li>)/,
-    '$1' + heroInner + '$2'
+    /(<span\b[^>]*\bid="hero-version"[^>]*>)([\s\S]*?)(<\/span>\s*<\/span>|<\/span>)/,
+    function (all, open, inner, close) {
+      // close 含 1 个（纯文本）或 2 个（嵌套 date span）</span>。
+      // 重建时不额外闭合 date span，由 close 负责，保证标签数量守恒。
+      var hasDateSpan = /<\/span>\s*<\/span>/.test(close)
+      var rebuilt = 'v' + ver + (hasDateSpan
+        ? '<span class="hero-version-date mono"> · ' + date
+        : '')
+      return open + rebuilt + close
+    }
   )
   fs.writeFileSync(INDEX, html, 'utf8')
   console.log('index.html fallback:', 'v' + ver, date)
