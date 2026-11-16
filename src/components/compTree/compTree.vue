@@ -822,7 +822,7 @@ export default {
       const e = this.estimateOf(node)
       if (!e) return ''
       const lines = []
-      lines.push(this.$t('estimateOut', { size: e.text, q: e.quality }))
+      lines.push(this.$t('estimateHover', { size: e.text, q: e.quality }))
       if (e.over) lines.push(this.$t('estimateOver', { target: humanSize(e.target) }))
       lines.push(this.$t('estimateDetail', { source: humanSize(e.sourceBytes), target: humanSize(e.target) }))
       lines.push(this.$t('estimateDisclaimerEstimated'))
