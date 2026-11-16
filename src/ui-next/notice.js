@@ -27,8 +27,10 @@ const ICONS = {
 const DEFAULT_DURATION = {
   info: 3200,
   success: 3200,
-  warning: 4600,
-  error: 6000,
+  // 告警/错误文案多为两行（标题 + 原因），原来 4.6s / 6s 偏短，
+  // 用户来不及读完就消失（issue #2）。延长到 8s / 10s；悬停仍可冻结倒计时。
+  warning: 8000,
+  error: 10000,
   confirm: 0
 }
 

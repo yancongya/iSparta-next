@@ -8,8 +8,11 @@
  */
 
 const NS = 'is-tip'
+const SHOW_DELAY = 140 // 显示延迟：原来 260ms 偏慢，掠过时几乎看不到（issue #2）
+const HIDE_GRACE = 200 // 隐藏宽限期：移开后给一点时间读完，快速掠过也不会满屏闪
 let host = null
-let timer = null
+let timer = null      // 显示延迟计时器
+let hideTimer = null  // 隐藏宽限计时器
 
 function ensureHost () {
   if (host && document.body.contains(host)) return host
@@ -49,18 +52,30 @@ function place (el, opts) {
 
 function hide () {
   if (timer) { clearTimeout(timer); timer = null }
+  if (hideTimer) { clearTimeout(hideTimer); hideTimer = null }
   if (host) host.classList.remove(NS + '--show')
+}
+
+// 移开后延迟隐藏，宽限期内重新悬停会取消（见 show 里的 hide()）
+function scheduleHide () {
+  if (timer) { clearTimeout(timer); timer = null }
+  if (hideTimer) { clearTimeout(hideTimer); hideTimer = null }
+  hideTimer = setTimeout(function () {
+    hideTimer = null
+    if (host) host.classList.remove(NS + '--show')
+  }, HIDE_GRACE)
 }
 
 function show (el, binding) {
   const opts = normalize(binding.value)
   if (!opts || !opts.text) return
+  // 清掉待隐藏：宽限期内移回同一控件不闪断
   hide()
   // 短延迟：掠过多个控件时不至于满屏闪提示
   timer = setTimeout(function () {
     timer = null
     place(el, opts)
-  }, 260)
+  }, SHOW_DELAY)
 }
 
 export default {
@@ -69,7 +84,8 @@ export default {
       // 存引用而非闭包捕获初次 binding：文案会随任务状态/产物大小变化
       binding: binding,
       enter: () => show(el, el._tip.binding),
-      leave: hide
+      leave: scheduleHide,
+      text: normalize(binding.value)
     }
     el.addEventListener('mouseenter', el._tip.enter)
     el.addEventListener('mouseleave', el._tip.leave)
@@ -77,10 +93,17 @@ export default {
     el.addEventListener('focusout', el._tip.leave)
   },
   componentUpdated (el, binding) {
-    // 更新 binding：否则 hover 一直显示首帧文案（合成树状态列会一直停在「待处理」）
-    if (el._tip) el._tip.binding = binding
-    // 文案变化时若正显示则重算位置
-    if (host && host.classList.contains(NS + '--show')) hide()
+    if (!el._tip) return
+    const next = normalize(binding.value)
+    const prev = el._tip.text
+    el._tip.binding = binding
+    el._tip.text = next
+    // 只在文案真的变了、且气泡正显示时才重算。
+    // 原来任何组件刷新都无条件 hide()，导致悬停读一半提示突然消失（issue #2）。
+    const changed = (prev && prev.text) !== (next && next.text)
+    if (changed && host && host.classList.contains(NS + '--show')) {
+      show(el, binding)
+    }
   },
   unbind (el) {
     if (!el._tip) return

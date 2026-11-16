@@ -71,14 +71,19 @@ var items = []
 // 获取所有的文件夹
 class actionFiles {
   getAllFiles (root) {
-        // 拉取文件夹
-    if (root.split(deep)[1].split('/').length < maxDeep) {
+    // 拉取文件夹
+    // 相对深度用 path.sep 计：Windows 是 '\'，mac/linux 是 '/'。
+    // 原来写死 split('/')，Windows 下根路径带 '\' 时层数算错，深目录会被误判超限而整批跳过。
+    var rel = root === deep ? '' : root.slice(deep.length).replace(/^[/\\]+/, '')
+    var depth = rel ? rel.split(path.sep).length : 0
+    if (depth < maxDeep) {
       let stats = fs.lstatSync(root)
       if (stats.isDirectory()) {
         var files = fs.readdirSync(root)
         files.forEach((file) => {
           var res = [],
-            pathname = root + '/' + file,
+            // 用 path.join 兼容两平台；原来写死 '/' 在 Windows 下混出 'C:\seq/sub' 这种混合分隔符
+            pathname = path.join(root, file),
             stat = fs.lstatSync(pathname)
           if (stat.isDirectory()) {
             res = res.concat(this.getAllFiles(pathname))
@@ -146,24 +151,23 @@ class actionFiles {
   }
 
   writePngBasic (PNGs) {
-    // console.warn(PNGs)
     let tempPrefix = {}
     for (var i = 0; i < PNGs.length; i++) {
       let prefixpath = path.dirname(PNGs[i])
+      // 取「末尾连续数字 + .png」前的部分作前缀：ah16_01.png → ah16_，frame_0002.png → frame_，
+      // 01.png → 空串。已兼容非纯数字前缀（issue #2 中 ah16_ 这类命名实测可正确归组），勿改回纯数字判断。
       let prefixname = path.basename(PNGs[i]).replace(/\d+\.png$/i, '')
       let prefix = prefixpath + prefixname
-      // console.log(path.basename(PNGs[i]))
       if (!tempPrefix[prefix]) {
         tempPrefix[prefix] = []
-        tempPrefix[prefix].push(PNGs[i])
-      } else {
-        tempPrefix[prefix].push(PNGs[i])
       }
-      if (i == PNGs.length - 1) {}
+      tempPrefix[prefix].push(PNGs[i])
     }
 
     for (var i in tempPrefix) {
-      if (tempPrefix[i].length > 1) {
+      // 原来要求 length > 1，导致单张 PNG、或每类只有一张的散图被静默丢弃，
+      // 最终 readerFiles 返回空 → 误导性的「没有找到可识别的图片」。单张也应成任务。
+      if (tempPrefix[i].length >= 1) {
         this.writeBasic('PNGs', path.dirname(tempPrefix[i][0]), tempPrefix[i])
       }
     }
