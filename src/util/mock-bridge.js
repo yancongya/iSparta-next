@@ -67,9 +67,13 @@ function createMockFs () {
     },
     remove: (p) => { delete files[p]; fsSave(files); return Promise.resolve() },
     // 失败语义必须保真：调用方（sizeGate）以 -1 区分“文件不存在”与“0 字节”
-    statSize: (p) => (Object.prototype.hasOwnProperty.call(files, p)
-      ? { ok: true, size: 1024 }
-      : { ok: false }),
+    // 源文件可登记演示字节数（__size__:<path>），让「预估质量角标」在浏览器预览里
+    // 显示有意义的降质值；未登记的文件（含产物）保持 1024，不影响产物大小角标。
+    statSize: (p) => {
+      if (!Object.prototype.hasOwnProperty.call(files, p)) return { ok: false }
+      const virtual = files['__size__:' + p]
+      return { ok: true, size: virtual ? Number(virtual) : 1024 }
+    },
     // 1px 透明 PNG 占位，保证缩略图链路形状一致
     readDataUrl: (p) => (Object.prototype.hasOwnProperty.call(files, p)
       ? { ok: true, dataUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==' }
@@ -254,13 +258,19 @@ function seedItems (fs, path, storage) {
   storage.setStoragePath(storagePath)
   // 种子结构变更（如演示字段）时升 SEED_VERSION，旧浏览器缓存自动重种，
   // 不必手动清 localStorage。只在 dev mock 生效，不碰真实数据。
-  const SEED_VERSION = '2'
+  const SEED_VERSION = '4'
   if (storage.getItem('iSparta-item') && storage.getItem('iSparta-seed-v') === SEED_VERSION) { return }
   storage.setItem('iSparta-seed-v', SEED_VERSION)
 
   const EXT_OF_FORMAT = { APNG: '.png', GIF: '.gif', WEBP: '.webp' }
-  const mk = (type, fileList, outputName, isSelected, formats) => {
+  // srcMB：演示用的「源体积」量级，写入 __size__ 虚拟键供 statSize 读取，
+  // 让右上角预估角标显示有意义的降质值（否则源恒为 1KB，预估总是「无需降质」）。
+  const mk = (type, fileList, outputName, isSelected, formats, srcMB) => {
     fileList.forEach((p) => fs.writeFileSync(p, 'mock'))
+    if (srcMB && srcMB > 0) {
+      const perFile = Math.round(srcMB * 1024 * 1024 / fileList.length)
+      fileList.forEach((p) => fs.writeFileSync('__size__:' + p, String(perFile)))
+    }
     // outputPath 是**目录**（与 processor 的 resolveOutputPath 语义一致）。
     // 之前误写成输出文件名，task-output 再 join 一次名字后永远读不到文件，
     // 产物大小/格式角标在纯浏览器预览里就一直为空。
@@ -298,12 +308,13 @@ function seedItems (fs, path, storage) {
   }
 
   const items = [
-    // 首条seed 三格式齐全：用来演示完成态的三枚格式角标
-    mk('APNG', ['/mock-assets/banner.apng'], 'banner', true, ['APNG', 'GIF', 'WEBP']),
-    mk('APNG', ['/mock-assets/loading.apng'], 'loading', false),
-    mk('PNGs', ['/mock-assets/frames/walk_001.png', '/mock-assets/frames/walk_002.png', '/mock-assets/frames/walk_003.png'], 'walk', false),
-    mk('GIF', ['/mock-assets/emotion.gif'], 'emotion', false),
-    mk('WEBP', ['/mock-assets/photo.webp'], 'photo', false)
+    // 首条seed 三格式齐全：用来演示完成态的三枚格式角标；srcMB 给足量级演示降质预估。
+    // 量级错落开：多数达标（≈0.9MB / Q 错落），walk 故意给超大源演示「超目标」警告态。
+    mk('APNG', ['/mock-assets/banner.apng'], 'banner', true, ['APNG', 'GIF', 'WEBP'], 1.5),
+    mk('APNG', ['/mock-assets/loading.apng'], 'loading', false, undefined, 1.2),
+    mk('PNGs', ['/mock-assets/frames/walk_001.png', '/mock-assets/frames/walk_002.png', '/mock-assets/frames/walk_003.png'], 'walk', false, undefined, 40),
+    mk('GIF', ['/mock-assets/emotion.gif'], 'emotion', false, undefined, 3),
+    mk('WEBP', ['/mock-assets/photo.webp'], 'photo', false, undefined, 2)
   ]
   storage.setItem('iSparta-item', JSON.stringify(items))
 

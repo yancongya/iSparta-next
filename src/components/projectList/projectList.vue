@@ -158,6 +158,13 @@
 
         <!-- 右侧：完成态格式角标 + 输出设置（单选打开）+ 帧预览/延时（二者独立，勿合并） -->
         <div class="side">
+          <!-- 右上角常驻：预估产物大小（≈xx KB/MB）；超目标用警告态，hover 看明细 -->
+          <span
+            v-if="estimateOf(project)"
+            class="est-badge"
+            :class="{ 'is-estimated': estimateOf(project).estimated, 'is-over': estimateOf(project).over }"
+            v-tip="estimateTipOf(project)"
+          ><is-icon name="box" size="xs" />{{ estimateOf(project).text }}</span>
           <!-- 每种输出格式一个角标（并排）：hover 看产物名与大小，点击复制该格式产物 -->
           <div v-if="outputBadges[index].length" class="side__badges">
             <button
@@ -187,13 +194,6 @@
                 <is-icon v-else :name="statusIcon(project.process)" size="sm" />
               </span>
             </div>
-            <!-- 常驻预估角标：目标大小启用时出现，紧贴状态点右侧，不新增行 -->
-            <span
-              v-if="estimateOf(project)"
-              class="est-badge"
-              :class="{ 'is-estimated': estimateOf(project).estimated }"
-              v-tip="estimateTipOf(project)"
-            >Q{{ estimateOf(project).quality }}</span>
             <div class="side__btns">
               <button
                 type="button"
@@ -272,7 +272,8 @@ import { naturalSort } from '../../util/sort'
 import notice from '../../ui-next/notice'
 import hostAdapter, { getSourceAdapter } from '../../util/host-env'
 import { fs } from '../../util/node-env'
-import { estimateQuality, estimateSourceBytes, humanSize } from '../../util/qualityEstimate'
+import { estimateOutput, estimateSourceBytes, humanSize } from '../../util/qualityEstimate'
+import { createLazyEstimate } from '../../util/lazyEstimate'
 
 /**
  * 取任务源字节：桌面动图文件已落盘 → statSize 真实值；
@@ -335,15 +336,26 @@ export default {
       playTick: 0,
       // 空白处框选
       marquee: { active: false, moved: false, x: 0, y: 0, w: 0, h: 0, startX: 0, startY: 0 },
-      suppressBlankClick: false
+      suppressBlankClick: false,
+      // 预估角标：异步算完后自增，触发模板重渲染读缓存
+      estimateTick: 0
     }
   },
 
   created () {
     // 角标数据缓存：产物存在性/大小要走 fs，进度更新引起重渲染时不该反复打盘
     this._badgeCache = new Map()
-    // 预估角标缓存：源字节同样走 fs，按 options 签名失效
-    this._estimateCache = new Map()
+    // 预估角标：源字节走 fs/IPC，交给惰性调度器在浏览器空闲时分批算，
+    // 结果按 options 签名缓存；算完自增 estimateTick 触发重渲染。
+    this._lazyEstimate = createLazyEstimate({
+      batch: 3,
+      compute: (key, project) => {
+        const src = sourceOf(project)
+        const value = src ? estimateOutput(project.options, src.bytes, src.estimated) : null
+        return { stamp: estimateStamp(project), value: value }
+      },
+      onFlush: () => { this.estimateTick++ }
+    })
     // 回应修改输出目录的操作
     ipc.on('change-item-fold', (path, order) => {
       if (path[0]) {
@@ -381,7 +393,7 @@ export default {
     this.unbindMarquee()
     this.unbindHostBlankEvents()
     if (this._badgeCache) this._badgeCache.clear()
-    if (this._estimateCache) this._estimateCache.clear()
+    if (this._lazyEstimate) this._lazyEstimate.dispose()
   },
   computed: {
     /**
@@ -564,34 +576,27 @@ export default {
       return shown || ''
     },
     /**
-     * 常驻小角标的预估质量：sizeLimit 开启且有格式时才算。
-     * 源字节走 fs.statSize（桌面动图文件已落盘）；取不到（CEP 合成/未渲染序列）返回 null，
-     * 由合成树视图用尺寸估算兜底。按 project+options 签名缓存，避免进度重渲染反复打盘。
+     * 右上角常驻角标的预估产物大小：sizeLimit 开启时才显示。
+     * 源字节走 fs.statSize（打盘/IPC），交给惰性调度器在空闲时算，命中缓存直接返回；
+     * 首帧无缓存返回 null（角标暂不显示），空闲算完由 onFlush 触发重渲染。
      */
     estimateOf (project) {
+      // 读一次 tick 建立模板依赖：调度器算完自增后触发本方法重估
+      void this.estimateTick
       const opts = project && project.options
       if (!opts || !opts.sizeLimit || !opts.sizeLimit.enabled) return null
-      const stamp = estimateStamp(project)
-      const cache = this._estimateCache
-      const key = project
-      const hit = cache && cache.get(key)
-      if (hit && hit.stamp === stamp) return hit.value
-      const src = sourceOf(project)
-      const value = src ? estimateQuality(opts, src.bytes, src.estimated) : null
-      if (cache) cache.set(key, { stamp: stamp, value: value })
-      return value
+      return this._lazyEstimate.get(project, project, estimateStamp(project))
     },
-    /** 角标 hover：预估质量 + 源/目标量级 + 仅供参考声明 */
+    /** 角标 hover：预估产物大小 + 规划质量 + 源/目标量级 + 仅供参考声明 */
     estimateTipOf (project) {
       const e = this.estimateOf(project)
       if (!e) return ''
-      const target = humanSize(e.maxBytes)
-      const source = humanSize(e.sourceBytes)
-      const note = this.$t('estimateDisclaimer')
-      const line = e.changed
-        ? this.$t('estimateChanged', { base: e.baseline, q: e.quality })
-        : this.$t('estimateSame', { q: e.quality })
-      return line + '\n' + this.$t('estimateDetail', { source: source, target: target }) + '\n' + note
+      const lines = []
+      lines.push(this.$t('estimateOut', { size: e.text, q: e.quality }))
+      if (e.over) lines.push(this.$t('estimateOver', { target: humanSize(e.target) }))
+      lines.push(this.$t('estimateDetail', { source: humanSize(e.sourceBytes), target: humanSize(e.target) }))
+      lines.push(e.estimated ? this.$t('estimateDisclaimerEstimated') : this.$t('estimateDisclaimer'))
+      return lines.join('\n')
     },
     // ---------- 标题与路径 ----------
     // 主标题 = 合成名 / 输出名（禁止把 ae-comp 或 basePath(outputPath) 当名字）

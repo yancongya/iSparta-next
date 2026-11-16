@@ -154,12 +154,14 @@
           >
             <is-icon class="mod-ct__state-ico" :name="stateIconOf(node)" size="xs" />
             <span v-if="stateLabelOf(node)" class="mod-ct__state-txt">{{ stateLabelOf(node) }}</span>
+            <!-- 完成态显示真实产物大小；否则（默认/待处理）显示预估产物大小 -->
             <span v-if="stateSizeOf(node)" class="mod-ct__state-size">{{ stateSizeOf(node) }}</span>
             <span
-              v-if="estimateOf(node)"
-              class="mod-ct__est"
+              v-else-if="estimateOf(node)"
+              class="mod-ct__state-size mod-ct__est"
+              :class="{ 'is-over': estimateOf(node).over }"
               v-tip="estimateTipOf(node)"
-            >Q{{ estimateOf(node).quality }}</span>
+            >≈{{ estimateOf(node).text }}</span>
           </button>
         </template>
       </li>
@@ -240,7 +242,8 @@ import {
   loadColumnLayout, saveColumnLayout, CT_NAME_KEY, CT_NAME_MIN
 } from '../../util/compTreeColumns'
 import { fs } from '../../util/node-env'
-import { estimateQuality, estimateSourceBytes, humanSize } from '../../util/qualityEstimate'
+import { estimateOutput, estimateSourceBytes, humanSize } from '../../util/qualityEstimate'
+import { createLazyEstimate } from '../../util/lazyEstimate'
 
 /** 合成节点的估算源字节：转换前序列未渲染，按 宽×高×帧数 估一个量级 */
 function nodeEstimateBytes (node) {
@@ -327,6 +330,8 @@ export default {
       /** 未加入任务（或用户刚切换）的格式状态，键为 node.id */
       formatMap: {},
       compIcon: (http ? '/icons/' : './icons/') + 'pag-comp.png',
+      // 预估角标：异步算完后自增，触发模板重渲染读缓存
+      estimateTick: 0
     }
   },
   computed: {
@@ -434,8 +439,16 @@ export default {
     }
   },
   created () {
-    // 预估角标缓存：按 node.id + 配置签名，滚动/进度重渲染不重复算
-    this._estimateCache = new Map()
+    // 预估：节点尺寸估算 + 读 globalSetting，交给惰性调度器在空闲时分批算，
+    // 结果按配置签名缓存；算完自增 estimateTick 触发重渲染。
+    this._lazyEstimate = createLazyEstimate({
+      batch: 4,
+      compute: (key, node) => ({
+        stamp: this.nodeEstimateStamp(node),
+        value: this.computeNodeEstimate(node)
+      }),
+      onFlush: () => { this.estimateTick++ }
+    })
     this.refresh()
     if (this.$root && this.$root.eventBus) {
       this.$root.eventBus.$on('comp-tree-refresh', this.refresh)
@@ -449,7 +462,7 @@ export default {
     this.unbindMarquee()
     this.stopColumnResize()
     this.closeHeadMenu()
-    if (this._estimateCache) this._estimateCache.clear()
+    if (this._lazyEstimate) this._lazyEstimate.dispose()
     if (this.$root && this.$root.eventBus) {
       this.$root.eventBus.$off('comp-tree-refresh', this.refresh)
       this.$root.eventBus.$off('comp-tree-add-selected', this.emitAdd)
@@ -461,6 +474,7 @@ export default {
   methods: {
     /** 默认设置保存后，未加入任务的合成格式图标初值跟着新默认刷新 */
     onDefaultFormatsChanged () {
+      this._globalOptsCache = null
       this.$forceUpdate()
     },
     storeItems () {
@@ -756,51 +770,63 @@ export default {
       if (copied) notice.success(this.$t('copyOutputSuccess', { count: files.length }))
       else notice.error(this.$t('copyOutputFailed'))
     },
-    /**
-     * 常驻预估角标：目标大小启用时按 宽×高×帧数 估算源字节，反推建议起始质量。
-     * 合成转换前序列未渲染，拿不到真实源字节，故一律为估算值（estimated=true，UI 标仅供参考）。
-     * 已加入任务的合成用其真实 options，未加入的用全局默认 options。
-     * 按 node.id + 配置签名缓存，滚动/重渲染不重复计算。
-     */
-    estimateOf (node) {
+    /** 该节点预估的配置签名：尺寸/格式/目标/质量任一变化都要重算 */
+    nodeEstimateStamp (node) {
+      const bytes = nodeEstimateBytes(node)
+      const task = this.taskOf(node)
+      const opts = (task && task.options) || this.globalEstimateOpts()
+      const sl = (opts && opts.sizeLimit) || {}
+      const fmt = (opts && opts.outputFormat && opts.outputFormat.length)
+        ? opts.outputFormat : this.formatsOf(node)
+      return [node.id, bytes, (fmt || []).join(','),
+        sl.enabled, sl.maxBytes, sl.maxMB,
+        opts && opts.quality && opts.quality.value,
+        opts && opts.quality && opts.quality.checked].join('|')
+    },
+    /** 未加入任务的合成：读全局设置里的默认 options（缓存到实例，避免每节点 JSON.parse） */
+    globalEstimateOpts () {
+      if (this._globalOptsCache) return this._globalOptsCache.opts
+      let opts = null
+      try {
+        const raw = window.storage && window.storage.getItem('globalSetting')
+        const gs = raw ? JSON.parse(raw) : null
+        opts = gs && gs.options
+      } catch (e) { opts = null }
+      this._globalOptsCache = { opts: opts }
+      return opts
+    },
+    /** 真正算预估（在空闲片里跑）：合成源一律按尺寸估算，标 estimated */
+    computeNodeEstimate (node) {
       if (!node) return null
       const bytes = nodeEstimateBytes(node)
       if (!(bytes > 0)) return null
       const task = this.taskOf(node)
-      let opts = task && task.options
-      if (!opts) {
-        try {
-          const raw = window.storage && window.storage.getItem('globalSetting')
-          const gs = raw ? JSON.parse(raw) : null
-          opts = gs && gs.options
-        } catch (e) { opts = null }
-      }
+      const opts = (task && task.options) || this.globalEstimateOpts()
       if (!opts || !opts.sizeLimit || !opts.sizeLimit.enabled) return null
       const fmt = (opts.outputFormat && opts.outputFormat.length)
-        ? opts.outputFormat
-        : this.formatsOf(node)
+        ? opts.outputFormat : this.formatsOf(node)
       const useOpts = Object.assign({}, opts, { outputFormat: fmt })
-      const stamp = [node.id, bytes, (fmt || []).join(','),
-        opts.sizeLimit.maxBytes, opts.sizeLimit.maxMB,
-        opts.quality && opts.quality.value, opts.quality && opts.quality.checked].join('|')
-      const cache = this._estimateCache
-      const hit = cache && cache.get(node.id)
-      if (hit && hit.stamp === stamp) return hit.value
-      const value = estimateQuality(useOpts, bytes, true)
-      if (cache) cache.set(node.id, { stamp: stamp, value: value })
-      return value
+      return estimateOutput(useOpts, bytes, true)
     },
-    /** 角标 hover：预估质量 + 尺寸估算的量级 + 仅供参考声明 */
+    /**
+     * 状态列常驻的预估产物大小：命中缓存直接返回；首帧无缓存返回 null，
+     * 空闲算完由 onFlush 触发重渲染。
+     */
+    estimateOf (node) {
+      void this.estimateTick
+      if (!node) return null
+      return this._lazyEstimate.get(node.id, node, this.nodeEstimateStamp(node))
+    },
+    /** 角标 hover：预估产物大小 + 规划质量 + 尺寸估算声明 */
     estimateTipOf (node) {
       const e = this.estimateOf(node)
       if (!e) return ''
-      const source = humanSize(e.sourceBytes)
-      const target = humanSize(e.maxBytes)
-      const line = e.changed
-        ? this.$t('estimateChanged', { base: e.baseline, q: e.quality })
-        : this.$t('estimateSame', { q: e.quality })
-      return line + '\n' + this.$t('estimateDetail', { source: source, target: target }) +
-        '\n' + this.$t('estimateDisclaimerEstimated')
+      const lines = []
+      lines.push(this.$t('estimateOut', { size: e.text, q: e.quality }))
+      if (e.over) lines.push(this.$t('estimateOver', { target: humanSize(e.target) }))
+      lines.push(this.$t('estimateDetail', { source: humanSize(e.sourceBytes), target: humanSize(e.target) }))
+      lines.push(this.$t('estimateDisclaimerEstimated'))
+      return lines.join('\n')
     },
     sizeText (n) {
       return (n.width || 0) + '×' + (n.height || 0)
@@ -1445,21 +1471,16 @@ export default {
   font-variant-numeric: tabular-nums;
   opacity: 0.85;
 }
-/* 常驻预估角标：尺寸估算值，虚线边框提示「仅供参考」；不占新列 */
-.mod-ct__est {
-  flex: 0 0 auto;
-  height: 14px;
-  padding: 0 4px;
-  border: 1px dashed var(--is-var-3, var(--is-accent));
-  border-radius: var(--is-r-pill, 8px);
+/* 状态列默认显示预估产物大小（≈xx MB），与真实产物大小同位置、同一套收缩省略；
+   继承 .mod-ct__state-size 的 font-variant-numeric / 省略号，这里只改颜色与提示 */
+.mod-ct__state-size.mod-ct__est {
+  flex: 0 1 auto;
   color: rgb(var(--is-var-3, 160, 130, 220));
-  font-family: var(--is-font-mono, monospace);
-  font-size: 9px;
-  font-weight: 700;
-  line-height: 12px;
-  white-space: nowrap;
   cursor: help;
-  opacity: 0.85;
+  opacity: 0.9;
+}
+.mod-ct__state-size.mod-ct__est.is-over {
+  color: rgb(var(--is-warn, 255, 200, 87));
 }
 .mod-ct__txt {
   flex: 1 1 0;

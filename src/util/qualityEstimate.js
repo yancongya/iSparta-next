@@ -11,7 +11,7 @@
 
 import { normalizeSizeLimit } from './processor/sizeGate'
 import { effectiveQualityStart } from './sizeLimitConfig'
-import { planStartingQuality } from './sizePlanner'
+import { planStartingQuality, estimateBytes } from './sizePlanner'
 
 const MB = 1024 * 1024
 
@@ -66,6 +66,39 @@ export function estimateQuality (options, sourceBytes, estimated) {
     estimated: !!estimated,
     feasible: !!plan.feasible,
     changed: plan.plannedQuality < baseline
+  }
+}
+
+/**
+ * 预估产物大小（角标主显示值）：用「规划后的起始质量」算每种格式的输出体积，
+ * 取最大值作保守估计——sizeLimit 是「每个文件」的上限，最坏的那个格式才决定是否达标。
+ * @returns {{text:string, bytes:number, target:number, quality:number, baseline:number,
+ *            over:boolean, estimated:boolean, details:Array, hasTarget:boolean}|null}
+ *          sizeLimit 未启用 / 无格式 / 无源字节时返回 null（角标不显示）
+ */
+export function estimateOutput (options, sourceBytes, estimated) {
+  const base = estimateQuality(options, sourceBytes, estimated)
+  if (!base) return null
+
+  // 逐格式按规划质量估算产物体积，取最大作为「最可能超限」的保守值
+  let maxBytes = 0
+  const details = base.formats.map(function (format) {
+    const bytes = estimateBytes(base.sourceBytes, base.quality, format)
+    if (bytes > maxBytes) maxBytes = bytes
+    return { format: format, bytes: bytes, over: bytes > base.maxBytes }
+  })
+
+  return {
+    text: humanSize(maxBytes),
+    bytes: maxBytes,
+    target: base.maxBytes,
+    quality: base.quality,
+    baseline: base.baseline,
+    over: maxBytes > base.maxBytes,
+    estimated: base.estimated,
+    feasible: base.feasible,
+    details: details,
+    hasTarget: true
   }
 }
 

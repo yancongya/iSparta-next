@@ -303,6 +303,8 @@ module.exports = {
     "toolchainReason.size":"Unexpected file size",
     "toolchainReason.missing":"File missing",
     "toolchainReason.unreadable":"File unreadable",
+    "estimateOut":"Est. output ≈{size} (at Q{q})",
+    "estimateOver":"Note: estimate exceeds target ≤{target}; current settings may not reach it",
     "estimateChanged":"Est. start quality Q{base} → Q{q}",
     "estimateSame":"Est. start quality Q{q} (no downgrade)",
     "estimateDetail":"Source {source} · target ≤ {target}",

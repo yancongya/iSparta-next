@@ -303,6 +303,8 @@ module.exports = {
     "toolchainReason.size":"檔案大小異常",
     "toolchainReason.missing":"檔案缺失",
     "toolchainReason.unreadable":"無法讀取檔案",
+    "estimateOut":"預估產物 ≈{size}（按 Q{q} 壓縮）",
+    "estimateOver":"注意：預估超出目標 ≤{target}，按目前設定可能壓不到",
     "estimateChanged":"預估起始品質 Q{base} → Q{q}",
     "estimateSame":"預估起始品質 Q{q}（無需降品質）",
     "estimateDetail":"來源 {source} · 目標 ≤ {target}",
