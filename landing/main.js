@@ -2617,12 +2617,35 @@ function setupRail() {
   var track = rail.querySelector(".rail__track")
   if (!viewport || !track) return
 
+  var FADE = 96 // 羽化宽度，与 CSS 里的默认值一致（两种形态共用）
+  var fallbackFadeBound = false // fallback 的 scroll 监听只绑一次
+
   function fallback() {
     rail.classList.add("rail--static")
     track.style.transform = ""
-    // 退化形态用固定羽化（原生横滚时位置不由我们管），把动态变量清掉
-    viewport.style.removeProperty("--fade-l")
-    viewport.style.removeProperty("--fade-r")
+    // 退化形态是原生横滚：羽化同样要随位置收合，否则停在首/末卡时
+    // 那一侧外面已经没内容了还被固定蒙版糊掉。用 scroll 事件按剩余量写。
+    // 只绑一次（resize 会重进 fallback，重复绑会叠监听）。
+    if (!fallbackFadeBound) {
+      fallbackFadeBound = true
+      var fadeMax = function () {
+        return Math.max(0, viewport.scrollWidth - viewport.clientWidth)
+      }
+      var syncFallbackFade = function () {
+        var max = fadeMax()
+        var p = viewport.scrollLeft
+        viewport.style.setProperty("--fade-l", Math.min(FADE, p) + "px")
+        viewport.style.setProperty("--fade-r", Math.min(FADE, max - p) + "px")
+      }
+      var ft = 0
+      viewport.addEventListener("scroll", function () {
+        if (ft) return
+        ft = requestAnimationFrame(function () { ft = 0; syncFallbackFade() })
+      }, { passive: true })
+      // 首次进入 / 内容尺寸变化也要算一次，不依赖用户先滚动
+      syncFallbackFade()
+      window.addEventListener("resize", syncFallbackFade, { passive: true })
+    }
     // 驱动形态可能已经把 scrollLeft 挪过，切回来时要归零，
     // 否则轨道一进去就是「已经滚到中间」的位置。
     viewport.scrollLeft = 0
@@ -2649,7 +2672,6 @@ rail.classList.add("rail--driven")
   // 历史坑2：scrub 的 onUpdate 也曾写 transform —— 与 wheel 互不知情，互相拽回。
   // 现在 scrollLeft 归退化形态、progress 彻底不存在，paint() 只有 wheel 一个调用方。
   var offset = 0
-  var FADE = 96 // 与 CSS 里的羽化宽度一致
 
   /**
    * 羽化蒙版随位置收合。

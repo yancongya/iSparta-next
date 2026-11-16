@@ -3374,11 +3374,11 @@ html[data-theme="dark"] .cmp-tab.is-on { color: #0c0f0e; }
      注意：mask-image 会让元素成为绝对定位后代的包含块（同 backdrop-filter），
      这里 viewport 内只有 .rail__track，没有 sticky/absolute 后代，安全。
 
-     羽化宽度由 --fade-l / --fade-r 控制（driven 形态下由 main.js 按剩余量写入）：
-     固定羽化会把首张卡与末张卡一起淡掉，看着像没对齐；只有那一侧外面
-     确实还有内容时才需要羽化。退化形态没人写这两个变量，走下面的默认值。 */
-  --fade-l: 88px;
-  --fade-r: 136px;
+     羽化宽度由 --fade-l / --fade-r 控制（由 main.js 按两侧剩余量写入，driven 与原生横滚两种形态都会写）：
+     只有那一侧外面确实还有内容时才羽化；停在首/末卡时对应侧剩余为 0，不淡出。
+     默认值给 0：JS 未跑起来的极端情况下宁可硬切，也不把首末卡糊掉。 */
+  --fade-l: 0px;
+  --fade-r: 0px;
   -webkit-mask-image: linear-gradient(
     to right,
     transparent 0,
@@ -5614,6 +5614,54 @@ html[data-theme="dark"] .cep {
 .ill-dl .ill-orb.o2 { animation-delay: 0.4s; }
 .ill-dl .ill-orb.o3 { animation-delay: 0.8s; }
 
+/* 00 ABOUT 新增能力卡：各自的专属循环动效。
+   配色一律继承既有 ill-ui-* class（CSS 变量，双主题自动跟随），这里只加几何运动。 */
+/* 新版自动到手：下载箭头落入 + 路由流动 + 版本号点亮 */
+.ill-upd .up-arrow {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: downloadNudge 1.6s ease-in-out infinite;
+}
+.ill-upd .ill-ui-route { animation: illDash 1.8s linear infinite; }
+.ill-upd .ill-ui-bridge {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: illPulse 2.4s ease-in-out infinite;
+}
+.ill-upd .up-latest {
+  animation: verGlow 2.4s ease-in-out infinite;
+}
+/* 预估大小：角标呼吸 + 进度推进 */
+.ill-est .est-badge {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: estBreathe 2.6s ease-in-out infinite;
+}
+/* 原版坑填平：三个勾依次画出 + 进度推进 */
+.ill-fix .fix-c1,
+.ill-fix .fix-c2,
+.ill-fix .fix-c3 {
+  stroke-dasharray: 12;
+  stroke-dashoffset: 12;
+  animation: checkDraw 3.6s ease-in-out infinite;
+}
+.ill-fix .fix-c2 { animation-delay: 0.5s; }
+.ill-fix .fix-c3 { animation-delay: 1s; }
+
+@keyframes verGlow {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+@keyframes estBreathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.09); }
+}
+@keyframes checkDraw {
+  0% { stroke-dashoffset: 12; }
+  28%, 82% { stroke-dashoffset: 0; }
+  100% { stroke-dashoffset: 12; }
+}
+
 @keyframes illFlip {
   0%, 100% { transform: translateY(0) rotate(0deg); opacity: 1; }
   40%      { transform: translateY(-6px) rotate(-4deg); opacity: 0.75; }
@@ -5733,6 +5781,14 @@ html[data-theme="dark"] .cep {
   .ill-ui-code,
   .ill-ui-download,
   .ill-ui-platform,
+  .ill-upd .up-arrow,
+  .ill-upd .ill-ui-route,
+  .ill-upd .ill-ui-bridge,
+  .ill-upd .up-latest,
+  .ill-est .est-badge,
+  .ill-fix .fix-c1,
+  .ill-fix .fix-c2,
+  .ill-fix .fix-c3,
   .why-card:hover .why-ill {
     animation: none;
   }
