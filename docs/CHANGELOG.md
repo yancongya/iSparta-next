@@ -11,6 +11,10 @@
 > 完整安装包与 Release 说明见 [Releases](https://github.com/yancongya/iSparta-next/releases)。
 > Commit 规范与 Release 正文结构见 [AGENTS.md](../AGENTS.md)。
 
+### v3.7.2（2026-11-16）
+
+- 修复 CEP 下输出路径模板含子目录（如 `{srcPath}/输出`）时因目标目录不存在导致转换失败的问题；新目录现在会自动创建，无需手动预建。
+
 ### v3.7.1（2026-11-11）
 
 - 合成树列宽拖动改为跟手挤压，分隔线随指针移动；名字列左右都能拖，往返可逆。
