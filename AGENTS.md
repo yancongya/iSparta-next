@@ -140,6 +140,8 @@ Release 正文与 commit 文案分开维护，每个版本在 `.github/release-n
 
 CI：`release.yml` 校验版本化 Release 文案、负责 bump、打包、挂 Release；`build.yml` 仅日常构建 Artifact；`pages.yml` 部署落地页。
 
+**dry-run 前置**：正式发版默认先跑一次 `-DryRun`（或 `-f dry_run=true`），用同一套构建流程校验产物与文案，全绿后再以 `dry_run=false` 正式发。dry-run 不写版本号、不提交、不打 tag、不建 Release，赶时间可跳过但须盯完整 run。若 `Build (mac)` 报 `Missing macOS installer ...<旧版本>...`，多为版本错位假失败（原因与识别见 `docs/RELEASE.md` §4），不要据此回滚代码。
+
 ## 3. 更新体验（产品约定）
 
 - 启动自动检查 → **应用内** Dock（右下角），**不**用系统通知（「有新版」提示）

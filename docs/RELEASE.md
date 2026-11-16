@@ -48,6 +48,8 @@ git push origin master
 
 ## 2. 正式发版（本地 CLI 触发云端打包）
 
+> **推荐流程：先 dry-run，全绿后再正式发。** dry-run 用与正式发版相同的流程算版本并构建全部平台产物，但不写回版本号、不提交、不打 tag、不创建 Release，可提前暴露文案结构或产物收集问题。赶时间可跳过——正式发版本身的 `version` job 同样校验文案，构建流程与 dry-run 一致；跳过时务必用 `gh run watch` 盯完整结果。dry-run 若报假失败（见 [§4 失败时](#4-失败时)），不要误判为构建坏了。
+
 ### 推荐：一键脚本
 
 ```powershell
@@ -126,7 +128,8 @@ Commit 与 Release 各自服务不同读者：commit 主题按 Conventional Comm
 3. **Collect & rename assets** 失败 → 检查 `latest*.yml` / 安装包是否生成；收集脚本须用通配符，勿写死不存在的文件名
 4. **Build** 失败 → 本地 `npm run build:windows`；本机网络无法下载 NSIS 工具时可用本地缓存/ELECTRON_BUILDER_NSIS_DIR（CI 通常无此问题）
 5. **Publish** 失败 → tag 是否已推、Artifact 是否非空
-6. 错误 tag 需删除后再发：
+6. **dry-run 的 `Write macOS pkg update manifest` 报 `Missing macOS installer: ...isparta-next-<旧版本>-mac-x64.pkg`** → **假失败，不是构建坏了**：dry-run 不写回版本号，`package.json` 仍是旧版本（如 3.7.1），但产物已按 CI 算出的目标版本（如 3.7.2）命名；旧脚本按 `package.json` 读旧版本去找文件，两者对不上即报缺失。已修复为从 CI 传入的 `RELEASE_VERSION` 读目标版本（未传时回退读 `package.json`，兼容日常构建）。**识别特征**：报错里的版本号 = 发版前的旧版本号，且失败 step 是写 pkg 清单（其余构建 job 均 success）。遇到可直接进入正式发版，正式发版会写回版本、两边一致，不会触发此错。
+7. 错误 tag 需删除后再发：
 
 ```powershell
 git push origin :refs/tags/vX.Y.Z
@@ -151,7 +154,9 @@ git tag -d vX.Y.Z
 若只改代码：commit + push origin master（结束）
     ↓
 若要发版且用户已授权：
-    gh workflow run release.yml -f bump=patch -f prerelease=false -f dry_run=false
+    gh workflow run release.yml -f bump=patch -f prerelease=false -f dry_run=true    # 先试跑校验
+    gh run watch <run-id>                                                            # 全绿再继续；假失败见 §4
+    gh workflow run release.yml -f bump=patch -f prerelease=false -f dry_run=false   # 正式发
     gh run watch <run-id>
     gh release view --repo yancongya/iSparta-next
     ↓
