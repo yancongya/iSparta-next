@@ -29,6 +29,8 @@
 
 - **AE panel:** one-button switch between comp tree and task list; the comp tree shows run status and output size, supports draggable column widths and per-comp output formats; double-click a row to open output settings, right-click to jump to a comp / open its location / output folder / stop task; with multiple tasks selected, the toolbar batch settings button opens shared settings; pinned filter bar
 - **Tasks and output:** per-comp settings persist; default output names come from composition names, while custom names are preserved; completed rows show final output size plus clickable format badges; copying files reports progress and result
+- **Grouped settings:** output and global settings use pinned top tabs (Basics / Paths / Animation / Compression); the narrow AE panel collapses to icon-only tabs, with no height jump between tabs
+- **Size estimate & self-check:** starting quality is estimated from the target size before conversion, and the estimated output size (≈xx KB/MB, hover for details) shows on task cards and in the comp-tree status column; encoder binaries are hash-checked with automatic fallback to a healthy copy, with results viewable under "About"
 - **Output actions:** copy completed files; hold Alt while hovering the toolbar button to open the output folder
 - **Bundled install:** system-wide installation (UAC prompt, CEP under Common Files, a single copy per machine); auto-detects the AE version; version shown in both the desktop title bar and the AE panel
 - **Onboarding (7 pages):** Welcome → Import → Output → Naming → Path variables → AE → Done, covering import methods, output settings and naming rules in one pass
@@ -281,7 +283,6 @@ Double-click friendly wrappers under `scripts/dev/`: `run-all-dev`, `run-dev-cep
 | [`docs/ACCEPTANCE-RUNBOOK.md`](docs/ACCEPTANCE-RUNBOOK.md) | Guide | Dual-target on-device acceptance steps |
 | [`docs/PLAN-DUAL-TARGET.md`](docs/PLAN-DUAL-TARGET.md) | Current | Shared desktop/CEP implementation, host boundaries, and status |
 | [`docs/maintenance/optimization-log.md`](docs/maintenance/optimization-log.md) | Log | Documentation/layout maintenance and verification boundaries |
-| [`docs/TODO-toolchain-and-sizing.md`](docs/TODO-toolchain-and-sizing.md) | Planned | Toolchain integrity checks and upfront target-size planning (not yet implemented) |
 | [`targets/cep/README.md`](targets/cep/README.md) | Guide | CEP development, build, and safe local mounting |
 | [`targets/cep/bin/README.md`](targets/cep/bin/README.md) | Guide | CEP encoder tools and runtime requirements |
 | [`AGENTS.md`](AGENTS.md) | Convention | Dev / commit / release conventions (humans and agents) |

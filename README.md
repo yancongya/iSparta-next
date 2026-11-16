@@ -33,6 +33,8 @@
 
 - **AE 面板**：合成树 / 任务列表一键切换，合成树显示运行状态与产物大小、列宽可拖、可按合成切换输出格式；双击行打开输出设置，右键定位合成 / 打开合成位置 / 输出目录 / 终止任务；多选后顶栏可一键进入批量输出设置，过滤条钉顶
 - **任务与输出**：单项合成设置会保留；默认输出名取自合成名，手动命名独立保留；任务条显示最终输出文件大小，完成后按输出格式显示可点击复制的角标；复制文件提供进度与结果反馈
+- **设置分栏**：输出设置与全局设置改为顶部固定分类（基础 / 路径 / 动画 / 压缩），AE 窄面板收成纯图标 tab；切换分类面板高度稳定不跳动
+- **大小预估与自检**：转换前按目标体积预估起始画质并在任务条右上角、合成树状态列显示预估产物大小（≈xx KB/MB，悬停看依据）；编码器哈希清单自检，损坏自动改用健康副本，「关于」页可查看结果
 - **输出操作**：复制已完成任务的文件；按住 Alt 悬停工具栏按钮可直接打开输出目录
 - **一体安装**：固定系统级安装（UAC 授权，CEP 进 Common Files，全机只留一份），自动扫描 AE 版本，桌面与扩展均显示版本号
 - **首启引导（7 页）**：欢迎 → 导入 → 输出 → 命名 → 路径变量 → AE → 完成，一次讲清导入方式、输出设置与命名规则
@@ -327,7 +329,6 @@ iSparta-next/
 | [`docs/ACCEPTANCE-RUNBOOK.md`](docs/ACCEPTANCE-RUNBOOK.md) | 手册 | 双端真机验收步骤 |
 | [`docs/PLAN-DUAL-TARGET.md`](docs/PLAN-DUAL-TARGET.md) | 现状 | 双端共享实现、宿主边界与当前状态 |
 | [`docs/maintenance/optimization-log.md`](docs/maintenance/optimization-log.md) | 记录 | 文档/目录梳理记录与验收边界 |
-| [`docs/TODO-toolchain-and-sizing.md`](docs/TODO-toolchain-and-sizing.md) | 待办 | 工具链完整性校验与目标大小前置规划（尚未实现） |
 | [`targets/cep/README.md`](targets/cep/README.md) | 手册 | CEP 开发、构建与安全挂载 |
 | [`targets/cep/bin/README.md`](targets/cep/bin/README.md) | 手册 | CEP 编码器工具的准备与运行要求 |
 | [`AGENTS.md`](AGENTS.md) | 约定 | 开发 / commit / release 约定（人与 Agent 共用） |
