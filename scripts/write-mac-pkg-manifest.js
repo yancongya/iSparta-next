@@ -4,7 +4,10 @@ const path = require('path')
 const crypto = require('crypto')
 
 const root = path.join(__dirname, '..')
-const version = require(path.join(root, 'package.json')).version
+// 发版 CI 在 dry-run 时不把新版本号写回 package.json，但产物已按目标版本命名；
+// 由 CI 通过 RELEASE_VERSION 显式传入目标版本，避免清单按旧版本号找 pkg 报缺失。
+// 未传入时沿用 package.json（日常构建与正式发版），行为不变。
+const version = process.env.RELEASE_VERSION || require(path.join(root, 'package.json')).version
 const releaseDir = path.join(root, 'release')
 const files = ['x64', 'arm64'].map((arch) => {
   const url = `isparta-next-${version}-mac-${arch}.pkg`

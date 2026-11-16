@@ -391,6 +391,8 @@ jobs:
 
       - name: Write macOS pkg update manifest
         if: matrix.platform == 'mac'
+        env:
+          RELEASE_VERSION: ${{ needs.version.outputs.version }}
         run: node scripts/write-mac-pkg-manifest.js
 
       - name: Audit bundle size
