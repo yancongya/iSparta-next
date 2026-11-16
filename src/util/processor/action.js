@@ -1,5 +1,7 @@
 import _ from 'lodash'
 import { ipc, path, os, getProcessBridge, getFs } from '../node-env'
+import { verifyTool } from './toolIntegrity'
+import appLog from '../../ui-next/log'
 
 const procEnv = getProcessBridge()
 ipc.send('get-app-path')
@@ -63,6 +65,31 @@ function toolSearchBases () {
 
 const tmpDir = path.join(os.tmpdir(), 'iSparta')
 
+// 校验缓存：同一候选进程内只算一次哈希（工具文件较大，避免每次 exec 都读盘）
+var integrityCache = {}
+function cachedVerify (cand, pf, bases) {
+  if (Object.prototype.hasOwnProperty.call(integrityCache, cand)) { return integrityCache[cand] }
+  var r = verifyTool(cand, pf, bases)
+  integrityCache[cand] = r
+  return r
+}
+// 供 UI / 诊断 clearing 缓存（换工具或重装后可重新校验）
+export function clearIntegrityCache () { integrityCache = {} }
+
+var integrityWarned = {}
+function warnIntegrityOnce (cand, r) {
+  if (integrityWarned[cand]) { return }
+  integrityWarned[cand] = true
+  appLog.warn('工具链完整性校验未通过：' + r.file + '（' + r.reason +
+    '），仍尝试使用。可执行 docs 中的工具恢复流程。', {
+    file: r.file,
+    reason: r.reason,
+    path: cand,
+    expected: r.expected,
+    actual: r.actual
+  })
+}
+
 var chmodDone = false
 function ensureExecutable(dir, pf) {
   if (chmodDone) {
@@ -111,17 +138,37 @@ export default class Action {
       ['public', 'bin', pf],
       ['static', 'bin', pf]
     ]
+    // 记录首个存在的候选：即使完整性校验不通过也用它兜底（软校验，绝不阻断转换）
+    var firstFound = ''
+    // integrity 用：把候选所在副本根显式传进去，按副本匹配清单期望值
+    var verifyBases = {
+      cep: bases[0] || '',
+      desktop: path.join(procEnv.cwd(), 'public'),
+      static: path.join(procEnv.cwd(), 'static')
+    }
     for (var i = 0; i < bases.length; i++) {
       for (var j = 0; j < rels.length; j++) {
         var parts = [bases[i]].concat(rels[j]).concat([exe])
         var cand = path.join.apply(path, parts)
         try {
           if (fsSyncExists(cand)) {
+            if (!firstFound) { firstFound = cand }
+            var vr = cachedVerify(cand, pf, verifyBases)
+            if (vr.checked && !vr.ok) {
+              warnIntegrityOnce(cand, vr)
+              // 损坏候选跳过，优先找下一个健康副本
+              continue
+            }
             ensureExecutable(path.dirname(cand), pf)
             return cand
           }
         } catch (eChk) { /* next */ }
       }
+    }
+    // 全部候选要么不存在、要么校验失败：用首个存在的兜底，让转换继续
+    if (firstFound) {
+      ensureExecutable(path.dirname(firstFound), pf)
+      return firstFound
     }
     // 都找不到：返回最可能的装机路径，让 ENOENT 带出真实查找位置
     var firstBase = bases[0] || ''

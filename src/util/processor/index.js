@@ -7,7 +7,9 @@ import webp2apng 	from './webp2apng'
 import Action 		from './action'
 import { fs, path, os } 	from '../node-env'
 import TYPE 		from '../../store/enum/type'
-import { enforceSizeLimit } from './sizeGate'
+import { enforceSizeLimit, normalizeSizeLimit } from './sizeGate'
+import { planStartingQuality } from '../sizePlanner'
+import { effectiveQualityStart } from '../sizeLimitConfig'
 import { resolveOutputPath } from '../outputPath'
 import hostAdapter 	from '../host-env'
 import appLog from '../../ui-next/log'
@@ -20,6 +22,40 @@ function stat (label) {
       MtaH5.clickStat(label)
     }
   } catch (e) { /* 统计失败不应中断转换流程 */ }
+}
+
+/**
+ * 首压前规划：sizeLimit 开启时，按目标体积反推一个保守起始质量，写入转换副本的
+ * quality（item 是 Action 里 JSON clone 的副本，不碰 store 的用户配置）。
+ * - 只在规划值低于用户基线时下调，绝不抬高；
+ * - 源大小取 fileList[0]（APNG/GIF/WEBP 母版或序列首帧），失败则跳过规划；
+ * - 规划只是起始建议，sizeGate 事后仍按真实大小兜底。
+ */
+function applyStartPlan (item) {
+  const opts = item && item.options
+  if (!opts || !opts.sizeLimit || !opts.sizeLimit.enabled) { return }
+  if (!opts.outputFormat || !opts.outputFormat.length) { return }
+  const q = opts.quality || {}
+  const baseline = effectiveQualityStart(q.value, q.checked)
+  const limit = normalizeSizeLimit(opts, baseline)
+  const sourceFile = item.basic && (item.basic.sourceFile || (item.basic.fileList && item.basic.fileList[0]))
+  let sourceBytes = -1
+  try { if (sourceFile) { sourceBytes = fs.statSize(sourceFile) } } catch (e) { /* skip */ }
+  if (!(sourceBytes > 0)) { return }
+  const plan = planStartingQuality({
+    maxBytes: limit.maxBytes,
+    sourceBytes: sourceBytes,
+    formats: opts.outputFormat,
+    baselineQuality: baseline,
+    safety: 0.9,
+    floorQuality: 20
+  })
+  if (plan.plannedQuality < baseline) {
+    opts.quality = { checked: true, value: plan.plannedQuality }
+    appLog.info('首压前规划：起始质量 Q' + baseline + ' → Q' + plan.plannedQuality +
+      '（目标 ' + (limit.maxBytes / 1024 / 1024).toFixed(2) + 'MB，源 ' +
+      (sourceBytes / 1024 / 1024).toFixed(2) + 'MB）')
+  }
 }
 
 function runWithConcurrency (tasks, limit) {
@@ -115,6 +151,8 @@ export default function (store, sameOutputPath, locale) {
           if (ready.basic.fileList && ready.basic.fileList[0] && !ready.basic.sourceFile) {
             ready.basic.sourceFile = ready.basic.fileList[0]
           }
+          // 目标大小前置规划：首压前把目标体积翻译成保守起始质量（仅 sizeLimit 开启时）
+          applyStartPlan(ready)
           switch (ready.basic.type) {
             case TYPE.PNGs:
             case TYPE.Comp:

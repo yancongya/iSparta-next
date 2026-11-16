@@ -60,6 +60,47 @@
     font-size: var(--is-fs-md);
   }
 
+  // 工具链完整性诊断卡片（只读）
+  .gs-integrity {
+    padding: var(--is-s-3);
+    border: 1px solid var(--is-border, var(--is-line));
+    border-radius: var(--is-radius-md, 8px);
+    background: var(--is-surface-2, var(--is-bg-2, transparent));
+  }
+
+  .gs-integrity__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--is-s-3);
+  }
+
+  .gs-integrity__title {
+    color: var(--is-text);
+    font-size: var(--is-fs-md);
+    font-weight: var(--is-fw-semi);
+  }
+
+  .gs-integrity__summary {
+    margin: var(--is-s-2) 0 2px;
+    font-size: var(--is-fs-sm);
+
+    &.gs-integrity--ok { color: var(--is-success, var(--is-text-2)); }
+    &.gs-integrity--bad { color: var(--is-danger, var(--is-error, var(--is-text-1))); }
+  }
+
+  .gs-integrity__skip {
+    color: var(--is-text-3);
+  }
+
+  .gs-integrity__bad {
+    margin: var(--is-s-2) 0 0;
+    padding-left: var(--is-s-4);
+    color: var(--is-text-3);
+    font-size: var(--is-fs-sm);
+    line-height: 1.6;
+  }
+
   // 关于区：产品名 + 版本 + 一句说明 + 官网按钮，贴在设置面板最底部
   .gs-about {
     display: flex;

@@ -7,6 +7,7 @@ import TYPE from '../../store/enum/type'
 import appLog from '../../ui-next/log'
 import i18n from '../../i18n'
 import { automaticRetryCount, automaticRetryQuality, effectiveQualityStart } from '../sizeLimitConfig'
+import { planStartingQuality } from '../sizePlanner'
 
 export function normalizeSizeLimit (options, quality) {
   const s = (options && options.sizeLimit) || {}
@@ -40,6 +41,41 @@ export function formatMB (bytes) {
 
 export function formatLimit (bytes) {
   return formatMB(bytes)
+}
+
+/**
+ * 前置规划：按目标体积与源大小，反推一个更接近目标的起始质量。
+ * 只用于「超限后重压」的基线：取用户基线与规划值中更保守者（不会抬高用户设置）。
+ * 首压本身不变——若首压已达标则完全不触发；规划只是让可能发生的重压少走几轮。
+ */
+function plannedRetryBaseline (item, limit, userBaseline, formats) {
+  try {
+    var sourceFile = item.basic && (item.basic.assembledApng || item.basic.sourceFile ||
+      (item.basic.fileList && item.basic.fileList[0]))
+    var sourceBytes = sourceFile ? fs.statSize(sourceFile) : -1
+    if (!(sourceBytes > 0)) { return { value: userBaseline, plan: null } }
+    var plan = planStartingQuality({
+      maxBytes: limit.maxBytes,
+      sourceBytes: sourceBytes,
+      formats: formats,
+      baselineQuality: userBaseline,
+      safety: 0.9,
+      floorQuality: 20
+    })
+    // 取更保守者：规划只降不升，尊重用户已设的低质量
+    var value = Math.min(userBaseline, plan.plannedQuality)
+    appLog.info('size-gate 前置规划', {
+      sourceBytes: sourceBytes,
+      maxBytes: limit.maxBytes,
+      userBaseline: userBaseline,
+      plannedQuality: plan.plannedQuality,
+      retryBaseline: value,
+      feasible: plan.feasible
+    })
+    return { value: value, plan: plan }
+  } catch (e) {
+    return { value: userBaseline, plan: null }
+  }
 }
 
 function outputPathFor (item, format) {
@@ -130,15 +166,19 @@ export function enforceSizeLimit (item, store, locale) {
   let triesUsed = 0
   let progressLogId = null
 
-  // 每种格式从同一质量基线重试，避免串色
+  // 每种格式从同一质量基线重试，避免串色。
+  // 前置规划：用目标体积反推更接近的起始质量，减少「压→测→降→再压」的轮次。
   const originalQuality = item.options.quality
+  const planned = plannedRetryBaseline(item, limit, initialQuality, formats)
   const baseQuality = originalQuality
     ? {
       checked: originalQuality.checked,
-      value: initialQuality
+      value: planned.value
     }
-    : { checked: true, value: 80 }
+    : { checked: true, value: planned.value }
   if (!isFinite(baseQuality.value)) { baseQuality.value = 80 }
+  // 规划可能给出小于用户基线的质量：checked 必须为 true 才会走 apngquant 量化分支
+  if (planned.plan && planned.value < initialQuality) { baseQuality.checked = true }
   function updateRetryLog (level, tries, detail) {
     const titleKey = level === 'warn' ? 'logGateProgressWarn' : level === 'ok' ? 'logGateProgressDone' : 'logGateProgress'
     const title = i18n.t(titleKey, { tries: tries, maxTries: limit.maxTries * formats.length })

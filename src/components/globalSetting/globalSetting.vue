@@ -210,6 +210,30 @@
 
         <div class="gs-split"></div>
 
+        <!-- 工具链完整性：按清单核对编码器 SHA256 / 大小，只读诊断。
+             只读、不阻断转换；异常时提示来源，供排障，不强制用户操作。 -->
+        <div class="gs-integrity">
+          <div class="gs-integrity__head">
+            <span class="gs-integrity__title">{{ $t('toolchainIntegrity') }}</span>
+            <is-button size="sm" icon="refresh" :loading="toolchainChecking" @click="refreshToolchain">
+              {{ $t('toolchainRecheck') }}
+            </is-button>
+          </div>
+          <template v-if="toolchain && toolchain.available">
+            <p class="gs-integrity__summary" :class="'gs-integrity--' + (toolchain.failed ? 'bad' : 'ok')">
+              {{ $t('toolchainSummary', { ok: toolchain.ok, total: toolchain.checked }) }}
+              <span v-if="toolchain.skipped" class="gs-integrity__skip"> · {{ $t('toolchainSkipped', { n: toolchain.skipped }) }}</span>
+            </p>
+            <p class="gs-hint">{{ $t('toolchainPlatform') }}: {{ toolchain.platform }} · {{ $t('toolchainSource') }}: {{ toolchain.source }}</p>
+            <ul v-if="toolchain.bad && toolchain.bad.length" class="gs-integrity__bad">
+              <li v-for="b in toolchain.bad" :key="b.file">{{ b.file }} — {{ $t('toolchainReason.' + b.reason) }}</li>
+            </ul>
+          </template>
+          <p v-else class="gs-hint">{{ $t('toolchainUnavailable') }}</p>
+        </div>
+
+        <div class="gs-split"></div>
+
         <!-- 关于：产品官网入口。外链一律走 hostAdapter.openExternal ——
              CEP 下必须是 cep.util.openURLInDefaultBrowser，直接 window.open /
              location.href 在 AE 面板里会被 CSP 拦掉（点了没反应）。 -->
@@ -234,6 +258,7 @@
 
 <script>
 import { storage } from '../../util/node-env'
+import { diagnoseToolchain } from '../../util/processor/toolIntegrity'
 import ThemeManager from '../../ui-next/theme'
 import PathVars from '../../ui-next/components/PathVars.vue'
 import IsPresetBar from '../../ui-next/components/IsPresetBar.vue'
@@ -292,6 +317,9 @@ export default {
       bookmarkLabel: '',
       appVersion: '',
       updateEnabled: true,
+      // 工具链完整性诊断（只读，进入设置或手动刷新时计算）
+      toolchain: null,
+      toolchainChecking: false,
       // 关于区的产品名走 brand 单一来源，不在模板里再写一份字面量
       APP_NAME
     }
@@ -654,6 +682,18 @@ export default {
     showDialog () {
       // 锁定时也允许打开：转换失败若未解锁，按钮会「点了没反应」
       this.dialogFormVisible = true
+      // 进入「关于」相关设置时跑一次工具链只读诊断（失败静默，不阻断）
+      if (!this.toolchain) { this.refreshToolchain() }
+    },
+    refreshToolchain () {
+      this.toolchainChecking = true
+      try {
+        this.toolchain = diagnoseToolchain()
+      } catch (e) {
+        this.toolchain = { available: false, platform: '?', checked: 0, failed: 0, skipped: 0, bad: [] }
+      } finally {
+        this.toolchainChecking = false
+      }
     },
     resetVarible () {
       this.setting = this.loadSetting()
