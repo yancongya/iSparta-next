@@ -11,19 +11,24 @@ import {
   emptyPresets,
   normalizePresets,
   presetList,
+  seqPresetList,
   activePresetIdOf,
+  activeSeqDirPresetIdOf,
   activePresetOf,
   setBuiltinTemplate,
+  setSeqDirBuiltinTemplate,
   resetBuiltinTemplate,
   upsertCustomPreset,
   removeCustomPreset
 } from './outputPath'
 
 const KEY = 'outputPresets'
+// 序列帧目录的预设独立存放，避免与产物路径预设混用（两组语义不同）
+export const SEQ_DIR_PRESETS_KEY = 'seqDirPresets'
 
-export function loadPresets () {
+export function loadPresets (key) {
   try {
-    const raw = storage.getItem(KEY)
+    const raw = storage.getItem(key || KEY)
     if (!raw) { return emptyPresets() }
     return normalizePresets(JSON.parse(raw))
   } catch (e) {
@@ -31,17 +36,20 @@ export function loadPresets () {
   }
 }
 
-export function savePresets (presets) {
+export function savePresets (presets, key) {
   try {
-    storage.setItem(KEY, JSON.stringify(normalizePresets(presets)))
+    storage.setItem(key || KEY, JSON.stringify(normalizePresets(presets)))
   } catch (e) { /* 桥未就绪时静默：下次启动回到空预设，不影响功能 */ }
 }
 
 export {
   presetList,
+  seqPresetList,
   activePresetIdOf,
+  activeSeqDirPresetIdOf,
   activePresetOf,
   setBuiltinTemplate,
+  setSeqDirBuiltinTemplate,
   resetBuiltinTemplate,
   upsertCustomPreset,
   removeCustomPreset

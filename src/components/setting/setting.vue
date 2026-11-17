@@ -1,6 +1,18 @@
 <template>
   <section class="mod-setting">
-    <h3 v-if="!hideTitle" class="mod-setting__title">{{ $t("outputConfig") }}</h3>
+    <div v-if="!hideTitle" class="mod-setting__title">
+      <span>{{ $t("outputConfig") }}</span>
+      <button
+        type="button"
+        class="mod-setting__layout"
+        :class="{ 'is-active': allInOne }"
+        :title="allInOne ? $t('toTabbed') : $t('toAllInOne')"
+        :aria-label="allInOne ? $t('toTabbed') : $t('toAllInOne')"
+        @click="$emit('toggle-all-in-one')"
+      >
+        <is-icon :name="allInOne ? 'grid' : 'list'" size="sm" />
+      </button>
+    </div>
 
     <!-- 未选中任何项目 -->
     <section v-if="!curtSetting" class="mod-empty">
@@ -20,8 +32,9 @@
       <span>{{ $t('multiBanner', { n: selectedList.length }) }}</span>
     </div>
 
-    <!-- 顶部固定分类：CEP 窄面板自动切成纯图标（样式见 setting.scss） -->
-    <nav v-if="curtSetting" class="mod-tabs-bar" :aria-label="$t('outputConfig')">
+    <!-- 顶部固定分类：CEP 窄面板自动切成纯图标（样式见 setting.scss）；
+         全部设置模式（早期面板）不显示分类，四组内容纵向排在同一个滚动区 -->
+    <nav v-if="curtSetting && !allInOne" class="mod-tabs-bar" :aria-label="$t('outputConfig')">
       <is-segmented
         v-model="activeTab"
         class="mod-tabs"
@@ -31,9 +44,9 @@
     </nav>
 
     <!-- 完整输出配置：单选/多选共用；多选时写入所有选中项 -->
-    <section v-if="curtSetting" class="mod-form">
+    <section v-if="curtSetting" class="mod-form" :class="{ 'is-all-in-one': allInOne }">
       <!-- 基础分类 -->
-      <div v-show="activeTab === 'basic'" class="mod-pane">
+      <div v-show="allInOne || activeTab === 'basic'" class="mod-pane">
       <!-- 输出名：单选整段拆词；多选每项同样支持拆词与漏斗 -->
       <div class="mod-form__group">
         <p class="mod-form__caption">
@@ -120,7 +133,92 @@
       </div><!-- /基础 -->
 
       <!-- 路径分类 -->
-      <div v-show="activeTab === 'output'" class="mod-pane">
+      <div v-show="allInOne || activeTab === 'output'" class="mod-pane">
+
+      <!-- 序列帧目录（仅 CEP 合成）：与输出路径完全相同的三段式自制结构，
+           独立预设 → 真实路径 → 展开变量路径；只决定中间帧渲染位置，与产物路径解耦。 -->
+      <div v-if="!showPathUI" class="mod-form__group seq-dir-group">
+        <div class="mod-form__capline">
+          <p class="mod-form__caption mod-form__caption--flush">{{ $t('seqDirTitle') }}</p>
+          <span class="capline-act path-vars-toggle">
+            <span>{{ $t('pathVar') }}</span>
+            <is-switch v-model="seqVariablesExpanded" />
+          </span>
+        </div>
+        <!-- 第一段：预设选择与创建 -->
+        <is-preset-bar
+          :presets="seqPresetItems"
+          :active-id="seqPresetActiveId"
+          :ctx="seqPathContext"
+          :current-template="seqDirTemplate"
+          :disabled="projectCount === 0"
+          @apply="onSeqPresetApply"
+          @save="onSeqPresetSave"
+          @reset="onSeqPresetReset"
+          @remove="onSeqPresetRemove"
+        />
+        <div class="path-rows">
+          <!-- 第二段：真实路径（只读预览）+ 右侧选目录按钮 -->
+          <div class="path-row">
+            <span class="path-row__label">{{ $t('seqDirTitle') }}</span>
+            <is-input
+              class="path-row__in"
+              :value="seqDirPreviewUI"
+              readonly
+              :placeholder="$t('seqDirPlaceholder')"
+            />
+            <button
+              type="button"
+              class="path-row__pick"
+              v-tip="$t('pickSeqDir')"
+              @click.stop="pickSeqDir"
+            ><is-icon name="folder" size="sm" /></button>
+          </div>
+          <p class="mod-form__hint">{{ $t('seqDirHint') }}</p>
+          <!-- 第三段：展开后可编辑变量路径 + 变量选择 -->
+          <transition name="is-collapse">
+            <div v-if="seqVariablesExpanded" class="path-variables-panel">
+              <path-vars
+                v-model="seqDirTemplate"
+                :ctx="seqPathContext"
+                :placeholder="$t('seqDirTemplatePh')"
+                var-scope="seq"
+                @insert="insertSeqVariable"
+              >
+                <button
+                  slot="append"
+                  type="button"
+                  class="pv__bookmark"
+                  :class="{ 'is-on': seqBookmarkOpen }"
+                  v-tip="$t('presetSaveTip')"
+                  :aria-label="$t('presetSaveTip')"
+                  @click.stop="seqBookmarkOpen = !seqBookmarkOpen"
+                ><is-icon name="bookmark" size="sm" /></button>
+              </path-vars>
+              <transition name="is-collapse">
+                <div v-if="seqBookmarkOpen" class="bookmark-row">
+                  <is-input
+                    v-model="seqBookmarkLabel"
+                    class="bookmark-row__in"
+                    size="sm"
+                    :placeholder="$t('presetNamePh')"
+                    :maxlength="16"
+                    @keyup.enter.native="confirmSeqBookmark"
+                    @keyup.esc.native="seqBookmarkOpen = false"
+                  />
+                  <button type="button" class="bookmark-row__ok" :aria-label="$t('confirm')" @click.stop="confirmSeqBookmark">
+                    <is-icon name="check" size="xs" />
+                  </button>
+                  <button type="button" :aria-label="$t('cancel')" @click.stop="seqBookmarkOpen = false">
+                    <is-icon name="close" size="xs" />
+                  </button>
+                </div>
+              </transition>
+            </div>
+          </transition>
+        </div>
+      </div>
+
       <!-- 输出路径：展示真实路径；CEP 无「选目录/输出到目录」（固定为项目旁合成子目录） -->
       <div class="mod-form__group">
         <div class="mod-form__capline">
@@ -148,7 +246,7 @@
             <span class="path-row__label">{{ $t('pathReal') }}</span>
             <is-input class="path-row__in" :value="pathPreviewUI" readonly :placeholder="'—'" />
             <button
-              v-if="showPathUI"
+              v-if="canPickDir"
               type="button"
               class="path-row__pick"
               v-tip="$t('pickOutputDir')"
@@ -200,7 +298,7 @@
       </div><!-- /路径 -->
 
       <!-- 动画分类 -->
-      <div v-show="activeTab === 'animation'" class="mod-pane">
+      <div v-show="allInOne || activeTab === 'animation'" class="mod-pane">
       <!-- 动画参数：帧率与循环次数 -->
       <div v-if="showFrame || canRemapFrames" class="mod-form__group animation-settings">
         <p class="mod-form__caption">{{ $t('animationSettings') }}</p>
@@ -225,7 +323,7 @@
       </div><!-- /动画 -->
 
       <!-- 压缩分类 -->
-      <div v-show="activeTab === 'compression'" class="mod-pane">
+      <div v-show="allInOne || activeTab === 'compression'" class="mod-pane">
       <!-- 压缩设置：质量与抽帧并排，阈值设置放在下方 -->
       <div class="mod-form__group compression-settings">
         <p class="mod-form__caption">{{ $t('compressionSettings') }}</p>
@@ -329,14 +427,18 @@
 import processor from '../../util/processor'
 import { ipc } from '../../util/node-env'
 import hostAdapter from '../../util/host-env'
-import { resolveOutputPath, normalizeOutputTo, outputContext } from '../../util/outputPath'
+import { resolveOutputPath, normalizeOutputTo, outputContext, seqDirContext, resolveSeqDir, SEQ_DIR_DEFAULT_TEMPLATE } from '../../util/outputPath'
 import {
+  SEQ_DIR_PRESETS_KEY,
   loadPresets,
   savePresets,
   presetList,
+  seqPresetList,
   activePresetIdOf,
+  activeSeqDirPresetIdOf,
   activePresetOf,
   setBuiltinTemplate,
+  setSeqDirBuiltinTemplate,
   resetBuiltinTemplate,
   upsertCustomPreset,
   removeCustomPreset
@@ -351,7 +453,9 @@ import QualityRetrySliders from '../../ui-next/components/QualityRetrySliders.vu
 
 export default {
   props: {
-    hideTitle: { type: Boolean, default: false }
+    hideTitle: { type: Boolean, default: false },
+    // true = 最早那版：不分类 Tab，基础/路径/动画/压缩全部纵向排在一页
+    allInOne: { type: Boolean, default: false }
   },
   components: { PathVars, IsPresetBar, QualityRetrySliders },
   data () {
@@ -371,7 +475,12 @@ export default {
       // 「将当前路径存为预设」的内联命名框
       bookmarkOpen: false,
       bookmarkLabel: '',
-      variablesExpanded: false
+      variablesExpanded: false,
+      // 序列帧目录（CEP 上游）：独立预设 + 变量面板展开态
+      seqVariablesExpanded: false,
+      seqDirPresets: loadPresets(SEQ_DIR_PRESETS_KEY),
+      seqBookmarkOpen: false,
+      seqBookmarkLabel: ''
     }
   },
   computed: {
@@ -405,9 +514,14 @@ export default {
     isArraySetting () {
       return this.selectedList.length > 1
     },
-    // CEP：可显示路径，但不提供「选目录/输出到目录」
+    // CEP：可显示路径，但不提供「批量输出到目录 / 删除全部」（合成列表由 AE 托管）
     showPathUI () {
       return !(hostAdapter && (hostAdapter.supportsCompImport || hostAdapter.kind === 'cep'))
+    },
+    // 选目录按钮：桌面与 CEP 都提供。CEP 下序列帧路径固定，但变量路径指向的是
+    // 最终产物输出目录，用户仍需能图形化选择；pickFolder 内部按宿主分派通道。
+    canPickDir () {
+      return !!(hostAdapter && typeof hostAdapter.pickFolder === 'function')
     },
     curtSetting () {
       if (this.selectedList.length === 0) {
@@ -628,6 +742,36 @@ export default {
         const mode = activePresetOf({ outputTo: { template: template } }) || 'custom'
         this.pushOutputTo({ template: template, mode: mode })
       }
+    },
+    // 序列帧目录模板（每任务独立，与 outputTo 对称存在 options 上）。
+    // 空值 = 用默认「工程旁合成名目录」，由 comp-source 回退。
+    seqDirTemplate: {
+      get () {
+        const t = this.curtSetting && this.curtSetting.seqDirTemplate
+        // 老任务没有该字段 / 用户清空输入：都按出厂默认「工程旁合成名目录」展示
+        return typeof t === 'string' && t.trim() ? t.trim() : SEQ_DIR_DEFAULT_TEMPLATE
+      },
+      set (value) { this.writeOptions({ seqDirTemplate: String(value || '') }) }
+    },
+    // 序列帧输入框展示值：有自定义显示模板，否则显示默认展开路径（工程旁合成名）
+    seqDirPreviewUI () {
+      if (!this.selectedList.length) { return '' }
+      const resolved = resolveSeqDir(this.selectedList[0])
+      if (resolved) { return resolved }
+      const b = this.selectedList[0].basic || {}
+      return b.outputBasePath || ''
+    },
+    // 变量面板 ctx：序列帧自己的基准（工程目录 + 合成名），与产物 ctx 分开
+    seqPathContext () {
+      if (!this.selectedList.length) { return null }
+      return seqDirContext(this.selectedList[0])
+    },
+    // 序列帧预设：内置（工程旁合成名 / 工程目录 / 上级目录）+ 用户自定义
+    seqPresetItems () {
+      return seqPresetList(this.seqDirPresets)
+    },
+    seqPresetActiveId () {
+      return activeSeqDirPresetIdOf(this.seqDirTemplate, this.seqDirPresets)
     }
   },
   // 注意：原实现在对象末尾多写了一个空的 watch，
@@ -643,6 +787,9 @@ export default {
     },
     variablesExpanded (expanded) {
       if (!expanded) { this.bookmarkOpen = false }
+    },
+    seqVariablesExpanded (expanded) {
+      if (!expanded) { this.seqBookmarkOpen = false }
     },
     selectedList () {
       this.syncPathUI()
@@ -831,6 +978,46 @@ export default {
       this.outputPresets = removeCustomPreset(this.outputPresets, p.id)
       savePresets(this.outputPresets)
     },
+    // ---------- 序列帧目录预设（独立 storage，与产物预设隔离）----------
+    onSeqPresetApply (p) {
+      this.seqDirTemplate = p.template
+    },
+    onSeqPresetSave (entry) {
+      if (entry.builtin) {
+        this.seqDirPresets = setSeqDirBuiltinTemplate(this.seqDirPresets, entry.id, entry.template)
+      } else {
+        this.seqDirPresets = upsertCustomPreset(this.seqDirPresets, entry)
+      }
+      savePresets(this.seqDirPresets, SEQ_DIR_PRESETS_KEY)
+      if (this.seqPresetActiveId === entry.id || entry.id === '') {
+        this.seqDirTemplate = entry.template
+      }
+    },
+    onSeqPresetReset (p) {
+      this.seqDirPresets = resetBuiltinTemplate(this.seqDirPresets, p.id)
+      savePresets(this.seqDirPresets, SEQ_DIR_PRESETS_KEY)
+      notice.success(this.$t('presetResetDone'), this.$t('presetResetDoneTip'))
+    },
+    onSeqPresetRemove (p) {
+      this.seqDirPresets = removeCustomPreset(this.seqDirPresets, p.id)
+      savePresets(this.seqDirPresets, SEQ_DIR_PRESETS_KEY)
+    },
+    confirmSeqBookmark () {
+      const tpl = String(this.seqDirTemplate || '').trim()
+      if (!tpl) {
+        notice.warning(this.$t('presetSaveEmpty'), this.$t('presetSaveEmptyTip'))
+        this.seqBookmarkOpen = false
+        return
+      }
+      this.seqDirPresets = upsertCustomPreset(this.seqDirPresets, {
+        label: this.seqBookmarkLabel || this.$t('presetUnnamed'),
+        template: tpl
+      })
+      savePresets(this.seqDirPresets, SEQ_DIR_PRESETS_KEY)
+      this.seqBookmarkOpen = false
+      this.seqBookmarkLabel = ''
+      notice.success(this.$t('presetSaved'), this.$t('presetSavedTip'))
+    },
     // 书签：把当前「变量路径」一键收藏成预设
     confirmBookmark () {
       const tpl = String(this.outputToTemplate || '').trim()
@@ -851,20 +1038,34 @@ export default {
     pickOutputDir () {
       if (!this.selectedList.length) { return }
       const cur = this.pathPreviewUI || ''
-      ipc.invoke('dialog:openDirectory', {
-        defaultPath: cur
-      }).then((r) => {
-        if (!r || r.canceled || !r.filePaths || !r.filePaths[0]) { return }
+      // 统一走 hostAdapter：桌面 dialog:openDirectory / CEP ispartaPickOutputFolder /
+      // 浏览器 mock，返回绝对路径字符串或 null（取消/失败）
+      Promise.resolve(hostAdapter.pickFolder(cur)).then((picked) => {
+        if (!picked) { return }
         // 绝对路径本身就是合法模板（无变量时原样返回），直接写入统一字段
-        this.pushOutputTo({ template: r.filePaths[0], mode: 'custom' })
+        this.pushOutputTo({ template: picked, mode: 'custom' })
         this.syncPathUI()
       }).catch(() => {})
     },
-    // 点击变量标签把 {key} 追加到模板末尾
+    // 序列帧目录：与 outputTo 一样存在 options，逐项写入（每任务独立）
+    pickSeqDir () {
+      if (!this.selectedList.length) { return }
+      const cur = this.seqDirPreviewUI || ''
+      Promise.resolve(hostAdapter.pickFolder(cur)).then((picked) => {
+        if (picked) { this.writeOptions({ seqDirTemplate: String(picked) }) }
+      }).catch(() => {})
+    },
+    // 点击变量标签把 {key} 追加到模板末尾（产物路径）
     insertVariable (key) {
       const token = '{' + key + '}'
       const cur = this.outputToTemplate || ''
       this.outputToTemplate = cur ? cur + token : token
+    },
+    // 序列帧变量胶囊：写入自己的模板，不碰产物 outputTo（两组路径保持解耦）
+    insertSeqVariable (key) {
+      const token = '{' + key + '}'
+      const cur = this.seqDirTemplate || ''
+      this.seqDirTemplate = cur ? cur + token : token
     },
     pushSizeLimit (patch) {
       const base = (this.curtSetting && this.curtSetting.sizeLimit) || {

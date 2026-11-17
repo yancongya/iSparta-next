@@ -259,7 +259,10 @@
       <!-- 右侧：输出设置 -->
       <div class="ib-side" :class="{ 'ib-side--shut': !settingsOpen }" :style="sideStyle">
         <div v-show="settingsOpen" class="ib-side__body">
-          <setting></setting>
+          <setting
+            :all-in-one="settingAllInOne"
+            @toggle-all-in-one="toggleSettingAllInOne"
+          ></setting>
         </div>
       </div>
     </section>
@@ -279,15 +282,28 @@
     <div
       v-if="supportsCompImport && settingsDialogOpen"
       class="ib-set-overlay"
+      :class="{ 'is-all-in-one': settingAllInOne }"
     >
       <div class="ib-set-overlay__bar">
         <span>{{ $t('outputConfig') }}</span>
-        <button type="button" class="ib-iconbtn" :title="$t('close')" @click="settingsDialogOpen = false">
-          <is-icon name="close" />
-        </button>
+        <div class="ib-set-overlay__acts">
+          <button
+            type="button"
+            class="ib-iconbtn"
+            :class="{ 'is-active': settingAllInOne }"
+            :title="settingAllInOne ? $t('toTabbed') : $t('toAllInOne')"
+            :aria-label="settingAllInOne ? $t('toTabbed') : $t('toAllInOne')"
+            @click="toggleSettingAllInOne"
+          >
+            <is-icon :name="settingAllInOne ? 'grid' : 'list'" />
+          </button>
+          <button type="button" class="ib-iconbtn" :title="$t('close')" @click="settingsDialogOpen = false">
+            <is-icon name="close" />
+          </button>
+        </div>
       </div>
       <div class="ib-set-overlay__body">
-        <setting :hide-title="true"></setting>
+        <setting :hide-title="true" :all-in-one="settingAllInOne"></setting>
       </div>
     </div>
     <is-update-dock
@@ -365,6 +381,8 @@ function minMainW () {
 const COLLAPSE_SIDE_W = 120
 const EXPAND_SIDE_W = 160
 const SIDE_W_KEY = 'uiSideW'
+// CEP 输出设置覆盖层：全部设置排在一页（早期面板）的偏好
+const SETTING_LAYOUT_KEY = 'uiSettingAllInOne'
 
 export default {
   name: 'UiNextHome',
@@ -398,6 +416,8 @@ export default {
       logOpen: false,
       compTreeOpen: false,
       settingsDialogOpen: false,
+      // CEP 输出设置覆盖层：全部设置一页（早期面板）偏好
+      settingAllInOne: false,
       outputActionHover: false,
       altPressed: false,
       // 仅工程/扫描异常时非空
@@ -528,6 +548,7 @@ export default {
     this.theme = ThemeManager.get()
     this._unsubTheme = ThemeManager.onChange((d) => { this.theme = d.theme })
     this.sideW = this.readSideW()
+    this.settingAllInOne = this.readSettingAllInOne()
     // 初始挂载同样遵循「无选中即折叠」；store 恢复逻辑保证有任务时至少选中一条，
     // 因此正常情况下带任务启动面板是开的
     // 初始挂载：CEP 不因选中自动展开（用户拖出）；桌面仍「有选中即展开」
@@ -609,6 +630,14 @@ export default {
     },
     onUpdateRestart () {
       updateService.restartToUpdate()
+    },
+    // ---------- CEP 设置覆盖层：分类 Tab / 全部设置一页 ----------
+    readSettingAllInOne () {
+      try { return storage.getItem(SETTING_LAYOUT_KEY) === '1' } catch (e) { return false }
+    },
+    toggleSettingAllInOne () {
+      this.settingAllInOne = !this.settingAllInOne
+      try { storage.setItem(SETTING_LAYOUT_KEY, this.settingAllInOne ? '1' : '0') } catch (e) { /* ignore */ }
     },
     // ---------- 右侧面板宽度：拖拽 + 持久化 ----------
     readSideW () {
@@ -1160,7 +1189,10 @@ export default {
 .ib-set-overlay {
   position: fixed;
   inset: 0;
-  z-index: 40;
+  // 必须盖住中栏 sort-bar / project-list 的 sticky 底栏（--is-z-sticky=100），
+  // 否则打开全屏设置后「开始任务 + 状态」仍浮在设置层上面。
+  // 仍低于 dialog / notice，避免盖掉全局设置弹窗与提示。
+  z-index: calc(var(--is-z-dialog) - 10);
   display: flex;
   flex-direction: column;
   background: var(--is-bg, #1b1b1b);
@@ -1175,11 +1207,25 @@ export default {
   font-weight: 600;
   color: var(--is-text, inherit);
 }
+.ib-set-overlay__acts {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--is-s-1);
+}
 .ib-set-overlay__body {
+  display: flex;
+  flex-direction: column;
   flex: 1;
   min-height: 0;
-  overflow: auto;
-  padding: 8px 12px 24px;
+  // 滚动交给 .mod-setting 内部的 .mod-form；外层再滚会让底部开始按钮
+  // 跟着内容走，无法固定在面板底边。
+  overflow: hidden;
+  padding: 8px 12px 0;
+}
+
+.ib-set-overlay__body > .mod-setting {
+  flex: 1;
+  min-height: 0;
 }
 .ib-main__list > * {
   min-height: 0;

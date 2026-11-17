@@ -2,7 +2,7 @@
 // 列表=合成树（扁平 + parent 预留）；拖入/粘贴/树勾选 → 与 drag/file.js 同形 item
 import _ from 'lodash'
 import { path, fs } from '../util/node-env'
-import { resolveOutputPath } from '../util/outputPath'
+import { resolveOutputPath, resolveSeqDir, safeCompDirName } from '../util/outputPath'
 import { buildInitialOutputName } from '../util/tokenizeName'
 import hostAdapter, { registerSourceAdapter as registerHostSource } from '../util/host-env'
 import appLog from '../ui-next/log'
@@ -60,15 +60,8 @@ function readGlobalSetting () {
 /** CEP 合成的固定原目录：工程文件旁以合成名命名；桌面路径解析不感知此规则。 */
 function compOutputBasePath (projectPath, compName) {
   if (!projectPath) { return '' }
-  const name = String(compName || '').replace(/^[\s\u3000]+|[\s\u3000]+$/g, '')
-  // 按宿主文件系统清理路径段，避免 Windows 非法字符；macOS 保留其合法字符。
-  const isWindows = path.sep === '\\'
-  let safeName = isWindows
-    ? name.replace(/["\\/:*?<>|]/g, '_').replace(/[. ]+$/g, '')
-    : name.replace(/\//g, '_')
-  if (isWindows && /^(con|prn|aux|nul|com[1-9]|lpt[1-9])$/i.test(safeName)) { safeName = '_' + safeName }
-  if (!safeName || safeName === '.' || safeName === '..') { safeName = '_comp' }
-  return path.join(path.dirname(projectPath), safeName)
+  // 与序列帧默认模板共用清洗规则：显式点「工程旁合成名」与留空回退必落同一目录
+  return path.join(path.dirname(projectPath), safeCompDirName(compName))
 }
 
 /**
@@ -383,10 +376,14 @@ export function prepareCompSequence (item, opts) {
   const host = cs()
   const idx = Number(basic.compIndex)
   const name = basic.compName || ''
-  // 序列帧固定放在工程旁的合成名目录，不能跟随用户选择的最终动画输出目录。
-  // 最终文件仍由 processor 按 outputPath 写入；未保存工程时退回应用临时目录。
+  // 序列帧目录默认放在工程旁的合成名目录，不能跟随用户选择的最终动画输出目录。
+  // 每任务可用 seqDirTemplate（变量模板，与产物 outputTo 对称）覆盖；该字段只决定
+  // 「中间帧渲染位置」，与 outputPath（最终动画产物）完全分离，避免混淆。
+  // 模板为空 → 回退 compOutputBasePath 既有默认，老任务行为不变。
+  // 未保存工程时退回应用临时目录。
   // 尾空格会另建「闪闪 」目录且 AE 写不进 → 统一 trim（jsx 侧再 trim 一次）
-  const outDirRaw = basic.outputBasePath ||
+  const seqDirCustom = resolveSeqDir(item)
+  const outDirRaw = seqDirCustom || basic.outputBasePath ||
     (basic.tmpDir || basic.tmpOutputDir) ||
     ('ae-comp-tmp-' + (idx != null ? idx : 'x'))
   const outDir = String(outDirRaw).replace(/^[\s\u3000]+|[\s\u3000]+$/g, '')

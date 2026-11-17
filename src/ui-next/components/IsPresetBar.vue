@@ -197,12 +197,9 @@ export default {
         id: this.editing === NEW ? '' : this.editing,
         label: this.form.label,
         template: tpl,
-        builtin: this.editing !== NEW && this.isBuiltinId(this.editing)
+        builtin: this.editing !== NEW && this.presets.some(p => p.id === this.editing && p.builtin)
       })
       this.cancelEdit()
-    },
-    isBuiltinId (id) {
-      return id === 'output' || id === 'beside'
     }
   }
 }

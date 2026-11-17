@@ -18,6 +18,7 @@
   overflow: hidden;
 
   &__title {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -29,6 +30,35 @@
     font-size: var(--is-fs-base);
     font-weight: var(--is-fw-semi);
     letter-spacing: 0.02em;
+  }
+
+  // 桌面标题栏的「分类 / 全部设置一页」切换；CEP 覆盖层用标题栏的同款按钮
+  &__layout {
+    position: absolute;
+    right: var(--is-s-2);
+    top: 50%;
+    transform: translateY(-50%);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    border: 1px solid var(--is-border);
+    border-radius: var(--is-r-sm);
+    background: var(--is-card);
+    color: var(--is-text-3);
+    cursor: pointer;
+    transition: color var(--is-dur-fast) var(--is-ease-std),
+      border-color var(--is-dur-fast) var(--is-ease-std),
+      background-color var(--is-dur-fast) var(--is-ease-std);
+
+    &:hover,
+    &.is-active {
+      border-color: var(--is-accent);
+      background: var(--is-accent-soft);
+      color: var(--is-accent);
+    }
   }
 
   // 表单整体可滚动；底部操作区已独立成 .mod-form__footer，不再预留 60px
@@ -87,6 +117,17 @@
 
   // 分类内容：v-show 切换，仅作布局容器
   .mod-pane { min-width: 0; }
+
+  // 全部设置一页：对齐最早版本的分隔线节奏。
+  // .mod-pane 只是分类容器，display:contents 让四组 .mod-form__group
+  // 直接参与 .mod-form 的排版；:last-of-type 不再按 pane 各自结算，
+  // 因此每组之间都有分隔线，只有最后一组无线。
+  .mod-form.is-all-in-one {
+    > .mod-pane { display: contents; }
+
+    .mod-pane .mod-form__group { border-bottom: 1px solid var(--is-divider); }
+    .mod-pane:last-child .mod-form__group:last-of-type { border-bottom: none; }
+  }
 
   .animation-settings__row {
     display: grid;

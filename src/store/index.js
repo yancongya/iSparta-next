@@ -6,7 +6,7 @@ import modules from './modules'
 import * as types from './mutation-types'
 import { fs, storage, os, path, getProcessBridge, ipc } from '../util/node-env'
 import { MODE_SYSTEM } from '../util/system-locale'
-import { resolveOutputPath } from '../util/outputPath'
+import { resolveOutputPath, SEQ_DIR_DEFAULT_TEMPLATE } from '../util/outputPath'
 import { buildInitialOutputName } from '../util/tokenizeName'
 import { existingOutputFilesOf } from '../util/task-output'
 import appLog from '../ui-next/log'
@@ -83,7 +83,9 @@ const defaultState = {
       mode: 'output',
       customPath: '',
       template: '{srcPath}'
-    }
+    },
+    // CEP 序列帧目录：出厂默认＝工程旁合成名目录；与产物 outputTo 互不引用
+    'seqDirTemplate': SEQ_DIR_DEFAULT_TEMPLATE
   },
   basic: {
     fileList: [],
@@ -190,6 +192,11 @@ if (!globalSetting) {
         parsed.options.outputTo.template = gTpl
         changed = true
       }
+      // seqDirTemplate 为后加项：补齐为新出厂默认，保证新建任务默认落在工程旁合成名目录
+      if (typeof parsed.options.seqDirTemplate !== 'string') {
+        parsed.options.seqDirTemplate = SEQ_DIR_DEFAULT_TEMPLATE
+        changed = true
+      }
     }
     // 一次性语言迁移：旧版把 'zh-cn' 写死为出厂值，与「用户显式选了简中」不可区分。
     // 按 docs/PLAN-GUIDE-PAGES.md §5.9 的决定「全部用户启用环境自适应」，把出厂遗留的
@@ -242,6 +249,10 @@ if (localData) {
       }
       if (!item.options.outputTo) {
         item.options.outputTo = _.cloneDeep(defaultState.options.outputTo)
+      }
+      // 老任务没有序列帧模板时补齐默认；桌面任务同样带上，字段语义与 CEP 解耦
+      if (typeof item.options.seqDirTemplate !== 'string') {
+        item.options.seqDirTemplate = SEQ_DIR_DEFAULT_TEMPLATE
       }
       if (!item.options.sizeLimit) {
         item.options.sizeLimit = _.cloneDeep(defaultState.options.sizeLimit)

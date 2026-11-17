@@ -56,7 +56,8 @@ function evalJson (script) {
   }
   if (s.indexOf('ispartaGetSelectedComps') === 0) return Promise.resolve({ ok: true, comps: [] })
   if (s.indexOf('ispartaRevealComp') === 0) return Promise.resolve({ ok: true })
-  if (s.indexOf('ispartaPickOutputFolder') === 0) return Promise.resolve({ ok: false })
+  // 选产物输出目录：mock 下返回一个示例绝对路径，便于 webui 验证选目录按钮回写变量路径
+  if (s.indexOf('ispartaPickOutputFolder') === 0) return Promise.resolve({ ok: true, path: '/mock/Project/输出' })
   // 其余 jsx（渲序列等）在 UI 调试里不会真跑；给 ok 让调用方走正常分支
   return Promise.resolve({ ok: true })
 }

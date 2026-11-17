@@ -27,6 +27,8 @@ export function sourceDirOf (item) {
   const basic = item && item.basic
   const input = basic && basic.inputPath
   // 宿主适配层可注入明确的源目录基准；共享路径解析只消费它，不猜测宿主目录规则。
+  // 注意：序列帧目录与产物路径刻意解耦——产物 {srcPath} 仍取 outputBasePath（既有默认），
+  // 不随自定义序列帧目录变化；帧放在哪都能被读取并生成产物。
   if (basic && typeof basic.outputBasePath === 'string' && basic.outputBasePath) {
     return basic.outputBasePath
   }
@@ -135,9 +137,9 @@ export function normalizePresets (raw) {
 }
 
 /** 渲染用的完整预设列表：内置（含改后模板与 modified 标记）+ 用户预设 */
-export function presetList (raw) {
+export function presetList (raw, builtins) {
   const p = normalizePresets(raw)
-  const out = BUILTIN_PRESETS.map(function (b) {
+  const out = (builtins || BUILTIN_PRESETS).map(function (b) {
     const over = p.builtin[b.value]
     const tpl = typeof over === 'string' && over.trim() ? over : b.template
     return {
@@ -155,13 +157,17 @@ export function presetList (raw) {
 }
 
 /** 当前模板命中哪个预设 id；返回 '' 表示未收藏的自定义路径 */
-export function activePresetIdOf (holder, rawPresets) {
-  const tpl = (normalizeOutputTo(holder).template || '').trim()
+export function activeTemplatePresetId (template, rawPresets, builtins) {
+  const tpl = String(template || '').trim()
   if (!tpl) { return '' }
-  const hit = presetList(rawPresets).filter(function (x) {
+  const hit = presetList(rawPresets, builtins).filter(function (x) {
     return slashNorm(x.template) === slashNorm(tpl)
   })
   return hit.length ? hit[0].id : ''
+}
+
+export function activePresetIdOf (holder, rawPresets) {
+  return activeTemplatePresetId(normalizeOutputTo(holder).template, rawPresets)
 }
 
 /** 旧签名：只按内置匹配，返回 value 或 ''（保留给未升级的调用点） */
@@ -171,9 +177,9 @@ export function activePresetOf (holder) {
 
 /* ---------- 纯函数式增删改：都返回新对象，便于 Vue 响应式赋值 ---------- */
 
-export function setBuiltinTemplate (raw, value, template) {
+export function setBuiltinTemplate (raw, value, template, builtins) {
   const p = normalizePresets(raw)
-  const b = BUILTIN_PRESETS.filter(function (x) { return x.value === value })[0]
+  const b = (builtins || BUILTIN_PRESETS).filter(function (x) { return x.value === value })[0]
   if (!b) { return p }
   const builtin = Object.assign({}, p.builtin)
   // 改回出厂模板等于取消覆盖，别留脏数据
@@ -236,4 +242,93 @@ export function outputPathPreviewLabel (o) {
   if (mode === 'output') { return '{源目录}' }
   if (mode === 'beside') { return '{源目录}/../（旁级）' }
   return '{自定义目录}'
+}
+
+/**
+ * 合成名 → 合法目录名。compOutputBasePath 与序列帧默认模板共用同一规则，
+ * 避免「留空回退」和「显式点默认预设」在 Windows 上落进两个目录。
+ */
+export function safeCompDirName (name) {
+  const raw = String(name || '').replace(/^[\s\u3000]+|[\s\u3000]+$/g, '')
+  const isWindows = npath.sep === '\\'
+  let safe = isWindows
+    ? raw.replace(/["\\/:*?<>|]/g, '_').replace(/[. ]+$/g, '')
+    : raw.replace(/\//g, '_')
+  if (isWindows && /^(con|prn|aux|nul|com[1-9]|lpt[1-9])$/i.test(safe)) { safe = '_' + safe }
+  if (!safe || safe === '.' || safe === '..') { safe = '_comp' }
+  return safe
+}
+
+/**
+ * 序列帧目录的变量上下文（与产物 outputContext 刻意分开）：
+ * - srcPath = AE 工程所在目录（不含合成名），未保存工程时为空
+ * - srcName = 合成名（已按目录规则清理，与 compOutputBasePath 一致）
+ * 于是默认模板 `{srcPath}/{srcName}` 正好展开成「工程旁合成名目录」。
+ */
+export function seqDirContext (item) {
+  const basic = (item && item.basic) || {}
+  const projectPath = basic.projectPath || ''
+  const srcPath = projectPath
+    ? npath.dirname(projectPath)
+    : (basic.inputPath && /[\\/]/.test(basic.inputPath) ? npath.dirname(basic.inputPath) : '')
+  const srcName = safeCompDirName(basic.compName || basic.sourceName || '')
+  const src = srcPath ? npath.basename(srcPath) : ''
+  const d = new Date()
+  const date = d.getFullYear() +
+    String(d.getMonth() + 1).padStart(2, '0') +
+    String(d.getDate()).padStart(2, '0')
+  return {
+    srcPath, src, srcName,
+    name: (item && item.options && item.options.outputName) || '',
+    type: basic.type || '',
+    parent: srcPath ? npath.dirname(srcPath) : '',
+    date
+  }
+}
+
+/** 默认序列帧目录模板：工程旁合成名目录 */
+export const SEQ_DIR_DEFAULT_TEMPLATE = '{srcPath}/{srcName}'
+
+/**
+ * 序列帧目录内置预设。只描述「中间帧渲到哪」，与产物 outputTo 的预设完全隔离。
+ * 1) 默认＝工程旁合成名目录；2) 工程旁指定目录下再按合成名分目录。
+ * 第二个的出厂子目录名是「序列帧」，点预设的编辑铅笔即可改成任意名字。
+ */
+export const SEQ_DIR_BUILTIN_PRESETS = [
+  { value: 'comp', labelKey: 'seqPresetComp', template: SEQ_DIR_DEFAULT_TEMPLATE },
+  { value: 'besideFolder', labelKey: 'seqPresetBesideFolder', template: '{srcPath}/序列帧/{srcName}' }
+]
+
+/** 序列帧预设列表：内置（含用户改过的模板）+ 用户自定义 */
+export function seqPresetList (raw) {
+  return presetList(raw, SEQ_DIR_BUILTIN_PRESETS)
+}
+
+/** 按模板反查序列帧预设 id */
+export function activeSeqDirPresetIdOf (template, rawPresets) {
+  return activeTemplatePresetId(template, rawPresets, SEQ_DIR_BUILTIN_PRESETS)
+}
+
+/** 改序列帧内置预设的出厂模板 */
+export function setSeqDirBuiltinTemplate (raw, value, template) {
+  return setBuiltinTemplate(raw, value, template, SEQ_DIR_BUILTIN_PRESETS)
+}
+
+/**
+ * 把每任务的序列帧目录模板展开成绝对路径。
+ * 空模板返回 '' —— 调用方据此回退到 compOutputBasePath 既有默认，
+ * 保证老任务（无该字段）行为完全不变。
+ */
+export function resolveSeqDir (item) {
+  const tpl = String((item && item.options && item.options.seqDirTemplate) || '').trim()
+  if (!tpl) { return '' }
+  const ctx = seqDirContext(item)
+  // 工程未保存（或工程就在根目录）时前置变量为空，模板里的分隔符会拼出 /合成名。
+  // 此时交回调用方走临时目录回退，保持老行为，绝不把帧写到磁盘根。
+  if ((/^\{srcPath\}[\\/]/.test(tpl) && !ctx.srcPath) ||
+      (/^\{parent\}[\\/]/.test(tpl) && !ctx.parent)) { return '' }
+  const trimPath = function (p) {
+    return String(p || '').replace(/^[\s\u3000]+|[\s\u3000]+$/g, '')
+  }
+  return trimPath(resolveVars(tpl, ctx))
 }

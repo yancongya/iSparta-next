@@ -108,6 +108,7 @@
               v-model="setting.options.outputTo.template"
               :ctx="demoCtx"
               class="gs-path__vars"
+              @insert="insertGsVariable"
             >
               <button
                 slot="append"
@@ -138,6 +139,58 @@
             </div>
           </div>
           <p class="gs-hint">{{ $t('outputToCustomHint') }}</p>
+        </is-form-item>
+
+        <!-- 序列帧目录（仅 CEP）：与输出路径同结构，独立预设；只决定中间帧渲到哪 -->
+        <is-form-item v-if="isCep" :label="$t('seqDirTitle')">
+          <div class="gs-path">
+            <is-preset-bar
+              :presets="seqPresetItems"
+              :active-id="seqPresetActiveId"
+              :ctx="demoCtx"
+              :current-template="gsSeqDirTemplate"
+              @apply="onSeqPresetApply"
+              @save="onSeqPresetSave"
+              @reset="onSeqPresetReset"
+              @remove="onSeqPresetRemove"
+            />
+            <path-vars
+              v-model="gsSeqDirTemplate"
+              :ctx="demoCtx"
+              :placeholder="$t('seqDirTemplatePh')"
+              var-scope="seq"
+              class="gs-path__vars"
+              @insert="insertGsSeqVariable"
+            >
+              <button
+                slot="append"
+                type="button"
+                class="pv__bookmark"
+                :class="{ 'is-on': seqBookmarkOpen }"
+                v-tip="$t('presetSaveTip')"
+                :aria-label="$t('presetSaveTip')"
+                @click.stop="seqBookmarkOpen = !seqBookmarkOpen"
+              ><is-icon name="bookmark" size="sm" /></button>
+            </path-vars>
+            <div v-if="seqBookmarkOpen" class="bookmark-row bookmark-row--gs">
+              <is-input
+                v-model="seqBookmarkLabel"
+                class="bookmark-row__in"
+                size="sm"
+                :placeholder="$t('presetNamePh')"
+                :maxlength="16"
+                @keyup.enter.native="confirmSeqBookmark"
+                @keyup.esc.native="seqBookmarkOpen = false"
+              />
+              <button type="button" class="bookmark-row__ok" :aria-label="$t('confirm')" @click.stop="confirmSeqBookmark">
+                <is-icon name="check" size="xs" />
+              </button>
+              <button type="button" :aria-label="$t('cancel')" @click.stop="seqBookmarkOpen = false">
+                <is-icon name="close" size="xs" />
+              </button>
+            </div>
+          </div>
+          <p class="gs-hint">{{ $t('seqDirHint') }}</p>
         </is-form-item>
 
         <div class="gs-split"></div>
@@ -262,12 +315,17 @@ import { diagnoseToolchain } from '../../util/processor/toolIntegrity'
 import ThemeManager from '../../ui-next/theme'
 import PathVars from '../../ui-next/components/PathVars.vue'
 import IsPresetBar from '../../ui-next/components/IsPresetBar.vue'
+import { SEQ_DIR_DEFAULT_TEMPLATE } from '../../util/outputPath'
 import {
+  SEQ_DIR_PRESETS_KEY,
   loadPresets,
   savePresets,
   presetList,
+  seqPresetList,
   activePresetIdOf,
+  activeSeqDirPresetIdOf,
   setBuiltinTemplate,
+  setSeqDirBuiltinTemplate,
   resetBuiltinTemplate,
   upsertCustomPreset,
   removeCustomPreset
@@ -313,8 +371,12 @@ export default {
       themeMode: ThemeManager.getMode(),
       // 输出路径预设：与输出设置面板共享同一份 storage 键
       outputPresets: loadPresets(),
+      // 序列帧目录预设：独立 storage，与产物预设隔离（仅 CEP 用）
+      seqDirPresets: loadPresets(SEQ_DIR_PRESETS_KEY),
       bookmarkOpen: false,
       bookmarkLabel: '',
+      seqBookmarkOpen: false,
+      seqBookmarkLabel: '',
       appVersion: '',
       updateEnabled: true,
       // 工具链完整性诊断（只读，进入设置或手动刷新时计算）
@@ -493,11 +555,35 @@ export default {
       return {
         srcPath: this.$t('demoSrcPath'),
         src: this.$t('demoSrc'),
+        srcName: (o && o.outputName) || this.$t('demoName'),
         name: (o && o.outputName) || this.$t('demoName'),
         type: 'APNG',
         parent: this.$t('demoParent'),
         date: date
       }
+    },
+    // 序列帧目录仅 CEP 有意义（桌面导入现成 PNG，没有渲序列这步）
+    isCep () {
+      return !!(hostAdapter && (hostAdapter.supportsCompImport || hostAdapter.kind === 'cep'))
+    },
+    // 全局默认序列帧目录模板；v-model 直接落到 setting.options，保存原样带上
+    gsSeqDirTemplate: {
+      get () {
+        const o = this.setting && this.setting.options
+        const t = o && o.seqDirTemplate
+        return typeof t === 'string' && t.trim() ? t.trim() : SEQ_DIR_DEFAULT_TEMPLATE
+      },
+      set (value) {
+        if (!this.setting) { return }
+        this.setting.options = this.setting.options || {}
+        this.setting.options.seqDirTemplate = String(value || '')
+      }
+    },
+    seqPresetItems () {
+      return seqPresetList(this.seqDirPresets)
+    },
+    seqPresetActiveId () {
+      return activeSeqDirPresetIdOf(this.gsSeqDirTemplate, this.seqDirPresets)
     },
     sizeValueText () {
       const s = this.setting && this.setting.options && this.setting.options.sizeLimit
@@ -589,6 +675,16 @@ export default {
       this.$set(o, 'template', tpl)
       if (mode) { this.$set(o, 'mode', mode) }
     },
+    insertGsVariable (key) {
+      const cur = String((this.setting.options.outputTo && this.setting.options.outputTo.template) || '')
+      const token = '{' + key + '}'
+      this.applyGsTemplate(cur + token)
+    },
+    insertGsSeqVariable (key) {
+      const cur = String(this.gsSeqDirTemplate || '')
+      const token = '{' + key + '}'
+      this.gsSeqDirTemplate = cur + token
+    },
     onGsPresetApply (p) {
       this.applyGsTemplate(p.template, p.builtin ? p.id : 'custom')
     },
@@ -627,6 +723,38 @@ export default {
       this.bookmarkOpen = false
       this.bookmarkLabel = ''
     },
+    // ---------- 序列帧目录预设（独立 storage）----------
+    onSeqPresetApply (p) { this.gsSeqDirTemplate = p.template },
+    onSeqPresetSave (entry) {
+      if (entry.builtin) {
+        this.seqDirPresets = setSeqDirBuiltinTemplate(this.seqDirPresets, entry.id, entry.template)
+      } else {
+        this.seqDirPresets = upsertCustomPreset(this.seqDirPresets, entry)
+      }
+      savePresets(this.seqDirPresets, SEQ_DIR_PRESETS_KEY)
+      if (entry.id === '' || this.seqPresetActiveId === entry.id) {
+        this.gsSeqDirTemplate = entry.template
+      }
+    },
+    onSeqPresetReset (p) {
+      this.seqDirPresets = resetBuiltinTemplate(this.seqDirPresets, p.id)
+      savePresets(this.seqDirPresets, SEQ_DIR_PRESETS_KEY)
+    },
+    onSeqPresetRemove (p) {
+      this.seqDirPresets = removeCustomPreset(this.seqDirPresets, p.id)
+      savePresets(this.seqDirPresets, SEQ_DIR_PRESETS_KEY)
+    },
+    confirmSeqBookmark () {
+      const tpl = String(this.gsSeqDirTemplate || '').trim()
+      if (!tpl) { this.seqBookmarkOpen = false; return }
+      this.seqDirPresets = upsertCustomPreset(this.seqDirPresets, {
+        label: this.seqBookmarkLabel || this.$t('presetUnnamed'),
+        template: tpl
+      })
+      savePresets(this.seqDirPresets, SEQ_DIR_PRESETS_KEY)
+      this.seqBookmarkOpen = false
+      this.seqBookmarkLabel = ''
+    },
     // 读取并补齐历史配置缺字段
     loadSetting () {
       let setting = null
@@ -641,6 +769,10 @@ export default {
         }
         if (!setting.options.outputTo) {
           setting.options.outputTo = Object.assign({}, DEFAULT_OUTPUT_TO)
+        }
+        // 序列帧目录默认值：老配置缺字段时补齐，保存后即成为新任务的出厂模板
+        if (typeof setting.options.seqDirTemplate !== 'string') {
+          setting.options.seqDirTemplate = SEQ_DIR_DEFAULT_TEMPLATE
         }
         // 历史配置可能缺 outputFormat 或残留非法值；归一后勾选组才有确定初值
         setting.options.outputFormat = normalizeOutputFormats(setting.options.outputFormat)

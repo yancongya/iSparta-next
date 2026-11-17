@@ -13,7 +13,7 @@
       <slot name="append" />
     </div>
 
-    <!-- 变量胶囊：点击插入，颜色区分，气泡显示当前取值 -->
+    <!-- 变量胶囊：点击插入，颜色区分；hover 第一行说作用，第二行给当前值 -->
     <div v-if="chips.length" class="pv__chips">
       <button
         v-for="v in chips"
@@ -22,7 +22,7 @@
         class="var-chip"
         :class="'var-chip--c' + v.i"
         :disabled="disabled"
-        v-tip="v.key + ' = ' + (v.value || '—')"
+        v-tip="tipFor(v)"
         @click.stop="$emit('insert', v.key)"
       >
         <span class="var-chip__key">{{ '{' + v.key + '}' }}</span>
@@ -45,7 +45,9 @@ export default {
     ctx: { type: Object, default: null },
     showLabel: { type: Boolean, default: true },
     disabled: { type: Boolean, default: false },
-    placeholder: { type: String, default: '{srcPath}/output' }
+    placeholder: { type: String, default: '{srcPath}/output' },
+    // output=产物路径语义；seq=序列帧目录语义（srcPath/srcName/parent 含义不同）
+    varScope: { type: String, default: 'output' }
   },
   computed: {
     chips () {
@@ -58,6 +60,13 @@ export default {
   methods: {
     onInput (v) {
       this.$emit('input', v)
+    },
+    tipFor (v) {
+      const cap = v.key.charAt(0).toUpperCase() + v.key.slice(1)
+      const scoped = 'varTip' + (this.varScope === 'seq' ? 'Seq' : '') + cap
+      const base = 'varTip' + cap
+      const desc = this.$te(scoped) ? this.$t(scoped) : (this.$te(base) ? this.$t(base) : v.key)
+      return desc + '\n' + this.$t('varTipCurrent') + ': ' + (v.value || '—')
     }
   }
 }
