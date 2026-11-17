@@ -417,11 +417,13 @@
     <div class="workbench">
       <!-- task card -->
       <div class="mod-list" id="mod-list">
+        <div class="sequence-stage" aria-hidden="true"><canvas id="sequence-strip"></canvas></div>
         <div class="item is-selected is-done" data-state="done" id="task-item" tabindex="0" role="article"  data-i18n-aria="a11y.taskItem"aria-label="任务条示例">
           <div class="check">
             <button type="button" class="checkbox is-on" id="task-check" aria-pressed="true" data-i18n-aria="a11y.taskCheck" aria-label="选中任务"></button>
           </div>
           <div class="thumb is-checker">
+            <canvas class="sequence-cover" id="sequence-cover" aria-hidden="true"></canvas>
             <div class="thumb-art" aria-hidden="true"><span></span><span></span><span></span></div>
             <span class="thumb__badge">24F</span>
             <span class="thumb__cmp-hint"  data-i18n-title="a11y.thumbCmp"title="转换完成后可对比">

@@ -644,6 +644,139 @@
     }
   }
 
+  function setupSequenceWorkbench() {
+    const section = document.getElementById("convert");
+    const strip = document.getElementById("sequence-strip");
+    const cover = document.getElementById("sequence-cover");
+    const stage = section && section.querySelector(".sequence-stage");
+    const card = document.getElementById("task-item");
+    const legend = section && section.querySelector(".task-legend");
+    const settings = section && section.querySelector(".outset");
+    if (!section || !strip || !cover || !stage || !card || !window.ScrollTrigger || reduceMotion) return;
+
+    const image = new Image();
+    image.decoding = "async";
+    let progress = 0;
+    let target = 0;
+    let direction = 1;
+    let frame = 0;
+    let last = 0;
+    let active = false;
+    let loaded = false;
+    let inView = false;
+    let scrollBlur = 0;
+    const ease = (value) => Math.max(0, Math.min(1, value));
+    const ramp = (value, start, end) => ease((value - start) / (end - start));
+
+    function sizeCanvas(canvas) {
+      const rect = canvas.getBoundingClientRect();
+      const scale = Math.min(window.devicePixelRatio || 1, 2);
+      const width = Math.max(1, Math.round(rect.width * scale));
+      const height = Math.max(1, Math.round(rect.height * scale));
+      if (canvas.width !== width || canvas.height !== height) {
+        canvas.width = width;
+        canvas.height = height;
+      }
+      return { width, height, scale };
+    }
+
+    function drawFrame(ctx, index, x, y, size) {
+      const tile = ((Math.floor(index) % 48) + 48) % 48;
+      ctx.drawImage(image, (tile % 8) * 120, Math.floor(tile / 8) * 120, 120, 120, x, y, size, size);
+    }
+
+    function render(time) {
+      if (!loaded) return;
+      const delta = Math.min(80, Math.max(0, time - (last || time)));
+      last = time;
+      scrollBlur *= Math.exp(-delta / 180);
+      progress += (target - progress) * (1 - Math.exp(-delta / 135));
+      if (Math.abs(target - progress) < 0.001) progress = target;
+      const merge = ramp(progress, 0.48, 0.83);
+      const arrived = ramp(progress, 0.63, 0.94);
+      const visible = 1 - ramp(progress, 0.62, 0.88);
+      stage.style.opacity = String(visible);
+      stage.style.filter = "blur(" + Math.max(Math.sin(Math.PI * merge) * 5, scrollBlur).toFixed(2) + "px)";
+      card.style.opacity = String(merge);
+      card.style.transform = merge > 0.999 ? "" : "translateY(" + ((1 - merge) * 12).toFixed(1) + "px) scale(" + (0.97 + merge * 0.03).toFixed(3) + ")";
+      card.style.pointerEvents = merge > 0.98 ? "" : "none";
+      legend.style.opacity = String(ramp(progress, 0.70, 0.92));
+      legend.style.transform = "translateY(" + ((1 - ramp(progress, 0.70, 0.92)) * 16).toFixed(1) + "px)";
+      settings.style.opacity = String(arrived);
+      settings.style.transform = "translateY(" + ((1 - arrived) * 22).toFixed(1) + "px)";
+
+      const speed = 9 + 28 * ramp(progress, 0, 0.68);
+      frame = (frame + direction * delta * speed / 1000 + 48) % 48;
+      const stripSize = sizeCanvas(strip);
+      const stripCtx = strip.getContext("2d");
+      stripCtx.clearRect(0, 0, stripSize.width, stripSize.height);
+      if (visible > 0.001) {
+        const tileSize = Math.min(stripSize.height * 0.9, 96 * stripSize.scale);
+        const step = tileSize * (1 - 0.52 * merge);
+        const count = Math.ceil(stripSize.width / Math.max(step, 1)) + 2;
+        const offset = (frame % 1) * step;
+        const center = stripSize.width / 2;
+        for (let i = -1; i < count; i++) {
+          const x = i * step - offset;
+          const pull = merge * (center - x - tileSize / 2);
+          stripCtx.globalAlpha = Math.max(0, 1 - merge * 0.55);
+          drawFrame(stripCtx, frame + i * 2, x + pull, (stripSize.height - tileSize) / 2, tileSize);
+        }
+        stripCtx.globalAlpha = 1;
+      }
+      const coverSize = sizeCanvas(cover);
+      const coverCtx = cover.getContext("2d");
+      coverCtx.clearRect(0, 0, coverSize.width, coverSize.height);
+      const previewSize = Math.min(coverSize.width, coverSize.height);
+      drawFrame(coverCtx, frame, (coverSize.width - previewSize) / 2, (coverSize.height - previewSize) / 2, previewSize);
+      if (!inView && Math.abs(progress - target) < 0.001) {
+        active = false;
+        return;
+      }
+      requestAnimationFrame(render);
+    }
+
+    function start() {
+      if (active || !loaded) return;
+      active = true;
+      last = 0;
+      requestAnimationFrame(render);
+    }
+
+    image.onload = function () {
+      loaded = true;
+      section.classList.add("sequence-ready");
+      const visibilityObserver = new IntersectionObserver(function (entries) {
+        inView = entries[0].isIntersecting;
+        if (inView) start();
+      });
+      visibilityObserver.observe(section);
+      const trigger = window.ScrollTrigger.create({
+        trigger: section,
+        start: "top 95%",
+        end: "top 34%",
+        onUpdate: function (self) {
+          direction = self.direction || direction;
+          scrollBlur = Math.min(6, Math.abs(self.getVelocity()) / 750);
+          target = self.progress;
+          start();
+        },
+        onEnter: start,
+        onEnterBack: start,
+        onLeave: function () { target = 1; },
+        onLeaveBack: function () { target = 0; }
+      });
+      target = trigger.progress;
+      start();
+    };
+    const observer = new IntersectionObserver(function (entries) {
+      if (!entries[0].isIntersecting) return;
+      image.src = "assets/sequence-come.webp";
+      observer.disconnect();
+    }, { rootMargin: "700px 0px" });
+    observer.observe(section);
+  }
+
   /* ---------- task card ---------- */
   const taskItem = document.getElementById("task-item");
   const taskCheck = document.getElementById("task-check");
@@ -2468,6 +2601,7 @@ function setupLineageDots() {
 
   setupNavCap();
   setupMicro();
+  setupSequenceWorkbench();
   setupRail();
   setupLineageDots();
   setupShotsTabs();
