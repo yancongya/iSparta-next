@@ -156,7 +156,9 @@ class actionFiles {
       let prefixpath = path.dirname(PNGs[i])
       // 取「末尾连续数字 + .png」前的部分作前缀：ah16_01.png → ah16_，frame_0002.png → frame_，
       // 01.png → 空串。已兼容非纯数字前缀（issue #2 中 ah16_ 这类命名实测可正确归组），勿改回纯数字判断。
-      let prefixname = path.basename(PNGs[i]).replace(/\d+\.png$/i, '')
+      // (?:\.[^.]+)* 兼容数字与 .png 之间的中间扩展名：ah16_06.pcx.png → ah16_（issue #2 用户实测
+      // 被 9 张拆成 9 个任务的正是这种双重扩展名）；无数字结尾（shot.pcx.png）不匹配，仍各自成组。
+      let prefixname = path.basename(PNGs[i]).replace(/\d+(?:\.[^.]+)*\.png$/i, '')
       let prefix = prefixpath + prefixname
       if (!tempPrefix[prefix]) {
         tempPrefix[prefix] = []
