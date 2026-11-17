@@ -12,6 +12,9 @@ export default function (item, isLossless, store, locale, opts) {
   var tmpDir = item.basic.tmpDir
   // 中间产物固定 ASCII 名 out.png / out-quant.png（避免中文 outputName 让工具失败）
   var tmpFile = path.join(item.basic.tmpOutputDir, 'out.png')
+  // sizeGate 重压复用同一 item / tmpDir；每轮开始重置跳过标志，避免上一轮的
+  // 内存跳过状态或残留 out-quant.png 污染本轮判断。
+  item.basic.apngQuantSkipped = false
   fs.ensureDirSync(tmpDir)
   if (tmpFile != item.basic.fileList[0]) {
     fs.copySync(item.basic.fileList[0], tmpFile)
@@ -49,6 +52,15 @@ export default function (item, isLossless, store, locale, opts) {
       })
       return false
     }).then(() => {
+      // apngquant 的输出 out-quant.png 必须接回 apngopt 作为输入，否则 --quality
+      // 只作用在一个没人读取的死文件上，最终 APNG 恒等于未量化母版 —— 用户会看到
+      // quality 设 100 还是 50 输出大小完全不变。
+      // 只有量化真正产物存在时才切换；内存不足跳过量化（catch 吞掉）时 out-quant.png
+      // 不存在，保持指向母版 out.png，让 apngopt 走无损优化继续。
+      const quantFile = path.join(item.basic.tmpOutputDir, 'out-quant.png')
+      if (!item.basic.apngQuantSkipped && fs.existsSync(quantFile)) {
+        item.basic.fileList[0] = quantFile
+      }
       return apngopt(item, store, locale, gateOpts)
     }).then(() => {
       // 收尾把 fileList[0] 指向规范化主文件 out.png（apngopt 的输出），而非 out-quant.png：

@@ -1,25 +1,33 @@
-# iSparta-next
+<div align="center">
 
-**中文** | [English](README.en.md)
+<img src="public/icons/icon-brand.svg" alt="iSparta-next 图标" width="120" height="120">
 
-![Latest release](https://img.shields.io/github/v/release/yancongya/iSparta-next?include_prereleases\&label=Release)
+<h1>iSparta-next</h1>
 
-![Downloads](https://img.shields.io/github/downloads/yancongya/iSparta-next/total.svg)
+<p>APNG / Animated WebP / GIF / PNG 序列，互转与压缩。</p>
 
-![Build Multi-Platform](https://img.shields.io/github/actions/workflow/status/yancongya/iSparta-next/build.yml?branch=master\&label=CI)
+<p><i>停更多年的经典 iSparta，在 Electron 28 + Vue 2 上重构的现代维护版。转换全程在本地完成，不上传云端。</i></p>
 
-![Electron](https://img.shields.io/badge/Electron-28.3.3-47848F?logo=electron\&logoColor=white)
+<p>
+  <a href="https://github.com/yancongya/iSparta-next/releases"><img alt="Windows" src="https://img.shields.io/badge/-Windows-0078D6?style=flat-square&logo=windows&logoColor=white"></a>
+  <a href="https://github.com/yancongya/iSparta-next/releases"><img alt="macOS" src="https://img.shields.io/badge/-macOS-000000?style=flat-square&logo=apple&logoColor=white"></a>
+  <a href="https://github.com/yancongya/iSparta-next/releases"><img alt="Linux" src="https://img.shields.io/badge/-Linux-FCA216?style=flat-square&logo=linux&logoColor=black"></a>
+</p>
 
-![Vue](https://img.shields.io/badge/Vue-2.x-42b883?logo=vue.js\&logoColor=white)
+<p>
+  <a href="https://github.com/yancongya/iSparta-next/releases"><img alt=" Latest release" src="https://img.shields.io/github/v/release/yancongya/iSparta-next?include_prereleases&label=Release&style=flat-square"></a>
+  <img alt="Downloads" src="https://img.shields.io/github/downloads/yancongya/iSparta-next/total.svg?style=flat-square">
+  <img alt="CI" src="https://img.shields.io/github/actions/workflow/status/yancongya/iSparta-next/build.yml?branch=master&label=CI&style=flat-square">
+  <img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square">
+</p>
 
-![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
+<p><a href="https://github.com/yancongya/iSparta-next/releases"><b>下载安装包 →</b></a> · <a href="https://yancongya.github.io/iSparta-next/">产品官网</a> · <a href="README.en.md">English</a></p>
 
-**iSparta-next** 是在停更多年的经典 [iSparta](https://github.com/iSparta/iSparta) 基础上重构的桌面动图转换工具，支持 **APNG / Animated WebP / GIF / PNG 序列** 之间的互转与压缩。
+<img src="docs/screenshots/desktop-workspace-hd.webp" alt="iSparta-next 工作台" width="720" style="border-radius:12px;">
 
-> **[点此前往 Releases 下载安装包 →](https://github.com/yancongya/iSparta-next/releases)**  
-> **产品官网 / 落地页：** **<https://yancongya.github.io/iSparta-next/>**  
-> iSparta-next 是停更 [iSparta](https://github.com/iSparta/iSparta) 的现代维护替代：APNG / Animated WebP / GIF / PNG 序列转换与压缩  
-> 技术栈：Electron 28 + Vue 2 · 支持 Windows / macOS / Linux
+</div>
+
+**iSparta-next** 是在停更多年的经典 [iSparta](https://github.com/iSparta/iSparta) 基础上重构的桌面动图转换工具，支持 **APNG / Animated WebP / GIF / PNG 序列** 之间的互转与压缩，并可在 After Effects 面板中直接调用。
 
 ### 更新检查与自动更新
 
@@ -113,6 +121,9 @@
 
 ## 截图
 
+<details>
+<summary><b>展开查看全部界面截图（桌面端 + AE 扩展端）</b></summary>
+
 > 图源唯一真相源在 [`docs/screenshots/`](docs/screenshots)。改图后跑 `node scripts\sync-screenshots.js` 同步落地页副本；`--check` 校验是否漂移（CI 会跑）。
 
 **桌面端**
@@ -135,17 +146,80 @@
 | :-----------------------------------------------------------------------------------------: |
 | <img src="docs/screenshots/cep-output-settings.webp" alt="AE 扩展：输出路径变量与大小阈值设置" width="480"> |
 
+</details>
+
 ## 下载
 
-请直接到 **[Releases](https://github.com/yancongya/iSparta-next/releases)** 页面下载最新安装包。
+请直接到 **[Releases](https://github.com/yancongya/iSparta-next/releases)** 页面下载最新版本。文件名中的 `<版本>` 指该 Release 的版本号（如 `3.8.1`）。
 
-| 平台      | 产物                | 架构          |
-| ------- | ----------------- | ----------- |
-| Windows | `.exe`（桌面与按需 AE 扩展） | x64 |
-| macOS   | `.pkg`（桌面与 AE 扩展） | x64 / arm64 |
-| Linux   | `.AppImage` | x64 |
+### 该下哪个包
 
-三端均由 GitHub Actions 构建。macOS 包目前未签名；若系统拦截，请在「系统设置 → 隐私与安全性」中允许打开。
+| 平台 | 架构 | 推荐下载 | 其他格式 |
+| --- | --- | --- | --- |
+| Windows 10 / 11 | x64 | `isparta-next-<版本>-win-x64.exe`（NSIS 安装版，双击安装） | `…-win-x64.zip`（免安装便携版） |
+| macOS 11+ | Apple 芯片（arm64） | `isparta-next-<版本>-mac-arm64.pkg`（系统级安装） | `…-mac-arm64.zip`（应用包） |
+| macOS 11+ | Intel（x64） | `isparta-next-<版本>-mac-x64.pkg` | `…-mac-x64.zip` |
+| Linux | x64 | `isparta-next-<版本>-linux-x64.AppImage`（免安装） | `…-linux-x64.tar.gz` |
+
+**AE 扩展**：桌面安装包在检测到 After Effects 时会**自动部署同版本 CEP 面板**，多数情况无需单独下载。只有已有 AE、想手动安装扩展时才下载 `isparta-next-<版本>-cep-win.zip` / `…-cep-mac.zip`，解压后按包内说明放入 CEP 扩展目录并重启 AE。
+
+想要始终指向最新版的固定链接（便于脚本 / 文档引用），用 `releases/latest/download/` 加下面的稳定文件名，例如：
+
+```text
+https://github.com/yancongya/iSparta-next/releases/latest/download/isparta-next-win-x64.exe
+```
+
+稳定文件名：`isparta-next-win-x64.exe`、`isparta-next-mac-arm64.pkg`、`isparta-next-mac-x64.pkg`、`isparta-next-linux-x64.AppImage`、`isparta-next-cep-win.zip`、`isparta-next-cep-mac.zip`。 electron-updater 的自动更新不走这些别名，而是读各平台 `latest*.yml` 内的版本化路径。
+
+三端均由 GitHub Actions 构建。安装包目前**未做代码签名 / 公证**，首次打开可能被系统拦截，按下表处理即可。
+
+### 首次打开提示怎么处理
+
+<details>
+<summary><b>macOS：「无法打开，因为来自身份不明的开发者」</b></summary>
+
+安装包未做签名 / 公证。`.pkg` 右键 → 打开 → 仍要打开；或安装后到「系统设置 → 隐私与安全性」点「仍要打开」。若仍被拦截，对应用执行以下命令（路径按实际安装位置）后再打开：
+
+```bash
+sudo xattr -cr "/Applications/iSparta-next.app"
+```
+
+</details>
+
+<details>
+<summary><b>Windows：「Windows 已保护你的电脑」（SmartScreen）</b></summary>
+
+本地安装包未做代码签名，点「更多信息 → 仍要运行」即可。签名进展见 [`docs/SIGNPATH.md`](docs/SIGNPATH.md)。
+
+</details>
+
+<details>
+<summary><b>Linux：双击 AppImage 无反应 / 白屏</b></summary>
+
+先赋予可执行权限：
+
+```bash
+chmod +x isparta-next-*.AppImage
+```
+
+若提示缺少 FUSE，安装 `libfuse2`（Ubuntu 22.04+：`sudo apt install libfuse2`），或用免 FUSE 方式运行：
+
+```bash
+./isparta-next-*.AppImage --appimage-extract-and-run
+```
+
+个别原生工具还需要 `sudo apt-get install libpng16-dev`。
+
+</details>
+
+<details>
+<summary><b>安装后 AE 里看不到面板</b></summary>
+
+确认安装时检测到了 After Effects，然后重启 AE。仍未出现时，用上面的 CEP zip 手动安装，或看 [`targets/cep/README.md`](targets/cep/README.md)。
+
+</details>
+
+更多排障入口见工具条「运行日志」面板和 [`docs/ACCEPTANCE-RUNBOOK.md`](docs/ACCEPTANCE-RUNBOOK.md)。
 
 > 需要自己编译或参与开发，请往下看「快速开始」。
 
@@ -308,7 +382,8 @@ iSparta-next/
 | `node scripts/dev/preview.js <guide\|landing\|web\|desktop\|cep>` | 起预览服务并自动打开浏览器 |
 | `node scripts/dev/build.js win` | 本机打 Windows 安装包（自动豁免删除守卫；构建后给出 exe 路径 / 体积 / sha256） |
 | `node scripts/dev/build.js cep` | 只重建 AE / CEP 面板产物 `targets/cep/ui` |
-| `node scripts/dev/check.js lint\|pack\|ports\|all` | 体检：lint / 出包自检 / 端口占用与归属识别 |
+| `npm run doctor:version` | 版本一致性守卫：package.json / lock / release notes / CEP payload / mac 清单 |
+| `node scripts/dev/check.js lint\|pack\|version\|ports\|all` | 体检：lint / 出包自检 / 版本一致性 / 端口占用与归属识别 |
 
 **浏览器 mockup（仅开发预览）**：桌面 Web（:8081）启动即由 `src/util/mock-bridge.js` 注入假桥与 5 条种子任务；CEP Web（:8082）需显式开关，用 `node scripts/dev/preview.js cep --mock`（等价访问 `http://127.0.0.1:8082/?mock=1`），由 `src/cep/mockup.js` 提供示例合成树 + 假任务，用于脱离 AE 调 UI。两者都只在 `NODE_ENV=development` 生效，真实桌面 / CEP 面板与生产构建不受影响；控制台 `__ispartaMockReset()` 可重置假数据。详见 [`AGENTS.md`](AGENTS.md)。
 

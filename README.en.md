@@ -1,20 +1,34 @@
-# iSparta-next
+<div align="center">
 
-**English** | [中文](README.md)
+<img src="public/icons/icon-brand.svg" alt="iSparta-next icon" width="120" height="120">
 
-[![Latest release](https://img.shields.io/github/v/release/yancongya/iSparta-next?include_prereleases&label=Release)](https://github.com/yancongya/iSparta-next/releases/latest)
-[![Downloads](https://img.shields.io/github/downloads/yancongya/iSparta-next/total.svg)](https://github.com/yancongya/iSparta-next/releases)
-[![Build Multi-Platform](https://img.shields.io/github/actions/workflow/status/yancongya/iSparta-next/build.yml?branch=master&label=CI)](https://github.com/yancongya/iSparta-next/actions/workflows/build.yml)
-[![Electron](https://img.shields.io/badge/Electron-28.3.3-47848F?logo=electron&logoColor=white)](https://www.electronjs.org/)
-[![Vue](https://img.shields.io/badge/Vue-2.x-42b883?logo=vue.js&logoColor=white)](https://vuejs.org/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/yancongya/iSparta-next/blob/master/LICENSE)
+<h1>iSparta-next</h1>
 
-**iSparta-next** is a desktop animated-image converter rebuilt from the classic [iSparta](https://github.com/iSparta/iSparta). It converts and compresses **APNG / Animated WebP / GIF / PNG sequences**.
+<p>Convert and compress APNG / Animated WebP / GIF / PNG sequences.</p>
 
-> **[Download from Releases →](https://github.com/yancongya/iSparta-next/releases)**  
-> Product page: **[https://yancongya.github.io/iSparta-next/](https://yancongya.github.io/iSparta-next/)**  
-> Stack: Electron 28 + Vue 2 · Platforms: Windows / macOS / Linux  
->  
+<p><i>A modern, maintained rebuild of the long-abandoned classic iSparta, on Electron 28 + Vue 2. All conversion happens locally — nothing is uploaded.</i></p>
+
+<p>
+  <a href="https://github.com/yancongya/iSparta-next/releases"><img alt="Windows" src="https://img.shields.io/badge/-Windows-0078D6?style=flat-square&logo=windows&logoColor=white"></a>
+  <a href="https://github.com/yancongya/iSparta-next/releases"><img alt="macOS" src="https://img.shields.io/badge/-macOS-000000?style=flat-square&logo=apple&logoColor=white"></a>
+  <a href="https://github.com/yancongya/iSparta-next/releases"><img alt="Linux" src="https://img.shields.io/badge/-Linux-FCA216?style=flat-square&logo=linux&logoColor=black"></a>
+</p>
+
+<p>
+  <a href="https://github.com/yancongya/iSparta-next/releases"><img alt="Latest release" src="https://img.shields.io/github/v/release/yancongya/iSparta-next?include_prereleases&label=Release&style=flat-square"></a>
+  <img alt="Downloads" src="https://img.shields.io/github/downloads/yancongya/iSparta-next/total.svg?style=flat-square">
+  <img alt="CI" src="https://img.shields.io/github/actions/workflow/status/yancongya/iSparta-next/build.yml?branch=master&label=CI&style=flat-square">
+  <img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square">
+</p>
+
+<p><a href="https://github.com/yancongya/iSparta-next/releases"><b>Download installers →</b></a> · <a href="https://yancongya.github.io/iSparta-next/">Product page</a> · <a href="README.md">中文</a></p>
+
+<img src="docs/screenshots/desktop-workspace-hd.webp" alt="iSparta-next workspace" width="720" style="border-radius:12px;">
+
+</div>
+
+**iSparta-next** is a desktop animated-image converter rebuilt from the classic [iSparta](https://github.com/iSparta/iSparta). It converts and compresses **APNG / Animated WebP / GIF / PNG sequences**, and can be called directly from an After Effects panel.
+
 > **Docs:** [Changelog & updater](docs/CHANGELOG.md) · [Release process](docs/RELEASE.md) · [Docs map](#docs-map) · [SEO checklist](docs/SEO_SUBMIT.md)
 
 ### Updates & auto-update
@@ -96,6 +110,9 @@ See [`docs/CHANGELOG.md`](docs/CHANGELOG.md), [`docs/PLAN-DUAL-TARGET.md`](docs/
 
 ## Screenshots
 
+<details>
+<summary><b>Expand to see all screenshots (desktop + AE extension)</b></summary>
+
 > Single source of truth lives in [`docs/screenshots/`](docs/screenshots). After changing an image run `node scripts\sync-screenshots.js` to refresh the landing-page copy; `--check` verifies they have not drifted (CI runs it).
 
 **Desktop**
@@ -118,17 +135,80 @@ See [`docs/CHANGELOG.md`](docs/CHANGELOG.md), [`docs/PLAN-DUAL-TARGET.md`](docs/
 | :---: |
 | <img src="docs/screenshots/cep-output-settings.webp" alt="AE extension: output path variables and size limit settings" width="480"> |
 
+</details>
+
 ## Download
 
-Get the latest installers from **[Releases](https://github.com/yancongya/iSparta-next/releases)**.
+Get the latest build from **[Releases](https://github.com/yancongya/iSparta-next/releases)**. `<version>` in a filename is that release's version (e.g. `3.8.1`).
 
-| Platform | Artifact | Arch |
-| --- | --- | --- |
-| Windows | `.exe` (desktop + optional AE extension) | x64 |
-| macOS | `.pkg` (desktop + optional AE extension) | x64 / arm64 |
-| Linux | `.AppImage` | x64 |
+### Which package to download
 
-All three platforms are built by GitHub Actions. **macOS packages are unsigned** — if Gatekeeper blocks the installer, allow it in System Settings → Privacy & Security.
+| Platform | Arch | Recommended | Alternatives |
+| --- | --- | --- | --- |
+| Windows 10 / 11 | x64 | `isparta-next-<version>-win-x64.exe` (NSIS installer) | `…-win-x64.zip` (portable) |
+| macOS 11+ | Apple silicon (arm64) | `isparta-next-<version>-mac-arm64.pkg` (system-level install) | `…-mac-arm64.zip` (app bundle) |
+| macOS 11+ | Intel (x64) | `isparta-next-<version>-mac-x64.pkg` | `…-mac-x64.zip` |
+| Linux | x64 | `isparta-next-<version>-linux-x64.AppImage` (portable) | `…-linux-x64.tar.gz` |
+
+**AE extension**: the desktop installer **deploys the matching CEP panel automatically** when After Effects is detected, so no separate download is needed in most cases. Only download `isparta-next-<version>-cep-win.zip` / `…-cep-mac.zip` to install the panel manually into an existing AE — unzip and follow the instructions inside, then restart AE.
+
+For a link that always points to the newest release (handy in scripts/docs), use `releases/latest/download/` plus a stable filename, e.g.:
+
+```text
+https://github.com/yancongya/iSparta-next/releases/latest/download/isparta-next-win-x64.exe
+```
+
+Stable filenames: `isparta-next-win-x64.exe`, `isparta-next-mac-arm64.pkg`, `isparta-next-mac-x64.pkg`, `isparta-next-linux-x64.AppImage`, `isparta-next-cep-win.zip`, `isparta-next-cep-mac.zip`. electron-updater does not use these aliases; it reads the versioned paths inside each platform's `latest*.yml`.
+
+All three platforms are built by GitHub Actions. Installers are **unsigned / not notarized**, so your OS may warn on first launch — expand the items below.
+
+### First-run warnings
+
+<details>
+<summary><b>macOS: "can't be opened because it is from an unidentified developer"</b></summary>
+
+Installers are unsigned / not notarized. Right-click the `.pkg` → Open → Open anyway; or after installing go to System Settings → Privacy & Security → Open anyway. If still blocked, run the following (adjust the path) and reopen:
+
+```bash
+sudo xattr -cr "/Applications/iSparta-next.app"
+```
+
+</details>
+
+<details>
+<summary><b>Windows: "Windows protected your PC" (SmartScreen)</b></summary>
+
+Local installers are not code-signed — click More info → Run anyway. Signing status: [`docs/SIGNPATH.md`](docs/SIGNPATH.md).
+
+</details>
+
+<details>
+<summary><b>Linux: AppImage does nothing / shows a blank window</b></summary>
+
+First make it executable:
+
+```bash
+chmod +x isparta-next-*.AppImage
+```
+
+If FUSE is missing, install `libfuse2` (Ubuntu 22.04+: `sudo apt install libfuse2`), or run without FUSE:
+
+```bash
+./isparta-next-*.AppImage --appimage-extract-and-run
+```
+
+Some native tools also need `sudo apt-get install libpng16-dev`.
+
+</details>
+
+<details>
+<summary><b>Panel not showing in AE after install</b></summary>
+
+Make sure After Effects was detected during install, then restart AE. If still missing, install manually from the CEP zip above, or see [`targets/cep/README.md`](targets/cep/README.md).
+
+</details>
+
+More troubleshooting: the **Run log** panel in the app, and [`docs/ACCEPTANCE-RUNBOOK.md`](docs/ACCEPTANCE-RUNBOOK.md).
 
 ## Features
 
@@ -262,7 +342,8 @@ iSparta-next/
 | `node scripts/dev/preview.js <guide\|landing\|web\|desktop\|cep>` | Start a preview server and open the browser |
 | `node scripts/dev/build.js win` | Local Windows installer (delete-guard exemption injected; prints exe path / size / sha256) |
 | `node scripts/dev/build.js cep` | Rebuild the AE / CEP panel bundle `targets/cep/ui` only |
-| `node scripts/dev/check.js lint\|pack\|ports\|all` | Health check: lint / packaging gate / port occupancy & owner |
+| `npm run doctor:version` | Version consistency gate: package.json / lock / release notes / CEP payload / mac manifest |
+| `node scripts/dev/check.js lint\|pack\|version\|ports\|all` | Health check: lint / packaging gate / version consistency / port occupancy & owner |
 
 **Browser mockup (dev preview only)**: the Desktop Web target (:8081) auto-installs `src/util/mock-bridge.js` with 5 seeded tasks. The CEP Web target (:8082) is opt-in — run `node scripts/dev/preview.js cep --mock` (equivalent to `http://127.0.0.1:8082/?mock=1`); `src/cep/mockup.js` then supplies a sample composition tree plus seeded tasks so CEP UI can be tuned without After Effects. Both are gated on `NODE_ENV=development`; real desktop/CEP panels and production builds are untouched. Run `__ispartaMockReset()` in the console to reset mock data. See [`AGENTS.md`](AGENTS.md).
 

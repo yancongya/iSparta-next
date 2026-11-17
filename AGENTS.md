@@ -13,6 +13,8 @@
 | CEP 铁律 | MainPath **禁 http://**；**真机 / 生产禁 mock**（dev 浏览器预览可显式 `?mock=1`，见下）；桥 `/lib/`|`../lib/`；外链 `cep.util.openURLInDefaultBrowser` |
 | CEP 载荷/扩展 zip | `npm run prepare:cep`（`build/cep-payload/`，含 `install/` 安装辅助）；`npm run pack:cep:win` / `pack:cep:mac`（`dist/*-cep-*-{win,mac}-x64.zip`，**安装辅助按平台取子集**，见下） |
 | 更新逻辑测试 | `node scripts\updateCheck.l1.js`；fixture：`scripts\fixture-github.js` |
+| APNG 质量链路测试 | `node scripts\apng-quality-chain.l1.js`；验证 apngquant 量化产物接回 apngopt（否则 quality 设值无效） |
+| 序列导入分组测试 | `node scripts\import-sequence-a02.l1.js`；走真实 `readerFiles` 全链路验证 a02/a03/a04 归为一个任务（自造+自清 fixture） |
 | 图标再生 | 见 `scripts\build-app-icons.js`、`scripts\make-icons-from-png.py`、`scripts\make-installer-images.py`（勿手改位图当源） |
 
 ### 1.1 统一入口脚本（`scripts/dev/`）——**先查这里，不要现敲命令**
