@@ -3340,6 +3340,110 @@ html[data-theme="dark"] .cmp-tab.is-on { color: #0c0f0e; }
   max-height: none;
 }
 
+/* About 轨道插画用同一套制图线条，每张图讲一个不同的过程。 */
+.rail__track .ill-svg,
+.rail__track .why-svg { animation: none; overflow: visible; }
+.scene-grid { fill: none; stroke: color-mix(in srgb, var(--accent) 10%, transparent); stroke-width: .6; }
+.scene-kicker,
+.scene-label,
+.scene-value,
+.scene-glyph { font-family: var(--mono, ui-monospace, monospace); font-weight: 700; }
+.scene-kicker { fill: color-mix(in srgb, var(--accent) 75%, var(--muted)); font-size: 5px; letter-spacing: .06em; }
+.scene-label { fill: var(--muted); font-size: 5.5px; letter-spacing: .03em; }
+.scene-value { fill: var(--accent); font-size: 13px; letter-spacing: -.04em; }
+.scene-value--small { font-size: 10px; }
+.scene-glyph { fill: var(--accent); font-size: 11px; }
+.scene-panel { fill: color-mix(in srgb, var(--card) 80%, var(--line)); stroke: color-mix(in srgb, var(--accent) 42%, var(--line)); stroke-width: 1; }
+.scene-accent-soft { fill: color-mix(in srgb, var(--accent) 17%, var(--card)); stroke: color-mix(in srgb, var(--accent) 58%, var(--line)); stroke-width: 1; }
+.scene-accent { fill: var(--accent); }
+.scene-stroke { fill: none; stroke: color-mix(in srgb, var(--muted) 75%, transparent); stroke-width: 1.2; stroke-linecap: round; }
+.scene-stroke--accent,
+.scene-route { fill: none; stroke: var(--accent); stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+.scene-ink-stroke { fill: none; stroke: var(--card); stroke-width: 1.4; stroke-linecap: round; }
+
+.pkg-module,
+.pkg-core,
+.batch-source,
+.batch-output,
+.interface-panel,
+.security-files,
+.security-shield,
+.update-old,
+.update-new { transform-box: fill-box; transform-origin: center; }
+.pkg-module--desktop { animation: sceneSlideLeft 5s ease-in-out infinite; }
+.pkg-module--cep { animation: sceneSlideRight 5s ease-in-out infinite; }
+.pkg-core { animation: sceneCore 5s ease-in-out infinite; }
+.ill-ae-install .scene-route { stroke-dasharray: 3 3; animation: sceneDash 1.2s linear infinite; }
+@keyframes sceneSlideLeft { 0%, 12%, 90%, 100% { transform: translateX(-7px); opacity: .55; } 34%, 77% { transform: translateX(0); opacity: 1; } }
+@keyframes sceneSlideRight { 0%, 20%, 90%, 100% { transform: translateX(7px); opacity: .55; } 42%, 77% { transform: translateX(0); opacity: 1; } }
+@keyframes sceneCore { 0%, 45%, 100% { transform: scale(.88); opacity: .6; } 65%, 83% { transform: scale(1.14); opacity: 1; } }
+@keyframes sceneDash { to { stroke-dashoffset: -12; } }
+
+.gate-threshold { fill: none; stroke: var(--accent); stroke-width: 1; stroke-dasharray: 4 3; }
+.gate-bar { fill: color-mix(in srgb, #f08b58 72%, var(--card)); transform-box: fill-box; transform-origin: center bottom; }
+.gate-bar--one { animation: gateBarOne 5s ease-in-out infinite; }
+.gate-bar--two { animation: gateBarTwo 5s ease-in-out infinite; }
+.gate-bar--three { fill: var(--accent); animation: gateBarThree 5s ease-in-out infinite; }
+.gate-pass { fill: color-mix(in srgb, var(--accent) 25%, var(--card)); stroke: var(--accent); stroke-width: 1; animation: gateSuccess 5s ease-in-out infinite; }
+.gate-check { fill: none; stroke: var(--accent); stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; animation: gateSuccess 5s ease-in-out infinite; }
+@keyframes gateBarOne { 0%, 18%, 95%, 100% { transform: scaleY(.15); opacity: .35; } 25%, 80% { transform: scaleY(1); opacity: 1; } }
+@keyframes gateBarTwo { 0%, 37%, 95%, 100% { transform: scaleY(.15); opacity: .35; } 48%, 80% { transform: scaleY(1); opacity: 1; } }
+@keyframes gateBarThree { 0%, 57%, 95%, 100% { transform: scaleY(.15); opacity: .35; } 67%, 82% { transform: scaleY(1); opacity: 1; } }
+@keyframes gateSuccess { 0%, 66%, 95%, 100% { opacity: .15; } 74%, 88% { opacity: 1; } }
+
+.est-arc { fill: none; stroke: color-mix(in srgb, var(--accent) 18%, var(--line)); stroke-width: 5; stroke-linecap: round; }
+.est-arc--live { stroke: var(--accent); stroke-dasharray: 145; stroke-dashoffset: 145; animation: estimateScan 4.5s ease-in-out infinite; }
+.est-needle { stroke: var(--accent); stroke-width: 2; stroke-linecap: round; transform-box: fill-box; transform-origin: left bottom; animation: estimateNeedle 4.5s ease-in-out infinite; }
+.ill-est .scene-value { animation: estimateValue 4.5s ease-in-out infinite; }
+@keyframes estimateScan { 0%, 12%, 100% { stroke-dashoffset: 145; } 65%, 86% { stroke-dashoffset: 34; } }
+@keyframes estimateNeedle { 0%, 12%, 100% { transform: rotate(-52deg); } 65%, 86% { transform: rotate(0); } }
+@keyframes estimateValue { 0%, 20% { opacity: .25; } 55%, 90% { opacity: 1; } 100% { opacity: .25; } }
+
+.batch-source--one { animation: batchSendOne 4.5s ease-in-out infinite; }
+.batch-source--two { animation: batchSendTwo 4.5s ease-in-out infinite; }
+.batch-route { stroke-dasharray: 4 4; animation: sceneDash 1.2s linear infinite; }
+.batch-output { animation: batchReceive 4.5s ease-in-out infinite; }
+@keyframes batchSendOne { 0%, 10%, 100% { transform: translateX(-8px); opacity: .45; } 30%, 85% { transform: translateX(0); opacity: 1; } }
+@keyframes batchSendTwo { 0%, 28%, 100% { transform: translateX(-8px); opacity: .45; } 48%, 85% { transform: translateX(0); opacity: 1; } }
+@keyframes batchReceive { 0%, 50%, 100% { transform: scale(.9); opacity: .55; } 68%, 86% { transform: scale(1.08); opacity: 1; } }
+
+.log-spine,
+.fix-spine { fill: none; stroke: color-mix(in srgb, var(--accent) 35%, var(--line)); stroke-width: 1.5; }
+.log-step,
+.fix-step { animation: sceneStep 4.5s ease-in-out infinite; }
+.log-step--two,
+.fix-step--two { animation-delay: .5s; }
+.log-step--three,
+.fix-step--three { animation-delay: 1s; }
+@keyframes sceneStep { 0%, 15%, 95%, 100% { opacity: .22; transform: translateY(4px); } 30%, 82% { opacity: 1; transform: translateY(0); } }
+.interface-desk { animation: interfaceDesk 4.8s ease-in-out infinite; }
+.interface-panel { animation: interfacePanel 4.8s ease-in-out infinite; }
+@keyframes interfaceDesk { 0%, 45%, 100% { opacity: 1; } 60%, 85% { opacity: .45; } }
+@keyframes interfacePanel { 0%, 35%, 100% { transform: translateX(8px); opacity: .4; } 60%, 85% { transform: translateX(0); opacity: 1; } }
+.security-files { animation: securityFiles 4.5s ease-in-out infinite; }
+.security-route { stroke-dasharray: 3 3; animation: sceneDash 1.2s linear infinite; }
+.security-shield { animation: securityShield 4.5s ease-in-out infinite; }
+.security-check,
+.fix-check { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.security-check { stroke-dasharray: 28; animation: securityDraw 4.5s ease-in-out infinite; }
+.fix-check { stroke-dasharray: 14; animation: fixDraw 4.5s ease-in-out infinite; }
+.fix-step--two .fix-check { animation-delay: .5s; }
+.fix-step--three .fix-check { animation-delay: 1s; }
+@keyframes securityFiles { 0%, 100% { opacity: .55; } 20%, 65% { opacity: 1; } }
+@keyframes securityShield { 0%, 35%, 100% { transform: scale(.92); opacity: .5; } 60%, 85% { transform: scale(1.05); opacity: 1; } }
+@keyframes securityDraw { 0%, 45%, 100% { stroke-dashoffset: 28; } 65%, 85% { stroke-dashoffset: 0; } }
+@keyframes fixDraw { 0%, 18%, 100% { stroke-dashoffset: 14; } 35%, 82% { stroke-dashoffset: 0; } }
+.update-route { stroke-dasharray: 4 4; animation: sceneDash 1s linear infinite; }
+.update-old { animation: updateOld 4.5s ease-in-out infinite; }
+.update-new { animation: updateNew 4.5s ease-in-out infinite; }
+@keyframes updateOld { 0%, 30%, 100% { transform: scale(1); opacity: 1; } 55%, 85% { transform: scale(.86); opacity: .5; } }
+@keyframes updateNew { 0%, 35%, 100% { transform: scale(.85); opacity: .5; } 60%, 85% { transform: scale(1.05); opacity: 1; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .rail__track .ill-svg *,
+  .rail__track .why-svg * { animation: none !important; }
+}
+
 /* TRAE 式阅读顺序：编号 → 标题 → 主视觉 → 说明 */
 .rail__track > .about-card h3,
 .rail__track > .why-card h3 {

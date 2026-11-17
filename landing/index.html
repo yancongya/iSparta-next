@@ -258,14 +258,12 @@
         <article class="about-card about-card--ill">
           <div class="ill" aria-hidden="true">
             <svg class="ill-svg ill-ae-install" viewBox="0 0 160 88" xmlns="http://www.w3.org/2000/svg">
-    <rect class="ill-ui-window" x="22" y="9" width="116" height="68" rx="6"/>
-    <path class="ill-ui-header" d="M28 9h104a6 6 0 0 1 6 6v9H22v-9a6 6 0 0 1 6-6Z"/>
-    <circle class="ill-ui-window-dot" cx="31" cy="17" r="1.7"/><circle class="ill-ui-window-dot" cx="38" cy="17" r="1.7"/>
-    <text class="ill-ui-label" x="49" y="19">INSTALLER</text>
-    <text class="ill-ui-label" x="32" y="32">CHOOSE COMPONENTS</text>
-    <rect class="ill-ui-action" x="30" y="37" width="46" height="17" rx="3"/><rect class="ill-ui-check" x="34" y="42" width="7" height="7" rx="2"/><path class="ill-ui-checkmark pkg-check pkg-check--desk" d="m36 45 1.5 1.5L40 43.5"/><text class="ill-ui-label" x="45" y="47">DESKTOP</text>
-    <rect class="ill-ui-action" x="82" y="37" width="46" height="17" rx="3"/><rect class="ill-ui-check" x="86" y="42" width="7" height="7" rx="2"/><path class="ill-ui-checkmark pkg-check pkg-check--ae" d="m88 45 1.5 1.5L92 43.5"/><text class="ill-ui-label" x="97" y="47">AE CEP</text>
-    <path class="ill-ui-route" d="M52 57v6h54v-6"/><rect class="ill-ui-track" x="37" y="67" width="86" height="3" rx="1.5"/><rect class="ill-ui-progress pkg-progress" x="37" y="67" width="86" height="3" rx="1.5"/>
+    <path class="scene-grid" d="M12 18h136M12 44h136M12 70h136M26 8v72M80 8v72M134 8v72"/>
+    <text class="scene-kicker" x="14" y="13">01 / SELECT</text>
+    <g class="pkg-module pkg-module--desktop"><rect class="scene-panel" x="17" y="27" width="43" height="30" rx="4"/><rect class="scene-accent-soft" x="23" y="33" width="31" height="17" rx="2"/><path class="scene-stroke" d="M27 46h23M28 54h22"/><text class="scene-label" x="39" y="68" text-anchor="middle">DESKTOP</text></g>
+    <g class="pkg-module pkg-module--cep"><rect class="scene-panel" x="100" y="27" width="43" height="30" rx="4"/><rect class="scene-accent-soft" x="109" y="32" width="25" height="20" rx="2"/><text class="scene-glyph" x="121.5" y="47" text-anchor="middle">Ae</text><text class="scene-label" x="121" y="68" text-anchor="middle">AE PANEL</text></g>
+    <path class="scene-route" d="M61 42h13m12 0h13"/><path class="scene-route" d="m68 38 5 4-5 4m24-8-5 4 5 4"/>
+    <g class="pkg-core"><path class="scene-accent" d="M72 27h16l6 7v23H66V34Z"/><path class="scene-ink-stroke" d="M72 27v8h16M72 44h16M76 49h8"/></g>
   </svg>
           </div>
           <h3 data-i18n="seo.pkg.t">一个安装包，按需勾选</h3>
@@ -279,12 +277,12 @@
         <article class="about-card about-card--ill">
           <div class="ill" aria-hidden="true">
             <svg class="ill-svg ill-gate" viewBox="0 0 160 88" xmlns="http://www.w3.org/2000/svg">
-    <rect class="ill-ui-window" x="12" y="12" width="136" height="64" rx="6"/><path class="ill-ui-header" d="M18 12h124a6 6 0 0 1 6 6v8H12v-8a6 6 0 0 1 6-6Z"/>
-    <text class="ill-ui-label" x="23" y="22">SIZE LIMIT</text><text class="ill-ui-value" x="126" y="22" text-anchor="end">1 MB</text>
-    <text class="ill-ui-label" x="23" y="39">OUTPUT</text><text class="ill-ui-value gate-size gate-size--before" x="132" y="39" text-anchor="end">2.28 MB</text><text class="ill-ui-value gate-size gate-size--after" x="132" y="39" text-anchor="end">0.93 MB</text>
-    <rect class="ill-ui-track" x="23" y="45" width="112" height="8" rx="4"/><rect class="ill-ui-progress gate-meter" x="23" y="45" width="112" height="8" rx="4"/>
-    <path class="ill-limit" d="M72 41v15"/><text class="ill-ui-label" x="72" y="63" text-anchor="middle">1 MB LIMIT</text>
-    <rect class="ill-ui-action gate-result" x="101" y="57" width="34" height="12" rx="6"/><text class="ill-ui-value gate-result" x="118" y="65" text-anchor="middle">PASS</text>
+    <path class="scene-grid" d="M12 18h136M12 44h136M12 70h136M26 8v72M80 8v72M134 8v72"/>
+    <text class="scene-kicker" x="14" y="13">02 / COMPRESS</text>
+    <path class="scene-stroke" d="M22 71h116"/><path class="gate-threshold" d="M22 41h116"/>
+    <rect class="gate-bar gate-bar--one" x="38" y="25" width="19" height="46" rx="3"/><rect class="gate-bar gate-bar--two" x="70" y="34" width="19" height="37" rx="3"/><rect class="gate-bar gate-bar--three" x="102" y="44" width="19" height="27" rx="3"/>
+    <text class="scene-label" x="47" y="79" text-anchor="middle">Q90</text><text class="scene-label" x="79" y="79" text-anchor="middle">Q80</text><text class="scene-label" x="111" y="79" text-anchor="middle">Q70</text>
+    <circle class="gate-pass" cx="132" cy="54" r="8"/><path class="gate-check" d="m128 54 3 3 5-6"/>
   </svg>
           </div>
           <h3 data-i18n="seo.size.t">体积可控</h3>
@@ -294,11 +292,12 @@
         <article class="about-card about-card--ill">
           <div class="ill" aria-hidden="true">
             <svg class="ill-svg ill-est" viewBox="0 0 160 88" xmlns="http://www.w3.org/2000/svg">
-    <rect class="ill-ui-window" x="16" y="16" width="128" height="56" rx="6"/><path class="ill-ui-header" d="M22 16h116a6 6 0 0 1 6 6v8H16v-8a6 6 0 0 1 6-6Z"/><circle class="ill-ui-window-dot" cx="25" cy="23" r="1.5"/>
-    <text class="ill-ui-label" x="26" y="38">TASK</text><rect class="ill-ui-thumb" x="26" y="43" width="18" height="16" rx="3"/>
-    <path class="ill-ui-line" d="M52 46h42M52 53h28"/>
-    <g class="est-badge"><rect class="ill-ui-action" x="104" y="9" width="48" height="17" rx="8"/><text class="ill-ui-value" x="128" y="20.5" text-anchor="middle">≈903 KB</text></g>
-    <rect class="ill-ui-track" x="26" y="65" width="100" height="3" rx="1.5"/><rect class="ill-ui-progress" x="26" y="65" width="64" height="3" rx="1.5"/>
+    <path class="scene-grid" d="M12 18h136M12 44h136M12 70h136M26 8v72M80 8v72M134 8v72"/>
+    <text class="scene-kicker" x="14" y="13">03 / ESTIMATE</text>
+    <path class="est-arc" d="M35 68a45 45 0 0 1 90 0"/><path class="est-arc est-arc--live" d="M35 68a45 45 0 0 1 90 0"/>
+    <circle class="scene-panel" cx="80" cy="68" r="5"/><path class="est-needle" d="M80 68 107 38"/>
+    <text class="scene-value" x="80" y="43" text-anchor="middle">≈903</text><text class="scene-label" x="80" y="53" text-anchor="middle">KB / EXPECTED</text>
+    <text class="scene-label" x="27" y="76">0</text><text class="scene-label" x="124" y="76">1 MB</text>
   </svg>
           </div>
           <h3 data-i18n="seo.est.t">开工前先估个大小</h3>
@@ -308,12 +307,12 @@
         <article class="about-card about-card--ill">
           <div class="ill" aria-hidden="true">
             <svg class="ill-svg ill-batch" viewBox="0 0 160 88" xmlns="http://www.w3.org/2000/svg">
-    <rect class="ill-ui-window" x="8" y="14" width="60" height="59" rx="5"/><path class="ill-ui-header" d="M13 14h50a5 5 0 0 1 5 5v8H8v-8a5 5 0 0 1 5-5Z"/><text class="ill-ui-label" x="17" y="23">INPUT</text>
-    <rect class="ill-ui-thumb" x="16" y="34" width="12" height="12" rx="2"/><path class="ill-ui-line" d="M33 37h26M33 43h19"/>
-    <rect class="ill-ui-thumb" x="16" y="51" width="12" height="12" rx="2" opacity=".6"/><path class="ill-ui-line" d="M33 54h26M33 60h19"/>
-    <path class="ill-ui-route" d="M69 43h22m0 0 7-7m-7 7 7 7"/>
-    <rect class="ill-ui-window" x="105" y="24" width="46" height="43" rx="5"/><path class="ill-ui-folder" d="M112 36h13l4 4h20v19h-37Z"/><path class="ill-ui-line" d="M115 48h18M115 53h12"/>
-    <text class="ill-ui-label" x="128" y="75" text-anchor="middle">OUTPUT</text>
+    <path class="scene-grid" d="M12 18h136M12 44h136M12 70h136M26 8v72M80 8v72M134 8v72"/>
+    <text class="scene-kicker" x="14" y="13">04 / BATCH</text>
+    <g class="batch-source batch-source--one"><rect class="scene-panel" x="22" y="25" width="28" height="16" rx="3"/><text class="scene-label" x="36" y="35" text-anchor="middle">A / 24F</text></g>
+    <g class="batch-source batch-source--two"><rect class="scene-panel" x="22" y="45" width="28" height="16" rx="3"/><text class="scene-label" x="36" y="55" text-anchor="middle">B / 36F</text></g>
+    <path class="scene-route batch-route" d="M53 33h17l12 11h23M53 53h17l12-9"/><circle class="scene-accent" cx="83" cy="44" r="3"/>
+    <g class="batch-output"><path class="scene-panel" d="M107 27h16l5 5h13v31h-34Z"/><text class="scene-glyph" x="124" y="46" text-anchor="middle">↗</text><text class="scene-label" x="124" y="55" text-anchor="middle">EXPORT</text></g>
   </svg>
           </div>
           <h3 data-i18n="seo.batch.t">批量与路径</h3>
@@ -324,11 +323,12 @@
         <article class="why-card">
           <div class="why-ill" aria-hidden="true">
             <svg class="why-svg ill-log" viewBox="0 0 160 88" xmlns="http://www.w3.org/2000/svg">
-    <rect class="ill-ui-window" x="12" y="10" width="136" height="68" rx="6"/><path class="ill-ui-header" d="M18 10h124a6 6 0 0 1 6 6v8H12v-8a6 6 0 0 1 6-6Z"/><text class="ill-ui-label" x="23" y="21">PROCESS LOG</text>
-    <circle class="ill-ui-status" cx="27" cy="36" r="2.5"/><path class="ill-ui-line" d="M35 36h73"/><text class="ill-ui-time" x="136" y="38" text-anchor="end">00:04</text>
-    <circle class="ill-ui-status" cx="27" cy="49" r="2.5"/><path class="ill-ui-line" d="M35 49h56"/><text class="ill-ui-time" x="136" y="51" text-anchor="end">00:09</text>
-    <circle class="ill-ui-status" cx="27" cy="62" r="2.5"/><path class="ill-ui-line" d="M35 62h88"/><text class="ill-ui-time" x="136" y="64" text-anchor="end">00:12</text>
-    <rect class="ill-ui-progress" x="22" y="70" width="68" height="3" rx="1.5"/><rect class="ill-ui-track" x="90" y="70" width="46" height="3" rx="1.5"/>
+    <path class="scene-grid" d="M12 18h136M12 44h136M12 70h136M26 8v72M80 8v72M134 8v72"/>
+    <text class="scene-kicker" x="14" y="13">05 / PROCESS</text>
+    <path class="log-spine" d="M35 25v49"/>
+    <g class="log-step log-step--one"><circle class="scene-accent" cx="35" cy="30" r="4"/><path class="scene-stroke" d="M46 30h63"/><text class="scene-label" x="139" y="32" text-anchor="end">00:04</text></g>
+    <g class="log-step log-step--two"><circle class="scene-accent" cx="35" cy="48" r="4"/><path class="scene-stroke" d="M46 48h78"/><text class="scene-label" x="139" y="50" text-anchor="end">00:09</text></g>
+    <g class="log-step log-step--three"><circle class="scene-accent" cx="35" cy="66" r="4"/><path class="scene-stroke" d="M46 66h53"/><text class="scene-label" x="139" y="68" text-anchor="end">00:12</text></g>
   </svg>
           </div>
           <p class="why-card__tag mono" data-i18n="seo.log.tag">日志</p>
@@ -339,10 +339,10 @@
         <article class="why-card">
           <div class="why-ill" aria-hidden="true">
             <svg class="why-svg ill-interface" viewBox="0 0 160 88" xmlns="http://www.w3.org/2000/svg">
-    <rect class="ill-ui-window" x="11" y="10" width="138" height="68" rx="6"/><path class="ill-ui-header" d="M17 10h126a6 6 0 0 1 6 6v8H11v-8a6 6 0 0 1 6-6Z"/><circle class="ill-ui-window-dot" cx="20" cy="17" r="1.5"/><circle class="ill-ui-window-dot" cx="26" cy="17" r="1.5"/>
-    <rect class="ill-ui-side" x="18" y="31" width="28" height="39" rx="3"/><path class="ill-ui-line" d="M53 35h84M53 42h68"/>
-    <rect class="ill-ui-tile" x="53" y="50" width="35" height="18" rx="3"/><rect class="ill-ui-tile" x="94" y="50" width="43" height="18" rx="3"/>
-    <path class="ill-ui-line" d="M22 37h18M22 43h15M22 49h18"/>
+    <path class="scene-grid" d="M12 18h136M12 44h136M12 70h136M26 8v72M80 8v72M134 8v72"/>
+    <text class="scene-kicker" x="14" y="13">06 / INTERFACE</text>
+    <g class="interface-desk"><rect class="scene-panel" x="18" y="27" width="91" height="46" rx="4"/><path class="scene-stroke" d="M18 36h91M46 36v37"/><rect class="scene-accent-soft" x="24" y="42" width="16" height="8" rx="2"/><rect class="scene-accent-soft" x="24" y="55" width="16" height="8" rx="2"/><path class="scene-stroke" d="M53 46h48M53 54h34M53 62h42"/></g>
+    <g class="interface-panel"><rect class="scene-panel" x="96" y="20" width="45" height="55" rx="4"/><path class="scene-stroke" d="M96 30h45M104 38h29M104 48h22M104 58h26"/><rect class="scene-accent-soft" x="103" y="64" width="31" height="5" rx="2"/></g>
   </svg>
           </div>
           <p class="why-card__tag mono" data-i18n="why.tag2">界面</p>
@@ -353,8 +353,11 @@
         <article class="why-card">
           <div class="why-ill" aria-hidden="true">
             <svg class="why-svg ill-security" viewBox="0 0 160 88" xmlns="http://www.w3.org/2000/svg">
-    <rect class="ill-ui-window" x="10" y="12" width="54" height="60" rx="6"/><path class="ill-ui-header" d="M16 12h42a6 6 0 0 1 6 6v7H10v-7a6 6 0 0 1 6-6Z"/><path class="ill-ui-line" d="M20 36h32M20 43h26M20 50h30"/>
-    <path class="ill-ui-shield" d="M105 15 136 27v16c0 17-13 27-31 34-18-7-31-17-31-34V27Z"/><path class="ill-ui-shield-check" d="m91 46 9 9 19-21"/><circle class="ill-ui-lock" cx="105" cy="42" r="5"/>
+    <path class="scene-grid" d="M12 18h136M12 44h136M12 70h136M26 8v72M80 8v72M134 8v72"/>
+    <text class="scene-kicker" x="14" y="13">07 / VERIFY</text>
+    <g class="security-files"><path class="scene-panel" d="M27 27h28l7 7v37H27Z"/><path class="scene-stroke" d="M35 42h19M35 50h19M35 58h13"/><path class="scene-panel" d="M45 22h27l7 7v36H65"/></g>
+    <path class="scene-route security-route" d="M79 44h20"/>
+    <g class="security-shield"><path class="scene-accent-soft" d="M118 20 140 29v18c0 16-9 25-22 32-13-7-22-16-22-32V29Z"/><path class="scene-stroke scene-stroke--accent" d="M118 26 134 33v14c0 11-6 18-16 24-10-6-16-13-16-24V33Z"/><path class="security-check" d="m109 47 7 7 13-15"/></g>
   </svg>
           </div>
           <p class="why-card__tag mono" data-i18n="why.tag5">依赖</p>
@@ -365,12 +368,12 @@
         <article class="about-card about-card--ill">
           <div class="ill" aria-hidden="true">
             <svg class="ill-svg ill-fix" viewBox="0 0 160 88" xmlns="http://www.w3.org/2000/svg">
-    <rect class="ill-ui-window" x="30" y="12" width="100" height="64" rx="6"/><path class="ill-ui-header" d="M36 12h88a6 6 0 0 1 6 6v8H30v-8a6 6 0 0 1 6-6Z"/>
-    <text class="ill-ui-label" x="40" y="24">FIXED</text>
-    <rect class="ill-ui-check" x="42" y="34" width="8" height="8" rx="2"/><path class="ill-ui-checkmark fix-c1" d="m44 38 1.5 1.5L47 37"/><path class="ill-ui-line" d="M56 38h52"/>
-    <rect class="ill-ui-check" x="42" y="49" width="8" height="8" rx="2"/><path class="ill-ui-checkmark fix-c2" d="m44 53 1.5 1.5L47 52"/><path class="ill-ui-line" d="M56 53h52"/>
-    <rect class="ill-ui-check" x="42" y="64" width="8" height="8" rx="2"/><path class="ill-ui-checkmark fix-c3" d="m44 68 1.5 1.5L47 67"/><path class="ill-ui-line" d="M56 68h52"/>
-    <rect class="ill-ui-track" x="42" y="73" width="76" height="2.5" rx="1.25"/><rect class="ill-ui-progress" x="42" y="73" width="52" height="2.5" rx="1.25"/>
+    <path class="scene-grid" d="M12 18h136M12 44h136M12 70h136M26 8v72M80 8v72M134 8v72"/>
+    <text class="scene-kicker" x="14" y="13">08 / REPAIR</text>
+    <path class="fix-spine" d="M42 27v46"/>
+    <g class="fix-step fix-step--one"><circle class="scene-panel" cx="42" cy="32" r="8"/><path class="fix-check" d="m38 32 3 3 5-6"/><text class="scene-label" x="60" y="34">FRAME ORDER</text></g>
+    <g class="fix-step fix-step--two"><circle class="scene-panel" cx="42" cy="50" r="8"/><path class="fix-check" d="m38 50 3 3 5-6"/><text class="scene-label" x="60" y="52">WINDOWS PATH</text></g>
+    <g class="fix-step fix-step--three"><circle class="scene-panel" cx="42" cy="68" r="8"/><path class="fix-check" d="m38 68 3 3 5-6"/><text class="scene-label" x="60" y="70">PROCESS LOCK</text></g>
   </svg>
           </div>
           <h3 data-i18n="seo.fix.t">原版的坑，填平了</h3>
@@ -384,11 +387,11 @@
                 <article class="about-card about-card--ill">
           <div class="ill" aria-hidden="true">
             <svg class="ill-svg ill-upd" viewBox="0 0 160 88" xmlns="http://www.w3.org/2000/svg">
-    <rect class="ill-ui-window" x="14" y="12" width="76" height="64" rx="6"/><path class="ill-ui-header" d="M20 12h64a6 6 0 0 1 6 6v8H14v-8a6 6 0 0 1 6-6Z"/><circle class="ill-ui-window-dot" cx="23" cy="19" r="1.5"/>
-    <text class="ill-ui-label" x="24" y="41">CURRENT</text><text class="ill-ui-value" x="80" y="41" text-anchor="end">v3.7</text>
-    <text class="ill-ui-label" x="24" y="56">LATEST</text><text class="ill-ui-value up-latest" x="80" y="56" text-anchor="end">v3.8</text>
-    <path class="ill-ui-route" d="M91 44h14m0 0 5-5m-5 5 5 5"/><rect class="ill-ui-bridge" x="116" y="24" width="32" height="40" rx="6"/><rect class="ill-ui-tile" x="122" y="32" width="20" height="13" rx="3"/>
-    <path class="ill-ui-download up-arrow" d="M132 36v6m-3-3 3 3 3-3"/><path class="ill-ui-line" d="M122 56h20"/>
+    <path class="scene-grid" d="M12 18h136M12 44h136M12 70h136M26 8v72M80 8v72M134 8v72"/>
+    <text class="scene-kicker" x="14" y="13">09 / UPDATE</text>
+    <g class="update-old"><circle class="scene-panel" cx="36" cy="48" r="19"/><text class="scene-label" x="36" y="46" text-anchor="middle">NOW</text><text class="scene-value scene-value--small" x="36" y="56" text-anchor="middle">v3.7</text></g>
+    <path class="scene-route update-route" d="M59 48h37"/><path class="scene-route" d="m89 42 7 6-7 6"/>
+    <g class="update-new"><circle class="scene-accent-soft" cx="121" cy="48" r="23"/><text class="scene-label" x="121" y="45" text-anchor="middle">READY</text><text class="scene-value scene-value--small" x="121" y="56" text-anchor="middle">v3.8</text></g>
   </svg>
           </div>
           <h3 data-i18n="seo.update.t">新版自动到手</h3>
