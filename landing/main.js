@@ -652,7 +652,7 @@
     const card = document.getElementById("task-item");
     const legend = section && section.querySelector(".task-legend");
     const settings = section && section.querySelector(".outset");
-    if (!section || !strip || !cover || !stage || !card || !window.ScrollTrigger || reduceMotion) return;
+    if (!section || !strip || !cover || !stage || !card || reduceMotion) return;
 
     const image = new Image();
     image.decoding = "async";
@@ -665,6 +665,7 @@
     let loaded = false;
     let inView = false;
     let scrollBlur = 0;
+    let lastScrollTime = 0;
     const ease = (value) => Math.max(0, Math.min(1, value));
     const ramp = (value, start, end) => ease((value - start) / (end - start));
 
@@ -751,24 +752,23 @@
         if (inView) start();
       });
       visibilityObserver.observe(section);
-      const trigger = window.ScrollTrigger.create({
-        trigger: section,
-        start: "top 95%",
-        end: "top 34%",
-        onUpdate: function (self) {
-          direction = self.direction || direction;
-          scrollBlur = Math.min(6, Math.abs(self.getVelocity()) / 750);
-          target = self.progress;
-          start();
-        },
-        onEnter: start,
-        onEnterBack: start,
-        onLeave: function () { target = 1; },
-        onLeaveBack: function () { target = 0; }
-      });
-      target = trigger.progress;
-      start();
+      updateScroll();
     };
+    function updateScroll() {
+      if (!loaded) return;
+      const height = window.innerHeight;
+      const next = ease((height * 0.95 - section.getBoundingClientRect().top) / (height * 0.61));
+      const now = performance.now();
+      if (next !== target) {
+        direction = next > target ? 1 : -1;
+        if (lastScrollTime) scrollBlur = Math.min(6, Math.abs(next - target) * height / Math.max(16, now - lastScrollTime) / 0.75);
+        target = next;
+        start();
+      }
+      lastScrollTime = now;
+    }
+    window.addEventListener("scroll", updateScroll, { passive: true });
+    window.addEventListener("resize", updateScroll, { passive: true });
     const observer = new IntersectionObserver(function (entries) {
       if (!entries[0].isIntersecting) return;
       image.src = "assets/sequence-come.webp";
@@ -2438,6 +2438,7 @@ function setupRail() {
   var fallbackFadeBound = false // fallback 的 scroll 监听只绑一次
 
   function fallback() {
+    rail.classList.remove("rail--driven")
     rail.classList.add("rail--static")
     track.style.transform = ""
     // 退化形态是原生横滚：羽化同样要随位置收合，否则停在首/末卡时
@@ -2475,8 +2476,8 @@ function setupRail() {
   }
 
   function usable() {
-    // 溢出不足半屏，或视口本身很窄，都没有横着看的必要
-    return shift() > viewport.clientWidth * 0.35 && window.innerWidth > 900
+    // 只要桌面宽度下有实际溢出，就让滚轮接管；超宽屏也不能退回可见滚动条。
+    return shift() > 1 && window.innerWidth > 900
   }
 
   if (!usable()) return fallback()

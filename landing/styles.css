@@ -3553,7 +3553,7 @@ html[data-theme="dark"] .cmp-tab.is-on { color: #0c0f0e; }
 }
 
 /* 工程要点横轨：00 ABOUT 内的横向轨道。
-   纵向滚动经 ScrollTrigger scrub 驱动轨道横向位移（见 main.js setupRail）。
+   鼠标悬停在轨道时，滚轮直接驱动横移（见 main.js setupRail）。
    JS 不可用 / 减少动效 / 轨道不溢出时，退回原生可横向滚动的容器 ——
    两种形态下内容都完整，只是驱动方式不同。 */
 .rail {
@@ -3561,7 +3561,7 @@ html[data-theme="dark"] .cmp-tab.is-on { color: #0c0f0e; }
 }
 
 .rail__viewport {
-  /* 退化形态自己就是滚动容器；JS 形态由 scrub + transform 驱动，不滚 */
+  /* 退化形态自己就是滚动容器；JS 形态由滚轮 + transform 驱动，不滚 */
   overflow-x: auto;
   overscroll-behavior-x: contain;
   scrollbar-width: thin;
