@@ -172,8 +172,9 @@ export default {
     align-items: center;
     width: 100%;
     height: 30px;
-    // 右侧留出 caret 空位
-    padding: 0 22px 0 var(--is-s-2);
+    // 右侧只留 caret（8px 宽、right:5px 起）所需最小空位，其余尽量给文本：
+    // .num 54px 槽位要完整显示「256」三位数，22px 右内边距会把数字挤成省略号
+    padding: 0 16px 0 6px;
     border: 1px solid var(--is-input-border);
     border-radius: var(--is-r-sm);
     background: var(--is-input-bg);
@@ -208,7 +209,7 @@ export default {
 
   &__caret {
     position: absolute;
-    right: 8px;
+    right: 5px;
     top: 50%;
     transform: translateY(-50%);
     width: 0;
