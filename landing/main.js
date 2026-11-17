@@ -1460,7 +1460,7 @@
     const note = document.getElementById("ae-note");
     const local = ["localhost", "127.0.0.1"].includes(window.location.hostname);
     if (!local || !frame) return;
-    const url = "http://localhost:8082/?mock=1&embed=landing";
+    const url = "http://" + window.location.hostname + ":8082/?mock=1&embed=landing";
     fetch(url, { mode: "no-cors", cache: "no-store" }).then(function () {
       frame.addEventListener("load", function () {
         preview.classList.add("is-live");
