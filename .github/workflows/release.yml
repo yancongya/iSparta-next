@@ -140,6 +140,11 @@ jobs:
             : `Version: ${cur} -> ${version} (dry_run=${dryRun})`)
           NODE
 
+      - name: Verify version consistency
+        env:
+          RELEASE_VERSION: ${{ steps.bump.outputs.version }}
+        run: node scripts/check-version-consistency.js --expect "$RELEASE_VERSION"
+
       - name: Resolve previous tag
         id: prev
         env:

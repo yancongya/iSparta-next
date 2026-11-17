@@ -4,8 +4,9 @@
  * 用法：
  *   node scripts/dev/check.js lint         # npm run lint（与 pre-commit 同一套）
  *   node scripts/dev/check.js pack         # npm run doctor:pack（出包前自检）
+ *   node scripts/dev/check.js version      # npm run doctor:version（版本一致性守卫）
  *   node scripts/dev/check.js ports        # 8080–8099 监听占用 + 归属识别
- *   node scripts/dev/check.js all          # lint + pack + ports
+ *   node scripts/dev/check.js all          # lint + pack + version + ports
  *
  * ports 为什么值得单独做：
  *   桌面 dev :8081 / CEP :8082 / 落地页 :8080 / 引导台 :8090 会互相顺延抢占，
@@ -36,12 +37,13 @@ function usage () {
   console.log('')
   console.log('  iSparta-next · 体检入口')
   console.log('')
-  console.log('  用法：node scripts/dev/check.js <lint|pack|ports|all>')
+  console.log('  用法：node scripts/dev/check.js <lint|pack|version|ports|all>')
   console.log('')
-  console.log('    lint    vue-cli 全仓 lint（pre-commit 也跑这个）')
-  console.log('    pack    出包前自检：图标 / 向导图 / 编码器目录 / CEP payload / NSIS 钩子')
-  console.log('    ports   ' + PORT_FROM + '–' + PORT_TO + ' 监听占用、所属进程与归属识别')
-  console.log('    all     上面三项依次跑')
+  console.log('    lint     vue-cli 全仓 lint（pre-commit 也跑这个）')
+  console.log('    pack     出包前自检：图标 / 向导图 / 编码器目录 / CEP payload / NSIS 钩子')
+  console.log('    version  版本一致性：package.json / lock / release notes / CEP payload / mac 清单')
+  console.log('    ports    ' + PORT_FROM + '–' + PORT_TO + ' 监听占用、所属进程与归属识别')
+  console.log('    all      上面四项依次跑')
   console.log('')
 }
 
@@ -189,7 +191,7 @@ async function checkPorts () {
 
 async function main () {
   const opt = parseArgv(process.argv.slice(2))
-  const known = ['lint', 'pack', 'ports', 'all']
+  const known = ['lint', 'pack', 'version', 'ports', 'all']
   if (opt.help || !opt.cmd) {
     usage()
     process.exit(opt.help ? 0 : 1)
@@ -224,6 +226,18 @@ async function main () {
       res.tail.forEach(function (l) { console.log('  | ' + l) })
     }
     results.push({ name: 'doctor:pack', code: res.code })
+  }
+
+  if (opt.cmd === 'version' || opt.cmd === 'all') {
+    hr('版本一致性 doctor:version')
+    const res = await run(npmCmd, ['run', 'doctor:version'])
+    console.log('')
+    console.log('  doctor:version ' + (res.code === 0 ? '通过' : '失败（退出码 ' + res.code + '）'))
+    if (res.code !== 0) {
+      hr('doctor:version 日志末尾')
+      res.tail.forEach(function (l) { console.log('  | ' + l) })
+    }
+    results.push({ name: 'doctor:version', code: res.code })
   }
 
   if (opt.cmd === 'ports' || opt.cmd === 'all') {

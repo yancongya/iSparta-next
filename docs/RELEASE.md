@@ -107,6 +107,27 @@ Commit 与 Release 各自服务不同读者：commit 主题按 Conventional Comm
 
 工作流会在改写版本号、提交 bump、创建 tag 之前校验对应 Release 文案文件、固定结构和摘要数量。缺少文案时会提前失败，不再退回由 commit 标题自动生成。新版本发布后，编辑源与 GitHub Release 正文保持一致；更正文案时应同时更新两处。
 
+### 版本一致性守卫
+
+改写版本号后，CI 的 **Verify version consistency** 步骤会跑 `scripts/check-version-consistency.js --expect <目标版本>`，确认以下四处指向同一个版本号，任一漂移即中止发版：
+
+| 检查项 | 真相源 / 来源 |
+| --- | --- |
+| `package.json` ↔ `--expect` | 本次 CI 算出的目标版本（bump 输出） |
+| `package-lock.json` 顶层与 `packages[""]` | 必须与 `package.json` 一致 |
+| `.github/release-notes/v<版本>.md` | 对应版本文案文件必须已提交 |
+| CEP payload `version.json` / macOS `latest-mac-pkg.yml` | 产物存在时校验，缺失仅告警（version job 阶段尚未生成，由各构建 job 用同一版本生成兜底） |
+
+本地自检（发版前可提前发现漂移，无需等 CI）：
+
+```powershell
+node scripts/check-version-consistency.js          # 以当前 package.json 为准
+node scripts/dev/check.js version                  # 体检入口同款
+node scripts/dev/check.js all                      # lint + pack + version + ports
+```
+
+> 本地若 CEP payload 报旧版本（如 `3.6.10-dev`），是 `build/cep-payload/` 里的陈旧构建缓存（已 gitignore），跑 `npm run prepare:cep` 重新生成即可；CI 发版时会用当前版本重建，不受本地缓存影响。macOS 清单未生成属正常（本地未打包）。
+
 每个新版本的文案文件必须先提交并 push 到 `master`（可与功能 commit 分开），然后触发 release workflow。`landing/` 页面部署仍由 `pages.yml` 独立处理，不进入桌面 / CEP Release 说明。
 
 ## 3. 版本号怎么选

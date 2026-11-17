@@ -30,6 +30,7 @@
     "dev:cep:off": "node scripts/cep-manifest-dev.js off",
     "lint": "node scripts/dev/ui-service.js lint",
     "doctor:pack": "node scripts/doctor-packaging.js",
+    "doctor:version": "node scripts/check-version-consistency.js",
     "prepare:cep": "node scripts/prepare-cep-payload.js",
     "pack:cep": "node scripts/pack-cep-zip.js",
     "pack:cep:win": "node scripts/pack-cep-zip.js --platform win",
