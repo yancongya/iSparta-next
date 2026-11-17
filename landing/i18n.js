@@ -129,6 +129,8 @@
       "naming.sub":
         "输出名字可以逐词选择；CEP 的序列帧目录与成品输出路径分别设预设、变量模板，并即时预览真实位置。",
       "naming.seq.title": "序列帧目录",
+      "naming.seq.badge": "CEP 专属",
+      "naming.seq.badgeTip": "仅 AE CEP 合成任务使用的序列帧目录设置",
       "naming.seq.desc": "AE 合成先渲染为 PNG 序列。这里决定中间帧放哪儿，不影响成品动画的保存位置。",
       "naming.seq.presets": "序列帧目录预设",
       "naming.seq.vars": "序列帧路径变量",
@@ -395,6 +397,8 @@
       "naming.sub":
         "Pick words for the output name. In CEP, set the PNG sequence directory and finished animation path independently with presets, templates, and live previews.",
       "naming.seq.title": "PNG sequence directory",
+      "naming.seq.badge": "CEP only",
+      "naming.seq.badgeTip": "PNG sequence directory settings for AE CEP composition tasks",
       "naming.seq.desc": "AE renders the composition to PNG frames first. This path holds the intermediate frames and does not change where finished animations are saved.",
       "naming.seq.presets": "Sequence directory presets",
       "naming.seq.vars": "Sequence path variables",
