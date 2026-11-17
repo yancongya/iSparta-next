@@ -650,9 +650,13 @@
     const cover = document.getElementById("sequence-cover");
     const stage = section && section.querySelector(".sequence-stage");
     const card = document.getElementById("task-item");
+    const thumb = card && card.querySelector(".thumb");
     const legend = section && section.querySelector(".task-legend");
     const settings = section && section.querySelector(".outset");
     if (!section || !strip || !cover || !stage || !card || reduceMotion) return;
+    const cardParts = [card.querySelector(".check"), card.querySelector(".info .input"), ...card.querySelectorAll(".info .summary"), card.querySelector(".side")];
+    const legendParts = [...legend.children];
+    const settingParts = [settings.querySelector(".outset__row"), settings.querySelector(".outset__flow"), settings.querySelector(".pipeline-note")];
 
     const image = new Image();
     image.decoding = "async";
@@ -666,8 +670,18 @@
     let inView = false;
     let scrollBlur = 0;
     let lastScrollTime = 0;
+    let jumpStartedAt = -Infinity;
     const ease = (value) => Math.max(0, Math.min(1, value));
     const ramp = (value, start, end) => ease((value - start) / (end - start));
+    const smooth = (value) => value * value * (3 - 2 * value);
+
+    function reveal(part, amount, x, y) {
+      if (!part) return;
+      const hidden = 1 - amount;
+      part.style.visibility = amount < 0.001 ? "hidden" : "";
+      part.style.transform = amount > 0.999 ? "" : "translate3d(" + (hidden * x).toFixed(1) + "px," + (hidden * y).toFixed(1) + "px,0)";
+      part.style.pointerEvents = amount > 0.98 ? "" : "none";
+    }
 
     function sizeCanvas(canvas) {
       const rect = canvas.getBoundingClientRect();
@@ -690,46 +704,73 @@
       if (!loaded) return;
       const delta = Math.min(80, Math.max(0, time - (last || time)));
       last = time;
-      scrollBlur *= Math.exp(-delta / 180);
-      progress += (target - progress) * (1 - Math.exp(-delta / 135));
+      scrollBlur *= Math.exp(-delta / 130);
+      progress += (target - progress) * (1 - Math.exp(-delta / 320));
       if (Math.abs(target - progress) < 0.001) progress = target;
-      const merge = ramp(progress, 0.48, 0.83);
-      const arrived = ramp(progress, 0.63, 0.94);
-      const visible = 1 - ramp(progress, 0.62, 0.88);
-      stage.style.opacity = String(visible);
-      stage.style.filter = "blur(" + Math.max(Math.sin(Math.PI * merge) * 5, scrollBlur).toFixed(2) + "px)";
-      card.style.opacity = String(merge);
-      card.style.transform = merge > 0.999 ? "" : "translateY(" + ((1 - merge) * 12).toFixed(1) + "px) scale(" + (0.97 + merge * 0.03).toFixed(3) + ")";
-      card.style.pointerEvents = merge > 0.98 ? "" : "none";
-      legend.style.opacity = String(ramp(progress, 0.70, 0.92));
-      legend.style.transform = "translateY(" + ((1 - ramp(progress, 0.70, 0.92)) * 16).toFixed(1) + "px)";
-      settings.style.opacity = String(arrived);
-      settings.style.transform = "translateY(" + ((1 - arrived) * 22).toFixed(1) + "px)";
+      const merge = smooth(ramp(progress, 0.87, 1));
+      const coverMix = smooth(ramp(merge, 0.96, 1));
+      const stageRect = stage.getBoundingClientRect();
+      const coverRect = cover.getBoundingClientRect();
+      const insetTop = Math.max(0, coverRect.top - stageRect.top) * merge;
+      const insetRight = Math.max(0, stageRect.right - coverRect.right) * merge;
+      const insetBottom = Math.max(0, stageRect.bottom - coverRect.bottom) * merge;
+      const insetLeft = Math.max(0, coverRect.left - stageRect.left) * merge;
+      stage.style.clipPath = merge < 0.001 ? "" : "inset(" + insetTop.toFixed(1) + "px " + insetRight.toFixed(1) + "px " + insetBottom.toFixed(1) + "px " + insetLeft.toFixed(1) + "px round 8px)";
+      stage.style.opacity = String(1 - coverMix);
+      stage.style.visibility = progress < 0.2 || coverMix > 0.999 ? "hidden" : "";
+      stage.style.filter = "blur(" + Math.max(Math.sin(Math.PI * merge) * 0.7, scrollBlur).toFixed(2) + "px)";
+      // 封面先在同一位置完整绘制，帧带最后渐隐露出它，避免两层半透明叠加变暗。
+      cover.style.opacity = merge >= 0.96 ? "1" : "0";
+      const shell = smooth(ramp(merge, 0.23, 0.70));
+      card.style.visibility = shell < 0.001 ? "hidden" : "";
+      card.style.clipPath = shell > 0.999 ? "" : "inset(0 " + ((1 - shell) * 100).toFixed(1) + "% 0 0 round 12px)";
+      thumb.style.visibility = merge >= 0.96 ? "" : "hidden";
+      card.style.pointerEvents = merge > 0.99 ? "" : "none";
+      cardParts.forEach((part, index) => {
+        const startAt = [0.24, 0.30, 0.40, 0.50, 0.60][index];
+        reveal(part, smooth(ramp(merge, startAt, startAt + 0.30)), index === 0 ? -20 : index === 4 ? 26 : 18, index > 1 && index < 4 ? 14 : 0);
+      });
+      legendParts.forEach((part, index) => reveal(part, smooth(ramp(merge, 0.55 + index * 0.08, 0.83 + index * 0.05)), 0, 18));
+      const settingsShell = smooth(ramp(merge, 0.55, 0.96));
+      settings.style.clipPath = settingsShell > 0.999 ? "" : "inset(0 0 " + ((1 - settingsShell) * 100).toFixed(1) + "% 0 round 14px)";
+      settings.style.transform = settingsShell > 0.999 ? "" : "translateY(" + ((1 - settingsShell) * 20).toFixed(1) + "px)";
+      settings.style.pointerEvents = settingsShell > 0.98 ? "" : "none";
+      settingParts.forEach((part, index) => reveal(part, smooth(ramp(merge, 0.58 + index * 0.11, 0.85 + index * 0.07)), index === 0 ? -14 : 12, 16));
 
-      const speed = 9 + 28 * ramp(progress, 0, 0.68);
-      frame = (frame + direction * delta * speed / 1000 + 48) % 48;
+      const speed = 1 + 12 * ramp(progress, 0.40, 0.86) + 2 * ramp(progress, 0.40, 0.86) * ramp(scrollBlur, 0, 1.4);
+      frame += direction * delta * speed / 1000;
       const stripSize = sizeCanvas(strip);
       const stripCtx = strip.getContext("2d");
       stripCtx.clearRect(0, 0, stripSize.width, stripSize.height);
-      if (visible > 0.001) {
+      if (merge < 0.999) {
         const tileSize = Math.min(stripSize.height * 0.9, 96 * stripSize.scale);
-        const step = tileSize * (1 - 0.52 * merge);
-        const count = Math.ceil(stripSize.width / Math.max(step, 1)) + 2;
-        const offset = (frame % 1) * step;
-        const center = stripSize.width / 2;
-        for (let i = -1; i < count; i++) {
-          const x = i * step - offset;
-          const pull = merge * (center - x - tileSize / 2);
-          stripCtx.globalAlpha = Math.max(0, 1 - merge * 0.55);
-          drawFrame(stripCtx, frame + i * 2, x + pull, (stripSize.height - tileSize) / 2, tileSize);
+        const step = tileSize;
+        const count = Math.ceil(stripSize.width / step) + 2;
+        const first = Math.floor(-frame) - 1;
+        const targetX = (coverRect.left + coverRect.width / 2 - stageRect.left) * stripSize.scale;
+        const targetY = (coverRect.top + coverRect.height / 2 - stageRect.top) * stripSize.scale;
+        const finalSize = coverRect.width * stripSize.scale;
+        const size = tileSize + (finalSize - tileSize) * merge;
+        const focus = Math.round(targetX / step - frame - 0.5);
+        function drawTile(i, alpha, sourceFrame) {
+          const x = (i + frame) * step + tileSize / 2;
+          const y = stripSize.height / 2;
+          stripCtx.globalAlpha = alpha;
+          drawFrame(stripCtx, sourceFrame, x + (targetX - x) * merge - size / 2, y + (targetY - y) * merge - size / 2, size);
         }
+        for (let i = first; i < first + count; i++) {
+          if (i !== focus && merge < 0.82) drawTile(i, Math.pow(1 - ramp(merge, 0.35, 0.82), 2), frame + i * 2);
+        }
+        drawTile(focus, 1, frame);
         stripCtx.globalAlpha = 1;
       }
       const coverSize = sizeCanvas(cover);
       const coverCtx = cover.getContext("2d");
       coverCtx.clearRect(0, 0, coverSize.width, coverSize.height);
       const previewSize = Math.min(coverSize.width, coverSize.height);
-      drawFrame(coverCtx, frame, (coverSize.width - previewSize) / 2, (coverSize.height - previewSize) / 2, previewSize);
+      const jump = ease((time - jumpStartedAt) / 360);
+      const lift = jump < 1 ? Math.sin(Math.PI * jump) * 8 * coverSize.scale : 0;
+      drawFrame(coverCtx, frame, (coverSize.width - previewSize) / 2, (coverSize.height - previewSize) / 2 - lift, previewSize);
       if (!inView && Math.abs(progress - target) < 0.001) {
         active = false;
         return;
@@ -757,11 +798,11 @@
     function updateScroll() {
       if (!loaded) return;
       const height = window.innerHeight;
-      const next = ease((height * 0.95 - section.getBoundingClientRect().top) / (height * 0.61));
+      const next = ease((height * 1.18 - section.getBoundingClientRect().top) / (height * 1.05));
       const now = performance.now();
       if (next !== target) {
         direction = next > target ? 1 : -1;
-        if (lastScrollTime) scrollBlur = Math.min(6, Math.abs(next - target) * height / Math.max(16, now - lastScrollTime) / 0.75);
+        if (lastScrollTime) scrollBlur = Math.min(1.4, Math.abs(next - target) * height / Math.max(16, now - lastScrollTime) / 3);
         target = next;
         start();
       }
@@ -769,6 +810,11 @@
     }
     window.addEventListener("scroll", updateScroll, { passive: true });
     window.addEventListener("resize", updateScroll, { passive: true });
+    settings.addEventListener("click", function (event) {
+      if (!event.target.closest("#in-chips .chip, #out-chips .chip")) return;
+      jumpStartedAt = performance.now();
+      start();
+    });
     const observer = new IntersectionObserver(function (entries) {
       if (!entries[0].isIntersecting) return;
       image.src = "assets/sequence-come.webp";

@@ -2735,20 +2735,25 @@ html[data-theme="dark"] .dl-badge {
 }
 
 .workbench .mod-list {
-  padding: 6px;
+  padding: 0;
   position: relative;
-  overflow: hidden;
+  overflow: visible;
+  background: transparent;
+  border-color: transparent;
 }
 
 .sequence-stage {
   position: absolute;
-  inset: 6px;
+  top: 0;
+  bottom: 0;
+  left: calc(50% - 50vw);
+  width: 100vw;
   z-index: 2;
   overflow: hidden;
-  border-radius: 12px;
+  border-radius: 0;
   pointer-events: none;
   opacity: 0;
-  background: linear-gradient(90deg, color-mix(in srgb, var(--card) 92%, transparent), var(--card) 50%, color-mix(in srgb, var(--card) 92%, transparent));
+  background: transparent;
 }
 
 .sequence-stage canvas {
