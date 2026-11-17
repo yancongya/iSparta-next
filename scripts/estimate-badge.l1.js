@@ -65,9 +65,13 @@ t('formatLetter 未知格式取首字母 / 空值兜底', () => {
 })
 
 // ---------- humanSizeCompact ----------
-t('humanSizeCompact KB 段四舍五入', () => {
+t('humanSizeCompact 小体积 B / 一位小数 K（小文件显示误差不放大）', () => {
+  assert.strictEqual(humanSizeCompact(860), '860B')
+  assert.strictEqual(humanSizeCompact(1024), '1.0K')
+  assert.strictEqual(humanSizeCompact(5 * 1024), '5.0K')
+})
+t('humanSizeCompact 10K 以上整 K 四舍五入', () => {
   assert.strictEqual(humanSizeCompact(245760), '240K')
-  assert.strictEqual(humanSizeCompact(1024), '1K')
 })
 t('humanSizeCompact MB 段一位小数', () => {
   assert.strictEqual(humanSizeCompact(10 * 1024 * 1024 + 300 * 1024), '10.3M')
@@ -121,14 +125,14 @@ t('estimateOutput 三格式逐格式明细齐全且 GIF 体积最大（k 最小�
   assert.strictEqual(e.text, sandbox.api.humanSize(gif.bytes))
 })
 t('estimateOutput over 标记逐格式独立（目标卡在 GIF 与其余格式之间）', () => {
-  // 先算出 GIF（k=1.15 最小 → 体积最大）与 WEBP 的模型体积，把目标卡在两者之间
-  const probe = estimateOutput(opts(500, ['APNG', 'GIF', 'WEBP']), 10 * 1024 * 1024, 80)
+  // 基线 Q=20：规划钳在规划下限 20，两次调用的规划 Q 恒定，才好在目标轴上精确卡位
+  const probe = estimateOutput(opts(500, ['APNG', 'GIF', 'WEBP'], 20), 10 * 1024 * 1024, false)
   const gifBytes = probe.details.find((d) => d.format === 'GIF').bytes
   const webpBytes = probe.details.find((d) => d.format === 'WEBP').bytes
   assert.ok(gifBytes - webpBytes > 1024, 'GIF 与 WEBP 模型体积差应大于 1KB')
-  const o = opts(500, ['APNG', 'GIF', 'WEBP'])
+  const o = opts(500, ['APNG', 'GIF', 'WEBP'], 20)
   o.sizeLimit.maxBytes = gifBytes - 1024
-  const e = estimateOutput(o, 10 * 1024 * 1024, 80)
+  const e = estimateOutput(o, 10 * 1024 * 1024, false)
   const byFmt = {}
   e.details.forEach((d) => { byFmt[d.format] = d })
   assert.strictEqual(byFmt.GIF.over, true, '目标略低于 GIF 模型体积，GIF 应标记超限')
@@ -142,10 +146,26 @@ t('estimateOutput 单格式 details 只有一项且可轮换退化（长度 1 �
   const picked = pickEstDetail(e.details, 3)
   assert.strictEqual(picked.format, 'APNG')
 })
-t('estimateOutput sizeLimit 关闭返回 null（角标不显示）', () => {
-  const o = opts(500, ['APNG'])
+t('estimateOutput sizeLimit 关闭仍给预估（hasTarget:false，无超限态）', () => {
+  const o = opts(500, ['APNG', 'GIF'])
+  o.sizeLimit.enabled = false
+  const src = 1024 * 1024
+  const e = estimateOutput(o, src, false)
+  assert.ok(e, '目标只是参照系，不是角标显示门槛（issue #2：关掉大小限制角标消失）')
+  assert.strictEqual(e.hasTarget, false)
+  assert.strictEqual(e.over, false, '无目标不存在超限态')
+  assert.strictEqual(e.target, 0)
+  assert.strictEqual(e.quality, 80, '无目标按用户基线质量直接估')
+  assert.strictEqual(e.sourceBytes, src, '返回源字节供 tooltip 显示')
+  e.details.forEach((d) => assert.strictEqual(d.over, false))
+  // 展示曲线带 floor=0.5：q=80 落在 (0.5, 1.0)×src，不再被幂曲线压到 0.7 以下
+  assert(e.bytes > src * 0.5 && e.bytes < src, 'q=80 体积应在 (0.5,1.0)×src: ' + e.bytes)
+})
+t('estimateOutput 无格式 / 无源字节仍返回 null', () => {
+  const o = opts(500, [])
   o.sizeLimit.enabled = false
   assert.strictEqual(estimateOutput(o, 1024 * 1024, false), null)
+  assert.strictEqual(estimateOutput(opts(500, ['APNG']), 0, false), null)
 })
 
 // ---------- estimateOutput 色深路线（色数档位）----------
@@ -179,6 +199,35 @@ t('estimateOutput 质量路线（旧配置）：mode quality 且不带 colors �
   const e = estimateOutput(opts(500, ['APNG', 'GIF']), 10 * 1024 * 1024, false)
   assert.strictEqual(e.mode, 'quality')
   assert(!('colors' in e), 'quality 路线不得携带 colors')
+})
+
+// ---------- 无目标（sizeLimit 关闭）----------
+t('estimateOutput 无目标色深路线：C256 体积≈源（索引全档无量化收益）', () => {
+  const o = opts(500, ['APNG'])
+  o.sizeLimit.enabled = false
+  o.palette = { mode: 'colors', colors: 256 }
+  const src = 4 * 1024 * 1024
+  const e = estimateOutput(o, src, false)
+  assert.strictEqual(e.mode, 'colors')
+  assert.strictEqual(e.colors, 256, '无目标不降档')
+  assert.strictEqual(e.bytes, src, '256 色因子恒为 1')
+  assert.strictEqual(e.hasTarget, false)
+  assert.strictEqual(e.over, false)
+})
+t('estimateOutput 无目标色深路线：低色数体积被 floor 托住（不虚低）', () => {
+  const o = opts(500, ['APNG'])
+  o.sizeLimit.enabled = false
+  o.palette = { mode: 'colors', colors: 2 }
+  const src = 4 * 1024 * 1024
+  const e = estimateOutput(o, src, false)
+  assert.strictEqual(e.colors, 2)
+  // 2 色 bpp=1/8，kc=0.7 → 幂项 ≈0.24；floor=0.5 托底 → 因子 ≈0.62，不掉到 0.3 以下
+  assert(e.bytes > src * 0.5, 'floor 托底后不应低于 0.5×src: ' + e.bytes)
+  assert(e.bytes < src, '低色数仍应小于源')
+})
+t('humanSize 小体积一位小数 KB', () => {
+  assert.strictEqual(sandbox.api.humanSize(1536), '1.5 KB')
+  assert.strictEqual(sandbox.api.humanSize(10 * 1024), '10.0 KB')
 })
 
 console.log('\n' + passed + ' tests passed')

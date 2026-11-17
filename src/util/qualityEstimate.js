@@ -16,6 +16,13 @@ import { normalizePalette } from './paletteConfig'
 
 const MB = 1024 * 1024
 
+// 角标展示曲线的「降质收益下限」（sizePlanner.estimateBytes 的 floor 参数）：
+// 8bit 索引 / 平面内容降质后输出仍 ≈ 源大小，(q/100)^k 幂曲线在低端会虚低 2~3 倍，
+// 0.5 是索引源（≈0.8~1.0）与 RGBA 源（≈0.4）之间的折中，把误差压进 ±40% 量级。
+// 仅角标展示用；首压规划（planStartingQuality / planStartingColors）保持乐观曲线，
+// 两者的「Q/C 档」仍同源（规划值），只是体积换更贴近实际的展示口径。
+const DISPLAY_FLOOR = 0.5
+
 /**
  * 按合成尺寸与帧数估算未压缩 PNG 序列的量级。
  * 一帧 RGBA 原始字节 = w×h×4；pngquant/APNG 通常压到原始的 20%~35%，取 0.28 作中位。
@@ -36,7 +43,7 @@ export function estimateSourceBytes (width, height, frames) {
  * @param {boolean} estimated 源字节是否为估算值（影响 UI 文案）
  * @returns {{quality:number, baseline:number, sourceBytes:number, maxBytes:number,
  *            formats:string[], estimated:boolean, feasible:boolean, changed:boolean}|null}
- *          sizeLimit 未启用 / 无格式 / 无源字节时返回 null（角标不显示）
+ *          无目标可规划（sizeLimit 未启用）/ 无格式 / 无源字节时返回 null
  */
 export function estimateQuality (options, sourceBytes, estimated) {
   const opts = options || {}
@@ -71,16 +78,19 @@ export function estimateQuality (options, sourceBytes, estimated) {
 }
 
 /**
- * 预估产物大小（角标主显示值）：用「规划后的起始质量」算每种格式的输出体积，
- * 取最大值作保守估计——sizeLimit 是「每个文件」的上限，最坏的那个格式才决定是否达标。
+ * 预估产物大小（角标主显示值）：按当前压缩路线估每种格式的输出体积，取最大值作
+ * 保守估计——sizeLimit 是「每个文件」的上限，最坏的那个格式才决定是否达标。
+ * 目标大小只是「参照系」而不是「显示门槛」：未启用 sizeLimit 时仍按用户当前
+ * 质量/色数直接估体积（hasTarget:false、无超限态），角标常驻可见。
  * @returns {{text:string, bytes:number, target:number, quality:number, baseline:number,
- *            over:boolean, estimated:boolean, details:Array, hasTarget:boolean}|null}
- *          sizeLimit 未启用 / 无格式 / 无源字节时返回 null（角标不显示）
+ *            sourceBytes:number, over:boolean, estimated:boolean, details:Array,
+ *            hasTarget:boolean}|null}
+ *          无格式 / 无源字节时返回 null（角标不显示）
  */
 export function estimateOutput (options, sourceBytes, estimated) {
   const opts = options || {}
   const sl = opts.sizeLimit
-  if (!sl || !sl.enabled) return null
+  const hasTarget = !!(sl && sl.enabled)
   const formats = Array.isArray(opts.outputFormat) ? opts.outputFormat.slice() : []
   if (!formats.length) return null
   const src = Number(sourceBytes)
@@ -88,68 +98,77 @@ export function estimateOutput (options, sourceBytes, estimated) {
 
   const pal = normalizePalette(opts)
   const baseline = effectiveQualityStart(opts.quality && opts.quality.value, opts.quality && opts.quality.checked)
-  const limit = normalizeSizeLimit(opts, baseline)
 
-  // 色深路线：反推起始色数档位，逐格式按色数模型估体积。
+  // 色深路线：有目标时反推起始色数档位，逐格式按色数模型估体积。
   // 返回结构与质量路线同形（mode:'colors' 供角标文案区分 C/C 档）
   if (pal.mode === 'colors') {
-    const worstFormat = formats.reduce(function (m, f) {
-      return estimateColorsBytes(src, pal.colors, f) > estimateColorsBytes(src, pal.colors, m) ? f : m
-    }, formats[0])
-    const plan = planStartingColors({
-      maxBytes: limit.maxBytes,
-      sourceBytes: src,
-      format: worstFormat,
-      baselineColors: pal.colors,
-      safety: 0.9,
-      floorColors: 16
-    })
+    let colors = pal.colors
+    let feasible = true
+    let target = 0
+    if (hasTarget) {
+      const limit = normalizeSizeLimit(opts, baseline)
+      target = limit.maxBytes
+      const worstFormat = formats.reduce(function (m, f) {
+        return estimateColorsBytes(src, pal.colors, f, DISPLAY_FLOOR) > estimateColorsBytes(src, pal.colors, m, DISPLAY_FLOOR) ? f : m
+      }, formats[0])
+      const plan = planStartingColors({
+        maxBytes: limit.maxBytes,
+        sourceBytes: src,
+        format: worstFormat,
+        baselineColors: pal.colors,
+        safety: 0.9,
+        floorColors: 16
+      })
+      colors = plan.plannedColors
+      feasible = !!plan.feasible
+    }
     let maxBytesC = 0
     const detailsC = formats.map(function (format) {
-      const bytes = estimateColorsBytes(src, plan.plannedColors, format)
+      const bytes = estimateColorsBytes(src, colors, format, DISPLAY_FLOOR)
       if (bytes > maxBytesC) maxBytesC = bytes
-      return { format: format, bytes: bytes, over: bytes > limit.maxBytes }
+      return { format: format, bytes: bytes, over: hasTarget && bytes > target }
     })
     return {
       mode: 'colors',
-      colors: plan.plannedColors,
+      colors: colors,
       baseline: pal.colors,
       text: humanSize(maxBytesC),
       bytes: maxBytesC,
-      target: limit.maxBytes,
-      over: maxBytesC > limit.maxBytes,
+      target: target,
+      sourceBytes: src,
+      over: hasTarget && maxBytesC > target,
       estimated: !!estimated,
-      feasible: plan.feasible,
+      feasible: feasible,
       details: detailsC,
-      hasTarget: true
+      hasTarget: hasTarget
     }
   }
 
-  // 质量路线（现状）：用「规划后的起始质量」算每种格式的输出体积，
-  // 取最大值作保守估计——sizeLimit 是「每个文件」的上限，最坏的那个格式才决定是否达标。
-  const base = estimateQuality(options, sourceBytes, estimated)
-  if (!base) return null
-
-  // 逐格式按规划质量估算产物体积，取最大作为「最可能超限」的保守值
+  // 质量路线：有目标时用「规划后的起始质量」算体积，无目标按用户基线质量直接估。
+  // 逐格式估算产物体积，取最大作为「最可能超限」的保守值
+  const base = hasTarget ? estimateQuality(options, sourceBytes, estimated) : null
+  const q = base ? base.quality : baseline
+  const target = base ? base.maxBytes : 0
   let maxBytes = 0
-  const details = base.formats.map(function (format) {
-    const bytes = estimateBytes(base.sourceBytes, base.quality, format)
+  const details = formats.map(function (format) {
+    const bytes = estimateBytes(src, q, format, DISPLAY_FLOOR)
     if (bytes > maxBytes) maxBytes = bytes
-    return { format: format, bytes: bytes, over: bytes > base.maxBytes }
+    return { format: format, bytes: bytes, over: hasTarget && bytes > target }
   })
 
   return {
     mode: 'quality',
     text: humanSize(maxBytes),
     bytes: maxBytes,
-    target: base.maxBytes,
-    quality: base.quality,
-    baseline: base.baseline,
-    over: maxBytes > base.maxBytes,
-    estimated: base.estimated,
-    feasible: base.feasible,
+    target: target,
+    quality: q,
+    baseline: baseline,
+    sourceBytes: src,
+    over: hasTarget && maxBytes > target,
+    estimated: !!estimated,
+    feasible: base ? !!base.feasible : true,
     details: details,
-    hasTarget: true
+    hasTarget: hasTarget
   }
 }
 
@@ -163,13 +182,19 @@ export function formatLetter (format) {
 }
 
 /**
- * 紧凑字号（角标专用）：248K / 10.2M。比 humanSize 短——角标要加格式字母前缀，
- * 且 CEP 状态列宽度敏感，全称「254 KB」会挤爆布局；tooltip 仍用 humanSize 全称。
+ * 紧凑字号（角标专用）：860B / 2.4K / 240K / 10.2M。比 humanSize 短——角标要加格式
+ * 字母前缀，且 CEP 状态列宽度敏感，全称「254 KB」会挤爆布局；tooltip 仍用 humanSize 全称。
+ * 10K 以下给一位小数：小体积四舍五入到整 K 的显示误差占比太大，会把预估偏差
+ * 放大成肉眼可见的对不上（issue #2 反馈的小文件场景）。
  */
 export function humanSizeCompact (bytes) {
   const n = Number(bytes)
   if (!(n > 0)) return '—'
-  if (n < MB) return Math.round(n / 1024) + 'K'
+  if (n < 1024) return Math.round(n) + 'B'
+  if (n < MB) {
+    const k = n / 1024
+    return (k < 10 ? k.toFixed(1) : Math.round(k)) + 'K'
+  }
   return (n / MB).toFixed(1) + 'M'
 }
 
@@ -191,11 +216,12 @@ export function pickEstDetail (details, selectedIndex) {
   return details[idx]
 }
 
-/** 字节数转人类可读（角标 tooltip 用），与 sizeGate.formatMB 同口径 */
+/** 字节数转人类可读（角标 tooltip 用），与 sizeGate.formatMB 同口径；
+ *  1MB 以下保留一位小数——小体积取整 KB 会把预估偏差放大（同 humanSizeCompact） */
 export function humanSize (bytes) {
   const n = Number(bytes)
   if (!(n > 0)) return '—'
-  if (n < 1024 * 1024) return (n / 1024).toFixed(0) + ' KB'
+  if (n < 1024 * 1024) return (n / 1024).toFixed(1) + ' KB'
   // 源字节可能很大（长序列），保留两位避免 10.00 与 10.01 看起来一样
   return (n / MB).toFixed(2) + ' MB'
 }

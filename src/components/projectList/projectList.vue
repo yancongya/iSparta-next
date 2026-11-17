@@ -289,18 +289,32 @@ import {
 import { createLazyEstimate } from '../../util/lazyEstimate'
 
 /**
- * 取任务源字节：桌面动图文件已落盘 → statSize 真实值；
+ * 取任务源字节：桌面动图文件已落盘 → statSize 真实值；序列任务要**全帧求和**
+ * ——fileList 是逐帧路径，只取 fileList[0] 会把 N 帧序列的源量级低估 N 倍，
+ * 产物预估随之全线偏小（issue #2「预估一直不准」的主因）。
  * CEP 合成转换前 fileList 为空 → 按 compWidth×compHeight×frameCount 估算（标 estimated）。
  * @returns {{bytes:number, estimated:boolean}|null}
  */
 function sourceOf (project) {
   const b = project && project.basic
   try {
-    const f = b && (b.sourceFile || (b.fileList && b.fileList[0]))
+    // 母版动图（GIF/APNG/WEBP）一个文件就是整个动画，优先单独取
+    const f = b && b.sourceFile
     if (f) {
       const n = fs.statSize(f)
       if (n > 0) return { bytes: n, estimated: false }
     }
+    // 序列（或合成渲染出的逐帧 PNG）：逐帧求和；单帧读不到跳过，其余照常计
+    const list = (b && b.fileList) || []
+    let sum = 0
+    let hit = false
+    for (let i = 0; i < list.length; i++) {
+      try {
+        const n = fs.statSize(list[i])
+        if (n > 0) { sum += n; hit = true }
+      } catch (e) { /* skip this frame */ }
+    }
+    if (hit && sum > 0) return { bytes: sum, estimated: false }
   } catch (e) { /* 落到合成估算 */ }
   if (b && (b.type === 'Comp' || b.compWidth)) {
     const bytes = estimateSourceBytes(
@@ -593,15 +607,13 @@ export default {
       return shown || ''
     },
     /**
-     * 右上角常驻角标的预估产物大小：sizeLimit 开启时才显示。
+     * 右上角常驻角标的预估产物大小：无目标（sizeLimit 关闭）也显示，目标只是参照系。
      * 源字节走 fs.statSize（打盘/IPC），交给惰性调度器在空闲时算，命中缓存直接返回；
      * 首帧无缓存返回 null（角标暂不显示），空闲算完由 onFlush 触发重渲染。
      */
     estimateOf (project) {
       // 读一次 tick 建立模板依赖：调度器算完自增后触发本方法重估
       void this.estimateTick
-      const opts = project && project.options
-      if (!opts || !opts.sizeLimit || !opts.sizeLimit.enabled) return null
       return this._lazyEstimate.get(project, project, estimateStamp(project))
     },
     /** 角标 hover：预估产物大小 + 分格式明细 + 规划值 + 源/目标量级 + 仅供参考声明（色深路线显示 C 档） */
@@ -622,7 +634,10 @@ export default {
         lines.push(this.$t('estimateCycleHint'))
       }
       if (e.over) lines.push(this.$t('estimateOver', { target: humanSize(e.target) }))
-      lines.push(this.$t('estimateDetail', { source: humanSize(e.sourceBytes), target: humanSize(e.target) }))
+      // 无目标（未开 OUTPUT SIZE LIMITED）时不显示「目标」行，只交代源量级
+      lines.push(e.hasTarget
+        ? this.$t('estimateDetail', { source: humanSize(e.sourceBytes), target: humanSize(e.target) })
+        : this.$t('estimateDetailSource', { source: humanSize(e.sourceBytes) }))
       lines.push(e.estimated ? this.$t('estimateDisclaimerEstimated') : this.$t('estimateDisclaimer'))
       return lines.join('\n')
     },

@@ -344,6 +344,7 @@ module.exports = {
     "estimateChanged":"Est. start quality Q{base} → Q{q}",
     "estimateSame":"Est. start quality Q{q} (no downgrade)",
     "estimateDetail":"Source {source} · target ≤ {target}",
+    "estimateDetailSource":"Source {source}",
     "estimateDisclaimer":"Rule-of-thumb estimate; actual result may differ.",
     "estimateDisclaimerEstimated":"Comp not rendered yet; source estimated from dimensions and frames, for reference only.",
     "estimateFormatOver":" (over target)",

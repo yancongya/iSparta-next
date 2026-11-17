@@ -344,6 +344,7 @@ module.exports = {
     "estimateChanged":"预估起始质量 Q{base} → Q{q}",
     "estimateSame":"预估起始质量 Q{q}（无需降质）",
     "estimateDetail":"源 {source} · 目标 ≤ {target}",
+    "estimateDetailSource":"源 {source}",
     "estimateDisclaimer":"经验估算，实际以转换结果为准。",
     "estimateDisclaimerEstimated":"合成未渲染，源大小按尺寸与帧数估算，仅供参考。",
     "estimateFormatOver":"（超目标）",

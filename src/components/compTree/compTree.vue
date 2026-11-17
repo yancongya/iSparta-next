@@ -683,7 +683,7 @@ export default {
     /**
      * 是否显示状态图标/文字。待处理态若已有预估大小，就让位只显示预估——
      * 待处理是绝大多数合成的默认态，重复的状态标记只是噪音；
-     * 没有预估（未开目标大小）时才保留状态，避免整列空白。
+     * 没有预估（源信息不足算不出）时才保留状态，避免整列空白。
      */
     showStateMark (node) {
       return !(this.stateOf(node) === 'pending' && this.estimateOf(node))
@@ -819,7 +819,9 @@ export default {
       if (!(bytes > 0)) return null
       const task = this.taskOf(node)
       const opts = (task && task.options) || this.globalEstimateOpts()
-      if (!opts || !opts.sizeLimit || !opts.sizeLimit.enabled) return null
+      // 不再以 sizeLimit.enabled 作显示门槛：无目标也按当前设置估体积（estimateOutput
+      // 返回 hasTarget:false），角标常驻可见（issue #2：关掉大小限制后角标消失）
+      if (!opts) return null
       const fmt = (opts.outputFormat && opts.outputFormat.length)
         ? opts.outputFormat : this.formatsOf(node)
       const useOpts = Object.assign({}, opts, { outputFormat: fmt })
@@ -852,7 +854,10 @@ export default {
         lines.push(this.$t('estimateCycleHint'))
       }
       if (e.over) lines.push(this.$t('estimateOver', { target: humanSize(e.target) }))
-      lines.push(this.$t('estimateDetail', { source: humanSize(e.sourceBytes), target: humanSize(e.target) }))
+      // 无目标（未开 OUTPUT SIZE LIMITED）时不显示「目标」行，只交代源量级
+      lines.push(e.hasTarget
+        ? this.$t('estimateDetail', { source: humanSize(e.sourceBytes), target: humanSize(e.target) })
+        : this.$t('estimateDetailSource', { source: humanSize(e.sourceBytes) }))
       lines.push(this.$t('estimateDisclaimerEstimated'))
       return lines.join('\n')
     },

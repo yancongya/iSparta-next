@@ -15,16 +15,21 @@ function finite (n, fallback) {
 
 /**
  * 估算「质量 q（0-100）下，格式 format 的输出体积」。
- * 经验模型：体积 ≈ sourceBytes × (q/100)^k，k 随格式不同（量化敏感度不同）。
+ * 经验模型：体积 ≈ sourceBytes × (floor + (1-floor) × (q/100)^k)，k 随格式不同（量化敏感度不同）。
+ * - floor（0-0.9，缺省 0）：降质收益下限。量化只减调色板，像素数据 + 熵编码占大头，
+ *   低质量端体积并不会按幂曲线无限缩水（索引/平面源实测输出 ≈ 源的 0.8~1.0）。
+ *   角标展示传 0.5 折中值压低低端虚高偏差；首压规划仍用缺省 0（乐观曲线 + sizeGate
+ *   重试兜底更稳，规划曲线变保守会让「只降不升」的起始质量被不必要地压低）。
  * 仅用于排序/反推量级，不追求精确；sizeGate 事后按真实大小兜底。
  */
-export function estimateBytes (sourceBytes, q, format) {
+export function estimateBytes (sourceBytes, q, format, floor) {
   const src = finite(sourceBytes, 0)
   if (src <= 0) { return 0 }
   const quality = clamp(finite(q, DEFAULT_QUALITY), 1, 100)
+  const f = clamp(finite(floor, 0), 0, 0.9)
   // pngquant / cwebp 的质量-体积曲线指数（越大＝降质量省得越多）
   const k = format === 'WEBP' ? 1.35 : format === 'GIF' ? 1.15 : 1.6
-  return src * Math.pow(quality / 100, k)
+  return src * (f + (1 - f) * Math.pow(quality / 100, k))
 }
 
 /**
@@ -72,17 +77,20 @@ var COLOR_PRESETS = [2, 4, 8, 16, 32, 64, 128, 256]
 
 /**
  * 估算「色数 c 下，格式 format 的输出体积」。
- * 经验模型：量化后走索引位宽，bytes ≈ sourceBytes × (log2(c)/8)^kc。
+ * 经验模型：量化后走索引位宽，bytes ≈ sourceBytes × (floor + (1-floor) × (log2(c)/8)^kc)。
  * kc：GIF 天生索引色受益直接取 0.5，APNG/PNG 走 PLTE+zlib 取 0.7。
+ * floor 同 estimateBytes 的「降质收益下限」语义（角标 0.5 / 规划缺省 0）：
+ * 少色只减调色板，像素数据仍在，2 色也不会缩到源的个位数百分比。
  * 仅用于量级预估（首压规划 / 角标），sizeGate 事后按真实大小兜底。
  */
-export function estimateColorsBytes (sourceBytes, colors, format) {
+export function estimateColorsBytes (sourceBytes, colors, format, floor) {
   const src = finite(sourceBytes, 0)
   if (src <= 0) { return 0 }
   const c = clamp(Math.round(Number(colors) || 256), 2, 256)
+  const f = clamp(finite(floor, 0), 0, 0.9)
   const bpp = Math.max(1, Math.log2(c)) / 8
   const kc = format === 'GIF' ? 0.5 : 0.7
-  return src * Math.pow(bpp, kc)
+  return src * (f + (1 - f) * Math.pow(bpp, kc))
 }
 
 /**
