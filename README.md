@@ -124,7 +124,7 @@
 <details>
 <summary><b>展开查看全部界面截图（桌面端 + AE 扩展端）</b></summary>
 
-> 图片由浏览器 mockup 生成，展示当前 Web UI 与示例数据，不代表 Electron／AE 实机验收。先运行 `npm run dev:all`，再运行 `node scripts\sync-screenshots.js --capture` 自动截图并同步落地页；也可用 `--capture=desktop` / `--capture=cep` 只重拍一端。展示外壳在本地 `http://127.0.0.1:8080/mockup.html?target=desktop`（或 `target=cep`），版本号可直接编辑或传 `version=4.0.0`。`--check` 校验图片是否漂移（CI 会跑）。图源唯一真相源在 [`docs/screenshots/`](docs/screenshots)。
+> 图片直接截取亮色模式下的浏览器 Web UI，不含展示外壳；使用示例数据，不代表 Electron／AE 实机验收。先运行 `npm run dev:all`，再运行 `node scripts\sync-screenshots.js --capture` 自动截图并同步落地页；也可用 `--capture=desktop` / `--capture=cep` 只重拍一端。独立展示外壳仍可在本地 `http://127.0.0.1:8080/mockup.html?target=desktop`（或 `target=cep`）预览，版本号可直接编辑或传 `version=4.0.0`。`--check` 校验图片是否漂移（CI 会跑）。图源唯一真相源在 [`docs/screenshots/`](docs/screenshots)。
 
 **桌面端**
 

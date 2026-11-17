@@ -1,7 +1,7 @@
 /**
  * 截图同步：docs/screenshots/ → landing/assets/shots/
  *
- * 为什么需要：README 与落地页共用同一批实拍图。以前是手工复制两份
+ * 为什么需要：README 与落地页共用同一批浏览器 mockup 截图。以前是手工复制两份
  * （public/screenshot/ 与 landing/assets/），已经漂移出 3 组字节级重复。
  * 现在 docs/screenshots/ 是**唯一真相源**，本脚本负责把它同步到落地页。
  *
@@ -37,13 +37,13 @@ const CAPTURE_WORKER = process.argv.includes('--capture-worker')
 const CAPTURE_TARGET = CAPTURE_ARG && CAPTURE_ARG.includes('=') ? CAPTURE_ARG.split('=')[1] : (process.env.ISPARTA_CAPTURE_TARGET || '')
 
 const SHOTS = [
-  ['desktop-workspace-hd', 'desktop', 1728, 1296],
+  ['desktop-workspace-hd', 'desktop', 1200, 900],
   ['desktop-settings-general', 'desktop', 984, 741],
   ['desktop-settings-update', 'desktop', 986, 793],
   ['desktop-empty', 'desktop', 984, 741],
-  ['cep-task-list', 'cep', 1728, 1296],
-  ['cep-comp-tree', 'cep', 1728, 1296],
-  ['cep-output-settings', 'cep', 1728, 1296]
+  ['cep-task-list', 'cep', 600, 800],
+  ['cep-comp-tree', 'cep', 600, 800],
+  ['cep-output-settings', 'cep', 600, 800]
 ]
 const ACTIVE_SHOTS = CAPTURE_TARGET ? SHOTS.filter((shot) => shot[1] === CAPTURE_TARGET) : SHOTS
 
@@ -60,11 +60,10 @@ function probe (port, marker) {
 }
 
 async function captureFromBrowser () {
-  let checks = [false, false, false]
+  let checks = [false, false]
   const deadline = Date.now() + 300000
   do {
     checks = await Promise.all([
-      probe(8080, 'ISPARTA-NEXT / LIVE UI MOCKUP'),
       CAPTURE_TARGET === 'cep' || probe(8081, '<title>iSparta-next</title>'),
       CAPTURE_TARGET === 'desktop' || probe(8082, '<title>iSparta</title>')
     ])
@@ -72,7 +71,7 @@ async function captureFromBrowser () {
     await new Promise((resolve) => setTimeout(resolve, 2000))
   } while (Date.now() < deadline)
   if (checks.some((ok) => !ok)) {
-    throw new Error('截图需要本仓库的 8080/8081/8082 预览服务。先运行 npm run dev:all，并确认端口未顺延。')
+    throw new Error('截图需要本仓库的 8081/8082 预览服务。先运行 npm run dev:all，并确认端口未顺延。')
   }
   const electronExe = require('electron')
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'isparta-shots-'))
@@ -112,7 +111,7 @@ async function runCaptureWorker () {
   const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
   async function frameReady (win, port) {
     for (let i = 0; i < 100; i++) {
-      const frame = win.webContents.mainFrame.frames.find((f) => f.url.includes(':' + port + '/'))
+      const frame = win.webContents.mainFrame
       if (frame) {
         const ready = await frame.executeJavaScript('!!document.querySelector(".ib")').catch(() => false)
         if (ready) return frame
@@ -126,6 +125,11 @@ async function runCaptureWorker () {
       const scene = ${JSON.stringify(scene)};
       const store = window.__ispartaStore;
       if (!store) throw new Error('mock store 未就绪');
+      document.documentElement.classList.remove('is-theme-dark');
+      document.body.classList.remove('is-theme-dark');
+      document.documentElement.classList.add('is-theme-light');
+      document.body.classList.add('is-theme-light');
+      document.documentElement.style.colorScheme = 'light';
       if (scene === 'desktop-empty') store.state.items.splice(0);
       if (scene === 'desktop-settings-general' || scene === 'desktop-settings-update') {
         const vm = document.querySelector('.globalsetting').__vue__;
@@ -151,7 +155,9 @@ async function runCaptureWorker () {
       const win = new BrowserWindow({ width, height, show: true, resizable: false, useContentSize: true,
         webPreferences: { backgroundThrottling: false, nodeIntegration: false, contextIsolation: true } })
       const version = require('../package.json').version
-      await win.loadURL('http://127.0.0.1:8080/mockup.html?target=' + target + '&scene=' + name + '&version=' + encodeURIComponent(version))
+      const query = target === 'cep' ? '?mock=1&embed=landing&' : '?'
+      await win.loadURL('http://127.0.0.1:' + (target === 'cep' ? 8082 : 8081) + '/' + query +
+        'mockVersion=' + encodeURIComponent(version))
       const frame = await frameReady(win, target === 'cep' ? 8082 : 8081)
       const result = await setupScene(frame, name)
       if (target === 'cep' && result.count !== 6) throw new Error('CEP 示例合成数量异常：' + result.count)

@@ -2948,7 +2948,7 @@ html[data-theme="dark"] .cmp-tab.is-on { color: #0c0f0e; }
    放大本身交给 GSAP（见 main.js setupShotsTabs）—— 入场动画 gsap.from 已经把
    transform 写在行内上了，CSS 的 :hover scale 会被它压掉（同页脚瓦片的坑）。
    这里只留不与 transform 冲突的部分：描边、投影、层级。
-   源图是 1440×1080 的 webp，放大后仍按原始像素采样，不会糊。 */
+   桌面截图为 4:3；CEP 截图为窄面板竖幅，均完整呈现界面。 */
 .shots-grid .shot {
   position: relative;
   margin: 0;
@@ -2972,6 +2972,11 @@ html[data-theme="dark"] .cmp-tab.is-on { color: #0c0f0e; }
   object-position: top center;
   display: block;
   background: var(--paper);
+}
+
+#shots-pane-cep .shot img {
+  aspect-ratio: 3 / 4;
+  object-fit: contain;
 }
 
 .shots-grid .shot figcaption {
@@ -4690,7 +4695,7 @@ html[data-theme="dark"] .cep {
   width: 100%;
   height: 100%;
 }
-.ae-live-preview__fallback { object-fit: cover; object-position: center top; transition: opacity .25s ease; }
+.ae-live-preview__fallback { object-fit: contain; object-position: center top; transition: opacity .25s ease; }
 .ae-live-preview__frame { border: 0; background: var(--card); }
 .ae-live-preview.is-live .ae-live-preview__fallback { opacity: 0; pointer-events: none; }
 .ae-panel-cap {

@@ -113,7 +113,7 @@ See [`docs/CHANGELOG.md`](docs/CHANGELOG.md), [`docs/PLAN-DUAL-TARGET.md`](docs/
 <details>
 <summary><b>Expand to see all screenshots (desktop + AE extension)</b></summary>
 
-> Images are generated from browser mockups showing the current Web UI and sample data; they are not Electron or AE host acceptance evidence. Start `npm run dev:all`, then run `node scripts\sync-screenshots.js --capture` to capture and sync the landing-page copies. Use `--capture=desktop` or `--capture=cep` for one side. The local shell is at `http://127.0.0.1:8080/mockup.html?target=desktop` (or `target=cep`); edit its version field or pass `version=4.0.0`. [`docs/screenshots/`](docs/screenshots) is the source of truth; `--check` detects drift (also in CI).
+> Images capture the browser Web UI directly in light mode, without the presentation shell. They use sample data and are not Electron or AE host acceptance evidence. Start `npm run dev:all`, then run `node scripts\sync-screenshots.js --capture` to capture and sync the landing-page copies. Use `--capture=desktop` or `--capture=cep` for one side. The separate local shell remains available at `http://127.0.0.1:8080/mockup.html?target=desktop` (or `target=cep`); edit its version field or pass `version=4.0.0`. [`docs/screenshots/`](docs/screenshots) is the source of truth; `--check` detects drift (also in CI).
 
 **Desktop**
 
