@@ -51,6 +51,8 @@ node scripts\dev\check.js all                # lint + pack + ports
 - 控制台 `__ispartaMockReset()` 清空 mock 数据；`__ispartaMockComplete(n)` 把前 n 条示例任务标成完成态（产物已由种子写入 mock fs），用于验收完成态卡片、产物大小与格式角标；预览内的复制经 `__ispartaMockClipboard` 模拟成功，不会真的写系统剪贴板；`?mock=1` 页面可顺带验合成树名字列的 APNG / GIF / WEBP 三格式图标与长名省略。
 - 桌面 Web 的 mock 桥、CEP mockup 都只能验 UI 交互，**不能替代**合成读取 / 渲染 / 安装 / 更新的宿主验收（见 `docs/ACCEPTANCE-RUNBOOK.md`）。
 
+**README / 落地页截图更新（复用现有脚本）**：先运行 `npm run dev:all`，确认 Web 和 CEP 分别在固定端口 8081、8082；若 Web/CEP 模式清理过 Electron 运行时，先运行 `node scripts/dev/mode.js desktop install` 恢复。运行 `node scripts/sync-screenshots.js --capture` 重拍全部七张亮色软件界面；`--capture=desktop` / `--capture=cep` 只重拍一端。截图场景和比例由脚本内 `SHOTS` 固定，图源写入 `docs/screenshots/`，脚本自动替换 `landing/assets/shots/` 副本。提交两处图片前运行 `node scripts/sync-screenshots.js --check`，确认无漂移。截图使用浏览器 mockup 示例数据，不代表 Electron / AE 实机验收；展示外壳 `landing/mockup.html` 仅用于本地预览，不进入这组截图。**不要另写截图脚本或手工复制两份图。**
+
 **`build.js` 两种模式的差异**
 
 - `win` → `npm run build:windows`（NSIS 一键安装）。三件事自动化：① **注入 `CODEBUDDY_SAFE_DELETE_ENABLED=0`** —— `vue.config.js` 把 CEP 的 `outputDir` 指到 `targets/cep/ui`，构建会清空重建该目录，不豁免必撞安全删除守卫；② 构建前报告该目录的受控 / 未跟踪文件数（受控的可 git 恢复，未跟踪的一清就没，有未跟踪却没加 `--backup` 会提示）；③ 构建后直接给出最新 exe 的**绝对路径 / 体积 / 时间 / sha256**，失败则回显末尾日志。`--backup` 备份到 `.bak/`（已 gitignore），`--dry` 只打印将要执行的命令。
