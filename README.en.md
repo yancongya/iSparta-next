@@ -113,7 +113,7 @@ See [`docs/CHANGELOG.md`](docs/CHANGELOG.md), [`docs/PLAN-DUAL-TARGET.md`](docs/
 <details>
 <summary><b>Expand to see all screenshots (desktop + AE extension)</b></summary>
 
-> Single source of truth lives in [`docs/screenshots/`](docs/screenshots). After changing an image run `node scripts\sync-screenshots.js` to refresh the landing-page copy; `--check` verifies they have not drifted (CI runs it).
+> Images are generated from browser mockups showing the current Web UI and sample data; they are not Electron or AE host acceptance evidence. Start `npm run dev:all`, then run `node scripts\sync-screenshots.js --capture` to capture and sync the landing-page copies. Use `--capture=desktop` or `--capture=cep` for one side. The local shell is at `http://127.0.0.1:8080/mockup.html?target=desktop` (or `target=cep`); edit its version field or pass `version=4.0.0`. [`docs/screenshots/`](docs/screenshots) is the source of truth; `--check` detects drift (also in CI).
 
 **Desktop**
 
@@ -121,19 +121,19 @@ See [`docs/CHANGELOG.md`](docs/CHANGELOG.md), [`docs/PLAN-DUAL-TARGET.md`](docs/
 | :---: | :---: |
 | <img src="docs/screenshots/desktop-workspace-hd.webp" alt="Desktop workbench with task list and output settings" width="480"> | <img src="docs/screenshots/desktop-empty.webp" alt="Empty state: drop, paste, or open a folder" width="480"> |
 
-| Default settings (language / theme / path vars / size cap) | Default settings (version & updates) |
+| Default settings (output path and variable templates) | Default settings (version & updates) |
 | :---: | :---: |
-| <img src="docs/screenshots/desktop-settings-general.webp" alt="Default settings: language, theme, output path variables, size limit" width="480"> | <img src="docs/screenshots/desktop-settings-update.webp" alt="Default settings: current version, update check and about" width="480"> |
+| <img src="docs/screenshots/desktop-settings-general.webp" alt="Default settings: output path and variable templates" width="480"> | <img src="docs/screenshots/desktop-settings-update.webp" alt="Default settings: current version, update check and about" width="480"> |
 
 **AE extension** (same workbench, hosted in the After Effects panel)
 
 | Comp list | Comp tree |
 | :---: | :---: |
-| <img src="docs/screenshots/cep-task-list.webp" alt="AE extension: comp task list with selection, fps and frame count" width="480"> | <img src="docs/screenshots/cep-comp-tree.webp" alt="AE extension: comp tree with size, fps and run status" width="480"> |
+| <img src="docs/screenshots/cep-task-list.webp" alt="AE extension: comp tasks, formats, fps and estimated size" width="480"> | <img src="docs/screenshots/cep-comp-tree.webp" alt="AE extension: comp tree with size, fps and run status" width="480"> |
 
-| Output settings (path vars + size cap) |
+| Output settings (sequence directory + final path) |
 | :---: |
-| <img src="docs/screenshots/cep-output-settings.webp" alt="AE extension: output path variables and size limit settings" width="480"> |
+| <img src="docs/screenshots/cep-output-settings.webp" alt="AE extension: sequence directory and final output path" width="480"> |
 
 </details>
 

@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>iSparta-next · 截图展示</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; width: 100%; height: 100%; }
+    body { display: grid; place-items: center; overflow: hidden; color: #e9eddf; font: 20px/1.4 system-ui, sans-serif; background: radial-gradient(circle at 18% 14%, #293e33, transparent 40%), #101714; }
+    .stage { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
+    .glow { position: absolute; inset: 16% 12% 2%; border-radius: 50%; background: #b3d568; filter: blur(120px); opacity: .12; }
+    .eyebrow { position: absolute; left: 7%; top: 7%; color: #c8f542; font: 700 13px/1.3 ui-monospace, monospace; letter-spacing: .17em; text-transform: uppercase; }
+    .version { position: absolute; right: 7%; top: 6.5%; display: flex; align-items: center; gap: 8px; color: #a4b6a6; font: 13px ui-monospace, monospace; }
+    .version input { width: 85px; color: #c8f542; background: #ffffff0d; border: 1px solid #ffffff3b; border-radius: 7px; padding: 5px 8px; font: inherit; }
+    .caption { position: absolute; left: 7%; bottom: 7%; }
+    .caption b { display: block; font-size: 34px; letter-spacing: -.04em; }
+    .caption span { color: #9eac9f; font-size: 15px; }
+    .device { position: absolute; overflow: hidden; background: #161b19; border: 1px solid #667366; box-shadow: 0 42px 90px #0009, 0 0 0 1px #ffffff13; }
+    .desktop .device { left: 7%; right: 7%; top: 18%; height: 65%; border-radius: 15px; }
+    .cep .device { left: 34%; width: 32%; top: 11%; height: 76%; border-radius: 9px; }
+    .chrome { height: 34px; display: flex; align-items: center; gap: 8px; padding: 0 13px; border-bottom: 1px solid #ffffff17; background: #232a26; font: 12px ui-monospace, monospace; color: #aeb9ad; }
+    .chrome i { width: 8px; height: 8px; border-radius: 50%; background: #66756b; }
+    .chrome strong { margin-left: auto; font-weight: 500; }
+    .viewport { width: 100%; height: calc(100% - 34px); border: 0; background: #f3f1e9; }
+    .cep .eyebrow { top: 12%; }
+    .cep .caption { left: 7%; bottom: 11%; max-width: 23%; }
+    .cep .caption b { font-size: 27px; }
+    .cep .caption span { display: block; margin-top: 9px; }
+  </style>
+</head>
+<body>
+  <main class="stage desktop" id="stage">
+    <div class="glow"></div>
+    <div class="eyebrow">ISPARTA-NEXT / LIVE UI MOCKUP</div>
+    <label class="version">VERSION <input id="version" aria-label="展示版本号" spellcheck="false"></label>
+    <div class="caption"><b id="title">桌面工作台</b><span id="sub">浏览器示例数据 · 当前界面</span></div>
+    <div class="device">
+      <div class="chrome"><i></i><i></i><i></i><strong id="chrome-title">iSparta-next · Desktop</strong></div>
+      <iframe class="viewport" id="preview" title="iSparta-next 当前界面"></iframe>
+    </div>
+  </main>
+  <script>
+    const query = new URLSearchParams(location.search);
+    const target = query.get('target') === 'cep' ? 'cep' : 'desktop';
+    const titles = {
+      'desktop-workspace-hd': '桌面工作台', 'desktop-empty': '拖入文件，开始转换',
+      'desktop-settings-general': '默认设置', 'desktop-settings-update': '版本与更新',
+      'cep-task-list': 'AE 合成任务', 'cep-comp-tree': '合成树视图',
+      'cep-output-settings': '逐项设置输出'
+    };
+    const scene = query.get('scene') || (target === 'cep' ? 'cep-task-list' : 'desktop-workspace-hd');
+    document.getElementById('stage').className = 'stage ' + target;
+    document.getElementById('title').textContent = titles[scene] || titles['desktop-workspace-hd'];
+    const versionInput = document.getElementById('version');
+    function setVersion(value) {
+      const version = String(value || '').replace(/^v/i, '').trim();
+      versionInput.value = version;
+      document.getElementById('chrome-title').textContent =
+        (target === 'cep' ? 'After Effects / iSparta-next' : 'iSparta-next · Desktop') + (version ? ' v' + version : '');
+    }
+    const preview = document.getElementById('preview');
+    function previewUrl(version) {
+      const url = 'http://' + location.hostname + (target === 'cep' ? ':8082/?mock=1&embed=landing' : ':8081/');
+      return url + (url.includes('?') ? '&' : '?') + 'mockVersion=' + encodeURIComponent(version);
+    }
+    versionInput.addEventListener('input', () => {
+      setVersion(versionInput.value);
+      if (/^\d+\.\d+\.\d+$/.test(versionInput.value)) preview.src = previewUrl(versionInput.value);
+    });
+    if (query.has('version')) setVersion(query.get('version'));
+    else fetch('/mockup-version.json', { cache: 'no-store' }).then(r => r.ok ? r.json() : null)
+      .then(data => { if (data) { setVersion(data.version); preview.src = previewUrl(versionInput.value); } }).catch(() => {});
+    preview.src = previewUrl(versionInput.value);
+  </script>
+</body>
+</html>

@@ -22,12 +22,158 @@
 const fs = require('fs')
 const path = require('path')
 const crypto = require('crypto')
+const http = require('http')
+const os = require('os')
+const { spawn } = require('child_process')
 
 const ROOT = path.join(__dirname, '..')
 const SRC_DIR = path.join(ROOT, 'docs', 'screenshots')
 const DST_DIR = path.join(ROOT, 'landing', 'assets', 'shots')
 
 const CHECK_ONLY = process.argv.includes('--check')
+const CAPTURE_ARG = process.argv.find((arg) => arg === '--capture' || /^--capture=(desktop|cep)$/.test(arg))
+const CAPTURE = !!CAPTURE_ARG
+const CAPTURE_WORKER = process.argv.includes('--capture-worker')
+const CAPTURE_TARGET = CAPTURE_ARG && CAPTURE_ARG.includes('=') ? CAPTURE_ARG.split('=')[1] : (process.env.ISPARTA_CAPTURE_TARGET || '')
+
+const SHOTS = [
+  ['desktop-workspace-hd', 'desktop', 1728, 1296],
+  ['desktop-settings-general', 'desktop', 984, 741],
+  ['desktop-settings-update', 'desktop', 986, 793],
+  ['desktop-empty', 'desktop', 984, 741],
+  ['cep-task-list', 'cep', 1728, 1296],
+  ['cep-comp-tree', 'cep', 1728, 1296],
+  ['cep-output-settings', 'cep', 1728, 1296]
+]
+const ACTIVE_SHOTS = CAPTURE_TARGET ? SHOTS.filter((shot) => shot[1] === CAPTURE_TARGET) : SHOTS
+
+function probe (port, marker) {
+  return new Promise((resolve) => {
+    const req = http.get({ hostname: '127.0.0.1', port, path: port === 8080 ? '/mockup.html' : '/', timeout: 3000 }, (res) => {
+      let body = ''
+      res.on('data', (chunk) => { body += chunk })
+      res.on('end', () => resolve(res.statusCode === 200 && body.includes(marker)))
+    })
+    req.on('error', () => resolve(false))
+    req.on('timeout', () => { req.destroy(); resolve(false) })
+  })
+}
+
+async function captureFromBrowser () {
+  let checks = [false, false, false]
+  const deadline = Date.now() + 300000
+  do {
+    checks = await Promise.all([
+      probe(8080, 'ISPARTA-NEXT / LIVE UI MOCKUP'),
+      CAPTURE_TARGET === 'cep' || probe(8081, '<title>iSparta-next</title>'),
+      CAPTURE_TARGET === 'desktop' || probe(8082, '<title>iSparta</title>')
+    ])
+    if (checks.every(Boolean)) break
+    await new Promise((resolve) => setTimeout(resolve, 2000))
+  } while (Date.now() < deadline)
+  if (checks.some((ok) => !ok)) {
+    throw new Error('截图需要本仓库的 8080/8081/8082 预览服务。先运行 npm run dev:all，并确认端口未顺延。')
+  }
+  const electronExe = require('electron')
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'isparta-shots-'))
+  try {
+    await new Promise((resolve, reject) => {
+    const env = { ...process.env, ISPARTA_CAPTURE_DIR: tempDir, ISPARTA_CAPTURE_TARGET: CAPTURE_TARGET }
+    delete env.ELECTRON_RUN_AS_NODE
+    const child = spawn(electronExe, [__filename, '--capture-worker'], {
+      cwd: ROOT,
+      env,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      windowsHide: true
+    })
+    child.stdout.on('data', (d) => process.stdout.write(d))
+    child.stderr.on('data', (d) => process.stderr.write(d))
+    child.on('error', reject)
+    child.on('exit', (code) => code === 0 ? resolve() : reject(new Error('截图采集失败，退出码 ' + code)))
+    })
+    for (const [name] of ACTIVE_SHOTS) {
+      const source = path.join(tempDir, name + '.webp')
+      if (!fs.existsSync(source)) throw new Error('缺少采集结果：' + name)
+    }
+    for (const [name] of ACTIVE_SHOTS) fs.copyFileSync(path.join(tempDir, name + '.webp'), path.join(SRC_DIR, name + '.webp'))
+  } finally {
+    for (const [name] of ACTIVE_SHOTS) {
+      const file = path.join(tempDir, name + '.webp')
+      if (fs.existsSync(file)) fs.unlinkSync(file)
+    }
+    fs.rmdirSync(tempDir)
+  }
+}
+
+async function runCaptureWorker () {
+  const { app, BrowserWindow } = require('electron')
+  app.on('window-all-closed', () => {})
+  await app.whenReady()
+  const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+  async function frameReady (win, port) {
+    for (let i = 0; i < 100; i++) {
+      const frame = win.webContents.mainFrame.frames.find((f) => f.url.includes(':' + port + '/'))
+      if (frame) {
+        const ready = await frame.executeJavaScript('!!document.querySelector(".ib")').catch(() => false)
+        if (ready) return frame
+      }
+      await pause(100)
+    }
+    throw new Error('预览框架未就绪：' + port)
+  }
+  async function setupScene (frame, scene) {
+    const action = `(async () => {
+      const scene = ${JSON.stringify(scene)};
+      const store = window.__ispartaStore;
+      if (!store) throw new Error('mock store 未就绪');
+      if (scene === 'desktop-empty') store.state.items.splice(0);
+      if (scene === 'desktop-settings-general' || scene === 'desktop-settings-update') {
+        const vm = document.querySelector('.globalsetting').__vue__;
+        vm.dialogFormVisible = true;
+        vm.activeTab = scene === 'desktop-settings-update' ? 'about' : 'output';
+      }
+      if (scene === 'cep-comp-tree') document.querySelector('.ib-rail__btn--layers').click();
+      if (scene === 'cep-output-settings') {
+        store.state.items[0].isSelected = true;
+        document.querySelector('.ib-rail__btn--end').click();
+        await new Promise(resolve => setTimeout(resolve, 0));
+        document.querySelector('.ib-set-overlay .mod-setting').__vue__.activeTab = 'output';
+      }
+      const style = document.createElement('style');
+      style.textContent = '*,*::before,*::after{animation-duration:0s!important;transition-duration:0s!important;caret-color:transparent!important}';
+      document.head.appendChild(style);
+      return { count: store.state.items.length, scene };
+    })()`
+    return frame.executeJavaScript(action)
+  }
+  try {
+    for (const [name, target, width, height] of ACTIVE_SHOTS) {
+      const win = new BrowserWindow({ width, height, show: true, resizable: false, useContentSize: true,
+        webPreferences: { backgroundThrottling: false, nodeIntegration: false, contextIsolation: true } })
+      const version = require('../package.json').version
+      await win.loadURL('http://127.0.0.1:8080/mockup.html?target=' + target + '&scene=' + name + '&version=' + encodeURIComponent(version))
+      const frame = await frameReady(win, target === 'cep' ? 8082 : 8081)
+      const result = await setupScene(frame, name)
+      if (target === 'cep' && result.count !== 6) throw new Error('CEP 示例合成数量异常：' + result.count)
+      await pause(350)
+      const png = (await win.webContents.capturePage()).toPNG().toString('base64')
+      const dataUrl = await win.webContents.executeJavaScript(`new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => { const canvas = document.createElement('canvas'); canvas.width = ${width}; canvas.height = ${height};
+          canvas.getContext('2d').drawImage(img, 0, 0); resolve(canvas.toDataURL('image/webp', .88)); };
+        img.onerror = reject; img.src = 'data:image/png;base64,${png}';
+      })`)
+      if (!dataUrl.startsWith('data:image/webp;base64,')) throw new Error('浏览器未提供 WebP 编码：' + name)
+      fs.writeFileSync(path.join(process.env.ISPARTA_CAPTURE_DIR, name + '.webp'), Buffer.from(dataUrl.split(',')[1], 'base64'))
+      console.log('[capture] ' + name + ' · ' + width + '×' + height)
+      win.destroy()
+    }
+    app.quit()
+  } catch (e) {
+    console.error('[capture] ' + e.stack)
+    app.exit(1)
+  }
+}
 
 /** 截图文件名规则：<端>-<界面>[-<细节>].webp，全小写连字符 */
 const NAME_RE = /^(desktop|cep)-[a-z0-9]+(-[a-z0-9]+)*\.webp$/
@@ -111,4 +257,10 @@ function main () {
     (wrote.length ? '（' + wrote.join('，') + '）' : '（无变化）'))
 }
 
-main()
+if (CAPTURE_WORKER) {
+  runCaptureWorker()
+} else if (CAPTURE) {
+  captureFromBrowser().then(main).catch((e) => { console.error('[capture] ' + e.message); process.exitCode = 1 })
+} else {
+  main()
+}

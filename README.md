@@ -124,7 +124,7 @@
 <details>
 <summary><b>展开查看全部界面截图（桌面端 + AE 扩展端）</b></summary>
 
-> 图源唯一真相源在 [`docs/screenshots/`](docs/screenshots)。改图后跑 `node scripts\sync-screenshots.js` 同步落地页副本；`--check` 校验是否漂移（CI 会跑）。
+> 图片由浏览器 mockup 生成，展示当前 Web UI 与示例数据，不代表 Electron／AE 实机验收。先运行 `npm run dev:all`，再运行 `node scripts\sync-screenshots.js --capture` 自动截图并同步落地页；也可用 `--capture=desktop` / `--capture=cep` 只重拍一端。展示外壳在本地 `http://127.0.0.1:8080/mockup.html?target=desktop`（或 `target=cep`），版本号可直接编辑或传 `version=4.0.0`。`--check` 校验图片是否漂移（CI 会跑）。图源唯一真相源在 [`docs/screenshots/`](docs/screenshots)。
 
 **桌面端**
 
@@ -132,19 +132,19 @@
 | :--------------------------------------------------------------------------------------: | :--------------------------------------------------------------------------------: |
 | <img src="docs/screenshots/desktop-workspace-hd.webp" alt="桌面工作台：任务列表与输出设置" width="480"> | <img src="docs/screenshots/desktop-empty.webp" alt="空状态：拖放、粘贴、点击打开目录" width="480"> |
 
-|                                     默认设置（语言 / 主题 / 路径变量 / 大小阈值）                                     |                                          默认设置（版本与更新）                                          |
+|                                     默认设置（输出路径与变量模板）                                     |                                          默认设置（版本与更新）                                          |
 | :-------------------------------------------------------------------------------------------------: | :-------------------------------------------------------------------------------------------: |
-| <img src="docs/screenshots/desktop-settings-general.webp" alt="默认设置：语言、主题、输出路径变量与大小阈值" width="480"> | <img src="docs/screenshots/desktop-settings-update.webp" alt="默认设置：当前版本、检查更新与关于" width="480"> |
+| <img src="docs/screenshots/desktop-settings-general.webp" alt="默认设置：输出路径与变量模板" width="480"> | <img src="docs/screenshots/desktop-settings-update.webp" alt="默认设置：当前版本、检查更新与关于" width="480"> |
 
 **AE 扩展端**（同一套工作台，装在 After Effects 面板里）
 
 |                                            合成列表                                           |                                           合成树                                          |
 | :---------------------------------------------------------------------------------------: | :------------------------------------------------------------------------------------: |
-| <img src="docs/screenshots/cep-task-list.webp" alt="AE 扩展：合成任务列表，可勾选并显示帧率帧数" width="480"> | <img src="docs/screenshots/cep-comp-tree.webp" alt="AE 扩展：合成树，显示尺寸、帧率与运行状态" width="480"> |
+| <img src="docs/screenshots/cep-task-list.webp" alt="AE 扩展：合成任务、格式、帧率与预估大小" width="480"> | <img src="docs/screenshots/cep-comp-tree.webp" alt="AE 扩展：合成树，显示尺寸、帧率与运行状态" width="480"> |
 
-|                                      输出设置（变量路径 + 大小阈值）                                      |
+|                                      输出设置（序列帧目录 + 成品路径）                                      |
 | :-----------------------------------------------------------------------------------------: |
-| <img src="docs/screenshots/cep-output-settings.webp" alt="AE 扩展：输出路径变量与大小阈值设置" width="480"> |
+| <img src="docs/screenshots/cep-output-settings.webp" alt="AE 扩展：序列帧目录与成品输出路径" width="480"> |
 
 </details>
 

@@ -21,6 +21,11 @@
 /* eslint-env browser */
 
 const FS_LS_KEY = 'isparta-mock-fs'
+const REQUESTED_MOCK_VERSION = typeof window !== 'undefined' &&
+  new URLSearchParams(window.location.search).get('mockVersion')
+const MOCK_VERSION = REQUESTED_MOCK_VERSION && /^\d+\.\d+\.\d+$/.test(REQUESTED_MOCK_VERSION)
+  ? REQUESTED_MOCK_VERSION : require('../../package.json').version
+const MOCK_NEXT_VERSION = MOCK_VERSION.replace(/\d+$/, (patch) => String(Number(patch) + 1))
 
 /* ---------- 内存文件系统 ---------- */
 
@@ -164,7 +169,7 @@ function createMockIpc () {
       // 更新检查：浏览器调试时用 window.__updateStub 注入任意 Result
       if (channel === 'updater:meta') {
         return Promise.resolve({
-          version: '3.3.8',
+          version: MOCK_VERSION,
           platform: 'win32',
           arch: 'x64',
           forcedVersion: ''
@@ -173,8 +178,8 @@ function createMockIpc () {
       if (channel === 'updater:check') {
         const stub = (typeof window !== 'undefined' && window.__updateStub) || {
           state: 'latest',
-          current: '3.3.8',
-          latest: '3.3.8',
+          current: MOCK_VERSION,
+          latest: MOCK_VERSION,
           notes: null,
           artifactName: 'isparta-next-win-x64.exe',
           downloadUrl: 'https://github.com/yancongya/iSparta-next/releases/latest/download/isparta-next-win-x64.exe',
@@ -185,7 +190,7 @@ function createMockIpc () {
           assetMissing: false
         }
         return Promise.resolve(Object.assign({
-          current: '3.3.8',
+          current: MOCK_VERSION,
           checkedAt: Date.now(),
           throttled: false,
           assetMissing: false
@@ -300,6 +305,7 @@ function seedItems (fs, path, storage) {
         outputFormat: list,
         floyd: { checked: true, value: 0.35 },
         quality: { checked: false, value: 80 },
+        palette: { mode: 'quality', colors: 256 },
         sizeLimit: { enabled: true, maxMB: 1, maxBytes: 1048576, unit: 'MB', autoDelete: false, autoQuality: true, step: 5, maxTries: 10 },
         outputTo: { mode: 'output', customPath: '', template: '' }
       },
@@ -317,6 +323,11 @@ function seedItems (fs, path, storage) {
     mk('GIF', ['/mock-assets/emotion.gif'], 'emotion', false, undefined, 3),
     mk('WEBP', ['/mock-assets/photo.webp'], 'photo', false, undefined, 2)
   ]
+  // 演示色深路线：banner seed 切到 colors 256（浏览器 mockup 验收角标「C256」文案与
+  // WebP 置灰提示用；品质路线的其余 seed 不动）
+  if (items[0] && items[0].options) {
+    items[0].options.palette = { mode: 'colors', colors: 256 }
+  }
   storage.setItem('iSparta-item', JSON.stringify(items))
 
   // 全局设置种子：真实环境由 store 初始化；浏览器预览补一份，
@@ -434,8 +445,8 @@ function installMockBridge () {
     } catch (e) { /* ignore */ }
     const base = {
       state: 'available',
-      current: '3.3.8',
-      latest: '3.3.9',
+      current: MOCK_VERSION,
+      latest: MOCK_NEXT_VERSION,
       notes: '· 阈值递减/重试等共用 Tip 文案，两端面板 info 提示统一\n\n【修复】\n· fix(setting): 阈值递减/重试等共用 Tip 文案',
       artifactName: 'isparta-next-win-x64.exe',
       downloadUrl: 'https://github.com/yancongya/iSparta-next/releases/latest/download/isparta-next-win-x64.exe',
@@ -446,7 +457,7 @@ function installMockBridge () {
       assetMissing: false
     }
     if (mode === 'clear') {
-      window.__updateStub = Object.assign({}, base, { state: 'latest', latest: '3.3.8' })
+      window.__updateStub = Object.assign({}, base, { state: 'latest', latest: MOCK_VERSION })
       window.__updateAutoStub = {
         supported: false,
         checking: false,
@@ -468,7 +479,7 @@ function installMockBridge () {
         downloaded: false,
         progress: 12,
         error: 'network',
-        version: '3.3.9',
+        version: MOCK_NEXT_VERSION,
         reason: 'ok'
       }
       return
@@ -482,7 +493,7 @@ function installMockBridge () {
         downloaded: true,
         progress: 100,
         error: null,
-        version: '3.3.9',
+        version: MOCK_NEXT_VERSION,
         reason: 'ok'
       }
       return
@@ -496,7 +507,7 @@ function installMockBridge () {
         downloaded: false,
         progress: 36,
         error: null,
-        version: '3.3.9',
+        version: MOCK_NEXT_VERSION,
         reason: 'ok'
       }
       // 模拟进度推进

@@ -15,6 +15,11 @@ export const APP_NAME = 'iSparta-next'
  * 「读不到就不显示版本」分支，而不是显示一个错的数字。
  */
 function readPackageVersion () {
+  if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined' &&
+      window.__ispartaMockBridge) {
+    const requested = new URLSearchParams(window.location.search).get('mockVersion')
+    if (requested && /^\d+\.\d+\.\d+$/.test(requested)) return requested
+  }
   try {
     // webpack 会把 JSON 内联进 bundle；CEP 面板与桌面共用同一份取值
     var pkg = require('../package.json')

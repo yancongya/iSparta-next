@@ -25,6 +25,12 @@ const TYPES = {
 
 const server = http.createServer(function (req, res) {
   var urlPath = decodeURIComponent(String(req.url || '/').split('?')[0])
+  if (urlPath === '/mockup-version.json') {
+    var version = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8')).version
+    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' })
+    res.end(JSON.stringify({ version: version }))
+    return
+  }
   if (urlPath.endsWith('/')) { urlPath += 'index.html' }
   var file = path.normalize(path.join(ROOT, urlPath))
   if (!file.startsWith(ROOT)) {

@@ -230,7 +230,7 @@
     <!-- 产品舞台：无边框大图，底部用渐隐遮罩融进页面（参考站观感） -->
     <figure class="hero-stage" id="hero-stage"  data-i18n-aria="a11y.heroFig"aria-label="iSparta-next 工作台界面">
       <div class="hero-shot">
-        <img src="assets/shots/desktop-workspace-hd.webp"  data-i18n-alt="a11y.shot.workbench"alt="iSparta-next 工作台：任务列表与输出设置" width="1440" height="1080" fetchpriority="high" />
+        <img src="assets/shots/desktop-workspace-hd.webp"  data-i18n-alt="a11y.shot.workbench"alt="iSparta-next 工作台：任务列表与输出设置" width="1728" height="1296" fetchpriority="high" />
         <!-- 渐隐遮罩：只盖住底部一段，让截图「沉」进背景而不是硬边收口。
              两端色都取自当前主题的 paper，暗色下改用深色，亮色下用纸色。 -->
         <span class="hero-shot__fade" aria-hidden="true"></span>
@@ -743,9 +743,9 @@
 
   <section class="section" id="shots">
     <div class="section-head">
-      <p class="eyebrow mono" data-i18n="shots.eb">05 · REAL UI</p>
+      <p class="eyebrow mono" data-i18n="shots.eb">05 · WEB UI</p>
       <h2 data-i18n="shots.h2">桌面版和 CEP 端界面预览</h2>
-      <p class="section-sub" data-i18n="shots.sub">应用真实界面：空状态导入、任务卡片列表、参数设置、默认设置（命名 / 路径 / 大小上限）。</p>
+      <p class="section-sub" data-i18n="shots.sub">浏览器 mockup 展示当前双端界面：空状态、任务列表、输出设置与合成树。</p>
     </div>
 <!-- 07 界面预览：桌面 / AE 扩展双端 tab。
          两个 tab 结构完全一致 —— 各 3 张同尺寸小卡片，hover / 聚焦时放大细看。
@@ -790,25 +790,25 @@
         role="tabpanel"
         aria-labelledby="shots-tab-desktop"
       >
-        <p class="shots-hint" data-i18n="shots.intro">和仓库 docs/screenshots/ 同源 · Electron 实拍</p>
+        <p class="shots-hint" data-i18n="shots.intro">和仓库 docs/screenshots/ 同源 · 浏览器 mockup</p>
         <div class="shots-grid">
           <figure class="shot" tabindex="0">
             <div class="shot__frame">
-              <img src="assets/shots/desktop-workspace-hd.webp"  data-i18n-alt="a11y.shot.workbench"alt="iSparta-next 桌面工作台：任务列表与输出设置" width="1440" height="1080" loading="lazy" />
+              <img src="assets/shots/desktop-workspace-hd.webp"  data-i18n-alt="a11y.shot.workbench"alt="iSparta-next 桌面工作台：任务列表与输出设置" width="1728" height="1296" loading="lazy" />
             </div>
-            <figcaption class="mono" data-i18n="shots.capMain">桌面工作台 · 任务列表 + 输出设置（路径变量 / 大小阈值）</figcaption>
+            <figcaption class="mono" data-i18n="shots.capMain">桌面工作台 · 任务列表 + 逐项输出设置</figcaption>
           </figure>
           <figure class="shot" tabindex="0">
             <div class="shot__frame">
-              <img src="assets/shots/desktop-empty.webp"  data-i18n-alt="a11y.shot.empty"alt="空状态：拖放、粘贴或点击打开目录" width="984" height="742" loading="lazy" />
+              <img src="assets/shots/desktop-empty.webp"  data-i18n-alt="a11y.shot.empty"alt="空状态：拖放、粘贴或点击打开目录" width="984" height="741" loading="lazy" />
             </div>
             <figcaption class="mono" data-i18n="shots.capEmpty">空状态 · 拖入 / 粘贴 / 点开</figcaption>
           </figure>
           <figure class="shot" tabindex="0">
             <div class="shot__frame">
-              <img src="assets/shots/desktop-settings-general.webp"  data-i18n-alt="a11y.shot.settings"alt="默认设置：语言、主题、输出路径变量与大小阈值" width="984" height="742" loading="lazy" />
+              <img src="assets/shots/desktop-settings-general.webp"  data-i18n-alt="a11y.shot.settings"alt="默认设置：输出路径与变量模板" width="984" height="741" loading="lazy" />
             </div>
-            <figcaption class="mono" data-i18n="shots.capSet">默认设置 · 命名 / {srcPath} / 大小上限</figcaption>
+            <figcaption class="mono" data-i18n="shots.capSet">默认设置 · 输出路径与变量模板</figcaption>
           </figure>
         </div>
       </div>
@@ -820,25 +820,25 @@
         aria-labelledby="shots-tab-cep"
         aria-hidden="true"
       >
-        <p class="shots-hint" data-i18n="shots.introAe">装在 After Effects 面板里 · 与桌面端共用同一套转换核</p>
+        <p class="shots-hint" data-i18n="shots.introAe">AE CEP 版布局 · 与桌面端共用同一套转换核</p>
         <div class="shots-grid">
           <figure class="shot" tabindex="0">
             <div class="shot__frame">
-              <img src="assets/shots/cep-comp-tree.webp"  data-i18n-alt="a11y.shot.tree"alt="AE 扩展：合成树与尺寸信息" width="1440" height="1080" loading="lazy" />
+              <img src="assets/shots/cep-comp-tree.webp"  data-i18n-alt="a11y.shot.tree"alt="AE 扩展：合成树与尺寸信息" width="1728" height="1296" loading="lazy" />
             </div>
-            <figcaption class="mono" data-i18n="shots.capCepTree">合成树 · 尺寸 / 帧率 / 帧数</figcaption>
+            <figcaption class="mono" data-i18n="shots.capCepTree">合成树 · 尺寸 / 帧率 / 运行状态</figcaption>
           </figure>
           <figure class="shot" tabindex="0">
             <div class="shot__frame">
-              <img src="assets/shots/cep-task-list.webp"  data-i18n-alt="a11y.shot.tasks"alt="AE 扩展：合成任务列表" width="1440" height="1080" loading="lazy" />
+              <img src="assets/shots/cep-task-list.webp"  data-i18n-alt="a11y.shot.tasks"alt="AE 扩展：合成任务列表" width="1728" height="1296" loading="lazy" />
             </div>
-            <figcaption class="mono" data-i18n="shots.capCepList">合成列表 · 勾选 / 帧率 / 帧数</figcaption>
+            <figcaption class="mono" data-i18n="shots.capCepList">合成任务 · 格式 / 帧率 / 预估大小</figcaption>
           </figure>
           <figure class="shot" tabindex="0">
             <div class="shot__frame">
-              <img src="assets/shots/cep-output-settings.webp"  data-i18n-alt="a11y.shot.output"alt="AE 扩展：输出路径变量与大小阈值" width="1440" height="1080" loading="lazy" />
+              <img src="assets/shots/cep-output-settings.webp"  data-i18n-alt="a11y.shot.output"alt="AE 扩展：序列帧目录与成品输出路径" width="1728" height="1296" loading="lazy" />
             </div>
-            <figcaption class="mono" data-i18n="shots.capCepSet">输出设置 · 变量路径 / 大小阈值</figcaption>
+            <figcaption class="mono" data-i18n="shots.capCepSet">输出设置 · 序列帧目录 / 成品路径</figcaption>
           </figure>
         </div>
       </div>
