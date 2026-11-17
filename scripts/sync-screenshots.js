@@ -10,6 +10,10 @@
  * dist_electron/win-unpacked/resources/app/screenshot/ 里有这几张 png）。
  *
  * 用法：
+ *   npm run dev:all                          启动 8081 Web 与 8082 CEP 预览
+ *   node scripts/dev/mode.js desktop install  若 Electron 运行时已被 Web/CEP clean 移除，先恢复
+ *   node scripts/sync-screenshots.js --capture  截取亮色 Web UI 并同步 README/落地页图片
+ *   node scripts/sync-screenshots.js --capture=desktop|cep  只重拍一端
  *   node scripts/sync-screenshots.js          同步（landing 有则覆盖）
  *   node scripts/sync-screenshots.js --check  只校验，不写盘（CI / 提交前用）
  *
@@ -60,6 +64,11 @@ function probe (port, marker) {
 }
 
 async function captureFromBrowser () {
+  let electronExe
+  try { electronExe = require('electron') } catch (_) {}
+  if (!electronExe || !fs.existsSync(electronExe)) {
+    throw new Error('缺少 Electron 运行时；先运行 node scripts/dev/mode.js desktop install，再截图。')
+  }
   let checks = [false, false]
   const deadline = Date.now() + 300000
   do {
@@ -73,7 +82,6 @@ async function captureFromBrowser () {
   if (checks.some((ok) => !ok)) {
     throw new Error('截图需要本仓库的 8081/8082 预览服务。先运行 npm run dev:all，并确认端口未顺延。')
   }
-  const electronExe = require('electron')
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'isparta-shots-'))
   try {
     await new Promise((resolve, reject) => {
