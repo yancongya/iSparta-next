@@ -258,7 +258,8 @@ function seedItems (fs, path, storage) {
   storage.setStoragePath(storagePath)
   // 种子结构变更（如演示字段）时升 SEED_VERSION，旧浏览器缓存自动重种，
   // 不必手动清 localStorage。只在 dev mock 生效，不碰真实数据。
-  const SEED_VERSION = '4'
+  const isCepMockup = !!window.__ispartaMockup
+  const SEED_VERSION = isCepMockup ? 'cep-5' : '4'
   if (storage.getItem('iSparta-item') && storage.getItem('iSparta-seed-v') === SEED_VERSION) { return }
   storage.setItem('iSparta-seed-v', SEED_VERSION)
 
@@ -307,7 +308,7 @@ function seedItems (fs, path, storage) {
     }
   }
 
-  const items = [
+  const items = isCepMockup ? [] : [
     // 首条seed 三格式齐全：用来演示完成态的三枚格式角标；srcMB 给足量级演示降质预估。
     // 量级错落开：多数达标（≈0.9MB / Q 错落），walk 故意给超大源演示「超目标」警告态。
     mk('APNG', ['/mock-assets/banner.apng'], 'banner', true, ['APNG', 'GIF', 'WEBP'], 1.5),
@@ -365,7 +366,7 @@ function installMockBridge () {
   seedItems(fs, path, storage)
   if (window.__ispartaMockup) {
     // eslint-disable-next-line no-console
-    console.info('[mock-bridge] 已为 CEP mockup 注入 5 条示例任务；__ispartaMockReset() 可重置')
+    console.info('[mock-bridge] CEP mockup 仅使用示例合成；__ispartaMockReset() 可重置')
   }
 
   // 调试工具：控制台执行可清空 mock 数据（含 localStorage）后刷新重来

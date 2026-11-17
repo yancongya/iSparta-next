@@ -77,7 +77,7 @@ export function installMockup () {
   }
   try {
     // eslint-disable-next-line no-console
-    console.info('[mockup] CEP 假数据模式已启用：任务种子 + 示例合成树（仅开发预览）')
+    console.info('[mockup] CEP 假数据模式已启用：示例合成树（仅开发预览）')
   } catch (e) { /* ignore */ }
   return true
 }

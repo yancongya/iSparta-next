@@ -30,7 +30,7 @@
 
 ```powershell
 node scripts\dev\preview.js guide            # 引导页原型台
-node scripts\dev\preview.js cep --mock        # CEP 浏览器 mockup：:8082/?mock=1（假任务 + 合成树）
+node scripts\dev\preview.js cep --mock        # CEP 浏览器 mockup：:8082/?mock=1（示例合成树）
 node scripts\dev\build.js win                # 本机打 Windows 安装包
 node scripts\dev\build.js cep                # 仅需要本地 CEP 产物时重建
 node scripts/dev/build.js mac-pkg             # macOS 从已构建 .app 打 pkg
@@ -44,7 +44,7 @@ node scripts\dev\check.js all                # lint + pack + ports
 | 目标 | 入口 | 开关 | 假数据来源 |
 | --- | --- | --- | --- |
 | 桌面 Web `web` :8081 | `node scripts/dev/preview.js web` | 无：`src/util/mock-bridge.js` 检测到 `!window.ispartaAPI` 自动注入 | 内存 fs / storage 假桥 + 5 条种子任务 |
-| CEP Web `cep` :8082 | `node scripts/dev/preview.js cep --mock` | 必须显式 `?mock=1`（`--mock` 只负责把参数附加到打开与打印的地址） | `src/cep/mockup.js` → 6 条示例合成 + 工程树假应答；`mock-bridge.js` → 5 条任务 |
+| CEP Web `cep` :8082 | `node scripts/dev/preview.js cep --mock` | 必须显式 `?mock=1`（`--mock` 只负责把参数附加到打开与打印的地址） | `src/cep/mockup.js` → 6 条示例合成 + 工程树假应答；`mock-bridge.js` → 空任务列表与假桥 |
 
 - CEP 铁律「禁 mock」针对**真机 / 生产**：`?mock=1` 只在 `NODE_ENV=development` 的 `serve:cep` 下生效；真实 AE 面板加载 `targets/cep/ui/index.html`（生产构建），不带参数也不启用。
 - `src/cep/main.js` 首位 `import './mockup'` 必须保留：`ensure-bridge` 与 store 在模块顶层读桥，顺序错了假数据接不上。
@@ -84,7 +84,7 @@ node scripts\dev\check.js all                # lint + pack + ports
 
 - 清理默认只预览；确认范围后追加 `--apply`。Web/CEP 清理额外删除 `node_modules/electron/dist` 和 `path.txt`；桌面模式保留 Electron 运行时。删除后切回桌面模式必须运行对应 install 命令恢复。
 - Web/CEP install 通过子进程环境跳过 Electron 二进制下载及原生依赖重建，不禁用其他依赖的安装脚本，不修改全局 npm 配置。普通 `npm install` 和 CI 保持完整安装行为，因此 UI 开发应使用上表入口。
-- CEP preview 只在浏览器看界面，不代表 AE 桥接可用；要看假任务 / 合成树用 `node scripts/dev/preview.js cep --mock`（dev-only，见 §1.1）；需要 AE 实机时另用 `npm run dev:cep`，关闭面板再打开刷新，收工执行 `npm run dev:cep:off`。
+- CEP preview 只在浏览器看界面，不代表 AE 桥接可用；要看示例合成树用 `node scripts/dev/preview.js cep --mock`（dev-only，见 §1.1）；需要 AE 实机时另用 `npm run dev:cep`，关闭面板再打开刷新，收工执行 `npm run dev:cep:off`。
 - 浏览器 serve 与 lint 通过 `scripts/dev/ui-service.js` 加载 Vue CLI，排除 Electron 插件，确保删除运行时后仍可启动；桌面和生产构建保持原入口。
 - 日常预览无需 `build:cep`、`prepare:cep` 或 Electron 打包。浏览器预览不能替代合成读取、渲染、安装和更新的宿主验收。
 - 切换模式清理前停止正在使用这些目录的开发服务与桌面进程。脚本不会自动停止用户进程。
