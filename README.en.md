@@ -41,6 +41,8 @@
 
 ### Recent highlights
 
+- **Compression routes:** choose quality or a fixed 2–256 color palette for APNG / GIF; size-limit retries step through color presets, and estimate badges cycle through output formats
+- **Sequence import:** numbered files such as `ah16_06.pcx.png` are grouped into one task
 - **AE panel:** one-button switch between comp tree and task list; the comp tree shows run status and output size, supports draggable column widths and per-comp output formats; double-click a row to open output settings, right-click to jump to a comp / open its location / output folder / stop task; with multiple tasks selected, the toolbar batch settings button opens shared settings; pinned filter bar
 - **Tasks and output:** per-comp settings persist; default output names come from composition names, while custom names are preserved; completed rows show final output size plus clickable format badges; copying files reports progress and result
 - **Grouped settings:** output and global settings use pinned top tabs (Basics / Paths / Animation / Compression); the narrow AE panel collapses to icon-only tabs, with no height jump between tabs
