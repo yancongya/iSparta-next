@@ -3214,27 +3214,50 @@ html[data-theme="dark"] .cmp-tab.is-on { color: #0c0f0e; }
 .rail__track > .about-card,
 .rail__track > .why-card {
   counter-increment: abcard;
+  position: relative;
   display: flex;
   flex-direction: column;
   /* 保持原卡片宽度，滚轮横移的每段位移仍对应相同的视觉节奏。 */
   width: clamp(232px, 24vw, 288px);
   flex: 0 0 auto;
   margin: 0;
-  padding: 0;
-  background: transparent;
-  border: 0;
-  border-radius: 0;
-  transition: transform 0.2s ease;
+  padding: 18px;
+  background: linear-gradient(155deg, color-mix(in srgb, var(--card) 92%, var(--accent) 8%), var(--card) 58%);
+  border: 1px solid color-mix(in srgb, var(--line) 85%, var(--accent) 15%);
+  border-radius: 16px;
+  box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 6%, transparent), 0 16px 36px rgba(0, 0, 0, 0.1);
+  transition: transform 0.35s cubic-bezier(.2,.8,.2,1), border-color 0.35s ease, box-shadow 0.35s ease;
 }
 
 .rail__track > .about-card:hover,
 .rail__track > .why-card:hover {
-  transform: translateY(-3px);
-  box-shadow: none;
+  transform: translateY(-7px);
+  border-color: color-mix(in srgb, var(--accent) 48%, var(--line));
+  box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 9%, transparent), 0 24px 48px rgba(0, 0, 0, 0.2), 0 0 28px color-mix(in srgb, var(--accent) 8%, transparent);
 }
 
 .rail__track > .about-card--ill:hover {
-  box-shadow: none;
+  box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 9%, transparent), 0 24px 48px rgba(0, 0, 0, 0.2), 0 0 28px color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+.rail__track > .about-card::after,
+.rail__track > .why-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(115deg, transparent 28%, color-mix(in srgb, var(--accent) 8%, transparent) 50%, transparent 72%);
+  background-size: 250% 100%;
+  background-position: 100% 0;
+  opacity: 0;
+  transition: background-position 0.7s ease, opacity 0.35s ease;
+}
+
+.rail__track > .about-card:hover::after,
+.rail__track > .why-card:hover::after {
+  background-position: 0 0;
+  opacity: 1;
 }
 
 /* 编号：[00] [01] … */
@@ -3242,7 +3265,9 @@ html[data-theme="dark"] .cmp-tab.is-on { color: #0c0f0e; }
 .rail__track > .why-card::before {
   content: "[" counter(abcard, decimal-leading-zero) "]";
   display: block;
-  margin: 0 0 12px;
+  margin: 0 0 14px;
+  padding-bottom: 11px;
+  border-bottom: 1px solid color-mix(in srgb, var(--accent) 24%, var(--line));
   font-family: var(--mono);
   font-size: 12px;
   font-weight: 700;
@@ -3279,12 +3304,12 @@ html[data-theme="dark"] .cmp-tab.is-on { color: #0c0f0e; }
   place-items: center;
   width: auto;
   height: auto;
-  aspect-ratio: 1.55;
-  min-height: 168px;
+  aspect-ratio: 1.6;
+  min-height: 144px;
   max-height: 252px;
   margin: 0;
   border: 1px solid color-mix(in srgb, var(--line) 82%, transparent);
-  border-radius: 12px;
+  border-radius: 10px;
   background:
     radial-gradient(ellipse at 50% 48%, color-mix(in srgb, var(--accent) 9%, transparent), transparent 58%),
     repeating-linear-gradient(0deg, transparent 0 27px, color-mix(in srgb, var(--line) 22%, transparent) 28px),
@@ -3292,11 +3317,12 @@ html[data-theme="dark"] .cmp-tab.is-on { color: #0c0f0e; }
     color-mix(in srgb, var(--card) 74%, var(--line));
   box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 4%, transparent);
   overflow: hidden;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+  transition: border-color 0.35s ease, box-shadow 0.35s ease, background-color 0.35s ease, transform 0.45s cubic-bezier(.2,.8,.2,1);
 }
 
 .rail__track > .about-card:hover .ill,
 .rail__track > .why-card:hover .why-ill {
+  transform: translateY(-2px);
   border-color: color-mix(in srgb, var(--accent) 52%, var(--line));
   box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 5%, transparent),
     0 10px 30px color-mix(in srgb, var(--accent) 8%, transparent);
@@ -3338,7 +3364,22 @@ html[data-theme="dark"] .cmp-tab.is-on { color: #0c0f0e; }
 @media (max-width: 480px) {
   .rail__track .ill,
   .rail__track .why-ill {
-    min-height: 152px;
+    min-height: 132px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rail__track > .about-card,
+  .rail__track > .why-card,
+  .rail__track .ill,
+  .rail__track .why-ill {
+    transition: none;
+  }
+  .rail__track > .about-card:hover,
+  .rail__track > .why-card:hover,
+  .rail__track > .about-card:hover .ill,
+  .rail__track > .why-card:hover .why-ill {
+    transform: none;
   }
 }
 
@@ -5631,6 +5672,45 @@ html[data-theme="dark"] .cep {
 .ill-upd .up-latest {
   animation: verGlow 2.4s ease-in-out infinite;
 }
+/* 安装选择依次亮起，再汇入同一条安装进度。 */
+.ill-ae-install .pkg-check {
+  stroke-dasharray: 9;
+  stroke-dashoffset: 9;
+  animation: pkgCheck 4.8s ease-in-out infinite;
+}
+.ill-ae-install .pkg-check--ae { animation-delay: .65s; }
+.ill-ae-install .ill-ui-route { animation: illDash 1.4s linear infinite; }
+.ill-ae-install .pkg-progress {
+  transform-box: fill-box;
+  transform-origin: left center;
+  animation: pkgFill 4.8s cubic-bezier(.2,.8,.2,1) infinite;
+}
+/* 超限数值、体积条与达标状态按一次压缩流程切换。 */
+.ill-gate .gate-meter {
+  transform-box: fill-box;
+  transform-origin: left center;
+  animation: gateShrink 4.8s cubic-bezier(.2,.8,.2,1) infinite;
+}
+.ill-gate .gate-size--before { animation: gateSizeBefore 4.8s ease infinite; }
+.ill-gate .gate-size--after { animation: gateSizeAfter 4.8s ease infinite; }
+.ill-gate .gate-result { animation: gatePass 4.8s ease infinite; }
+.ill-gate .ill-limit { stroke: var(--accent); stroke-width: 1; stroke-dasharray: 2 2; }
+.ill-batch .ill-ui-thumb:first-of-type { animation: batchQueue 3.6s ease-in-out infinite; }
+.ill-batch .ill-ui-folder { animation: folderReceive 3.6s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+.ill-log .ill-ui-time { animation: logReveal 3.6s steps(1) infinite; }
+.ill-interface .ill-ui-tile { animation: interfaceSwitch 3.6s ease-in-out infinite; }
+.ill-interface .ill-ui-tile:nth-of-type(2) { animation-delay: .45s; }
+
+@keyframes pkgCheck { 0%, 12% { stroke-dashoffset: 9; } 25%, 82% { stroke-dashoffset: 0; } 95%, 100% { stroke-dashoffset: 9; } }
+@keyframes pkgFill { 0%, 27% { transform: scaleX(.08); } 72%, 88% { transform: scaleX(1); } 100% { transform: scaleX(.08); } }
+@keyframes gateShrink { 0%, 22% { transform: scaleX(1); fill: #f08b58; } 60%, 86% { transform: scaleX(.43); fill: var(--accent); } 100% { transform: scaleX(1); fill: #f08b58; } }
+@keyframes gateSizeBefore { 0%, 34% { opacity: 1; } 48%, 90% { opacity: 0; } 100% { opacity: 1; } }
+@keyframes gateSizeAfter { 0%, 34% { opacity: 0; } 48%, 90% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes gatePass { 0%, 48% { opacity: .18; transform: translateY(3px); } 62%, 88% { opacity: 1; transform: translateY(0); } 100% { opacity: .18; transform: translateY(3px); } }
+@keyframes batchQueue { 0%, 100% { opacity: .6; } 35%, 70% { opacity: 1; } }
+@keyframes folderReceive { 0%, 35%, 100% { transform: scale(1); } 55% { transform: scale(1.08); } }
+@keyframes logReveal { 0%, 15% { opacity: .3; } 16%, 85% { opacity: 1; } 86%, 100% { opacity: .3; } }
+@keyframes interfaceSwitch { 0%, 100% { fill: color-mix(in srgb, var(--accent) 13%, var(--card)); } 45%, 70% { fill: color-mix(in srgb, var(--accent) 36%, var(--card)); } }
 /* 预估大小：角标呼吸 + 进度推进 */
 .ill-est .est-badge {
   transform-box: fill-box;
@@ -5755,6 +5835,20 @@ html[data-theme="dark"] .cep {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .ill-ae-install .pkg-check,
+  .ill-ae-install .pkg-progress,
+  .ill-ae-install .ill-ui-route,
+  .ill-gate .gate-meter,
+  .ill-gate .gate-size,
+  .ill-gate .gate-result,
+  .ill-batch .ill-ui-thumb:first-of-type,
+  .ill-batch .ill-ui-folder,
+  .ill-log .ill-ui-time,
+  .ill-interface .ill-ui-tile {
+    animation: none;
+  }
+  .ill-ae-install .pkg-check { stroke-dashoffset: 0; }
+  .ill-gate .gate-size--after { opacity: 0; }
   .about-card--ill:hover,
   .why-card:hover {
     transform: none;
