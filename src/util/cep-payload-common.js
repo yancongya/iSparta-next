@@ -13,8 +13,8 @@ const EXT_NAME = 'iSparta'
 const EXT_DISPLAY_NAME = 'iSparta-next AE'
 
 // 小工具子集（与 targets/cep/bin/README.md 一致）
-const WIN_TOOLS = ['apngasm.exe', 'apngquant.exe', 'apngopt.exe', 'cwebp.exe', 'webpmux.exe']
-const MAC_TOOLS = ['apngasm', 'apngquant', 'apngopt', 'cwebp', 'webpmux']
+const WIN_TOOLS = ['apngasm.exe', 'apngquant.exe', 'apngopt.exe', 'gifsicle.exe', 'cwebp.exe', 'webpmux.exe']
+const MAC_TOOLS = ['apngasm', 'apngquant', 'apngopt', 'gifsicle', 'cwebp', 'webpmux']
 const NIX_TOOLS = MAC_TOOLS
 const SKIP_COPY = new Set(['.git', '.DS_Store', 'Thumbs.db'])
 

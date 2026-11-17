@@ -454,6 +454,14 @@ body.side-narrow .mod-setting .mod-tabs-bar .is-segmented__item {
     font-size: var(--is-fs-sm);
   }
 
+  // 色深路线下的重试说明：替换 quality-retry-sliders 的位置，只读文案
+  &__colors-note {
+    margin: 0;
+    color: var(--is-text-3, var(--is-text-2));
+    font-size: var(--is-fs-xs, 11px);
+    line-height: 1.5;
+  }
+
   // 两个复选框并排一行：均分且各自压缩省略，不折行
   // （本文件为全局样式，无需 ::v-deep）
   &__row--checks {

@@ -24,6 +24,8 @@ const defaultItem = () => ({
     outputFormat: ['APNG', 'GIF', 'WEBP'],
     floyd: { checked: true, value: 0.35 },
     quality: { checked: true, value: 80 },
+    // 压缩路线：quality（默认）/ colors；旧副本缺字段时由 paletteConfig.normalizePalette 兜底
+    palette: { mode: 'quality', colors: 256 },
     sizeLimit: {
       enabled: true,
       maxMB: 0.78125,

@@ -112,6 +112,7 @@ import { toCompItem, prepareCompSequence } from './comp-source'
 import appLog from '../ui-next/log'
 import IsLogPanel from '../ui-next/components/IsLogPanel.vue'
 import i18n from '../i18n'
+import { normalizePalette } from '../util/paletteConfig'
 
 /* global window */
 
@@ -171,6 +172,14 @@ export default {
     setProgress (text, kind) {
       this.progressText = text
       this.progressKind = kind || ''
+    },
+    /** 读取全局压缩路线（设置面板写入 globalSetting；storage 不响应式，加任务时现读） */
+    readGlobalPalette () {
+      try {
+        const raw = window.storage && window.storage.getItem('globalSetting')
+        const gs = raw ? JSON.parse(raw) : null
+        return normalizePalette(gs && gs.options)
+      } catch (e) { return { mode: 'quality', colors: 256 } }
     },
     localePack () {
       // processor 只读这些键；与桌面 setting.vue 传入的 locale 同形
@@ -295,6 +304,9 @@ export default {
             outputFormat: [this.format],
             floyd: { checked: this.useCompress, value: 0.35 },
             quality: { checked: true, value: this.quality },
+            // 压缩路线单一数据源在设置面板（setting.vue 写 globalSetting / 任务 options）；
+            // 快捷加任务从这里读取同一份路线，避免两处开关漂移。缺省兜底 quality。
+            palette: this.readGlobalPalette(),
             sizeLimit: Object.assign({}, this.sizeLimit, {
               maxBytes: Math.max(1, Number(this.sizeLimit.maxKB) || 800) * 1024,
               maxMB: Math.max(1, Number(this.sizeLimit.maxKB) || 800) / 1024

@@ -8,6 +8,15 @@ const source = fs.readFileSync(path.join(__dirname, '../src/util/processor/sizeG
   .replace(/^import .*$/gm, '')
   .replace(/^export function /gm, 'function ')
   .concat('\n globalThis.testApi = { normalizeSizeLimit, enforceSizeLimit }')
+// sizeGate 现依赖 paletteConfig（压缩路线）与 sizePlanner（色数规划）；随沙箱一并注入
+const paletteSource = fs.readFileSync(path.join(__dirname, '../src/util/paletteConfig.js'), 'utf8')
+  .replace(/^import .*$/gm, '')
+  .replace(/^export const /gm, 'const ')
+  .replace(/^export function /gm, 'function ')
+  .replace(/^export /gm, '')
+const plannerSource = fs.readFileSync(path.join(__dirname, '../src/util/sizePlanner.js'), 'utf8')
+  .replace(/^import .*$/gm, '')
+  .replace(/^export function /gm, 'function ')
 const configSource = fs.readFileSync(path.join(__dirname, '../src/util/sizeLimitConfig.js'), 'utf8')
   .replace(/^export function /gm, 'function ')
   .concat('\n globalThis.sizeLimitConfigApi = { automaticRetryCount, automaticRetryQuality, effectiveQualityStart }')
@@ -38,7 +47,9 @@ function makeHarness (autoDelete, maxTries, maxKB, staysOverAtQualityFloor) {
   }
   const context = {
     fs: files,
-    path,
+    // 沙箱内统一 posix 路径：sizes 键全部是 posix 形态（'/out/animation.webp'），
+    // win32 path.join 会产出 '\\out\\...' 导致 statSize 永远 -1（该缺陷仅在 Windows 暴露）
+    path: path.posix,
     Promise,
     isFinite,
     Math,
@@ -49,7 +60,7 @@ function makeHarness (autoDelete, maxTries, maxKB, staysOverAtQualityFloor) {
     apng2gif: () => Promise.resolve(),
     apng2webp: item => {
       const q = Number(item.options.quality.value)
-      sizes[path.join(item.basic.tmpOutputDir, 'out.webp')] = staysOverAtQualityFloor
+      sizes[path.posix.join(item.basic.tmpOutputDir, 'out.webp')] = staysOverAtQualityFloor
         ? 510000 + q * 6000
         : (q <= 60 ? 450000 : 700000)
       return Promise.resolve()
@@ -69,6 +80,9 @@ function makeHarness (autoDelete, maxTries, maxKB, staysOverAtQualityFloor) {
       t: (key, args) => key + ' ' + Object.keys(args).map(k => k + '=' + args[k]).join(' ')
     }
   }
+  // paletteConfig / sizePlanner 的顶层函数声明会挂到 context 全局，sizeGate 源码直接引用
+  vm.runInNewContext(paletteSource, context, { filename: 'paletteConfig.js' })
+  vm.runInNewContext(plannerSource, context, { filename: 'sizePlanner.js' })
   vm.runInNewContext(configSource, context, { filename: 'sizeLimitConfig.js' })
   context.automaticRetryCount = context.sizeLimitConfigApi.automaticRetryCount
   context.automaticRetryQuality = context.sizeLimitConfigApi.automaticRetryQuality
@@ -133,6 +147,14 @@ async function main () {
   assert(keep.logs.some(line => line.indexOf('500.0KB') >= 0), 'logs should report the actual 500 KiB limit')
   assert(keep.logs.some(line => line.indexOf('logGateProgressDone') >= 0 && line.indexOf('tries=3') >= 0), 'the summary should show the final retry count')
   assert.strictEqual(keep.logs.filter(line => line.indexOf('logGateProgress') >= 0).length, 1, 'retries should update a single log row')
+
+  const colorsWebp = makeHarness(true, 10)
+  colorsWebp.item.options.palette = { mode: 'colors', colors: 2 }
+  const colorsWebpResult = await colorsWebp.api.enforceSizeLimit(colorsWebp.item, colorsWebp.store, {})
+  assert.strictEqual(colorsWebpResult.triesUsed, 3, 'WebP keeps quality retries when color count is already at its floor')
+  assert.strictEqual(colorsWebpResult.succeeded, true)
+  assert.strictEqual(colorsWebp.sizes['/out/animation.webp'], 450000)
+  assert.strictEqual(colorsWebp.item.options.palette.colors, 2, 'retry must restore the chosen color count')
 
   const replace = makeHarness(true, 10)
   replace.sizes['/out/animation_v9.webp'] = 1200000

@@ -75,7 +75,7 @@ need('targets/cep/lib/cep-bridge.js', 'CEP 桥')
 need('build/installer.nsh', 'NSIS 组件页 / 安装卸载钩子')
 
 // 编码器子集：targets/cep/bin 优先，否则 public/bin
-const WIN_TOOLS = ['apngasm.exe', 'apngquant.exe', 'apngopt.exe', 'cwebp.exe', 'webpmux.exe']
+const WIN_TOOLS = ['apngasm.exe', 'apngquant.exe', 'apngopt.exe', 'gifsicle.exe', 'cwebp.exe', 'webpmux.exe']
 function hasWinTools (dirRel) {
   return WIN_TOOLS.filter((t) => exists(path.join(dirRel, t)) && sizeOf(path.join(dirRel, t)) > 0)
 }

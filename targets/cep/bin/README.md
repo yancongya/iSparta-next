@@ -21,6 +21,7 @@ targets/cep/bin/
 | `apngasm` | PNG 序列 → APNG | `pngs2apng.js` |
 | `apngquant` | APNG 调色板压缩（可选） | `apngCompress.js` |
 | `apngopt` | APNG 优化（可选） | `apngCompress.js` |
+| `gifsicle` | GIF 色深档位量化（`--colors N`） | `apng2gif.js`（色深路线，GPL-2.0） |
 | `cwebp` | 帧 PNG → WebP | `apng2webp.js` |
 | `webpmux` | 帧合成动画 WebP | `apng2webp.js` |
 
@@ -30,7 +31,7 @@ PowerShell 示例（win64）：
 $src = "F:\iSparta\public\bin\win64"
 $dst = "F:\iSparta\targets\cep\bin\win64"
 New-Item -ItemType Directory -Force -Path $dst | Out-Null
-Copy-Item "$src\apngasm.exe","$src\apngquant.exe","$src\apngopt.exe","$src\cwebp.exe","$src\webpmux.exe" $dst
+Copy-Item "$src\apngasm.exe","$src\apngquant.exe","$src\apngopt.exe","$src\gifsicle.exe","$src\cwebp.exe","$src\webpmux.exe" $dst
 ```
 
 mac / linux 同理（无 `.exe` 后缀）。

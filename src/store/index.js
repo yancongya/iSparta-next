@@ -69,6 +69,12 @@ const defaultState = {
       checked: true,
       value: 80
     },
+    // 压缩路线：quality（质量系数，默认）/ colors（色深档位）。两条路线互斥，
+    // 缺省字段一律按 quality 解读（paletteConfig.normalizePalette 兜底），旧配置零破坏
+    'palette': {
+      mode: 'quality',
+      colors: 256
+    },
     'sizeLimit': {
       enabled: true,
       maxMB: 0.78125,
@@ -195,6 +201,21 @@ if (!globalSetting) {
       // seqDirTemplate 为后加项：补齐为新出厂默认，保证新建任务默认落在工程旁合成名目录
       if (typeof parsed.options.seqDirTemplate !== 'string') {
         parsed.options.seqDirTemplate = SEQ_DIR_DEFAULT_TEMPLATE
+        changed = true
+      }
+      // floyd / quality 为后加项且下游直读（globalSetting.vue options.floyd.value、
+      // apngCompress options.floyd.checked、comp-source options.quality），缺字段补齐
+      if (!parsed.options.floyd) {
+        parsed.options.floyd = _.cloneDeep(defaultState.options.floyd)
+        changed = true
+      }
+      if (!parsed.options.quality) {
+        parsed.options.quality = _.cloneDeep(defaultState.options.quality)
+        changed = true
+      }
+      // palette 缺省语义即 quality 路线（normalizePalette 兜底），物化为出厂值零行为差异
+      if (!parsed.options.palette) {
+        parsed.options.palette = _.cloneDeep(defaultState.options.palette)
         changed = true
       }
     }

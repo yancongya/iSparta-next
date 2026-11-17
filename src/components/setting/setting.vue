@@ -119,7 +119,7 @@
         </div>
       </div>
 
-      <!-- 输出格式：三等分 -->
+      <!-- 输出格式：三等分；色深路线下 WEBP 置灰（WebP 无色数概念，保持 quality 编码） -->
       <div class="mod-form__group">
         <p class="mod-form__caption">{{ $t('outputFormat') }}</p>
         <is-checkbox-group v-model="formatList" class="fmt-grid">
@@ -127,6 +127,8 @@
             v-for="format in formatStatic"
             :key="format"
             :label="format"
+            :disabled="isColorsMode && format === 'WEBP'"
+            v-tip="isColorsMode && format === 'WEBP' ? $t('webpNoColorsTip') : ''"
           />
         </is-checkbox-group>
       </div>
@@ -329,21 +331,46 @@
         <p class="mod-form__caption">{{ $t('compressionSettings') }}</p>
         <div class="compression-settings__controls">
           <div class="mod-form__row">
-            <span class="row-label">{{ $t('compressionQuality') }}</span>
-            <is-checkbox v-model="qualityCheck">{{ $t('enable') }}</is-checkbox>
-            <is-input
-              v-model="quality"
-              type="number"
-              class="num"
-              :disabled="!qualityCheck"
-              :max="100"
-              :min="0"
-              number
-              placeholder="100"
+            <span class="row-label">{{ $t('paletteMode') }}</span>
+            <is-segmented
+              v-model="paletteMode"
+              :options="paletteModeOptions"
+              size="sm"
             />
-            <button type="button" class="is-info" :aria-label="$t('compressionQuality')" v-tip="$t('qualityTip')">
+            <button type="button" class="is-info" :aria-label="$t('paletteMode')" v-tip="$t('paletteModeTip')">
               <is-icon name="info" size="sm" />
             </button>
+          </div>
+          <div class="mod-form__row">
+            <span class="row-label">{{ isColorsMode ? $t('paletteColors') : $t('compressionQuality') }}</span>
+            <template v-if="!isColorsMode">
+              <is-checkbox v-model="qualityCheck">{{ $t('enable') }}</is-checkbox>
+              <is-input
+                v-model="quality"
+                type="number"
+                class="num"
+                :disabled="!qualityCheck"
+                :max="100"
+                :min="0"
+                number
+                placeholder="100"
+              />
+              <button type="button" class="is-info" :aria-label="$t('compressionQuality')" v-tip="$t('qualityTip')">
+                <is-icon name="info" size="sm" />
+              </button>
+            </template>
+            <template v-else>
+              <!-- 色深模式：同一槽位原位变身，与质量输入框等宽（.num） -->
+              <is-select
+                v-model="paletteColors"
+                :options="paletteColorOptions"
+                class="num"
+                :aria-label="$t('paletteColors')"
+              />
+              <button type="button" class="is-info" :aria-label="$t('paletteColors')" v-tip="$t('colorsTip')">
+                <is-icon name="info" size="sm" />
+              </button>
+            </template>
           </div>
           <div v-if="canRemapFrames" class="mod-form__row mod-form__row--remap">
             <is-checkbox v-model="frameRemapEnabled">{{ $t('frameRemapEnable') }}</is-checkbox>
@@ -382,10 +409,14 @@
               </button>
             </div>
             <quality-retry-sliders
+              v-if="!isColorsMode"
               :start-quality="minimumSelectedQuality"
               :tries="sizeMaxTries"
               @tries-change="sizeMaxTries = $event"
             />
+            <p v-else class="size-limit__colors-note">
+              {{ $t('colorsRetryNote') }}
+            </p>
           </div>
         </div>
       </div>
@@ -444,6 +475,7 @@ import {
   removeCustomPreset
 } from '../../util/outputPresets'
 import { tokenizeName, joinTokens } from '../../util/tokenizeName'
+import { PALETTE_COLOR_PRESETS, normalizePalette } from '../../util/paletteConfig'
 import PathVars from '../../ui-next/components/PathVars.vue'
 import IsPresetBar from '../../ui-next/components/IsPresetBar.vue'
 import notice from '../../ui-next/notice'
@@ -696,6 +728,32 @@ export default {
       set (value) {
         if (!isFinite(Number(value)) || value > 100 || value < 0) return false
         this.writeOptions({ quality: { checked: this.qualityCheck, value: value } })
+      }
+    },
+    // 压缩路线切换：quality / colors 二选一（互斥）。旧数据无 palette 字段时
+    // normalizePalette 兜底为 quality，UI 与转换链路共用同一解读
+    paletteModeOptions () {
+      return [
+        { label: this.$t('paletteModeQuality'), value: 'quality' },
+        { label: this.$t('paletteModeColors'), value: 'colors' }
+      ]
+    },
+    paletteColorOptions () {
+      return PALETTE_COLOR_PRESETS.map((n) => ({ label: String(n), value: n }))
+    },
+    isColorsMode () {
+      return normalizePalette(this.curtSetting).mode === 'colors'
+    },
+    paletteMode: {
+      get () { return normalizePalette(this.curtSetting).mode },
+      set (value) {
+        this.writeOptions({ palette: { mode: value, colors: this.paletteColors } })
+      }
+    },
+    paletteColors: {
+      get () { return normalizePalette(this.curtSetting).colors },
+      set (value) {
+        this.writeOptions({ palette: { mode: 'colors', colors: value } })
       }
     },
     sizeEnabled: {

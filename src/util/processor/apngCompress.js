@@ -1,6 +1,7 @@
 import { path, fs } from '../node-env'
 import action from './action'
 import appLog from '../../ui-next/log'
+import { normalizePalette } from '../paletteConfig'
 
 export default function (item, isLossless, store, locale, opts) {
   store.dispatch('editProcess', {
@@ -24,18 +25,31 @@ export default function (item, isLossless, store, locale, opts) {
 
   var gateOpts = opts && opts.markFail ? { markFail: true } : (opts && opts.markFail === false ? { markFail: false } : undefined)
 
-	// apngquant
-  if (!item.options.quality.checked) {
+	// apngquant：两条路线互斥——
+	// - 色深路线：位置参数色数档位 N（实测 2.10.1 不认 --colors 标志，且 N 必须在输入文件前），
+	//   绝不传 --quality；
+	// - 质量路线（现状）：--quality=0-X，绝不传色数。
+	var pal = normalizePalette(item.options)
+	var isColors = pal.mode === 'colors'
+  // 量化开关：色深路线始终量化（用户选 C 档即是选减色，C256 也是索引化）；
+  // 质量路线沿用 quality.checked 开关——关掉则纯无损 apngopt
+  if (!isColors && !item.options.quality.checked) {
     return apngopt(item, store, locale, gateOpts)
   } else {
-    return action.exec(action.bin('apngquant'), [
+    var quantArgs = [
       item.basic.fileList[0],
       '--output',
       path.join(item.basic.tmpOutputDir, 'out-quant.png'),
       '--force',
-      item.options.floyd.checked ? ('--floyd=' + item.options.floyd.value) : '',
-      item.options.quality.checked ? ('--quality=0-' + item.options.quality.value) : ''
-    ], item, store, locale, gateOpts).catch((err) => {
+      item.options.floyd.checked ? ('--floyd=' + item.options.floyd.value) : ''
+    ]
+    if (isColors) {
+      // 位置参数必须在输入文件之前（实测 `N input --output` 序会段错误/误判）
+      quantArgs.unshift(pal.colors)
+    } else if (item.options.quality.checked) {
+      quantArgs.push('--quality=0-' + item.options.quality.value)
+    }
+    return action.exec(action.bin('apngquant'), quantArgs, item, store, locale, gateOpts).catch((err) => {
       const detail = String(err && (err.err || err.stderr || err.message) || err)
       if (!/out of memory|memory allocation|libpng failed/i.test(detail)) {
         throw err

@@ -13,6 +13,12 @@ const src = fs.readFileSync(path.join(__dirname, '..', 'src/util/processor/apngC
   .replace(/^export default function \(/m, 'function apngCompress (')
   .replace(/^export default /gm, '')
   .replace(/^export /gm, '')
+// apngCompress 现依赖 paletteConfig（压缩路线归一化）；随沙箱一并注入
+const paletteSrc = fs.readFileSync(path.join(__dirname, '..', 'src/util/paletteConfig.js'), 'utf8')
+  .replace(/^import .*$/gm, '')
+  .replace(/^export const /gm, 'const ')
+  .replace(/^export function /gm, 'function ')
+  .replace(/^export /gm, '')
 
 const TMP = '/tmp/isparta-apng-quality'
 const OUT = path.posix.join(TMP, 'out.png')
@@ -51,7 +57,7 @@ function makeCtx () {
   }
   ctx.locale = { compressing: 'compressing' }
   vm.createContext(ctx)
-  vm.runInContext(src + '\n;this.apngCompress = apngCompress;', ctx)
+  vm.runInContext(paletteSrc + '\n' + src + '\n;this.apngCompress = apngCompress;', ctx)
   return ctx
 }
 

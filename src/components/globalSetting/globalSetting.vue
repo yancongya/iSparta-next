@@ -53,13 +53,13 @@
         <div class="gs-pair">
           <div class="gs-pair__cell">
             <span class="gs-pair__label">
-              {{ $t('floyd') }}
-              <button type="button" class="is-info" :aria-label="$t('floyd')" v-tip="$t('floydTip')">
+              {{ $t('paletteMode') }}
+              <button type="button" class="is-info" :aria-label="$t('paletteMode')" v-tip="$t('paletteModeTip')">
                 <is-icon name="info" size="sm" />
               </button>
             </span>
             <div class="gs-pair__ctrl">
-              <is-input v-model="setting.options.floyd.value" type="number" class="w-80" :max="1" :min="0" step="0.05" number />
+              <is-segmented v-model="paletteMode" :options="paletteModeOptions" size="sm" />
             </div>
           </div>
           <div class="gs-pair__cell">
@@ -70,16 +70,43 @@
               </button>
             </span>
             <div class="gs-pair__ctrl">
-              <is-checkbox v-model="qualityChecked">{{ $t('qualityEnable') }}</is-checkbox>
-              <is-input v-model="qualityValue" type="number" class="w-80" :max="100" :min="0" :disabled="!qualityChecked" number />
+              <template v-if="!isColorsMode">
+                <is-checkbox v-model="qualityChecked">{{ $t('qualityEnable') }}</is-checkbox>
+                <is-input v-model="qualityValue" type="number" class="w-80" :max="100" :min="0" :disabled="!qualityChecked" number />
+              </template>
+              <template v-else>
+                <!-- 色深模式：原位变身，与质量输入框等宽（.w-80） -->
+                <is-select v-model="paletteColors" :options="paletteColorOptions" class="w-80" :aria-label="$t('paletteColors')" />
+                <button type="button" class="is-info" :aria-label="$t('paletteColors')" v-tip="$t('colorsTip')">
+                  <is-icon name="info" size="sm" />
+                </button>
+              </template>
+            </div>
+          </div>
+          <div class="gs-pair__cell">
+            <span class="gs-pair__label">
+              {{ $t('floyd') }}
+              <button type="button" class="is-info" :aria-label="$t('floyd')" v-tip="$t('floydTip')">
+                <is-icon name="info" size="sm" />
+              </button>
+            </span>
+            <div class="gs-pair__ctrl">
+              <is-input v-model="setting.options.floyd.value" type="number" class="w-80" :max="1" :min="0" step="0.05" number />
             </div>
           </div>
         </div>
 
-        <!-- 默认输出格式：与右侧输出设置同一组控件，写回 globalSetting.options.outputFormat -->
+        <!-- 默认输出格式：与右侧输出设置同一组控件，写回 globalSetting.options.outputFormat；
+             色深路线下 WEBP 置灰（WebP 无色数概念，保持 quality 编码） -->
         <is-form-item :label="$t('defaultOutputFormat')">
           <is-checkbox-group v-model="defaultFormats" class="gs-formats">
-            <is-checkbox v-for="f in formatStatic" :key="f" :label="f" />
+            <is-checkbox
+              v-for="f in formatStatic"
+              :key="f"
+              :label="f"
+              :disabled="isColorsMode && f === 'WEBP'"
+              v-tip="isColorsMode && f === 'WEBP' ? $t('webpNoColorsTip') : ''"
+            />
           </is-checkbox-group>
           <p class="gs-hint">{{ $t('defaultOutputFormatTip') }}</p>
         </is-form-item>
@@ -311,6 +338,7 @@
 
 <script>
 import { storage } from '../../util/node-env'
+import { PALETTE_COLOR_PRESETS, normalizePalette } from '../../util/paletteConfig'
 import { diagnoseToolchain } from '../../util/processor/toolIntegrity'
 import ThemeManager from '../../ui-next/theme'
 import PathVars from '../../ui-next/components/PathVars.vue'
@@ -358,6 +386,10 @@ const DEFAULT_OUTPUT_TO = {
   customPath: '',
   template: '{srcPath}'
 }
+
+// 与 store defaultState 出厂值对齐：历史配置缺字段时的补齐值
+const DEFAULT_FLOYD = { checked: true, value: 0.35 }
+const DEFAULT_QUALITY = { checked: true, value: 80 }
 
 export default {
   components: { PathVars, IsPresetBar, QualityRetrySliders },
@@ -458,6 +490,32 @@ export default {
     qualityChecked: {
       get () { return !!this.setting.options.quality.checked },
       set (value) { this.$set(this.setting.options.quality, 'checked', !!value) }
+    },
+    // 压缩路线：quality / colors 二选一（互斥）。旧 globalSetting 无 palette 字段时
+    // normalizePalette 兜底为 quality，与转换链路共用同一解读
+    paletteModeOptions () {
+      return [
+        { label: this.$t('paletteModeQuality'), value: 'quality' },
+        { label: this.$t('paletteModeColors'), value: 'colors' }
+      ]
+    },
+    paletteColorOptions () {
+      return PALETTE_COLOR_PRESETS.map(function (n) { return { label: String(n), value: n } })
+    },
+    isColorsMode () {
+      return normalizePalette(this.setting && this.setting.options).mode === 'colors'
+    },
+    paletteMode: {
+      get () { return normalizePalette(this.setting && this.setting.options).mode },
+      set (value) {
+        this.$set(this.setting.options, 'palette', { mode: value, colors: this.paletteColors })
+      }
+    },
+    paletteColors: {
+      get () { return normalizePalette(this.setting && this.setting.options).colors },
+      set (value) {
+        this.$set(this.setting.options, 'palette', { mode: 'colors', colors: value })
+      }
     },
     qualityRetryBase () {
       const quality = this.setting.options.quality
@@ -776,6 +834,15 @@ export default {
         }
         // 历史配置可能缺 outputFormat 或残留非法值；归一后勾选组才有确定初值
         setting.options.outputFormat = normalizeOutputFormats(setting.options.outputFormat)
+        // floyd / quality 为后加项且模板直读（options.floyd.value 等无保护），缺字段补齐
+        if (!setting.options.floyd) {
+          setting.options.floyd = Object.assign({}, DEFAULT_FLOYD)
+        }
+        if (!setting.options.quality) {
+          setting.options.quality = Object.assign({}, DEFAULT_QUALITY)
+        }
+        // palette 有 normalizePalette 兜底；物化归一值，保存后与出厂默认同构
+        setting.options.palette = normalizePalette(setting.options)
       }
       return setting
     },

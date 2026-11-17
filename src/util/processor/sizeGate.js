@@ -7,7 +7,8 @@ import TYPE from '../../store/enum/type'
 import appLog from '../../ui-next/log'
 import i18n from '../../i18n'
 import { automaticRetryCount, automaticRetryQuality, effectiveQualityStart } from '../sizeLimitConfig'
-import { planStartingQuality } from '../sizePlanner'
+import { planStartingQuality, planStartingColors, estimateColorsBytes } from '../sizePlanner'
+import { normalizePalette, automaticRetryColors, automaticRetryColorsCount } from '../paletteConfig'
 
 export function normalizeSizeLimit (options, quality) {
   const s = (options && options.sizeLimit) || {}
@@ -75,6 +76,44 @@ function plannedRetryBaseline (item, limit, userBaseline, formats) {
     return { value: value, plan: plan }
   } catch (e) {
     return { value: userBaseline, plan: null }
+  }
+}
+
+/**
+ * 前置规划（色深路线）：按目标体积与源大小，反推更接近目标的起始色数档位。
+ * 与质量路线同一「只降不升」原则；规划值作为逐档重试的起跑点。
+ */
+function plannedRetryBaselineColors (item, limit, baselineColors) {
+  try {
+    var sourceFile = item.basic && (item.basic.assembledApng || item.basic.sourceFile ||
+      (item.basic.fileList && item.basic.fileList[0]))
+    var sourceBytes = sourceFile ? fs.statSize(sourceFile) : -1
+    if (!(sourceBytes > 0)) { return { value: baselineColors, plan: null } }
+    // 最坏格式决定是否超限（GIF 体积模型最大），与 quality 路线同一保守口径
+    var formats = item.options.outputFormat || ['APNG']
+    var worst = formats.reduce(function (m, f) {
+      return estimateColorsBytes(sourceBytes, baselineColors, f) > estimateColorsBytes(sourceBytes, baselineColors, m) ? f : m
+    }, formats[0])
+    var plan = planStartingColors({
+      maxBytes: limit.maxBytes,
+      sourceBytes: sourceBytes,
+      format: worst,
+      baselineColors: baselineColors,
+      safety: 0.9,
+      floorColors: 16
+    })
+    var value = Math.min(baselineColors, plan.plannedColors)
+    appLog.info('size-gate 前置规划（色深）', {
+      sourceBytes: sourceBytes,
+      maxBytes: limit.maxBytes,
+      baselineColors: baselineColors,
+      plannedColors: plan.plannedColors,
+      retryBaseline: value,
+      feasible: plan.feasible
+    })
+    return { value: value, plan: plan }
+  } catch (e) {
+    return { value: baselineColors, plan: null }
   }
 }
 
@@ -160,16 +199,29 @@ export function enforceSizeLimit (item, store, locale) {
     return Promise.resolve({ enforced: false })
   }
 
+  // 压缩路线：quality（质量系数重试）/ colors（色深逐档重试，WEBP 除外——
+  // WebP 无色数概念，仍走 cwebp -q 质量重试）。两条路线互斥。
+  const pal = normalizePalette(item.options)
+  const colorsMode = pal.mode === 'colors'
+  const colorMaxTries = colorsMode ? automaticRetryColorsCount(pal.colors, limit.configuredMaxTries) : 0
+  const retryBudget = item.options.outputFormat.reduce(function (total, format) {
+    return total + (colorsMode && format !== TYPE.WEBP ? colorMaxTries : limit.maxTries)
+  }, 0)
+  const originalPalette = item.options.palette ? { mode: pal.mode, colors: pal.colors } : undefined
+
   const maxBytes = limit.maxBytes
   const formats = item.options.outputFormat.slice()
   let warned = []
   let triesUsed = 0
   let progressLogId = null
 
-  // 每种格式从同一质量基线重试，避免串色。
-  // 前置规划：用目标体积反推更接近的起始质量，减少「压→测→降→再压」的轮次。
+  // 每种格式从同一基线重试，避免串色。
+  // 前置规划：用目标体积反推更接近的起始值，减少「压→测→降→再压」的轮次。
   const originalQuality = item.options.quality
-  const planned = plannedRetryBaseline(item, limit, initialQuality, formats)
+  // 色深路线不做 quality 规划（互斥；WEBP 重试从用户 quality 起跑）
+  const planned = colorsMode
+    ? { value: initialQuality, plan: null }
+    : plannedRetryBaseline(item, limit, initialQuality, formats)
   const baseQuality = originalQuality
     ? {
       checked: originalQuality.checked,
@@ -179,9 +231,14 @@ export function enforceSizeLimit (item, store, locale) {
   if (!isFinite(baseQuality.value)) { baseQuality.value = 80 }
   // 规划可能给出小于用户基线的质量：checked 必须为 true 才会走 apngquant 量化分支
   if (planned.plan && planned.value < initialQuality) { baseQuality.checked = true }
+  // 色深路线：规划只影响色数基线；quality 规划不参与（互斥），WEBP 重试仍用用户 quality
+  const plannedColors = colorsMode
+    ? plannedRetryBaselineColors(item, limit, pal.colors)
+    : { value: pal.colors, plan: null }
+  const baseColors = plannedColors.value
   function updateRetryLog (level, tries, detail) {
     const titleKey = level === 'warn' ? 'logGateProgressWarn' : level === 'ok' ? 'logGateProgressDone' : 'logGateProgress'
-    const title = i18n.t(titleKey, { tries: tries, maxTries: limit.maxTries * formats.length })
+    const title = i18n.t(titleKey, { tries: tries, maxTries: retryBudget })
     if (progressLogId && appLog.update) {
       appLog.update(progressLogId, level, title, detail)
     } else if (!progressLogId) {
@@ -191,6 +248,7 @@ export function enforceSizeLimit (item, store, locale) {
   }
 
   function checkOne (format) {
+    const maxTries = colorsMode && format !== TYPE.WEBP ? colorMaxTries : limit.maxTries
     const outPath = outputPathFor(item, format)
     let size = fs.statSize(outPath)
     appLog.info('size-gate 输出文件检查', {
@@ -215,10 +273,13 @@ export function enforceSizeLimit (item, store, locale) {
       return cleanupRetryVersions(item, format).then(() => null)
     }
 
-    // 每种格式独立从原始质量起跑，上一格式降低的质量不能串给下一格式。
+    // 每种格式独立从原始基线起跑，上一格式降低的质量/色数不能串给下一格式。
     item.options.quality = {
       checked: baseQuality.checked,
       value: baseQuality.value
+    }
+    if (colorsMode) {
+      item.options.palette = { mode: 'colors', colors: baseColors }
     }
 
     function retry (tries, currentPath) {
@@ -234,20 +295,36 @@ export function enforceSizeLimit (item, store, locale) {
         warned.push({ format, size, compressionSkipped: true })
         return Promise.resolve({ format, size, action: 'warn-quantization-skipped' })
       }
-      if (tries >= limit.maxTries) {
+      if (tries >= maxTries) {
         warned.push({ format, size, tries })
         return Promise.resolve({ format, size, action: 'warn-after-tries', tries })
       }
-      const startQ = isFinite(baseQuality.value) ? baseQuality.value : 80
+      // 色深路线（APNG/GIF）：逐档降色数，绝不碰 quality；
+      // WEBP 在色深路线仍走质量重试（cwebp -q，WebP 无色数概念）
       const attempt = tries + 1
-      const nextQ = automaticRetryQuality(startQ, limit.maxTries, attempt)
-      if (nextQ >= Number(item.options.quality.value)) {
-        const quality = Number(item.options.quality.value)
-        warned.push({ format, size, tries, quality, floor: true })
+      const useColorsRetry = colorsMode && format !== TYPE.WEBP
+      let nextValue
+      let floorValue
+      if (useColorsRetry) {
+        const startC = isFinite(baseColors) ? baseColors : 256
+        nextValue = automaticRetryColors(startC, maxTries, attempt)
+        floorValue = Number(item.options.palette.colors)
+      } else {
+        const startQ = isFinite(baseQuality.value) ? baseQuality.value : 80
+        nextValue = automaticRetryQuality(startQ, maxTries, attempt)
+        floorValue = Number(item.options.quality.value)
+      }
+      if (nextValue >= floorValue) {
+        warned.push({ format, size, tries, [useColorsRetry ? 'colors' : 'quality']: floorValue, floor: true })
         return Promise.resolve({ format, size, action: 'warn-floor', tries })
       }
-      item.options.quality.checked = true
-      item.options.quality.value = nextQ
+      if (useColorsRetry) {
+        item.options.palette = { mode: 'colors', colors: nextValue }
+        item.options.quality.checked = true
+      } else {
+        item.options.quality.checked = true
+        item.options.quality.value = nextValue
+      }
       triesUsed += 1
 
       const retryDetail = i18n.t('logGateRetry', {
@@ -262,8 +339,8 @@ export function enforceSizeLimit (item, store, locale) {
 
       store.dispatch('editProcess', {
         index: item.index,
-        text: (locale.sizeLimitRetry || 'Size over limit, quality→') + nextQ +
-          ' (' + formatMB(size) + ' > ' + formatLimit(maxBytes) + ') ' + attempt + '/' + limit.maxTries,
+        text: (locale.sizeLimitRetry || 'Size over limit, quality→') + (useColorsRetry ? 'C' + nextValue : nextValue) +
+          ' (' + formatMB(size) + ' > ' + formatLimit(maxBytes) + ') ' + attempt + '/' + maxTries,
         schedule: 0.85
       })
 
@@ -300,9 +377,15 @@ export function enforceSizeLimit (item, store, locale) {
   return formats.reduce(function (chain, format) {
     return chain.then(() => checkOne(format))
   }, Promise.resolve()).then(() => {
-    // Retry quality is temporary per-conversion state; preserve the user's
+    // Retry quality/palette is temporary per-conversion state; preserve the user's
     // configured baseline for the next run and for the settings panel.
     if (originalQuality) item.options.quality = originalQuality
+    if (originalPalette) {
+      item.options.palette = originalPalette
+    } else {
+      // 旧数据本无 palette 字段：恢复缺省形态，交给 normalizePalette 按 quality 解读
+      delete item.options.palette
+    }
     const summary = formats.map(function (format) {
       const finalSize = fs.statSize(outputPathFor(item, format))
       return format + ' ' + formatMB(finalSize) + (finalSize > maxBytes ? ' > ' : ' ≤ ') + formatLimit(maxBytes)

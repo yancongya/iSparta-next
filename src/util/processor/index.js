@@ -8,7 +8,8 @@ import Action 		from './action'
 import { fs, path, os } 	from '../node-env'
 import TYPE 		from '../../store/enum/type'
 import { enforceSizeLimit, normalizeSizeLimit } from './sizeGate'
-import { planStartingQuality } from '../sizePlanner'
+import { planStartingQuality, planStartingColors, estimateColorsBytes } from '../sizePlanner'
+import { normalizePalette } from '../paletteConfig'
 import { effectiveQualityStart } from '../sizeLimitConfig'
 import { resolveOutputPath } from '../outputPath'
 import hostAdapter 	from '../host-env'
@@ -25,9 +26,10 @@ function stat (label) {
 }
 
 /**
- * 首压前规划：sizeLimit 开启时，按目标体积反推一个保守起始质量，写入转换副本的
- * quality（item 是 Action 里 JSON clone 的副本，不碰 store 的用户配置）。
+ * 首压前规划：sizeLimit 开启时，按目标体积反推一个保守起始值，写入转换副本的
+ * quality / palette（item 是 Action 里 JSON clone 的副本，不碰 store 的用户配置）。
  * - 只在规划值低于用户基线时下调，绝不抬高；
+ * - 质量路线反推起始质量 Q；色深路线反推起始色数档位（两条路线互斥，绝不同时生效）；
  * - 源大小取 fileList[0]（APNG/GIF/WEBP 母版或序列首帧），失败则跳过规划；
  * - 规划只是起始建议，sizeGate 事后仍按真实大小兜底。
  */
@@ -35,13 +37,36 @@ function applyStartPlan (item) {
   const opts = item && item.options
   if (!opts || !opts.sizeLimit || !opts.sizeLimit.enabled) { return }
   if (!opts.outputFormat || !opts.outputFormat.length) { return }
-  const q = opts.quality || {}
-  const baseline = effectiveQualityStart(q.value, q.checked)
-  const limit = normalizeSizeLimit(opts, baseline)
+  const pal = normalizePalette(opts)
+  const limit = normalizeSizeLimit(opts, effectiveQualityStart(opts.quality && opts.quality.value, opts.quality && opts.quality.checked))
   const sourceFile = item.basic && (item.basic.sourceFile || (item.basic.fileList && item.basic.fileList[0]))
   let sourceBytes = -1
   try { if (sourceFile) { sourceBytes = fs.statSize(sourceFile) } } catch (e) { /* skip */ }
   if (!(sourceBytes > 0)) { return }
+  if (pal.mode === 'colors') {
+    // 色深路线：反推起始色数档位（只降不升；规划下限 16 色，sizeGate 逐档重试兜底）。
+    // 最坏格式决定是否超限——与 quality 路线同一保守口径。
+    const worst = opts.outputFormat.reduce(function (m, f) {
+      return estimateColorsBytes(sourceBytes, pal.colors, f) > estimateColorsBytes(sourceBytes, pal.colors, m) ? f : m
+    }, opts.outputFormat[0])
+    const plan = planStartingColors({
+      maxBytes: limit.maxBytes,
+      sourceBytes: sourceBytes,
+      format: worst,
+      baselineColors: pal.colors,
+      safety: 0.9,
+      floorColors: 16
+    })
+    if (plan.plannedColors < pal.colors) {
+      opts.palette = { mode: 'colors', colors: plan.plannedColors }
+      appLog.info('首压前规划：起始色数 C' + pal.colors + ' → C' + plan.plannedColors +
+        '（目标 ' + (limit.maxBytes / 1024 / 1024).toFixed(2) + 'MB，源 ' +
+        (sourceBytes / 1024 / 1024).toFixed(2) + 'MB）')
+    }
+    return
+  }
+  const q = opts.quality || {}
+  const baseline = effectiveQualityStart(q.value, q.checked)
   const plan = planStartingQuality({
     maxBytes: limit.maxBytes,
     sourceBytes: sourceBytes,

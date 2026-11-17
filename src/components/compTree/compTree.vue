@@ -157,14 +157,15 @@
               <is-icon class="mod-ct__state-ico" :name="stateIconOf(node)" size="xs" />
               <span v-if="stateLabelOf(node)" class="mod-ct__state-txt">{{ stateLabelOf(node) }}</span>
             </template>
-            <!-- 完成态显示真实产物大小；否则（默认/待处理）显示预估产物大小 -->
+            <!-- 完成态显示真实产物大小；否则（默认/待处理）显示按格式轮换的预估产物大小 -->
             <span v-if="stateSizeOf(node)" class="mod-ct__state-size">{{ stateSizeOf(node) }}</span>
             <span
               v-else-if="estimateOf(node)"
               class="mod-ct__state-size mod-ct__est"
-              :class="{ 'is-over': estimateOf(node).over }"
+              :class="{ 'is-over': estDisplayOf(node).over, 'can-cycle': estimateOf(node).details.length > 1 }"
               v-tip="estimateTipOf(node)"
-            >≈{{ estimateOf(node).text }}</span>
+              @click.stop="cycleEstFormat(node)"
+            >{{ estDisplayOf(node).letter }}&nbsp;≈{{ estDisplayOf(node).text }}</span>
           </button>
         </template>
       </li>
@@ -245,7 +246,7 @@ import {
   loadColumnLayout, saveColumnLayout, CT_NAME_KEY, CT_NAME_MIN
 } from '../../util/compTreeColumns'
 import { fs } from '../../util/node-env'
-import { estimateOutput, estimateSourceBytes, humanSize } from '../../util/qualityEstimate'
+import { estimateOutput, estimateSourceBytes, humanSize, humanSizeCompact, formatLetter, pickEstDetail } from '../../util/qualityEstimate'
 import { createLazyEstimate } from '../../util/lazyEstimate'
 
 /** 合成节点的估算源字节：转换前序列未渲染，按 宽×高×帧数 估一个量级 */
@@ -334,7 +335,10 @@ export default {
       formatMap: {},
       compIcon: (http ? '/icons/' : './icons/') + 'pag-comp.png',
       // 预估角标：异步算完后自增，触发模板重渲染读缓存
-      estimateTick: 0
+      estimateTick: 0,
+      // 预估角标点击轮换：记录每个节点的当前显示格式下标（键为 node.id，
+      // 未点过回退最坏格式）
+      estFmtIdx: {}
     }
   },
   computed: {
@@ -792,7 +796,9 @@ export default {
       return [node.id, bytes, (fmt || []).join(','),
         sl.enabled, sl.maxBytes, sl.maxMB,
         opts && opts.quality && opts.quality.value,
-        opts && opts.quality && opts.quality.checked].join('|')
+        opts && opts.quality && opts.quality.checked,
+        opts && opts.palette && opts.palette.mode,
+        opts && opts.palette && opts.palette.colors].join('|')
     },
     /** 未加入任务的合成：读全局设置里的默认 options（缓存到实例，避免每节点 JSON.parse） */
     globalEstimateOpts () {
@@ -828,16 +834,53 @@ export default {
       if (!node) return null
       return this._lazyEstimate.get(node.id, node, this.nodeEstimateStamp(node))
     },
-    /** 角标 hover：预估产物大小 + 规划质量 + 尺寸估算声明 */
+    /** 角标 hover：预估产物大小 + 分格式明细 + 规划值 + 尺寸估算声明（色深路线显示 C 档） */
     estimateTipOf (node) {
       const e = this.estimateOf(node)
       if (!e) return ''
       const lines = []
-      lines.push(this.$t('estimateHover', { size: e.text, q: e.quality }))
+      if (e.mode === 'colors') {
+        lines.push(this.$t('estimateColorsHover', { size: e.text, c: e.colors }))
+      } else {
+        lines.push(this.$t('estimateHover', { size: e.text, q: e.quality }))
+      }
+      if (e.details && e.details.length > 1) {
+        e.details.forEach((d) => {
+          const over = d.over ? ' ' + this.$t('estimateFormatOver') : ''
+          lines.push(d.format + ' ' + humanSize(d.bytes) + over)
+        })
+        lines.push(this.$t('estimateCycleHint'))
+      }
       if (e.over) lines.push(this.$t('estimateOver', { target: humanSize(e.target) }))
       lines.push(this.$t('estimateDetail', { source: humanSize(e.sourceBytes), target: humanSize(e.target) }))
       lines.push(this.$t('estimateDisclaimerEstimated'))
       return lines.join('\n')
+    },
+    /**
+     * 角标当前显示的格式：默认最坏格式，点击轮换后按 estFmtIdx 显示。
+     * 紧凑字号 + 单字母前缀，状态列窄、多格式全称放不下。
+     */
+    estDisplayOf (node) {
+      const e = this.estimateOf(node)
+      const detail = pickEstDetail(e && e.details, this.estFmtIdx[node && node.id])
+      if (!detail) return { letter: '', text: '', over: false }
+      return {
+        letter: formatLetter(detail.format),
+        text: humanSizeCompact(detail.bytes),
+        over: !!detail.over
+      }
+    },
+    /** 点击角标在勾选格式间轮换；仅一种格式时无动作 */
+    cycleEstFormat (node) {
+      const e = this.estimateOf(node)
+      if (!e || !e.details || e.details.length < 2) return
+      const n = e.details.length
+      let worst = 0
+      for (let i = 1; i < n; i++) {
+        if (e.details[i].bytes > e.details[worst].bytes) worst = i
+      }
+      const cur = Number.isInteger(this.estFmtIdx[node.id]) ? this.estFmtIdx[node.id] : worst
+      this.$set(this.estFmtIdx, node.id, (cur + 1) % n)
     },
     sizeText (n) {
       return (n.width || 0) + '×' + (n.height || 0)
@@ -1482,13 +1525,18 @@ export default {
   font-variant-numeric: tabular-nums;
   opacity: 0.85;
 }
-/* 状态列默认显示预估产物大小（≈xx MB），与真实产物大小同位置、同一套收缩省略；
+/* 状态列默认显示按格式轮换的预估产物大小（A ≈xxK），与真实产物大小同位置、同一套收缩省略；
    继承 .mod-ct__state-size 的 font-variant-numeric / 省略号，这里只改颜色与提示 */
 .mod-ct__state-size.mod-ct__est {
   flex: 0 1 auto;
   color: rgb(var(--is-var-3, 160, 130, 220));
   cursor: help;
   opacity: 0.9;
+  user-select: none;
+}
+/* 勾选了多个输出格式时角标可点击轮换格式；单格式仍是纯 hover 提示 */
+.mod-ct__state-size.mod-ct__est.can-cycle {
+  cursor: pointer;
 }
 .mod-ct__state-size.mod-ct__est.is-over {
   color: rgb(var(--is-warn, 255, 200, 87));

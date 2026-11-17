@@ -15,6 +15,9 @@
 | 更新逻辑测试 | `node scripts\updateCheck.l1.js`；fixture：`scripts\fixture-github.js` |
 | APNG 质量链路测试 | `node scripts\apng-quality-chain.l1.js`；验证 apngquant 量化产物接回 apngopt（否则 quality 设值无效） |
 | 序列导入分组测试 | `node scripts\import-sequence-a02.l1.js`；走真实 `readerFiles` 全链路验证 9 种文件名形态分组（含双重扩展名 `ah16_06.pcx.png`、不从 01 起始、多前缀拆分；自造+自清 fixture） |
+| 预估角标测试 | `node scripts\estimate-badge.l1.js`；验证角标按格式轮换的纯函数（formatLetter / humanSizeCompact / pickEstDetail）与 estimateOutput 分格式明细、逐格式 over 标记 |
+| 色深压缩测试 | `node scripts\palette-compress.l1.js`；验证 `src\util\paletteConfig.js`（档位吸附 / 旧配置回退 quality / 逐级降色数）、apngCompress 色数参数分发、applyStartPlan 色深规划、apng2gif→gifsicle GIF 色深链路（`--colors N` + 失败兜底） |
+| 体积闸测试 | `node scripts\sizeGate.l1.js`；验证 sizeGate 双路线重试（quality 逐级降 / colors 逐档降色数）、临时产物路径与原始 quality 恢复（沙箱 path 用 posix 形态，与 sizes 键一致） |
 | 图标再生 | 见 `scripts\build-app-icons.js`、`scripts\make-icons-from-png.py`、`scripts\make-installer-images.py`（勿手改位图当源） |
 
 ### 1.1 统一入口脚本（`scripts/dev/`）——**先查这里，不要现敲命令**

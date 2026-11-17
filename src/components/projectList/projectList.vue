@@ -159,14 +159,22 @@
         <!-- 右侧：完成态格式角标 + 输出设置（单选打开）+ 帧预览/延时（二者独立，勿合并） -->
         <!-- has-est：角标绝对定位到卡片右上角后脱离侧栏流，补一段顶部间距保持其余按钮原位 -->
         <div class="side" :class="{ 'has-est': !!estimateOf(project) }">
-          <!-- 右上角常驻：预估产物大小（≈xx KB/MB）；超目标用警告态，hover 看明细 -->
+          <!-- 右上角常驻：按格式轮换的预估产物大小（≈xxK/M）。
+               默认显示最坏格式（决定超限的那个），点击在勾选格式间轮换，hover 看全部分格式明细 -->
           <span
             v-if="estimateOf(project)"
             class="est-badge"
-            :class="{ 'is-estimated': estimateOf(project).estimated, 'is-over': estimateOf(project).over }"
+            :class="{
+              'is-estimated': estimateOf(project).estimated,
+              'is-over': estDisplayOf(index).over,
+              'can-cycle': estimateOf(project).details.length > 1
+            }"
             v-tip="estimateTipOf(project)"
-            :aria-label="$t('estimateHover', { size: estimateOf(project).text, q: estimateOf(project).quality })"
-          ><is-icon name="box" size="xs" />≈{{ estimateOf(project).text }}</span>
+            :aria-label="estimateOf(project).mode === 'colors'
+              ? $t('estimateColorsHover', { size: estimateOf(project).text, c: estimateOf(project).colors })
+              : $t('estimateHover', { size: estimateOf(project).text, q: estimateOf(project).quality })"
+            @click.stop="cycleEstFormat(index)"
+          >{{ estDisplayOf(index).letter }}&nbsp;≈{{ estDisplayOf(index).text }}</span>
           <!-- 每种输出格式一个角标（并排）：hover 看产物名与大小，点击复制该格式产物 -->
           <div v-if="outputBadges[index].length" class="side__badges">
             <button
@@ -274,7 +282,10 @@ import { naturalSort } from '../../util/sort'
 import notice from '../../ui-next/notice'
 import hostAdapter, { getSourceAdapter } from '../../util/host-env'
 import { fs } from '../../util/node-env'
-import { estimateOutput, estimateSourceBytes, humanSize } from '../../util/qualityEstimate'
+import {
+  estimateOutput, estimateSourceBytes, humanSize, humanSizeCompact,
+  formatLetter, pickEstDetail
+} from '../../util/qualityEstimate'
 import { createLazyEstimate } from '../../util/lazyEstimate'
 
 /**
@@ -299,12 +310,13 @@ function sourceOf (project) {
   return null
 }
 
-/** options 签名：源字节 / 目标 / 格式 / 质量任一变化都要重算预估 */
+/** options 签名：源字节 / 目标 / 格式 / 质量 / 压缩路线任一变化都要重算预估 */
 function estimateStamp (project) {
   const o = (project && project.options) || {}
   const s = o.sizeLimit || {}
   return [s.enabled, s.maxBytes, s.maxMB, s.unit,
-    (o.outputFormat || []).join(','), o.quality && o.quality.value, o.quality && o.quality.checked].join('|')
+    (o.outputFormat || []).join(','), o.quality && o.quality.value, o.quality && o.quality.checked,
+    o.palette && o.palette.mode, o.palette && o.palette.colors].join('|')
 }
 
 /* 封面播放的两个常量，放在组件外避免每次实例化都重建 */
@@ -340,7 +352,10 @@ export default {
       marquee: { active: false, moved: false, x: 0, y: 0, w: 0, h: 0, startX: 0, startY: 0 },
       suppressBlankClick: false,
       // 预估角标：异步算完后自增，触发模板重渲染读缓存
-      estimateTick: 0
+      estimateTick: 0,
+      // 预估角标点击轮换：记录每条任务的当前显示格式下标（键为列表下标，
+      // 与 outputBadges[index] 同一寻址口径；未点过回退最坏格式）
+      estFmtIdxMap: {}
     }
   },
 
@@ -589,16 +604,53 @@ export default {
       if (!opts || !opts.sizeLimit || !opts.sizeLimit.enabled) return null
       return this._lazyEstimate.get(project, project, estimateStamp(project))
     },
-    /** 角标 hover：预估产物大小 + 规划质量 + 源/目标量级 + 仅供参考声明 */
+    /** 角标 hover：预估产物大小 + 分格式明细 + 规划值 + 源/目标量级 + 仅供参考声明（色深路线显示 C 档） */
     estimateTipOf (project) {
       const e = this.estimateOf(project)
       if (!e) return ''
       const lines = []
-      lines.push(this.$t('estimateHover', { size: e.text, q: e.quality }))
+      if (e.mode === 'colors') {
+        lines.push(this.$t('estimateColorsHover', { size: e.text, c: e.colors }))
+      } else {
+        lines.push(this.$t('estimateHover', { size: e.text, q: e.quality }))
+      }
+      if (e.details && e.details.length > 1) {
+        e.details.forEach((d) => {
+          const over = d.over ? ' ' + this.$t('estimateFormatOver') : ''
+          lines.push(d.format + ' ' + humanSize(d.bytes) + over)
+        })
+        lines.push(this.$t('estimateCycleHint'))
+      }
       if (e.over) lines.push(this.$t('estimateOver', { target: humanSize(e.target) }))
       lines.push(this.$t('estimateDetail', { source: humanSize(e.sourceBytes), target: humanSize(e.target) }))
       lines.push(e.estimated ? this.$t('estimateDisclaimerEstimated') : this.$t('estimateDisclaimer'))
       return lines.join('\n')
+    },
+    /**
+     * 角标当前显示的格式：默认最坏格式（决定超限），点击轮换后按 estFmtIdxMap 显示。
+     * 紧凑字号 + 单字母前缀，宽度与旧版「≈254 KB」基本持平。
+     */
+    estDisplayOf (index) {
+      const e = this.estimateOf(this.projectList[index])
+      const detail = pickEstDetail(e && e.details, this.estFmtIdxMap[index])
+      if (!detail) return { letter: '', text: '', over: false }
+      return {
+        letter: formatLetter(detail.format),
+        text: humanSizeCompact(detail.bytes),
+        over: !!detail.over
+      }
+    },
+    /** 点击角标在勾选格式间轮换；仅一种格式时无动作（角标也就不可点） */
+    cycleEstFormat (index) {
+      const e = this.estimateOf(this.projectList[index])
+      if (!e || !e.details || e.details.length < 2) return
+      const n = e.details.length
+      let worst = 0
+      for (let i = 1; i < n; i++) {
+        if (e.details[i].bytes > e.details[worst].bytes) worst = i
+      }
+      const cur = Number.isInteger(this.estFmtIdxMap[index]) ? this.estFmtIdxMap[index] : worst
+      this.$set(this.estFmtIdxMap, index, (cur + 1) % n)
     },
     // ---------- 标题与路径 ----------
     // 主标题 = 合成名 / 输出名（禁止把 ae-comp 或 basePath(outputPath) 当名字）

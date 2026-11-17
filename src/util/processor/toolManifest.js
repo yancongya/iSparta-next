@@ -13,6 +13,7 @@ export const TOOL_MANIFEST = {
       "cwebp.exe": "e1041c5486fb4e57e31155c45d66117f8fc270e5a56a1049408a05f54bd52969|590336",
       "dwebp.exe": "34321a62b2fdb727a23aee6a41cbf4ebc89c39ba465b34f5ba98d069a796d558|410112",
       "gif2apng.exe": "2e2cc9416b975eeec15c9f6415aa3716ec8a91cc0a885f399f84693029c598cc|175104",
+      "gifsicle.exe": "ddc60e270c8827b9181ac38c53eb7a195a36ff7461de366de13ee97349b4e460|362864",
       "webpmux.exe": "eb41c54a9ce3a162b4d55a15f51d54cbf4dfaa0012e98a600a6d3b5a320c0ec3|174592"
     },
     "win64": {
@@ -24,6 +25,7 @@ export const TOOL_MANIFEST = {
       "cwebp.exe": "6fcb809892083ce6558878082c0b5a927442654dac963b0d02268f6e99986787|741888",
       "dwebp.exe": "ee66951df0f868f0c41f49fcc2d0fc53072912b7357836317ca177cbae5eb343|505344",
       "gif2apng.exe": "2e2cc9416b975eeec15c9f6415aa3716ec8a91cc0a885f399f84693029c598cc|175104",
+      "gifsicle.exe": "061d368541f422f8169291f36145630590a36236bdd28d3eb184e34b0d0f423a|335808",
       "webpmux.exe": "8006d5cfc3a9634e9a18888b9f0aefd5e6212af9a76daa39955593d1f6b2d32c|240128"
     },
     "mac": {
@@ -35,6 +37,7 @@ export const TOOL_MANIFEST = {
       "cwebp": "75e8087f7abd89633903600421b493305ec43580fec73de92280555626a09609|3146160",
       "dwebp": "826498029b4f53bfcdaf8f06a8fffb80b5680a70f52634ad289d1dc396848b56|826824",
       "gif2apng": "2835250b24d61b612a96b8663b18b1691ec05eccca7933d5742bd213376f1ed0|336020",
+      "gifsicle": "a570ece9924748e189f2bd403b6b9a47400a537d0b4119abcb2e025035e66de1|220960",
       "webpmux": "0684503ef3ab4f40d364ac926bb2e8e0146488c1db5f0cecdb5fde03f917f456|332760"
     },
     "linux": {
@@ -46,6 +49,7 @@ export const TOOL_MANIFEST = {
       "cwebp": "3f7c790f922b9417031180e33ed3ccfab5f2c543829d7915e2953f8419a81422|4780800",
       "dwebp": "e0c42e22c482683c58e90643dfa6aa31805aad981a74d27540cff2322ccfecd0|1959192",
       "gif2apng": "a8574d4b642a44ad027a7debd21192b685e5c896caa7783580c4d276cfd94855|124636",
+      "gifsicle": "d6a780ff73454662ab28d960349784c4c81adff112113e88bf9b288934abf575|247492",
       "webpmux": "af2cf3bc9c3d11af9cdd1a0d2ff69cc57b5fe1bea83de8651c8b9ad74ba93355|1336440"
     }
   },
@@ -59,6 +63,7 @@ export const TOOL_MANIFEST = {
       "cwebp.exe": "49e9cb98db30bfa27936933e6fd94d407e0386802cb192800d9fd824f6476873|563712",
       "dwebp.exe": "3e61f0cf38ee493ed72817b298251363991eacc1ff13938eac2a9f6a2080f38d|248320",
       "gif2apng.exe": "2e2cc9416b975eeec15c9f6415aa3716ec8a91cc0a885f399f84693029c598cc|175104",
+      "gifsicle.exe": "ddc60e270c8827b9181ac38c53eb7a195a36ff7461de366de13ee97349b4e460|362864",
       "webpmux.exe": "b4e896e86a5c2aafae2d28b3109e33239db5b013e191d56d6c38186842938f86|137216"
     },
     "win64": {
@@ -70,6 +75,7 @@ export const TOOL_MANIFEST = {
       "cwebp.exe": "909b56a892ee3e00643f5449f98fb126e1de0756ae7b5b2f9edbb69cf53bda86|625664",
       "dwebp.exe": "69e9cca013999656caf878528c2f9089b82f3055f0c8c91d1f272d609dd21d18|276992",
       "gif2apng.exe": "2e2cc9416b975eeec15c9f6415aa3716ec8a91cc0a885f399f84693029c598cc|175104",
+      "gifsicle.exe": "061d368541f422f8169291f36145630590a36236bdd28d3eb184e34b0d0f423a|335808",
       "webpmux.exe": "de8851730d46f1d75974d88efbab39a720646a98d2be62bdfa3f3e3a0c763dda|152064"
     },
     "mac": {
@@ -81,6 +87,7 @@ export const TOOL_MANIFEST = {
       "cwebp": "a06a3ee436e375c89dbc1b0b2e8bd7729a55139ae072ed3f7bd2e07de0ebb379|1342200",
       "dwebp": "7dea5c413122b099757c24f7bd5face0c45936ee8c014a9325858b372cd19497|421508",
       "gif2apng": "2835250b24d61b612a96b8663b18b1691ec05eccca7933d5742bd213376f1ed0|336020",
+      "gifsicle": "a570ece9924748e189f2bd403b6b9a47400a537d0b4119abcb2e025035e66de1|220960",
       "webpmux": "5389d2d24ef0801d585a28bade4c54ca755a786f41470219eb2b927e25b1b05f|242080"
     },
     "linux": {
@@ -92,6 +99,7 @@ export const TOOL_MANIFEST = {
       "cwebp": "d4881f4a928349438ae2ac50a91599c829a061c8b2bbb139c2b0b4bac8e6bdad|1601808",
       "dwebp": "5acc570fc64cda54ed5dbc73403b1a855b4711b6393636c0547ab650fad7e512|363112",
       "gif2apng": "a8574d4b642a44ad027a7debd21192b685e5c896caa7783580c4d276cfd94855|124636",
+      "gifsicle": "d6a780ff73454662ab28d960349784c4c81adff112113e88bf9b288934abf575|247492",
       "webpmux": "5e35c533c904f611f509f0c0c4a0d3334059b5e54508763b8809f176d001f251|305704"
     }
   },
@@ -105,6 +113,7 @@ export const TOOL_MANIFEST = {
       "cwebp.exe": "e1041c5486fb4e57e31155c45d66117f8fc270e5a56a1049408a05f54bd52969|590336",
       "dwebp.exe": "34321a62b2fdb727a23aee6a41cbf4ebc89c39ba465b34f5ba98d069a796d558|410112",
       "gif2apng.exe": "2e2cc9416b975eeec15c9f6415aa3716ec8a91cc0a885f399f84693029c598cc|175104",
+      "gifsicle.exe": "ddc60e270c8827b9181ac38c53eb7a195a36ff7461de366de13ee97349b4e460|362864",
       "webpmux.exe": "eb41c54a9ce3a162b4d55a15f51d54cbf4dfaa0012e98a600a6d3b5a320c0ec3|174592"
     },
     "win64": {
@@ -116,6 +125,7 @@ export const TOOL_MANIFEST = {
       "cwebp.exe": "6fcb809892083ce6558878082c0b5a927442654dac963b0d02268f6e99986787|741888",
       "dwebp.exe": "ee66951df0f868f0c41f49fcc2d0fc53072912b7357836317ca177cbae5eb343|505344",
       "gif2apng.exe": "2e2cc9416b975eeec15c9f6415aa3716ec8a91cc0a885f399f84693029c598cc|175104",
+      "gifsicle.exe": "061d368541f422f8169291f36145630590a36236bdd28d3eb184e34b0d0f423a|335808",
       "webpmux.exe": "8006d5cfc3a9634e9a18888b9f0aefd5e6212af9a76daa39955593d1f6b2d32c|240128"
     },
     "mac": {
@@ -127,6 +137,7 @@ export const TOOL_MANIFEST = {
       "cwebp": "75e8087f7abd89633903600421b493305ec43580fec73de92280555626a09609|3146160",
       "dwebp": "826498029b4f53bfcdaf8f06a8fffb80b5680a70f52634ad289d1dc396848b56|826824",
       "gif2apng": "2835250b24d61b612a96b8663b18b1691ec05eccca7933d5742bd213376f1ed0|336020",
+      "gifsicle": "a570ece9924748e189f2bd403b6b9a47400a537d0b4119abcb2e025035e66de1|220960",
       "webpmux": "0684503ef3ab4f40d364ac926bb2e8e0146488c1db5f0cecdb5fde03f917f456|332760"
     },
     "linux": {
@@ -138,9 +149,10 @@ export const TOOL_MANIFEST = {
       "cwebp": "3f7c790f922b9417031180e33ed3ccfab5f2c543829d7915e2953f8419a81422|4780800",
       "dwebp": "e0c42e22c482683c58e90643dfa6aa31805aad981a74d27540cff2322ccfecd0|1959192",
       "gif2apng": "a8574d4b642a44ad027a7debd21192b685e5c896caa7783580c4d276cfd94855|124636",
+      "gifsicle": "d6a780ff73454662ab28d960349784c4c81adff112113e88bf9b288934abf575|247492",
       "webpmux": "af2cf3bc9c3d11af9cdd1a0d2ff69cc57b5fe1bea83de8651c8b9ad74ba93355|1336440"
     }
   }
 }
 
-export const TOOL_NAMES = ["apng2gif","apngasm","apngdis","apngopt","apngquant","cwebp","dwebp","gif2apng","webpmux"]
+export const TOOL_NAMES = ["apng2gif","apngasm","apngdis","apngopt","apngquant","cwebp","dwebp","gif2apng","gifsicle","webpmux"]

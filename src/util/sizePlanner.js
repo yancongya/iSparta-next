@@ -64,3 +64,59 @@ export function planStartingQuality (input) {
   const plannedQuality = clamp(Math.min(minQ, baseline), floor, 100)
   return { plannedQuality, suggestions, feasible: allFeasible, reason: 'planned' }
 }
+
+// ---------- 色深路线（palette.mode === 'colors'）----------
+// 与 paletteConfig.PALETTE_COLOR_PRESETS 同源的档位表。这里本地再声明一份是为了
+// 保持 sizePlanner 零依赖可被 vm 沙箱逐源拼接测试（paletteConfig 由测试脚本一并注入）。
+var COLOR_PRESETS = [2, 4, 8, 16, 32, 64, 128, 256]
+
+/**
+ * 估算「色数 c 下，格式 format 的输出体积」。
+ * 经验模型：量化后走索引位宽，bytes ≈ sourceBytes × (log2(c)/8)^kc。
+ * kc：GIF 天生索引色受益直接取 0.5，APNG/PNG 走 PLTE+zlib 取 0.7。
+ * 仅用于量级预估（首压规划 / 角标），sizeGate 事后按真实大小兜底。
+ */
+export function estimateColorsBytes (sourceBytes, colors, format) {
+  const src = finite(sourceBytes, 0)
+  if (src <= 0) { return 0 }
+  const c = clamp(Math.round(Number(colors) || 256), 2, 256)
+  const bpp = Math.max(1, Math.log2(c)) / 8
+  const kc = format === 'GIF' ? 0.5 : 0.7
+  return src * Math.pow(bpp, kc)
+}
+
+/**
+ * 由「目标体积」反推保守的起始色数档位（色深路线，对称 planStartingQuality）。
+ * 返回 { plannedColors, feasible }：
+ * - plannedColors：建议起始色数（档位值，只降不升由调用方保证）
+ * - feasible：目标是否可达（最低档仍超限时为 false）
+ */
+export function planStartingColors (input) {
+  const o = input || {}
+  const maxBytes = finite(o.maxBytes, 0)
+  const sourceBytes = finite(o.sourceBytes, 0)
+  const format = o.format || 'APNG'
+  const baseline = clamp(Math.round(finite(o.baselineColors, 256)), 2, 256)
+  const safety = clamp(finite(o.safety, 0.9), 0.5, 1)
+  // 规划下限：过低色数观感崩坏，且 sizeGate 还有逐档重试空间
+  const floor = clamp(Math.round(finite(o.floorColors, 16)), 2, baseline)
+
+  if (!(maxBytes > 0) || !(sourceBytes > 0)) {
+    return { plannedColors: baseline, feasible: true, reason: 'no-input' }
+  }
+
+  // 从不高于基线的最高档往下找第一个满足目标的档位；预算上限 × safety 保守
+  let planned = floor
+  let feasible = false
+  for (let i = COLOR_PRESETS.length - 1; i >= 0; i--) {
+    const c = COLOR_PRESETS[i]
+    if (c > baseline) { continue }
+    if (estimateColorsBytes(sourceBytes, c, format) <= maxBytes * safety) {
+      planned = Math.max(c, floor)
+      feasible = true
+      break
+    }
+  }
+  // 最低档仍超限：仍返回 floor，交由 sizeGate 事后如实判超限
+  return { plannedColors: feasible ? planned : floor, feasible: feasible, reason: 'planned' }
+}
