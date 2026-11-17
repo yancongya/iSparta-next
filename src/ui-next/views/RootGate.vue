@@ -54,7 +54,12 @@ export default {
   created () {
     // 挂载前判定：main.js 已完成 ThemeManager.init() / syncLocaleFromStorage()，
     // 此刻 storage 路径已绑定，读得到真实标记。
-    if (shouldAutoOpen()) { openOnboarding() }
+    // 落地页嵌入的开发 mockup 直接展示工作台；真实 CEP 与普通预览仍走首启引导。
+    const landingEmbed = process.env.NODE_ENV === 'development' &&
+      typeof window !== 'undefined' &&
+      /[?&]mock=1(?:&|$)/.test(window.location.search) &&
+      /[?&]embed=landing(?:&|$)/.test(window.location.search)
+    if (!landingEmbed && shouldAutoOpen()) { openOnboarding() }
     if (this.isStandalone) {
       try {
         const api = typeof window !== 'undefined' && window.ispartaAPI

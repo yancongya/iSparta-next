@@ -913,6 +913,61 @@
     });
   }
 
+  /* CEP 两组路径各用自己的上下文与模板；修改一侧不触碰另一侧。 */
+  const pathDemoContexts = {
+    seq: { srcPath: "D:/Projects/StickerPack", src: "StickerPack", srcName: "Logo_Loop", name: "Logo_Loop", type: "Comp", parent: "D:/Projects", date: "20261117" },
+    output: { srcPath: "D:/Projects/StickerPack/Logo_Loop", src: "Logo_Loop", srcName: "Logo_Loop", name: "Logo_Loop", type: "Comp", parent: "D:/Projects/StickerPack", date: "20261117" },
+  };
+  document.querySelectorAll(".path-demo").forEach(function (demo) {
+    const ctx = pathDemoContexts[demo.dataset.pathKind];
+    const input = demo.querySelector(".path-input");
+    const preview = demo.querySelector(".path-preview");
+    const vars = demo.querySelector(".path-vars");
+    if (!ctx || !input || !preview || !vars) return;
+    function paint() {
+      if (nameInput) ctx.name = nameInput.value;
+      preview.textContent = input.value.replace(/\{([a-zA-Z]+)\}/g, function (match, key) {
+        return Object.prototype.hasOwnProperty.call(ctx, key) ? ctx[key] : match;
+      }) || "—";
+      const nameValue = vars.querySelector('[data-key="name"] .var-chip__val');
+      if (nameValue) nameValue.textContent = ctx.name;
+      demo.querySelectorAll("[data-template]").forEach(function (button) {
+        button.classList.toggle("is-on", button.dataset.template === input.value);
+      });
+    }
+    ["srcPath", "srcName", "parent", "name", "date"].forEach(function (key) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "var-chip";
+      button.dataset.key = key;
+      const keySpan = document.createElement("span");
+      keySpan.className = "var-chip__key";
+      keySpan.textContent = "{" + key + "}";
+      const valSpan = document.createElement("span");
+      valSpan.className = "var-chip__val";
+      valSpan.textContent = ctx[key];
+      button.appendChild(keySpan);
+      button.appendChild(valSpan);
+      button.addEventListener("click", function () {
+        const start = input.selectionStart == null ? input.value.length : input.selectionStart;
+        const end = input.selectionEnd == null ? input.value.length : input.selectionEnd;
+        const variable = "{" + key + "}";
+        input.value = input.value.slice(0, start) + variable + input.value.slice(end);
+        input.focus();
+        input.selectionStart = input.selectionEnd = start + variable.length;
+        paint();
+      });
+      vars.appendChild(button);
+    });
+    demo.querySelectorAll("[data-template]").forEach(function (button) {
+      button.addEventListener("click", function () { input.value = button.dataset.template; paint(); });
+    });
+    input.addEventListener("input", paint);
+    if (nameInput) nameInput.addEventListener("input", paint);
+    if (tokenRow) tokenRow.addEventListener("click", paint);
+    paint();
+  });
+
   /* ---------- resolve latest release asset URLs + changelog board ---------- */
   function fmtDate(iso) {
     if (!iso) return "";
@@ -1397,397 +1452,26 @@
   }
 
 
-  /* ---------- AE 面板区块：CEP 窄屏面板交互演示 ----------
-     结构对齐真实 CEP：ib-rail 顶栏 / mod-list 列表 / mod-bar 底栏 / ib-set-overlay 设置层 */
+  /* 本地用真正的 CEP Web mockup；公开页面保留同源截图兜底。 */
   function setupAeStage() {
-    const stage = document.getElementById("ae-stage");
-    const panel = document.getElementById("ae-panel");
-    if (!stage || !panel) return;
-
+    const preview = document.getElementById("ae-live-preview");
+    if (!preview) return;
+    const frame = preview.querySelector(".ae-live-preview__frame");
     const note = document.getElementById("ae-note");
-    const list = document.getElementById("ae-items");
-    if (!list) return;
-    let items = Array.prototype.slice.call(list.querySelectorAll(".cep-item"));
-    const allBox = document.getElementById("ae-all");
-    const allBox2 = document.getElementById("ae-all2");
-    const search = document.getElementById("ae-search");
-    const chips = panel.querySelectorAll(".cep-chip");
-    const count = document.getElementById("ae-count");
-    const bar = document.getElementById("ae-bar");
-    const rowbar = document.getElementById("ae-rowbar");
-    const views = document.getElementById("ae-views");
-    const outBtn = document.getElementById("ae-out");
-    const overlay = document.getElementById("ae-overlay");
-    const overlayClose = document.getElementById("ae-overlay-close");
-    const goBtn = document.getElementById("ae-go");
-    const themeBtn = document.getElementById("ae-theme");
-    const logBtn = document.getElementById("ae-log");
-
-    function setNote(t) {
-      if (note) note.textContent = t;
-    }
-
-    /* ---- 选中态：勾选 ⇄ 条目高亮 ⇄ 计数 ⇄ 全选框三态 ---- */
-    function syncSelection() {
-      let sel = 0;
-      items.forEach(function (it) {
-        const cb = it.querySelector('.cep-cb > input');
-        const on = !!(cb && cb.checked);
-        it.classList.toggle("is-sel", on);
-        if (on) sel++;
-      });
-      const total = items.length;
-      if (count) count.textContent = sel + " / " + total;
-      [allBox, allBox2].forEach(function (b) {
-        if (!b) return;
-        b.checked = total > 0 && sel === total;
-        b.indeterminate = sel > 0 && sel < total;
-      });
-      return sel;
-    }
-
-    /* ---- 总进度 = 已完成 + 进行中占比（虚拟）----
-       真实 bar-total__fill 有 is-shimmer 态：runningCount > 0 时走accent→hot 渐变 + 扫光 */
-    function syncProgress() {
-      let done = 0;
-      let run = 0;
-      items.forEach(function (it) {
-        const d = it.querySelector(".cep-dot.is-done");
-        const r = it.querySelector(".cep-dot.is-run");
-        if (d) done++;
-        if (r) run++;
-      });
-      const pct = Math.round(((done + run * 0.38) / items.length) * 100);
-      if (bar) {
-        bar.style.width = Math.min(100, pct) + "%";
-        bar.classList.toggle("is-run", run > 0);
-      }
-      return { done: done, run: run, pct: pct };
-    }
-
-    items.forEach(function (it) {
-      const cb = it.querySelector('.cep-cb > input');
-      const name = it.dataset.name || "";
-      if (cb) {
-        cb.addEventListener("change", function () {
-          const sel = syncSelection();
-          setNote(
-            cb.checked
-              ? "已选 " + name + " · " + (it.dataset.fmt || "APNG") + " → " + (it.dataset.path || "ae-comp")
-              : "已取消 " + name + " · 当前选中 " + sel + " 个合成"
-          );
-        });
-      }
-      // 点行任意处切换勾选（真实面板是点行选中 + 点勾选框多选，这里合成一处）
-      it.addEventListener("click", function (e) {
-        if (e.target.closest(".cep-mini") || e.target.closest(".cep-cb")) return;
-        if (cb) {
-          cb.checked = !cb.checked;
-          cb.dispatchEvent(new Event("change"));
-        }
-      });
-      // 行内设置按钮 → 打开输出配置覆盖层
-      it.querySelectorAll(".cep-mini").forEach(function (b) {
-        b.addEventListener("click", function (e) {
-          e.stopPropagation();
-          openOverlay();
-          const cap = overlay && overlay.querySelector(".cep-input");
-          if (cap) cap.textContent = name;
-        });
-      });
+    const local = ["localhost", "127.0.0.1"].includes(window.location.hostname);
+    if (!local || !frame) return;
+    const url = "http://localhost:8082/?mock=1&embed=landing";
+    fetch(url, { mode: "no-cors", cache: "no-store" }).then(function () {
+      frame.addEventListener("load", function () {
+        preview.classList.add("is-live");
+        if (note) note.textContent = isEn() ? "Interactive CEP preview · sample data" : "CEP 实时交互预览 · 示例数据";
+      }, { once: true });
+      frame.hidden = false;
+      frame.src = url;
+    }).catch(function () {
+      // CEP dev server 未运行时，继续展示仓库维护的实拍截图。
     });
-
-    /* ---- 全选（三态） ---- */
-    function toggleAll() {
-      const anyOff = items.some(function (it) {
-        const cb = it.querySelector('.cep-cb > input');
-        return cb && !cb.checked;
-      });
-      items.forEach(function (it) {
-        const cb = it.querySelector('.cep-cb > input');
-        if (cb) cb.checked = anyOff;
-      });
-      const sel = syncSelection();
-      // 取消全选不再提示（"已清空选择 · 当前 0 个合成" 这类文案无信息量）
-      if (anyOff) setNote("已全选 " + sel + " 个合成");
-    }
-    if (allBox) allBox.addEventListener("change", toggleAll);
-    if (allBox2) allBox2.addEventListener("change", toggleAll);
-
-    /* ---- 搜索过滤（对齐 mod-list__filter 的 keyword） ---- */
-    if (search) {
-      search.addEventListener("input", function () {
-        const kw = search.value.trim().toLowerCase();
-        let shown = 0;
-        items.forEach(function (it) {
-          const hit = !kw || (it.dataset.name || "").toLowerCase().indexOf(kw) >= 0;
-          it.style.display = hit ? "" : "none";
-          if (hit) shown++;
-        });
-        setNote(kw ? "搜索「" + search.value.trim() + "」· 命中 " + shown + " 个合成" : "输入项目 · 共 " + items.length + " 个合成");
-      });
-    }
-
-    /* ---- 排序 chips：fps / 帧数 ---- */
-    let sortKey = "fps";
-    let sortAsc = true;
-    function applySort() {
-      items.sort(function (a, b) {
-        const d = (Number(a.dataset[sortKey]) || 0) - (Number(b.dataset[sortKey]) || 0);
-        return sortAsc ? d : -d;
-      });
-      items.forEach(function (it) {
-        list.appendChild(it);
-      });
-      setNote(
-        "按 " + (sortKey === "fps" ? "帧率" : "帧数") + (sortAsc ? "升序" : "降序") + " 排序 · 共 " + items.length + " 个合成"
-      );
-    }
-    chips.forEach(function (chip) {
-      chip.addEventListener("click", function () {
-        const key = chip.dataset.sort || "fps";
-        if (key === sortKey) {
-          sortAsc = !sortAsc;
-        } else {
-          sortKey = key;
-          sortAsc = true;
-        }
-        chips.forEach(function (c) {
-          c.classList.toggle("is-on", c === chip);
-          const i = c.querySelector("i");
-          if (i) i.textContent = c === chip ? (sortAsc ? "↑" : "↓") : "";
-        });
-        applySort();
-      });
-    });
-
-    /* ---- 输出配置覆盖层（CEP 点顶栏最右按钮全屏铺开） ---- */
-    function openOverlay() {
-      if (!overlay) return;
-      overlay.hidden = false;
-      setNote("输出配置 · 输出名 / 压缩质量 / 输出格式 / 输出路径");
-    }
-    function closeOverlay() {
-      if (!overlay) return;
-      overlay.hidden = true;
-    }
-    if (outBtn) outBtn.addEventListener("click", openOverlay);
-    if (overlayClose) overlayClose.addEventListener("click", closeOverlay);
-
-    /* ---- 开始：跑一段进度动画，跑完标记完成 ---- */
-    function runConvert() {
-      const running = items.filter(function (it) {
-        return it.querySelector(".cep-dot.is-run");
-      });
-      if (!running.length) {
-        setNote("没有正在转换的合成 · 勾选合成后点开始");
-        return;
-      }
-      const row = running[0];
-      // 真实是「轨道 .item-bar + 内填 .item-bar__fill」两层，宽度只作用在内填上
-      const rowTrack = row.querySelector(".cep-item__bar");
-      const rowFill = row.querySelector(".cep-item__fill");
-      let p = Number((rowFill && rowFill.style.width.replace("%", "")) || 0);
-      const dot = row.querySelector(".cep-dot");
-      const step = reduceMotion
-        ? function () {}
-        : function () {
-            p = Math.min(100, p + 8);
-            if (rowFill) rowFill.style.width = p + "%";
-            const total = Math.round(((pctBase() + p / 100) / items.length) * 100);
-            if (bar) {
-              bar.style.width = Math.min(100, total) + "%";
-              bar.classList.add("is-run");
-            }
-          };
-      function pctBase() {
-        let d = 0;
-        items.forEach(function (it) {
-          if (it !== row && it.querySelector(".cep-dot.is-done")) d++;
-        });
-        return d;
-      }
-      const timer = setInterval(function () {
-        step();
-        if (p >= 100) {
-          clearInterval(timer);
-          row.classList.remove("is-run");
-          if (rowTrack) {
-            rowTrack.classList.remove("is-run");
-            // 真实 .item-bar.is-done .item-bar__fill 用 width:100% !important
-            rowTrack.classList.add("is-done");
-          }
-          if (rowFill) rowFill.style.width = "100%";
-          if (dot) {
-            dot.className = "cep-dot is-done";
-            dot.innerHTML =
-              '<svg viewBox="0 0 24 24"><path d="M22 11.1V12a10 10 0 1 1-5.9-9.1"/><path d="m22 4-10 10-3-3"/></svg>';
-          }
-          syncProgress();
-          setNote("导出完成 · " + (row.dataset.name || "") + " → " + (row.dataset.fmt || "APNG"));
-        }
-      }, 180);
-    }
-    const startBtn = document.getElementById("ae-start");
-    if (startBtn) startBtn.addEventListener("click", runConvert);
-    if (goBtn) {
-      goBtn.addEventListener("click", function () {
-        closeOverlay();
-        runConvert();
-      });
-    }
-
-    /* ---- 视图切换：任务列表⇄ 合成树 ----
-       真实是两个独立组件（projectList / compTree）整块替换，不是同一批 DOM 改样式；
-       这里用 .cep 的 is-tree class 切换显隐，两套 DOM 各自保留自己的交互。 */
-    let isTree = false;
-
-    /* 合成树：勾选 ⇄ 行高亮 ⇄ 全选三态 ⇄ 搜索过滤 ⇄ 列表头排序 */
-    const treeList = document.getElementById("ae-tree-list");
-    const treeSearch = document.getElementById("ae-tree-search");
-    const allBox3 = document.getElementById("ae-all3");
-    let treeRows = treeList
-      ? Array.prototype.slice.call(treeList.querySelectorAll(".cep-ct__row"))
-      : [];
-
-    function syncTree() {
-      let sel = 0;
-      let vis = 0;
-      treeRows.forEach(function (r) {
-        const cb = r.querySelector('.cep-cb > input');
-        const on = !!(cb && cb.checked);
-        r.classList.toggle("is-on", on);
-        r.setAttribute("aria-selected", on ? "true" : "false");
-        if (on) sel++;
-        if (r.style.display !== "none") vis++;
-      });
-      if (allBox3) {
-        allBox3.checked = vis > 0 && sel === vis;
-        allBox3.indeterminate = sel > 0 && sel < vis;
-      }
-      return sel;
-    }
-
-    if (treeList) {
-      treeRows.forEach(function (r) {
-        const cb = r.querySelector('.cep-cb > input');
-        const name = r.dataset.name || "";
-        if (cb) {
-          cb.addEventListener("change", function () {
-            const n = syncTree();
-            setNote(
-              cb.checked ? "已选 " + name + " · " + n + " 个合成"
-                         : "已取消 " + name + " · 当前选中 " + n + " 个合成"
-            );
-          });
-        }
-        r.addEventListener("click", function () {
-          if (!cb) return;
-          cb.checked = !cb.checked;
-          syncTree();
-        });
-      });
-
-      if (allBox3) {
-        allBox3.addEventListener("change", function () {
-          treeRows.forEach(function (r) {
-            const cb = r.querySelector('.cep-cb > input');
-            if (cb && r.style.display !== "none") cb.checked = allBox3.checked;
-          });
-          const n = syncTree();
-          // 取消全选不提示（同上：无信息量）
-          if (allBox3.checked) setNote("已全选 " + n + " 个合成");
-        });
-      }
-
-      if (treeSearch) {
-        treeSearch.addEventListener("input", function () {
-          const kw = treeSearch.value.trim().toLowerCase();
-          treeRows.forEach(function (r) {
-            const hit = !kw || (r.dataset.name || "").toLowerCase().indexOf(kw) >= 0;
-            r.style.display = hit ? "" : "none";
-          });
-          syncTree();
-        });
-      }
-
-      /* 列表头排序：尺寸 / 帧率 / 帧数（真实 compTree 的 sortBy + sortMark） */
-      panel &&
-        panel.querySelectorAll(".cep-ct__c--num[data-sort]").forEach(function (btn) {
-          btn.addEventListener("click", function () {
-            const key = btn.dataset.sort;
-            const dir = btn.classList.contains("is-desc") ? -1 : 1;
-            panel
-              .querySelectorAll(".cep-ct__c--num[data-sort]")
-              .forEach(function (b) {
-                b.classList.remove("is-on", "is-desc");
-                const i = b.querySelector("i");
-                if (i) i.remove();
-              });
-            btn.classList.add("is-on");
-            btn.classList.toggle("is-desc", dir < 0);
-            const mark = document.createElement("i");
-            mark.textContent = dir > 0 ? " ↑" : " ↓";
-            btn.appendChild(mark);
-
-            const num = function (r) {
-              const v = r.dataset[key] || "";
-              return key === "size" ? parseFloat(v) || 0 : Number(v) || 0;
-            };
-            treeRows
-              .slice()
-              .sort(function (a, b) {
-                const x = num(a), y = num(b);
-                if (key === "size") return x * dir === y * dir ? 0 : (x < y ? -1 : 1) * dir;
-                return (x - y) * dir;
-              })
-              .forEach(function (r) {
-                treeList.appendChild(r);
-              });
-            setNote("按" + btn.textContent.trim() + (dir > 0 ? "升序" : "降序") + "排列");
-          });
-        });
-      syncTree();
-    }
-
-    if (views) {
-      views.addEventListener("click", function () {
-        isTree = !isTree;
-        views.classList.toggle("is-on", isTree);
-        if (panel) panel.classList.toggle("is-tree", isTree);
-        setNote(
-          isTree
-            ? "合成树视图 · 表格列出全部合成，可按尺寸 / 帧率 / 帧数排序"
-            : "任务列表视图 · 卡片列出合成，含帧率 / 循环 / 格式摘要"
-        );
-      });
-    }
-
-    /* ---- 主题：面板主题键与真实一致，点一下切换整站明暗（便于对比两套 UI） ---- */
-    if (themeBtn) {
-      themeBtn.addEventListener("click", function () {
-        var root = document.documentElement;
-        var toDark = root.getAttribute("data-theme") !== "dark";
-        try {
-          root.setAttribute("data-theme", toDark ? "dark" : "light");
-          window.localStorage.setItem("uiTheme", toDark ? "dark" : "light");
-        } catch (e) {}
-        setNote(toDark ? "面板切到暗色主题 · 与应用共用一套令牌" : "面板切到亮色主题 · 与应用共用一套令牌");
-      });
-    }
-    if (logBtn) {
-      logBtn.addEventListener("click", function () {
-        logBtn.classList.remove("has-dot");
-        setNote("运行日志 · 扫描 / 编码 / 降质每一步都留痕");
-      });
-    }
-
-    /* ---- 初始态 ---- */
-    syncSelection();
-    const st = syncProgress();
-    setNote("读到 " + items.length + " 个合成 · 已完成 " + st.done + " · 转换中 " + st.run);
   }
-
   resolveLatestDownloads();
 
   setupAeStage();

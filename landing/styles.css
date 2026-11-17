@@ -2138,21 +2138,17 @@ html[data-theme="dark"] .dl-badge {
   }
 }
 
-.log-board__bar,
-
-@keyframes logIn {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: none; }
-}
-
-  border-color: color-mix(in srgb, #f87171 28%, transparent);
-  background: color-mix(in srgb, #f87171 8%, var(--card));
-}
-
 .name-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 24px;
+  align-items: stretch;
+}
+
+.path-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(20px, 2.5vw, 32px);
   align-items: stretch;
 }
 
@@ -2164,6 +2160,19 @@ html[data-theme="dark"] .dl-badge {
   display: flex;
   flex-direction: column;
   min-height: 340px;
+}
+
+.name-panel--naming { min-height: 230px; }
+.path-demo { min-width: 0; gap: 0; }
+.path-demo__head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 8px; }
+.path-demo__head h3 { margin: 0; font-size: 1.22rem; line-height: 1.3; }
+.path-demo__index { color: var(--accent); font-size: 11px; font-weight: 700; white-space: nowrap; }
+.path-demo__desc { color: var(--muted); font-size: 13px; line-height: 1.6; margin: 0 0 22px; min-height: 3.2em; }
+.path-demo .path-presets { min-height: 36px; }
+.path-demo .path-preview { flex: 0 0 auto; min-height: 52px; }
+@media (max-width: 700px) {
+  .path-grid { grid-template-columns: 1fr; }
+  .path-demo__desc { min-height: 0; }
 }
 
 .name-panel .lab-label {
@@ -2987,7 +2996,6 @@ html[data-theme="dark"] .cmp-tab.is-on { color: #0c0f0e; }
 }
 
 @media (max-width: 900px) {
-  .name-grid,
   .shots-grid {
     grid-template-columns: 1fr 1fr;
   }
@@ -4664,6 +4672,25 @@ html[data-theme="dark"] .cep {
 .ae-panel {
   margin: 0;
 }
+.ae-live-preview {
+  position: relative;
+  flex: 1;
+  min-height: 520px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--card);
+}
+.ae-live-preview__fallback,
+.ae-live-preview__frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.ae-live-preview__fallback { object-fit: cover; object-position: center top; transition: opacity .25s ease; }
+.ae-live-preview__frame { border: 0; background: var(--card); }
+.ae-live-preview.is-live .ae-live-preview__fallback { opacity: 0; pointer-events: none; }
 .ae-panel-cap {
   display: flex;
   align-items: center;
