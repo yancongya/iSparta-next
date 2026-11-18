@@ -46,7 +46,8 @@ function formatNotes (body) {
     const t = line.trim()
     if (/^#{1,6}\s/.test(t)) {
       skip = /工程|CI|Chore|chore|Other|其他|Commits|Full Changelog|Installers|安装包/i.test(t)
-      if (/功能|修复|Features|Fixes|Docs|文档/i.test(t) && !skip) { out.push(line) }
+      // 词表对齐 release-notes 实际标题（新增/修复/体验优化/合规说明），兼容旧写法
+      if (/新增|功能|修复|体验优化|优化|合规|文档|Features|Fixes|Improvement|Compliance|Docs/i.test(t) && !skip) { out.push(line) }
       continue
     }
     if (skip) { continue }

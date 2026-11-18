@@ -1503,10 +1503,15 @@
     lines.forEach(function (line) {
       var t = line.trim();
       if (!t) return;
+      // GitHub Release 正文的 <details>/<summary> 是折叠壳，不是更新条目
+      if (/^<\/?(details|summary)\b/i.test(t)) return;
       if (/^#{1,6}\s/.test(t)) {
-        if (/功能|Feature/i.test(t)) bucket = "feat";
+        // 词表对齐 release-notes 实际标题（新增/修复/体验优化/合规说明），
+        // 兼容旧写法（功能/Features/文档/Docs）。此前只认「功能/文档」，
+        // 而数据源用的是「新增」「体验优化」「合规说明」，导致 feat/docs 恒为 0。
+        if (/新增|功能|Feature|Added|体验优化|优化|Improvement/i.test(t)) bucket = "feat";
         else if (/修复|Fix/i.test(t)) bucket = "fix";
-        else if (/文档|Doc/i.test(t)) bucket = "docs";
+        else if (/文档|Doc|合规|Compliance|使用说明|Usage/i.test(t)) bucket = "docs";
         else if (/工程|CI|Chore|Other|其他|Installers|安装包/i.test(t)) bucket = "skip";
         else bucket = "other";
         return;

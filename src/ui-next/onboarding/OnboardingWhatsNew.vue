@@ -6,7 +6,7 @@
         <h1 class="own-title">{{ $t('obWhatsNewTitle', { ver: version }) }}</h1>
       </div>
 
-      <p class="own-sub">{{ $t('obWhatsNewSub') }}</p>
+      <p class="own-sub">{{ sub }}</p>
 
       <ul class="own-list">
         <li v-for="(item, i) in highlights" :key="i" class="own-li">
@@ -30,6 +30,10 @@
  * CEP 面板浮层时渲染。只说明本次更新的重点，点「开始使用」即写完成标记并关闭，
  * 避免「装完一关 loading 立刻弹长引导」的割裂感。
  *
+ * 亮点内容优先取「本次版本的实际更新说明」——检查更新时已把 Release 正文存进
+ * updatePrefs.lastResult.notes，重启后可同步读到；读不到（手动安装 / 缓存缺失）
+ * 才回退到 obWhatsNewH1/H2/H3 三条固定文案。这样升级弹窗永远说本次版本，不再是一成不变的三句。
+ *
  * ⚠ 不直接依赖 Onboarding.vue 的 ob-* 全局样式，自包含 scoped 样式，保持独立可维护。
  */
 import IsIcon from '../components/ui/IsIcon.vue'
@@ -37,6 +41,22 @@ import IsButton from '../components/ui/IsButton.vue'
 import hostAdapter from '../../util/host-env'
 import * as onboarding from './state'
 import { APP_VERSION } from '../../brand'
+import { loadUpdatePrefs } from '../../util/updatePrefs'
+
+/** 从 formatReleaseNotes 文本里取首屏摘要（【分组】标题之前的行），最多 max 条 */
+function briefLines (notes, max) {
+  if (!notes || typeof notes !== 'string') { return [] }
+  var lines = notes.split(/\r?\n/)
+  var out = []
+  for (var i = 0; i < lines.length; i++) {
+    var t = String(lines[i]).trim()
+    if (!t) { continue }
+    if (/^【.+】$/.test(t)) { break }
+    out.push(t.replace(/^·\s*/, ''))
+    if (out.length >= max) { break }
+  }
+  return out
+}
 
 export default {
   name: 'OnboardingWhatsNew',
@@ -44,7 +64,22 @@ export default {
   computed: {
     isCep () { return hostAdapter.kind === 'cep' },
     version () { return APP_VERSION },
+    /** 缓存的最新版本恰为当前版本时，才把 notes 当作「本次更新说明」 */
+    releaseHighlights () {
+      try {
+        var last = loadUpdatePrefs().lastResult
+        if (!last || !last.notes) { return [] }
+        var latest = String(last.latest || '').replace(/^v/, '')
+        if (latest && latest !== String(APP_VERSION)) { return [] }
+        return briefLines(last.notes, 6)
+      } catch (e) { return [] }
+    },
+    isDynamic () { return this.releaseHighlights.length > 0 },
+    sub () {
+      return this.isDynamic ? this.$t('obWhatsNewSubDynamic') : this.$t('obWhatsNewSub')
+    },
     highlights () {
+      if (this.isDynamic) { return this.releaseHighlights }
       return [
         this.$t('obWhatsNewH1'),
         this.$t('obWhatsNewH2'),

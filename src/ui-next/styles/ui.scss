@@ -1757,6 +1757,16 @@ body.is-scroll-locked {
   border-radius: var(--is-r-xl);
 }
 
+/* CEP 面板内铺满可用区（含左右，高度按内容自适应不撑满），沿用日志面板的铺满约定 */
+.is-dialog.upd-dialog {
+  padding: 6px;
+}
+
+.is-dialog__panel.upd-panel--full {
+  width: 100%;
+  max-height: calc(100vh - 12px);
+}
+
 .upd-panel .is-dialog__body {
   padding: var(--is-s-6) var(--is-s-6) var(--is-s-4);
 }
@@ -1831,6 +1841,26 @@ body.is-scroll-locked {
 
 .upd__notes-fade {
   max-height: 200px;
+
+  // 展开后放开高度限制，让完整分组说明可见（外壳仍保留滚动兜底）
+  &.is-expanded {
+    max-height: 46vh;
+  }
+}
+
+.upd__notes-toggle {
+  align-self: flex-start;
+  margin: calc(var(--is-s-1) * -1) 0 0;
+  padding: 2px 0;
+  border: none;
+  background: none;
+  color: var(--is-accent);
+  font-size: var(--is-fs-sm);
+  line-height: 1.5;
+  cursor: pointer;
+
+  &:hover { text-decoration: underline; }
+  &:focus-visible { outline: 2px solid var(--is-accent); outline-offset: 2px; }
 }
 
 .upd__list-item {

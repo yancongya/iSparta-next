@@ -3,8 +3,9 @@
     :visible="visible"
     :hide-header="true"
     :show-close="false"
-    panel-class="upd-panel"
-    width="440px"
+    :panel-class="panelClass"
+    :width="dialogWidth"
+    :root-class="rootClass"
     :title="heroHead"
     @update:visible="onVisible"
   >
@@ -26,15 +27,24 @@
 
       <is-alert v-if="needsGatekeeperHint" variant="warning" :description="$t('updateMacHint')" />
 
-      <is-scroll-fade v-if="noteItems.length" class="upd__notes-fade">
-        <ul class="upd__list">
-          <li
-            v-for="(item, i) in noteItems"
-            :key="i"
-            :class="item.kind === 'group' ? 'upd__list-group' : 'upd__list-item'"
-          >{{ item.text }}</li>
-        </ul>
-      </is-scroll-fade>
+      <template v-if="noteItems.length">
+        <is-scroll-fade class="upd__notes-fade" :class="{ 'is-expanded': notesExpanded }">
+          <ul class="upd__list">
+            <li
+              v-for="(item, i) in visibleNoteItems"
+              :key="i"
+              :class="item.kind === 'group' ? 'upd__list-group' : 'upd__list-item'"
+            >{{ item.text }}</li>
+          </ul>
+        </is-scroll-fade>
+        <button
+          v-if="hasLongNotes"
+          type="button"
+          class="upd__notes-toggle"
+          :aria-expanded="notesExpanded ? 'true' : 'false'"
+          @click="notesExpanded = !notesExpanded"
+        >{{ notesExpanded ? $t('updateNotesCollapse') : $t('updateNotesExpand') }}</button>
+      </template>
       <p v-else class="upd__notes-empty">{{ $t('updateNotesEmpty') }}</p>
 
       <!-- 安装中：不能再显示「已下载 100%」——那是上一步的结论，
@@ -120,6 +130,7 @@ import IsDialog from './ui/IsDialog.vue'
 import IsProgress from './ui/IsProgress.vue'
 import IsScrollFade from './ui/IsScrollFade.vue'
 import IsAlert from './ui/IsAlert.vue'
+import hostAdapter from '../../util/host-env'
 
 export default {
   name: 'IsUpdateDialog',
@@ -129,7 +140,15 @@ export default {
     result: { type: Object, default: null },
     auto: { type: Object, default: null }
   },
+  data () {
+    return { notesExpanded: false }
+  },
   computed: {
+    /** CEP 面板内让更新弹窗铺满可用宽度（桌面仍用 440px 居中卡片） */
+    isCep () { return hostAdapter.kind === 'cep' },
+    dialogWidth () { return this.isCep ? '100%' : '440px' },
+    rootClass () { return this.isCep ? 'upd-dialog' : '' },
+    panelClass () { return this.isCep ? 'upd-panel upd-panel--full' : 'upd-panel' },
     latest () {
       return (this.result && this.result.latest) || ''
     },
@@ -193,6 +212,30 @@ export default {
         return { kind: 'item', text: t.replace(/^·\s*/, '') }
       }).filter(Boolean)
     },
+    /**
+     * formatReleaseNotes 输出形如「摘要行… ＋ 【分组】行…」：
+     * 第一个【分组】之前的行是首屏 3–6 条摘要，之后是折叠区详细分组。
+     * 据此把说明拆成「简述 / 详细」两段，默认只显示简述。
+     */
+    noteBrief () {
+      var out = []
+      for (var i = 0; i < this.noteItems.length; i++) {
+        if (this.noteItems[i].kind === 'group') break
+        out.push(this.noteItems[i])
+      }
+      return out
+    },
+    noteDetail () {
+      var out = []
+      var seen = false
+      for (var i = 0; i < this.noteItems.length; i++) {
+        if (this.noteItems[i].kind === 'group') { seen = true }
+        if (seen) out.push(this.noteItems[i])
+      }
+      return out
+    },
+    hasLongNotes () { return this.noteDetail.length > 0 },
+    visibleNoteItems () { return this.notesExpanded ? this.noteItems : this.noteBrief },
     installFootnote () {
       if (this.autoCompleted) return this.$t('updateRestartAe')
       if (this.autoInstalling) {
