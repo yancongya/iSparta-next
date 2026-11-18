@@ -139,6 +139,46 @@
     .mod-form__row { flex-wrap: nowrap; }
   }
 
+  // 压缩设置固定一行：左模式 tab 左对齐，右「开关＋数值/下拉」右对齐
+  .compression-settings__row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--is-s-2) var(--is-s-3);
+    min-width: 0;
+
+    .compression-settings__mode,
+    .compression-settings__value {
+      display: flex;
+      align-items: center;
+      gap: var(--is-s-2);
+      min-width: 0;
+    }
+    .compression-settings__value { justify-content: flex-end; }
+    // 数值框/下拉在窄面板（CEP）下与质量输入框等宽
+    .num { width: 76px; }
+  }
+
+  .compression-settings__preserve-note {
+    display: flex;
+    align-items: center;
+    gap: var(--is-s-2);
+    margin: 0 0 var(--is-s-3);
+    padding: var(--is-s-2) var(--is-s-3);
+    border-radius: var(--is-r-sm);
+    background: var(--is-fill-2, rgba(127, 127, 127, .08));
+    color: var(--is-text-2);
+    font-size: var(--is-fs-sm);
+  }
+
+  // 关压缩时压缩链路整体置灰 + 阻断交互（控件同时传了 :disabled，双重保险）
+  .is-compression-off {
+    opacity: .5;
+    pointer-events: none;
+    filter: grayscale(.6);
+  }
+
   .compression-settings__controls {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));

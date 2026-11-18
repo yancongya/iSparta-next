@@ -287,6 +287,8 @@ import {
   formatLetter, pickEstDetail
 } from '../../util/qualityEstimate'
 import { createLazyEstimate } from '../../util/lazyEstimate'
+import { readPngBitDepth } from '../../util/pngBitDepth'
+import { isPreserveBitDepth } from '../../util/paletteConfig'
 
 /**
  * 取任务源字节：桌面动图文件已落盘 → statSize 真实值；序列任务要**全帧求和**
@@ -330,7 +332,7 @@ function estimateStamp (project) {
   const s = o.sizeLimit || {}
   return [s.enabled, s.maxBytes, s.maxMB, s.unit,
     (o.outputFormat || []).join(','), o.quality && o.quality.value, o.quality && o.quality.checked,
-    o.palette && o.palette.mode, o.palette && o.palette.colors].join('|')
+    o.palette && o.palette.mode, o.palette && o.palette.colors, !!o.preserveBitDepth].join('|')
 }
 
 /* 封面播放的两个常量，放在组件外避免每次实例化都重建 */
@@ -383,6 +385,17 @@ export default {
       compute: (key, project) => {
         const src = sourceOf(project)
         const value = src ? estimateOutput(project.options, src.bytes, src.estimated) : null
+        // 位深（源首帧 IHDR）：与预估同批惰性算 + 缓存；读不到时首帧不显示该行
+        if (value) {
+          const b = project && project.basic
+          const first = (b && b.sourceFile) || (b && b.fileList && b.fileList[0])
+          const info = readPngBitDepth(first)
+          if (info) {
+            value.srcBits = info.bits
+            value.srcIndexed = info.colorType === 3
+            value.preserve = isPreserveBitDepth(project.options)
+          }
+        }
         return { stamp: estimateStamp(project), value: value }
       },
       onFlush: () => { this.estimateTick++ }
@@ -638,6 +651,15 @@ export default {
       lines.push(e.hasTarget
         ? this.$t('estimateDetail', { source: humanSize(e.sourceBytes), target: humanSize(e.target) })
         : this.$t('estimateDetailSource', { source: humanSize(e.sourceBytes) }))
+      // 位深行：源首帧探测到才显示。保真=保留源位深无损；压缩=产物 8-bit 索引
+      if (e.srcBits) {
+        const srcLabel = e.srcIndexed
+          ? this.$t('bitDepthIndexed', { bits: e.srcBits })
+          : this.$t('bitDepthTrue', { bits: e.srcBits })
+        lines.push(e.preserve
+          ? this.$t('bitDepthPreserved', { src: srcLabel })
+          : this.$t('bitDepthForward', { src: srcLabel, dst: this.$t('bitDepthIndexed', { bits: 8 }) }))
+      }
       lines.push(e.estimated ? this.$t('estimateDisclaimerEstimated') : this.$t('estimateDisclaimer'))
       return lines.join('\n')
     },

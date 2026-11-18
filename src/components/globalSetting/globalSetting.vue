@@ -50,7 +50,17 @@
           <span class="unit">{{ $t('times') }}</span>
           <em class="hint">{{ $t('loopTips') }}</em>
         </is-form-item>
-        <div class="gs-pair">
+        <!-- 压缩总开关：关=保真（保留源 32-bit，仅 apngopt 无损），压缩链路整体置灰 -->
+        <is-form-item :label="$t('compressionEnable')">
+          <is-checkbox v-model="compressionEnabled">{{ $t('enable') }}</is-checkbox>
+          <button type="button" class="is-info" :aria-label="$t('compressionEnable')" v-tip="$t('compressionEnableTip')">
+            <is-icon name="info" size="sm" />
+          </button>
+        </is-form-item>
+        <p v-if="!compressionEnabled" class="gs-hint gs-preserve-note">
+          <is-icon name="info" size="sm" /> {{ $t('preserveBitDepthNote') }}
+        </p>
+        <div class="gs-pair" :class="{ 'is-compression-off': !compressionEnabled }">
           <div class="gs-pair__cell">
             <span class="gs-pair__label">
               {{ $t('paletteMode') }}
@@ -59,7 +69,7 @@
               </button>
             </span>
             <div class="gs-pair__ctrl">
-              <is-segmented v-model="paletteMode" :options="paletteModeOptions" size="sm" />
+              <is-segmented v-model="paletteMode" :options="paletteModeOptions" size="sm" :disabled="!compressionEnabled" />
             </div>
           </div>
           <div class="gs-pair__cell">
@@ -71,12 +81,11 @@
             </span>
             <div class="gs-pair__ctrl">
               <template v-if="!isColorsMode">
-                <is-checkbox v-model="qualityChecked">{{ $t('qualityEnable') }}</is-checkbox>
-                <is-input v-model="qualityValue" type="number" class="w-80" :max="100" :min="0" :disabled="!qualityChecked" number />
+                <is-input v-model="qualityValue" type="number" class="w-80" :max="100" :min="0" :disabled="!compressionEnabled" number />
               </template>
               <template v-else>
                 <!-- 色深模式：原位变身，与质量输入框等宽（.w-80） -->
-                <is-select v-model="paletteColors" :options="paletteColorOptions" class="w-80" :aria-label="$t('paletteColors')" />
+                <is-select v-model="paletteColors" :options="paletteColorOptions" class="w-80" :aria-label="$t('paletteColors')" :disabled="!compressionEnabled" />
                 <button type="button" class="is-info" :aria-label="$t('paletteColors')" v-tip="$t('colorsTip')">
                   <is-icon name="info" size="sm" />
                 </button>
@@ -91,7 +100,7 @@
               </button>
             </span>
             <div class="gs-pair__ctrl">
-              <is-input v-model="setting.options.floyd.value" type="number" class="w-80" :max="1" :min="0" step="0.05" number />
+              <is-input v-model="setting.options.floyd.value" type="number" class="w-80" :max="1" :min="0" step="0.05" number :disabled="!compressionEnabled" />
             </div>
           </div>
         </div>
@@ -222,9 +231,10 @@
 
         <div class="gs-split"></div>
 
+        <div :class="{ 'is-compression-off': !compressionEnabled }">
         <is-form-item :label="$t('sizeLimit')">
           <span class="gs-pair__label">
-            <is-switch v-model="setting.options.sizeLimit.enabled" />
+            <is-switch v-model="setting.options.sizeLimit.enabled" :disabled="!compressionEnabled" />
             <button type="button" class="is-info" :aria-label="$t('sizeLimitEnable')" v-tip="$t('sizeLimitEnableTip')">
               <is-icon name="info" size="sm" />
             </button>
@@ -237,12 +247,13 @@
               :value="sizeDraft !== null ? sizeDraft : sizeValueText"
               inputmode="decimal"
               placeholder="1"
+              :disabled="!compressionEnabled"
               @focus="onSizeFocus"
               @input="onSizeDraftInput"
               @blur="onSizeBlur"
             />
             <span class="gs-size-row__right">
-              <is-segmented v-model="sizeUnit" :options="['MB', 'KB']" size="sm" />
+              <is-segmented v-model="sizeUnit" :options="['MB', 'KB']" size="sm" :disabled="!compressionEnabled" />
               <button type="button" class="is-info" :aria-label="$t('sizeLimitMax')" v-tip="$t('sizeLimitMaxTip')">
                 <is-icon name="info" size="sm" />
               </button>
@@ -256,6 +267,7 @@
           :tries="sizeLimitMaxTries"
           @tries-change="sizeLimitMaxTries = $event"
         />
+        </div>
         </div><!-- /输出 -->
 
         <!-- 关于 -->
@@ -338,7 +350,7 @@
 
 <script>
 import { storage } from '../../util/node-env'
-import { PALETTE_COLOR_PRESETS, normalizePalette } from '../../util/paletteConfig'
+import { PALETTE_COLOR_PRESETS, normalizePalette, isPreserveBitDepth } from '../../util/paletteConfig'
 import { diagnoseToolchain } from '../../util/processor/toolIntegrity'
 import ThemeManager from '../../ui-next/theme'
 import PathVars from '../../ui-next/components/PathVars.vue'
@@ -487,9 +499,14 @@ export default {
         this.$set(this.setting.options, 'outputFormat', picked)
       }
     },
-    qualityChecked: {
-      get () { return !!this.setting.options.quality.checked },
-      set (value) { this.$set(this.setting.options.quality, 'checked', !!value) }
+    // 压缩总开关（compressionEnabled = !preserveBitDepth），与任务设置面板同一层级。
+    // 开启时同步把质量路线 checked 打开（独立「启用」勾选已移除，避免真开压缩却走无损）。
+    compressionEnabled: {
+      get () { return !isPreserveBitDepth(this.setting && this.setting.options) },
+      set (value) {
+        this.$set(this.setting.options, 'preserveBitDepth', !value)
+        if (value) this.$set(this.setting.options.quality, 'checked', true)
+      }
     },
     // 压缩路线：quality / colors 二选一（互斥）。旧 globalSetting 无 palette 字段时
     // normalizePalette 兜底为 quality，与转换链路共用同一解读

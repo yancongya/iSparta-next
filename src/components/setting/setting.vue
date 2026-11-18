@@ -329,63 +329,66 @@
       <!-- 压缩设置：质量与抽帧并排，阈值设置放在下方 -->
       <div class="mod-form__group compression-settings">
         <p class="mod-form__caption">{{ $t('compressionSettings') }}</p>
-        <div class="compression-settings__controls">
-          <div class="mod-form__row">
-            <span class="row-label">{{ $t('paletteMode') }}</span>
+        <!-- 压缩设置固定一行：左=模式 tab（左对齐），右=开启压缩开关＋对应控件（右对齐）。
+             两模式共用同一个总开关，色深模式也有开关（消掉旧版只有质量模式有「启用」的不一致）。
+             关压缩=保真（保留源 32-bit，仅 apngopt 无损）。 -->
+        <div class="compression-settings__row" :class="{ 'is-compression-off': !compressionEnabled }">
+          <div class="compression-settings__mode">
             <is-segmented
               v-model="paletteMode"
               :options="paletteModeOptions"
               size="sm"
+              :disabled="!compressionEnabled"
             />
             <button type="button" class="is-info" :aria-label="$t('paletteMode')" v-tip="$t('paletteModeTip')">
               <is-icon name="info" size="sm" />
             </button>
           </div>
-          <div class="mod-form__row">
-            <span class="row-label">{{ isColorsMode ? $t('paletteColors') : $t('compressionQuality') }}</span>
-            <template v-if="!isColorsMode">
-              <is-checkbox v-model="qualityCheck">{{ $t('enable') }}</is-checkbox>
-              <is-input
-                v-model="quality"
-                type="number"
-                class="num"
-                :disabled="!qualityCheck"
-                :max="100"
-                :min="0"
-                number
-                placeholder="100"
-              />
-              <button type="button" class="is-info" :aria-label="$t('compressionQuality')" v-tip="$t('qualityTip')">
-                <is-icon name="info" size="sm" />
-              </button>
-            </template>
-            <template v-else>
-              <!-- 色深模式：同一槽位原位变身，与质量输入框等宽（.num） -->
-              <is-select
-                v-model="paletteColors"
-                :options="paletteColorOptions"
-                class="num"
-                :aria-label="$t('paletteColors')"
-              />
-              <button type="button" class="is-info" :aria-label="$t('paletteColors')" v-tip="$t('colorsTip')">
-                <is-icon name="info" size="sm" />
-              </button>
-            </template>
-          </div>
-          <div v-if="canRemapFrames" class="mod-form__row mod-form__row--remap">
-            <is-checkbox v-model="frameRemapEnabled">{{ $t('frameRemapEnable') }}</is-checkbox>
-            <span class="row-label row-label--remap">{{ $t('frameRemapTarget') }}</span>
-            <is-input v-model="frameRemapTargetRate" type="number" class="num" :disabled="!frameRemapEnabled" :max="remapSourceRate" :min="0.01" :step="0.01" number />
-            <button type="button" class="is-info" :aria-label="$t('frameRemapTarget')" v-tip="$t('frameRemapTip')">
+          <div class="compression-settings__value">
+            <is-checkbox v-model="compressionEnabled">{{ $t('compressionEnable') }}</is-checkbox>
+            <is-input
+              v-if="!isColorsMode"
+              v-model="quality"
+              type="number"
+              class="num"
+              :disabled="!compressionEnabled"
+              :max="100"
+              :min="0"
+              number
+              placeholder="100"
+            />
+            <is-select
+              v-else
+              v-model="paletteColors"
+              :options="paletteColorOptions"
+              class="num"
+              :aria-label="$t('paletteColors')"
+              :disabled="!compressionEnabled"
+            />
+            <button v-if="isColorsMode" type="button" class="is-info" :aria-label="$t('paletteColors')" v-tip="$t('colorsTip')">
+              <is-icon name="info" size="sm" />
+            </button>
+            <button v-else type="button" class="is-info" :aria-label="$t('compressionQuality')" v-tip="$t('qualityTip')">
               <is-icon name="info" size="sm" />
             </button>
           </div>
         </div>
-        <div class="compression-settings__threshold">
+        <p v-if="!compressionEnabled" class="compression-settings__preserve-note">
+          <is-icon name="info" size="sm" /> {{ $t('preserveBitDepthNote') }}
+        </p>
+        <div v-if="canRemapFrames" class="mod-form__row mod-form__row--remap">
+          <is-checkbox v-model="frameRemapEnabled">{{ $t('frameRemapEnable') }}</is-checkbox>
+          <span class="row-label row-label--remap">{{ $t('frameRemapTarget') }}</span>
+          <is-input v-model="frameRemapTargetRate" type="number" class="num" :disabled="!frameRemapEnabled" :max="remapSourceRate" :min="0.01" :step="0.01" number />
+          <button type="button" class="is-info" :aria-label="$t('frameRemapTarget')" v-tip="$t('frameRemapTip')">
+            <is-icon name="info" size="sm" />
+          </button>
+        </div>
+        <div class="compression-settings__threshold" :class="{ 'is-compression-off': !compressionEnabled }">
           <div class="mod-form__capline">
             <p class="mod-form__caption mod-form__caption--flush">{{ $t("sizeLimit") }}</p>
             <span class="capline-act">
-              <is-switch v-model="sizeEnabled" />
+              <is-switch v-model="sizeEnabled" :disabled="!compressionEnabled" />
               <button type="button" class="is-info" :aria-label="$t('sizeLimitEnable')" v-tip="$t('sizeLimitEnableTip')">
                 <is-icon name="info" size="sm" />
               </button>
@@ -475,7 +478,7 @@ import {
   removeCustomPreset
 } from '../../util/outputPresets'
 import { tokenizeName, joinTokens } from '../../util/tokenizeName'
-import { PALETTE_COLOR_PRESETS, normalizePalette } from '../../util/paletteConfig'
+import { PALETTE_COLOR_PRESETS, normalizePalette, isPreserveBitDepth } from '../../util/paletteConfig'
 import PathVars from '../../ui-next/components/PathVars.vue'
 import IsPresetBar from '../../ui-next/components/IsPresetBar.vue'
 import notice from '../../ui-next/notice'
@@ -717,6 +720,18 @@ export default {
       },
       set (value) {
         this.writeOptions({ outputFormat: value })
+      }
+    },
+    // 压缩总开关（compressionEnabled = !preserveBitDepth）：
+    // 关压缩=保真输出，仅 apngopt 无损，体积闸失效；开压缩=现状两路线。
+    // 开启时同步把质量路线的 checked 打开（旧的独立「启用」勾选已移除，避免真开压缩却走无损）。
+    compressionEnabled: {
+      get () { return !isPreserveBitDepth(this.curtSetting) },
+      set (value) {
+        this.writeOptions({
+          preserveBitDepth: !value,
+          quality: { checked: value ? true : this.curtSetting.quality.checked, value: this.quality }
+        })
       }
     },
     qualityCheck: {

@@ -248,6 +248,8 @@ import {
 import { fs } from '../../util/node-env'
 import { estimateOutput, estimateSourceBytes, humanSize, humanSizeCompact, formatLetter, pickEstDetail } from '../../util/qualityEstimate'
 import { createLazyEstimate } from '../../util/lazyEstimate'
+import { readPngBitDepth } from '../../util/pngBitDepth'
+import { isPreserveBitDepth } from '../../util/paletteConfig'
 
 /** 合成节点的估算源字节：转换前序列未渲染，按 宽×高×帧数 估一个量级 */
 function nodeEstimateBytes (node) {
@@ -798,7 +800,8 @@ export default {
         opts && opts.quality && opts.quality.value,
         opts && opts.quality && opts.quality.checked,
         opts && opts.palette && opts.palette.mode,
-        opts && opts.palette && opts.palette.colors].join('|')
+        opts && opts.palette && opts.palette.colors,
+        !!opts.preserveBitDepth].join('|')
     },
     /** 未加入任务的合成：读全局设置里的默认 options（缓存到实例，避免每节点 JSON.parse） */
     globalEstimateOpts () {
@@ -825,7 +828,18 @@ export default {
       const fmt = (opts.outputFormat && opts.outputFormat.length)
         ? opts.outputFormat : this.formatsOf(node)
       const useOpts = Object.assign({}, opts, { outputFormat: fmt })
-      return estimateOutput(useOpts, bytes, true)
+      const value = estimateOutput(useOpts, bytes, true)
+      // 位深：合成节点转换前无源 PNG，仅当任务副本带真实 fileList/sourceFile 时探测；
+      // 探测不到时首帧不显示该行（与项目列表同一口径）。task 已在上方声明，直接复用。
+      const b = task && task.basic
+      const first = (b && b.sourceFile) || (b && b.fileList && b.fileList[0])
+      const info = readPngBitDepth(first)
+      if (value && info) {
+        value.srcBits = info.bits
+        value.srcIndexed = info.colorType === 3
+        value.preserve = isPreserveBitDepth(task.options)
+      }
+      return value
     },
     /**
      * 状态列常驻的预估产物大小：命中缓存直接返回；首帧无缓存返回 null，
@@ -858,6 +872,15 @@ export default {
       lines.push(e.hasTarget
         ? this.$t('estimateDetail', { source: humanSize(e.sourceBytes), target: humanSize(e.target) })
         : this.$t('estimateDetailSource', { source: humanSize(e.sourceBytes) }))
+      // 位深行：源首帧探测到才显示。保真=保留源位深无损；压缩=产物 8-bit 索引
+      if (e.srcBits) {
+        const srcLabel = e.srcIndexed
+          ? this.$t('bitDepthIndexed', { bits: e.srcBits })
+          : this.$t('bitDepthTrue', { bits: e.srcBits })
+        lines.push(e.preserve
+          ? this.$t('bitDepthPreserved', { src: srcLabel })
+          : this.$t('bitDepthForward', { src: srcLabel, dst: this.$t('bitDepthIndexed', { bits: 8 }) }))
+      }
       lines.push(this.$t('estimateDisclaimerEstimated'))
       return lines.join('\n')
     },

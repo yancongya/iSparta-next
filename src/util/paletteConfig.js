@@ -38,6 +38,15 @@ export function isColorsMode (options) {
 }
 
 /**
+ * 保真输出是否生效（关压缩、保留源 32-bit RGBA，仅走 apngopt 无损）。
+ * 字段缺省一律 false——旧持久化配置 / 旧任务副本 / CEP 旧数据零行为差异，
+ * 与 normalizePalette 同一兜底约定。只有显式 === true 才开启。
+ */
+export function isPreserveBitDepth (options) {
+  return !!(options && options.preserveBitDepth === true)
+}
+
+/**
  * 色深重试：超限时按档位逐级下调（对称 quality 路线的 automaticRetryQuality）。
  * 从当前档位向更小档位取第 attempt 步；到底后维持最小档位继续重试（最终由判超限兜底）。
  * @param {number} colors 当前色数（先经档位吸附）

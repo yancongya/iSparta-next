@@ -69,6 +69,9 @@ const defaultState = {
       checked: true,
       value: 80
     },
+    // APNG 保真输出：true=关压缩、保留源 32-bit RGBA，仅走 apngopt 无损；
+    // 缺省 false=维持现状（走压缩）。后加字段，下游一律经 isPreserveBitDepth 兜底。
+    'preserveBitDepth': false,
     // 压缩路线：quality（质量系数，默认）/ colors（色深档位）。两条路线互斥，
     // 缺省字段一律按 quality 解读（paletteConfig.normalizePalette 兜底），旧配置零破坏
     'palette': {
@@ -213,6 +216,11 @@ if (!globalSetting) {
         parsed.options.quality = _.cloneDeep(defaultState.options.quality)
         changed = true
       }
+      // preserveBitDepth 为后加项且下游直读（isPreserveBitDepth 兜底），缺省 false 零行为差异
+      if (typeof parsed.options.preserveBitDepth !== 'boolean') {
+        parsed.options.preserveBitDepth = false
+        changed = true
+      }
       // palette 缺省语义即 quality 路线（normalizePalette 兜底），物化为出厂值零行为差异
       if (!parsed.options.palette) {
         parsed.options.palette = _.cloneDeep(defaultState.options.palette)
@@ -277,6 +285,10 @@ if (localData) {
       }
       if (!item.options.sizeLimit) {
         item.options.sizeLimit = _.cloneDeep(defaultState.options.sizeLimit)
+      }
+      // preserveBitDepth 为后加项且下游直读，缺省 false（维持现状走压缩）
+      if (typeof item.options.preserveBitDepth !== 'boolean') {
+        item.options.preserveBitDepth = false
       }
       // 输出路径旧模板迁移（{srcPath}/output → {srcPath}）
       if (item.options.outputTo) {

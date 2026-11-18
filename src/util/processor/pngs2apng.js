@@ -30,7 +30,8 @@ export default function (item, store, locale) {
   // reused frame before invoking apngasm so the failing frame is actionable.
   function readPngDimensions (file) {
     const data = fs.readFileSync(file)
-    const header = data.slice(0, 24)
+    // 前 26 字节：签名(8) + IHDR 长度(4) + 类型(4) + width(4) + height(4) + bitDepth(1) + colorType(1)
+    const header = data.slice(0, 26)
     const byteAt = function (offset) {
       return typeof header === 'string' ? header.charCodeAt(offset) : header[offset]
     }
@@ -55,7 +56,14 @@ export default function (item, store, locale) {
       const size = data.length
       throw new Error('invalid PNG frame: ' + file + ' | dataType=' + (typeof data) + ' | bytes=' + header.length + ' | size=' + size + ' | header=' + (hex || '<empty>'))
     }
-    return { width: uint32(16), height: uint32(20), fileSize: data.length }
+    // bitDepth(byte24) / colorType(byte25)：6=RGBA32 / 2=RGB24 / 3=索引；供角标位深行与保真判定
+    return {
+      width: uint32(16),
+      height: uint32(20),
+      fileSize: data.length,
+      bitDepth: byteAt(24),
+      colorType: byteAt(25)
+    }
   }
 
   let firstDimensions = null

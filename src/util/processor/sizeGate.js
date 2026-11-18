@@ -8,7 +8,7 @@ import appLog from '../../ui-next/log'
 import i18n from '../../i18n'
 import { automaticRetryCount, automaticRetryQuality, effectiveQualityStart } from '../sizeLimitConfig'
 import { planStartingQuality, planStartingColors, estimateColorsBytes } from '../sizePlanner'
-import { normalizePalette, automaticRetryColors, automaticRetryColorsCount } from '../paletteConfig'
+import { normalizePalette, automaticRetryColors, automaticRetryColorsCount, isPreserveBitDepth } from '../paletteConfig'
 
 export function normalizeSizeLimit (options, quality) {
   const s = (options && options.sizeLimit) || {}
@@ -195,6 +195,11 @@ export function enforceSizeLimit (item, store, locale) {
     item.options.quality && item.options.quality.checked
   )
   const limit = normalizeSizeLimit(item.options, initialQuality)
+  // 保真输出（关压缩、保留 32-bit）：整个体积闸失效——不重压、不因超限标失败。
+  // 与设置面板「关压缩时体积阈值区置灰」同一语义，两条防线一致。
+  if (isPreserveBitDepth(item.options)) {
+    return Promise.resolve({ enforced: false, preserved: true })
+  }
   if (!limit.enabled || !item.options.outputFormat || !item.options.outputFormat.length) {
     return Promise.resolve({ enforced: false })
   }
@@ -320,10 +325,13 @@ export function enforceSizeLimit (item, store, locale) {
       }
       if (useColorsRetry) {
         item.options.palette = { mode: 'colors', colors: nextValue }
-        item.options.quality.checked = true
+        if (!isPreserveBitDepth(item.options)) { item.options.quality.checked = true }
       } else {
-        item.options.quality.checked = true
-        item.options.quality.value = nextValue
+        // 保真模式下不得强制开启量化（体积闸入口已整段跳过，此处为双防线）
+        if (!isPreserveBitDepth(item.options)) {
+          item.options.quality.checked = true
+          item.options.quality.value = nextValue
+        }
       }
       triesUsed += 1
 

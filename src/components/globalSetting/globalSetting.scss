@@ -176,6 +176,20 @@
     flex-basis: 112px;
   }
 
+  // 关压缩时压缩链路整体置灰 + 阻断交互（控件同时传了 :disabled，双重保险）
+  .is-compression-off {
+    opacity: .5;
+    pointer-events: none;
+    filter: grayscale(.6);
+  }
+
+  .gs-preserve-note {
+    display: flex;
+    align-items: center;
+    gap: var(--is-s-2);
+    margin: 0 0 var(--is-s-3);
+  }
+
   // 双列并排字段：统一「左标签 + 右控件」，与上方 is-form-item 对齐节奏
   .gs-pair {
     display: grid;

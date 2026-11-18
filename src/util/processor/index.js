@@ -9,7 +9,7 @@ import { fs, path, os } 	from '../node-env'
 import TYPE 		from '../../store/enum/type'
 import { enforceSizeLimit, normalizeSizeLimit } from './sizeGate'
 import { planStartingQuality, planStartingColors, estimateColorsBytes } from '../sizePlanner'
-import { normalizePalette } from '../paletteConfig'
+import { normalizePalette, isPreserveBitDepth } from '../paletteConfig'
 import { effectiveQualityStart } from '../sizeLimitConfig'
 import { resolveOutputPath } from '../outputPath'
 import hostAdapter 	from '../host-env'
@@ -35,7 +35,9 @@ function stat (label) {
  */
 function applyStartPlan (item) {
   const opts = item && item.options
-  if (!opts || !opts.sizeLimit || !opts.sizeLimit.enabled) { return }
+  // 保真输出：不做前置质量/色数规划——无压缩、无体积约束，规划无意义且会篡改用户档位
+  if (!opts || isPreserveBitDepth(opts)) { return }
+  if (!opts.sizeLimit || !opts.sizeLimit.enabled) { return }
   if (!opts.outputFormat || !opts.outputFormat.length) { return }
   const pal = normalizePalette(opts)
   const limit = normalizeSizeLimit(opts, effectiveQualityStart(opts.quality && opts.quality.value, opts.quality && opts.quality.checked))

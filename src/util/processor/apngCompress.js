@@ -1,7 +1,7 @@
 import { path, fs } from '../node-env'
 import action from './action'
 import appLog from '../../ui-next/log'
-import { normalizePalette } from '../paletteConfig'
+import { normalizePalette, isPreserveBitDepth } from '../paletteConfig'
 
 export default function (item, isLossless, store, locale, opts) {
   store.dispatch('editProcess', {
@@ -32,8 +32,10 @@ export default function (item, isLossless, store, locale, opts) {
 	var pal = normalizePalette(item.options)
 	var isColors = pal.mode === 'colors'
   // 量化开关：色深路线始终量化（用户选 C 档即是选减色，C256 也是索引化）；
-  // 质量路线沿用 quality.checked 开关——关掉则纯无损 apngopt
-  if (!isColors && !item.options.quality.checked) {
+  // 质量路线沿用 quality.checked 开关——关掉则纯无损 apngopt。
+  // 保真输出（preserveBitDepth）优先级最高：无论哪条路线都跳过 apngquant，
+  // 仅走 apngopt 无损，保住源 32-bit RGBA（apngquant 本质是量化器，必出 8-bit 索引）。
+  if (isPreserveBitDepth(item.options) || (!isColors && !item.options.quality.checked)) {
     return apngopt(item, store, locale, gateOpts)
   } else {
     var quantArgs = [

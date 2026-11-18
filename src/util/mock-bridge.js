@@ -301,6 +301,9 @@ function seedItems (fs, path, storage) {
       const perFile = Math.round(srcMB * 1024 * 1024 / fileList.length)
       fileList.forEach((p) => fs.writeFileSync('__size__:' + p, String(perFile)))
     }
+    // 位深演示：源文件是 'mock' 占位读不出 IHDR，登记 32-bit RGBA(bitDepth=8,colorType=6)
+    // 虚拟键，让角标 hover 在浏览器预览里显示「源 32-bit → 产物 8-bit 索引」。
+    fileList.forEach((p) => fs.writeFileSync('__bitdepth__:' + p, '8|6'))
     // outputPath 是**目录**（与 processor 的 resolveOutputPath 语义一致）。
     // 之前误写成输出文件名，task-output 再 join 一次名字后永远读不到文件，
     // 产物大小/格式角标在纯浏览器预览里就一直为空。
