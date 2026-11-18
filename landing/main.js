@@ -191,6 +191,12 @@
   const btnAuto = document.getElementById("btn-auto");
   const qSlider = document.getElementById("q-slider");
   const qVal = document.getElementById("q-val");
+  const cSlider = document.getElementById("c-slider");
+  const cVal = document.getElementById("c-val");
+  const qualityControl = document.getElementById("quality-control");
+  const depthControl = document.getElementById("depth-control");
+  const routeBtns = document.querySelectorAll(".gate-route__btn");
+  const gateAutoLabel = document.getElementById("gate-auto-label");
   const resultCard = document.getElementById("gate-result");
   const resultFmt = document.getElementById("result-fmt");
   const resultBadge = document.getElementById("result-badge");
@@ -206,6 +212,10 @@
   let gateRunning = false;
   let activeFmt = "APNG";
   let limitUnit = "MB";
+  // 压缩路线：quality=质量系数（Q10–100），depth=色深档位（C2–C256）。
+  // 色深档位与应用一致，只有 2 的幂八档，WebP 无色数概念（置灰）。
+  let activeRoute = "quality";
+  const COLOR_STEPS = [2, 4, 8, 16, 32, 64, 128, 256];
   const FMT_FACTOR = { APNG: 1, GIF: 0.72, WEBP: 0.55 };
 
   function limitMB() {
@@ -237,6 +247,20 @@
     return base * factor;
   }
 
+  // 色深路线：色数越少体积越小。C2 约 0.24MB、C256 约 2.95MB，与国际路线同量级。
+  function sizeForColor(colors, fmt) {
+    const c = Math.max(2, Math.min(256, Number(colors) || 256));
+    const t = Math.min(1, Math.round(Math.log2(c)) / 8);
+    const base = Math.max(0.22, 2.85 * Math.pow(t, 1.45) + 0.1);
+    const factor = FMT_FACTOR[fmt || activeFmt] || 1;
+    return base * factor;
+  }
+
+  // 按当前路线返回体积：quality 用质量曲线，depth 用色数曲线。
+  function currentSize(value, fmt) {
+    return activeRoute === "depth" ? sizeForColor(value, fmt) : sizeForQuality(value, fmt);
+  }
+
   // 与应用 sizeLimitConfig.automaticRetryQuality 同构：把降幅按次数均匀摊到 Q1，
   // 没有手动步长。attempt 从 1 起算第几档；0 次表示不降。
   function retryQuality(start, tries, attempt) {
@@ -245,6 +269,68 @@
     if (!t || attempt <= 0) return s;
     const i = Math.max(1, Math.min(attempt, t));
     return Math.max(1, Math.floor(s - (s - 1) * i / t));
+  }
+
+  // 色深路线重试：按 256→128→64→…→2 逐档降色数，与应用自动重试同构。
+  function retryColor(start, tries, attempt) {
+    const steps = COLOR_STEPS;
+    let idx = steps.indexOf(Number(start));
+    if (idx < 0) idx = steps.length - 1;
+    const t = Math.min(tries, idx);
+    if (!t || attempt <= 0) return steps[idx];
+    const i = Math.max(1, Math.min(attempt, t));
+    return steps[Math.max(0, idx - i)];
+  }
+
+  function retryValue(start, tries, attempt) {
+    return activeRoute === "depth" ? retryColor(start, tries, attempt) : retryQuality(start, tries, attempt);
+  }
+
+  // 与应用「按目标体积估起始画质」同构：从满画质往下找第一个能压进阈值的档位，
+  // 再往回抬高一点作为「更好的画质」起点，让演示一开始就是超限、再一档档降。
+  function estimateStartQuality(cfg) {
+    const fmt = activeFmt;
+    if (!cfg.enabled) return 95;
+    let fit = 100;
+    for (let q = 100; q >= 1; q--) {
+      if (sizeForQuality(q, fmt) <= cfg.maxMB) fit = q;
+      else break;
+    }
+    // 从刚好达标处抬高一档起跳，确保第一步是「超限」；至少留一点降档空间。
+    const start = Math.min(100, fit + Math.max(6, Math.round(cfg.maxTries / 2)));
+    return Math.max(2, start);
+  }
+
+  // 色深路线起始色数估算：从最高档往下找刚好达标的档位，再抬高一档确保先超限。
+  function estimateStartColor(cfg) {
+    const fmt = activeFmt;
+    if (!cfg.enabled) return 256;
+    let fit = 256;
+    for (let i = COLOR_STEPS.length - 1; i >= 0; i--) {
+      if (sizeForColor(COLOR_STEPS[i], fmt) <= cfg.maxMB) {
+        fit = COLOR_STEPS[i];
+        break;
+      }
+    }
+    const idx = COLOR_STEPS.indexOf(fit);
+    return COLOR_STEPS[Math.min(COLOR_STEPS.length - 1, idx + 1)];
+  }
+
+  function estimateStart(cfg) {
+    return activeRoute === "depth" ? estimateStartColor(cfg) : estimateStartQuality(cfg);
+  }
+
+  // 当前路线的显示值（滑块值→实际值）与标签，供 UI 与日志统一使用。
+  function readSettingValue() {
+    if (activeRoute === "depth") {
+      const idx = Math.max(0, Math.min(COLOR_STEPS.length - 1, Number(cSlider && cSlider.value) || 0));
+      return COLOR_STEPS[idx];
+    }
+    return Number(qSlider && qSlider.value) || 85;
+  }
+
+  function valueLabel(v) {
+    return activeRoute === "depth" ? "C" + v : "q=" + v;
   }
 
   function clearLog() {
@@ -266,16 +352,80 @@
       gateTimer = null;
     }
     if (btnAuto) btnAuto.disabled = false;
+    if (resultCard) resultCard.classList.remove("is-recoding");
+  }
+
+  // 只把当前路线的滑块与数字设到指定档位，不触碰体积/判定。
+  function setQualityUI(v) {
+    if (activeRoute === "depth") {
+      const idx = Math.max(0, COLOR_STEPS.indexOf(Number(v)));
+      if (cSlider) cSlider.value = String(idx);
+      if (cVal) cVal.textContent = "C" + v;
+    } else {
+      if (qSlider) qSlider.value = String(v);
+      if (qVal) qVal.textContent = String(v);
+    }
+  }
+
+  // 演示「自动重设档位」这一步时，给数字一个显眼的跳动反馈。
+  function flashQualityReset() {
+    const el = activeRoute === "depth" ? cVal : qVal;
+    if (!el) return;
+    el.classList.remove("is-reset");
+    void el.getBoundingClientRect();
+    el.classList.add("is-reset");
+  }
+
+  // 切换压缩路线：显示对应控件、同步右侧「自动降档」文案与结果角标。
+  function applyRouteUI() {
+    const depth = activeRoute === "depth";
+    if (qualityControl) qualityControl.hidden = depth;
+    if (depthControl) depthControl.hidden = !depth;
+    routeBtns.forEach(function (b) {
+      b.classList.toggle("is-on", b.dataset.route === activeRoute);
+    });
+    if (gateAutoLabel) {
+      gateAutoLabel.textContent = isEn()
+        ? depth
+          ? "Auto-lower color count if over"
+          : "Auto-lower quality if over"
+        : depth
+        ? "超了自动降色数"
+        : "超了自动降质量";
+      gateAutoLabel.setAttribute("data-i18n", depth ? "play.autoDepth" : "play.autoQ");
+    }
+    // WebP 无色数概念：色深路线下置灰不可选，若当前选中则回退到 APNG。
+    fmtBtns.forEach(function (b) {
+      b.classList.toggle("is-muted", depth && b.dataset.fmt === "WEBP");
+    });
+    if (depth && activeFmt === "WEBP") {
+      activeFmt = "APNG";
+      fmtBtns.forEach(function (b) {
+        b.classList.toggle("is-on", b.dataset.fmt === "APNG");
+      });
+    }
+  }
+
+  // 结果卡进入/退出「重新压缩中」状态：体积数字与进度条呈现处理中的观感。
+  function setRecoding(on) {
+    if (resultCard) resultCard.classList.toggle("is-recoding", on);
+    if (!resultBadge) return;
+    if (on) {
+      resultBadge.classList.remove("is-pass", "is-over");
+      resultBadge.classList.add("is-recoding");
+      resultBadge.textContent = isEn() ? "Re-encoding" : "重压中";
+    } else {
+      resultBadge.classList.remove("is-recoding");
+    }
   }
 
   function paintResult(q) {
     const cfg = readGateCfg();
-    const mb = sizeForQuality(q, activeFmt);
+    const mb = currentSize(q, activeFmt);
     const enabled = cfg.enabled;
     const ok = !enabled || mb <= cfg.maxMB;
 
-    if (qSlider) qSlider.value = String(q);
-    if (qVal) qVal.textContent = String(q);
+    setQualityUI(q);
     if (resultFmt) resultFmt.textContent = labelOf(activeFmt);
     if (resultSize) resultSize.textContent = mb.toFixed(2) + " MB";
 
@@ -285,7 +435,7 @@
     }
 
     if (resultBadge) {
-      resultBadge.classList.remove("is-pass", "is-over");
+      resultBadge.classList.remove("is-pass", "is-over", "is-recoding");
       if (!enabled) {
         resultBadge.textContent = isEn() ? "Off" : "不限制";
         resultBadge.classList.add("is-pass");
@@ -323,25 +473,58 @@
   function runGateDemo() {
     stopGate();
     clearLog();
-    const startQ = Number(qSlider && qSlider.value) || 85;
+    const cfg = readGateCfg();
+    // 起始档位按目标体积估算，而不是沿用滑块上次留下的值。
+    const startQ = estimateStart(cfg);
     let q = startQ;
     let tryN = 0;
     if (btnAuto) btnAuto.disabled = true;
     gateRunning = true;
     paintResult(q);
-    const delay = reduceMotion ? 0 : 450;
+    setRecoding(false);
+    const delay = reduceMotion ? 0 : 420;
+    const step = reduceMotion ? 0 : 360;
+
+    const estLabel = isEn()
+      ? activeRoute === "depth"
+        ? "Est. start colors"
+        : "Est. start Q"
+      : activeRoute === "depth"
+      ? "估算起始色数"
+      : "估算起始画质";
+    const resetLabel = isEn()
+      ? activeRoute === "depth"
+        ? "Reset colors"
+        : "Reset Q"
+      : activeRoute === "depth"
+      ? "重设色数"
+      : "重设质量";
+    const autoOffLabel = isEn()
+      ? activeRoute === "depth"
+        ? "Auto color off"
+        : "Auto quality off"
+      : activeRoute === "depth"
+      ? "未开自动降色数"
+      : "未开自动降质量";
+    const minValue = activeRoute === "depth" ? 2 : 1;
+
+    addLog(
+      "<span class='st'>\u25c6</span><span>" + estLabel + "</span><span>" + valueLabel(q) + "</span>",
+      "is-est"
+    );
 
     function attempt() {
       if (!gateRunning) return;
       tryN += 1;
       const st = paintResult(q);
+      setRecoding(false);
       const passT = isEn() ? "Pass" : "通过";
       const overT = isEn() ? "Over" : "超限";
       const offT = isEn() ? "No limit" : "不限制";
 
       if (!st.cfg.enabled) {
         addLog(
-          "<span class='st'>#" + tryN + "</span><span>q=" + q + "</span><span>" + st.mb.toFixed(2) + "MB</span><span>" + offT + "</span>",
+          "<span class='st'>#" + tryN + "</span><span>" + valueLabel(q) + "</span><span>" + st.mb.toFixed(2) + "MB</span><span>" + offT + "</span>",
           "is-pass"
         );
         finish(true);
@@ -349,33 +532,45 @@
       }
       if (st.mb <= st.cfg.maxMB) {
         addLog(
-          "<span class='st'>#" + tryN + "</span><span>q=" + q + "</span><span>" + st.mb.toFixed(2) + "MB</span><span>" + passT + "</span>",
+          "<span class='st'>#" + tryN + "</span><span>" + valueLabel(q) + "</span><span>" + st.mb.toFixed(2) + "MB</span><span>" + passT + "</span>",
           "is-pass"
         );
         finish(true);
         return;
       }
       addLog(
-        "<span class='st'>#" + tryN + "</span><span>q=" + q + "</span><span>" + st.mb.toFixed(2) + "MB</span><span>" + overT + "</span>",
+        "<span class='st'>#" + tryN + "</span><span>" + valueLabel(q) + "</span><span>" + st.mb.toFixed(2) + "MB</span><span>" + overT + "</span>",
         "is-over"
       );
       if (!st.cfg.autoQuality) {
-        addLog("<span>" + (isEn() ? "Auto quality off" : "未开自动降质量") + "</span>", "is-over");
+        addLog("<span>" + autoOffLabel + "</span>", "is-over");
         finish(false);
         return;
       }
-      if (tryN >= st.cfg.maxTries || q <= 1) {
+      if (tryN >= st.cfg.maxTries || q <= minValue) {
         addLog("<span>" + (isEn() ? "Max retries" : "达最大重试") + "</span>", "is-over");
         finish(false);
         return;
       }
-      q = retryQuality(startQ, st.cfg.maxTries, tryN);
-      gateTimer = setTimeout(attempt, delay);
+
+      // 第一步：自动把当前档位重设到下一档（只动 UI + 标注），进入「重压中」状态。
+      const nextQ = retryValue(startQ, st.cfg.maxTries, tryN);
+      addLog(
+        "<span class='st'>\u21b3</span><span>" + resetLabel + "</span><span>" + valueLabel(q) + " \u2192 " + valueLabel(nextQ) + "</span>",
+        "is-resetlog"
+      );
+      setQualityUI(nextQ);
+      flashQualityReset();
+      setRecoding(true);
+      // 第二步：用新档位重新压缩，得到新体积并判定。
+      q = nextQ;
+      gateTimer = setTimeout(attempt, delay + step);
     }
 
     function finish(ok) {
       gateRunning = false;
       if (btnAuto) btnAuto.disabled = false;
+      setRecoding(false);
       if (ok && hasGsap && !reduceMotion && resultCard) {
         window.gsap.fromTo(resultCard, { scale: 1 }, { scale: 1.02, duration: 0.2, yoyo: true, repeat: 1 });
         var badge = document.getElementById("result-badge");
@@ -396,15 +591,48 @@
       paintResult(Number(qSlider.value));
     });
   }
+  if (cSlider) {
+    cSlider.addEventListener("input", function () {
+      stopGate();
+      const idx = Math.max(0, Math.min(COLOR_STEPS.length - 1, Number(cSlider.value) || 0));
+      if (cVal) cVal.textContent = "C" + COLOR_STEPS[idx];
+      paintResult(COLOR_STEPS[idx]);
+    });
+  }
+
+  routeBtns.forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      if (btn.dataset.route === activeRoute) return;
+      stopGate();
+      activeRoute = btn.dataset.route === "depth" ? "depth" : "quality";
+      applyRouteUI();
+      paintResult(readSettingValue());
+      clearLog();
+      addLog(
+        "<span>" +
+          (isEn()
+            ? activeRoute === "depth"
+              ? "Color-depth route: 256 → 128 → … → 2. WebP has no color count."
+              : "Quality route: lower Q step by step."
+            : activeRoute === "depth"
+            ? "色深路线：按 256 → 128 → … → 2 逐档降色数，WebP 无色数概念。"
+            : "质量路线：按质量系数逐档下调重压。") +
+          "</span>",
+        ""
+      );
+    });
+  });
 
   fmtBtns.forEach(function (btn) {
     btn.addEventListener("click", function () {
+      // WebP 无色数概念：色深路线下点它不改格式，只提示。
+      if (activeRoute === "depth" && btn.dataset.fmt === "WEBP") return;
       stopGate();
       activeFmt = btn.dataset.fmt || "APNG";
       fmtBtns.forEach(function (b) {
         b.classList.toggle("is-on", b === btn);
       });
-      paintResult(Number(qSlider && qSlider.value) || 85);
+      paintResult(readSettingValue());
     });
   });
 
@@ -429,7 +657,7 @@
           gateMax.min = "0.1";
         }
       }
-      paintResult(Number(qSlider && qSlider.value) || 85);
+      paintResult(readSettingValue());
     });
   });
 
@@ -438,12 +666,13 @@
     if (!el) return;
     el.addEventListener("change", function () {
       stopGate();
-      paintResult(Number(qSlider && qSlider.value) || 85);
+      paintResult(readSettingValue());
     });
   });
 
-  paintResult(85);
-  addLog("<span>" + (isEn() ? "Slide quality or run auto re-encode" : "拖动质量或运行自动重压") + "</span>", "");
+  applyRouteUI();
+  paintResult(readSettingValue());
+  addLog("<span>" + (isEn() ? "Pick a route, then replay auto re-encode" : "选压缩路线，或运行自动重压") + "</span>", "");
 
   if ("IntersectionObserver" in window) {
     let played = false;
@@ -654,6 +883,9 @@
     const legend = section && section.querySelector(".task-legend");
     const settings = section && section.querySelector(".outset");
     if (!section || !strip || !cover || !stage || !card || reduceMotion) return;
+    // 序列帧精灵图参数：打你鸭的 36 帧（6×6，每格 200px）。
+    // 带子滚动时每格固定显示序列里的一帧（像真实胶片），格内画面不随时间翻页。
+    const SHEET = { cols: 6, rows: 6, count: 36, tile: 200 };
     const cardParts = [card.querySelector(".check"), card.querySelector(".info .input"), ...card.querySelectorAll(".info .summary"), card.querySelector(".side")];
     const legendParts = [...legend.children];
     const settingParts = [settings.querySelector(".outset__row"), settings.querySelector(".outset__flow"), settings.querySelector(".pipeline-note")];
@@ -664,12 +896,11 @@
     let target = 0;
     let direction = 1;
     let frame = 0;
+    let coverFrame = 0; // 汇聚定格后封面停留的那一帧
     let last = 0;
     let active = false;
     let loaded = false;
     let inView = false;
-    let scrollBlur = 0;
-    let lastScrollTime = 0;
     let jumpStartedAt = -Infinity;
     const ease = (value) => Math.max(0, Math.min(1, value));
     const ramp = (value, start, end) => ease((value - start) / (end - start));
@@ -696,15 +927,15 @@
     }
 
     function drawFrame(ctx, index, x, y, size) {
-      const tile = ((Math.floor(index) % 48) + 48) % 48;
-      ctx.drawImage(image, (tile % 8) * 120, Math.floor(tile / 8) * 120, 120, 120, x, y, size, size);
+      const tile = ((Math.floor(index) % SHEET.count) + SHEET.count) % SHEET.count;
+      ctx.drawImage(image, (tile % SHEET.cols) * SHEET.tile, Math.floor(tile / SHEET.cols) * SHEET.tile,
+        SHEET.tile, SHEET.tile, x, y, size, size);
     }
 
     function render(time) {
       if (!loaded) return;
       const delta = Math.min(80, Math.max(0, time - (last || time)));
       last = time;
-      scrollBlur *= Math.exp(-delta / 130);
       progress += (target - progress) * (1 - Math.exp(-delta / 320));
       if (Math.abs(target - progress) < 0.001) progress = target;
       const merge = smooth(ramp(progress, 0.87, 1));
@@ -718,7 +949,9 @@
       stage.style.clipPath = merge < 0.001 ? "" : "inset(" + insetTop.toFixed(1) + "px " + insetRight.toFixed(1) + "px " + insetBottom.toFixed(1) + "px " + insetLeft.toFixed(1) + "px round 8px)";
       stage.style.opacity = String(1 - coverMix);
       stage.style.visibility = progress < 0.2 || coverMix > 0.999 ? "hidden" : "";
-      stage.style.filter = "blur(" + Math.max(Math.sin(Math.PI * merge) * 0.7, scrollBlur).toFixed(2) + "px)";
+      // CSS 层不做整排模糊：运动模糊改由每格自身沿运动方向的拖影实现（见 drawTile），
+      // 这样中心焦点格始终锐利、边缘格才有拖影。这里只保留汇聚瞬间的极轻微柔化。
+      stage.style.filter = "blur(" + (Math.sin(Math.PI * merge) * 0.35).toFixed(2) + "px)";
       // 封面先在同一位置完整绘制，帧带最后渐隐露出它，避免两层半透明叠加变暗。
       cover.style.opacity = merge >= 0.96 ? "1" : "0";
       const shell = smooth(ramp(merge, 0.23, 0.70));
@@ -737,14 +970,16 @@
       settings.style.pointerEvents = settingsShell > 0.98 ? "" : "none";
       settingParts.forEach((part, index) => reveal(part, smooth(ramp(merge, 0.58 + index * 0.11, 0.85 + index * 0.07)), index === 0 ? -14 : 12, 16));
 
-      const speed = 1 + 12 * ramp(progress, 0.40, 0.86) + 2 * ramp(progress, 0.40, 0.86) * ramp(scrollBlur, 0, 1.4);
+      // 速度由滚动「进度位置」决定，而非滚动动作快慢：停在第几段，就持续以该段速度运转。
+      // 帧带在 0.20 出现后先静止一段，到 0.34 才开始加速——同一位置无论怎么滚，速度都一致。
+      const speed = 36 * ramp(progress, 0.34, 0.85);
       frame += direction * delta * speed / 1000;
       const stripSize = sizeCanvas(strip);
       const stripCtx = strip.getContext("2d");
       stripCtx.clearRect(0, 0, stripSize.width, stripSize.height);
       if (merge < 0.999) {
-        const tileSize = Math.min(stripSize.height * 0.9, 96 * stripSize.scale);
-        const step = tileSize;
+        const tileSize = Math.min(stripSize.height * 0.86, 96 * stripSize.scale);
+        const step = tileSize * 1.45; // 帧间留缝加大，让每格更像独立的一帧
         const count = Math.ceil(stripSize.width / step) + 2;
         const first = Math.floor(-frame) - 1;
         const targetX = (coverRect.left + coverRect.width / 2 - stageRect.left) * stripSize.scale;
@@ -752,16 +987,39 @@
         const finalSize = coverRect.width * stripSize.scale;
         const size = tileSize + (finalSize - tileSize) * merge;
         const focus = Math.round(targetX / step - frame - 0.5);
+        // 清晰中心：展开态落在带子视觉正中（屏幕中间那格），汇聚时平滑过渡到要放大的焦点格。
+        const visualCenter = (stripSize.width / 2 - tileSize / 2) / step - frame;
+        const clearSlot = visualCenter + (focus - visualCenter) * merge;
         function drawTile(i, alpha, sourceFrame) {
           const x = (i + frame) * step + tileSize / 2;
           const y = stripSize.height / 2;
-          stripCtx.globalAlpha = alpha;
-          drawFrame(stripCtx, sourceFrame, x + (targetX - x) * merge - size / 2, y + (targetY - y) * merge - size / 2, size);
+          const dx = x + (targetX - x) * merge - size / 2;
+          const dy = y + (targetY - y) * merge - size / 2;
+          // 运动模糊合成：清晰中心那格单次绘制保持锐利；越靠两边的格子沿运动方向拖影越强。
+          // 模糊强度跟随速度（速度由进度决定）：起步段清晰，越往下拖影越强，稳定不闪烁。
+          const spread = Math.min(Math.abs(i - clearSlot) / 4, 1);
+          const motion = ramp(speed, 3, 26);
+          const blur = spread * motion;
+          if (blur < 0.06) {
+            stripCtx.globalAlpha = alpha;
+            drawFrame(stripCtx, sourceFrame, dx, dy, size);
+            return;
+          }
+          const samples = 9;
+          const trail = blur * step * 0.38; // 单侧拖影距离
+          for (let s = 0; s < samples; s++) {
+            const t = (s / (samples - 1) - 0.5) * 2; // -1 ~ 1
+            stripCtx.globalAlpha = alpha * 0.15 * (1 - Math.abs(t) * 0.5);
+            drawFrame(stripCtx, sourceFrame, dx + t * trail, dy, size);
+          }
         }
+        // 每一格固定画序列里的一帧（slot*2），带着平移，格内画面永不随时间翻页。
         for (let i = first; i < first + count; i++) {
-          if (i !== focus && merge < 0.82) drawTile(i, Math.pow(1 - ramp(merge, 0.35, 0.82), 2), frame + i * 2);
+          if (i !== focus && merge < 0.82) drawTile(i, Math.pow(1 - ramp(merge, 0.35, 0.82), 2), i * 2);
         }
-        drawTile(focus, 1, frame);
+        drawTile(focus, 1, focus * 2);
+        // 汇聚到封面时锁定焦点格的那一帧，带子退场后封面就定格在这里。
+        coverFrame = ((focus * 2) % SHEET.count + SHEET.count) % SHEET.count;
         stripCtx.globalAlpha = 1;
       }
       const coverSize = sizeCanvas(cover);
@@ -770,7 +1028,7 @@
       const previewSize = Math.min(coverSize.width, coverSize.height);
       const jump = ease((time - jumpStartedAt) / 360);
       const lift = jump < 1 ? Math.sin(Math.PI * jump) * 8 * coverSize.scale : 0;
-      drawFrame(coverCtx, frame, (coverSize.width - previewSize) / 2, (coverSize.height - previewSize) / 2 - lift, previewSize);
+      drawFrame(coverCtx, coverFrame, (coverSize.width - previewSize) / 2, (coverSize.height - previewSize) / 2 - lift, previewSize);
       if (!inView && Math.abs(progress - target) < 0.001) {
         active = false;
         return;
@@ -799,14 +1057,11 @@
       if (!loaded) return;
       const height = window.innerHeight;
       const next = ease((height * 1.18 - section.getBoundingClientRect().top) / (height * 1.05));
-      const now = performance.now();
       if (next !== target) {
         direction = next > target ? 1 : -1;
-        if (lastScrollTime) scrollBlur = Math.min(1.4, Math.abs(next - target) * height / Math.max(16, now - lastScrollTime) / 3);
         target = next;
         start();
       }
-      lastScrollTime = now;
     }
     window.addEventListener("scroll", updateScroll, { passive: true });
     window.addEventListener("resize", updateScroll, { passive: true });
@@ -817,7 +1072,7 @@
     });
     const observer = new IntersectionObserver(function (entries) {
       if (!entries[0].isIntersecting) return;
-      image.src = "assets/sequence-come.webp";
+      image.src = "assets/sequence-daniya.webp";
       observer.disconnect();
     }, { rootMargin: "700px 0px" });
     observer.observe(section);
@@ -1633,24 +1888,394 @@
 
   /* 本地用真正的 CEP Web mockup；公开页面保留同源截图兜底。 */
   function setupAeStage() {
-    const preview = document.getElementById("ae-live-preview");
-    if (!preview) return;
-    const frame = preview.querySelector(".ae-live-preview__frame");
+    const stage = document.getElementById("ae-stage");
+    const panel = document.getElementById("ae-panel");
+    if (!stage || !panel) return;
+
     const note = document.getElementById("ae-note");
-    const local = ["localhost", "127.0.0.1"].includes(window.location.hostname);
-    if (!local || !frame) return;
-    const url = "http://" + window.location.hostname + ":8082/?mock=1&embed=landing";
-    fetch(url, { mode: "no-cors", cache: "no-store" }).then(function () {
-      frame.addEventListener("load", function () {
-        preview.classList.add("is-live");
-        if (note) note.textContent = isEn() ? "Interactive CEP preview · sample data" : "CEP 实时交互预览 · 示例数据";
-      }, { once: true });
-      frame.hidden = false;
-      frame.src = url;
-    }).catch(function () {
-      // CEP dev server 未运行时，继续展示仓库维护的实拍截图。
+    const list = document.getElementById("ae-items");
+    if (!list) return;
+    let items = Array.prototype.slice.call(list.querySelectorAll(".cep-item"));
+    const allBox = document.getElementById("ae-all");
+    const allBox2 = document.getElementById("ae-all2");
+    const search = document.getElementById("ae-search");
+    const chips = panel.querySelectorAll(".cep-chip");
+    const count = document.getElementById("ae-count");
+    const bar = document.getElementById("ae-bar");
+    const rowbar = document.getElementById("ae-rowbar");
+    const views = document.getElementById("ae-views");
+    const outBtn = document.getElementById("ae-out");
+    const overlay = document.getElementById("ae-overlay");
+    const overlayClose = document.getElementById("ae-overlay-close");
+    const goBtn = document.getElementById("ae-go");
+    const themeBtn = document.getElementById("ae-theme");
+    const logBtn = document.getElementById("ae-log");
+
+    function setNote(t) {
+      if (note) note.textContent = t;
+    }
+
+    /* ---- 选中态：勾选 ⇄ 条目高亮 ⇄ 计数 ⇄ 全选框三态 ---- */
+    function syncSelection() {
+      let sel = 0;
+      items.forEach(function (it) {
+        const cb = it.querySelector('.cep-cb > input');
+        const on = !!(cb && cb.checked);
+        it.classList.toggle("is-sel", on);
+        if (on) sel++;
+      });
+      const total = items.length;
+      if (count) count.textContent = sel + " / " + total;
+      [allBox, allBox2].forEach(function (b) {
+        if (!b) return;
+        b.checked = total > 0 && sel === total;
+        b.indeterminate = sel > 0 && sel < total;
+      });
+      return sel;
+    }
+
+    /* ---- 总进度 = 已完成 + 进行中占比（虚拟）----
+       真实 bar-total__fill 有 is-shimmer 态：runningCount > 0 时走accent→hot 渐变 + 扫光 */
+    function syncProgress() {
+      let done = 0;
+      let run = 0;
+      items.forEach(function (it) {
+        const d = it.querySelector(".cep-dot.is-done");
+        const r = it.querySelector(".cep-dot.is-run");
+        if (d) done++;
+        if (r) run++;
+      });
+      const pct = Math.round(((done + run * 0.38) / items.length) * 100);
+      if (bar) {
+        bar.style.width = Math.min(100, pct) + "%";
+        bar.classList.toggle("is-run", run > 0);
+      }
+      return { done: done, run: run, pct: pct };
+    }
+
+    items.forEach(function (it) {
+      const cb = it.querySelector('.cep-cb > input');
+      const name = it.dataset.name || "";
+      if (cb) {
+        cb.addEventListener("change", function () {
+          const sel = syncSelection();
+          setNote(
+            cb.checked
+              ? "已选 " + name + " · " + (it.dataset.fmt || "APNG") + " → " + (it.dataset.path || "ae-comp")
+              : "已取消 " + name + " · 当前选中 " + sel + " 个合成"
+          );
+        });
+      }
+      // 点行任意处切换勾选（真实面板是点行选中 + 点勾选框多选，这里合成一处）
+      it.addEventListener("click", function (e) {
+        if (e.target.closest(".cep-mini") || e.target.closest(".cep-cb")) return;
+        if (cb) {
+          cb.checked = !cb.checked;
+          cb.dispatchEvent(new Event("change"));
+        }
+      });
+      // 行内设置按钮 → 打开输出配置覆盖层
+      it.querySelectorAll(".cep-mini").forEach(function (b) {
+        b.addEventListener("click", function (e) {
+          e.stopPropagation();
+          openOverlay();
+          const cap = overlay && overlay.querySelector(".cep-input");
+          if (cap) cap.textContent = name;
+        });
+      });
     });
+
+    /* ---- 全选（三态） ---- */
+    function toggleAll() {
+      const anyOff = items.some(function (it) {
+        const cb = it.querySelector('.cep-cb > input');
+        return cb && !cb.checked;
+      });
+      items.forEach(function (it) {
+        const cb = it.querySelector('.cep-cb > input');
+        if (cb) cb.checked = anyOff;
+      });
+      const sel = syncSelection();
+      // 取消全选不再提示（"已清空选择 · 当前 0 个合成" 这类文案无信息量）
+      if (anyOff) setNote("已全选 " + sel + " 个合成");
+    }
+    if (allBox) allBox.addEventListener("change", toggleAll);
+    if (allBox2) allBox2.addEventListener("change", toggleAll);
+
+    /* ---- 搜索过滤（对齐 mod-list__filter 的 keyword） ---- */
+    if (search) {
+      search.addEventListener("input", function () {
+        const kw = search.value.trim().toLowerCase();
+        let shown = 0;
+        items.forEach(function (it) {
+          const hit = !kw || (it.dataset.name || "").toLowerCase().indexOf(kw) >= 0;
+          it.style.display = hit ? "" : "none";
+          if (hit) shown++;
+        });
+        setNote(kw ? "搜索「" + search.value.trim() + "」· 命中 " + shown + " 个合成" : "输入项目 · 共 " + items.length + " 个合成");
+      });
+    }
+
+    /* ---- 排序 chips：fps / 帧数 ---- */
+    let sortKey = "fps";
+    let sortAsc = true;
+    function applySort() {
+      items.sort(function (a, b) {
+        const d = (Number(a.dataset[sortKey]) || 0) - (Number(b.dataset[sortKey]) || 0);
+        return sortAsc ? d : -d;
+      });
+      items.forEach(function (it) {
+        list.appendChild(it);
+      });
+      setNote(
+        "按 " + (sortKey === "fps" ? "帧率" : "帧数") + (sortAsc ? "升序" : "降序") + " 排序 · 共 " + items.length + " 个合成"
+      );
+    }
+    chips.forEach(function (chip) {
+      chip.addEventListener("click", function () {
+        const key = chip.dataset.sort || "fps";
+        if (key === sortKey) {
+          sortAsc = !sortAsc;
+        } else {
+          sortKey = key;
+          sortAsc = true;
+        }
+        chips.forEach(function (c) {
+          c.classList.toggle("is-on", c === chip);
+          const i = c.querySelector("i");
+          if (i) i.textContent = c === chip ? (sortAsc ? "↑" : "↓") : "";
+        });
+        applySort();
+      });
+    });
+
+    /* ---- 输出配置覆盖层（CEP 点顶栏最右按钮全屏铺开） ---- */
+    function openOverlay() {
+      if (!overlay) return;
+      overlay.hidden = false;
+      setNote("输出配置 · 输出名 / 压缩质量 / 输出格式 / 输出路径");
+    }
+    function closeOverlay() {
+      if (!overlay) return;
+      overlay.hidden = true;
+    }
+    if (outBtn) outBtn.addEventListener("click", openOverlay);
+    if (overlayClose) overlayClose.addEventListener("click", closeOverlay);
+
+    /* ---- 开始：跑一段进度动画，跑完标记完成 ---- */
+    function runConvert() {
+      const running = items.filter(function (it) {
+        return it.querySelector(".cep-dot.is-run");
+      });
+      if (!running.length) {
+        setNote("没有正在转换的合成 · 勾选合成后点开始");
+        return;
+      }
+      const row = running[0];
+      // 真实是「轨道 .item-bar + 内填 .item-bar__fill」两层，宽度只作用在内填上
+      const rowTrack = row.querySelector(".cep-item__bar");
+      const rowFill = row.querySelector(".cep-item__fill");
+      let p = Number((rowFill && rowFill.style.width.replace("%", "")) || 0);
+      const dot = row.querySelector(".cep-dot");
+      const step = reduceMotion
+        ? function () {}
+        : function () {
+            p = Math.min(100, p + 8);
+            if (rowFill) rowFill.style.width = p + "%";
+            const total = Math.round(((pctBase() + p / 100) / items.length) * 100);
+            if (bar) {
+              bar.style.width = Math.min(100, total) + "%";
+              bar.classList.add("is-run");
+            }
+          };
+      function pctBase() {
+        let d = 0;
+        items.forEach(function (it) {
+          if (it !== row && it.querySelector(".cep-dot.is-done")) d++;
+        });
+        return d;
+      }
+      const timer = setInterval(function () {
+        step();
+        if (p >= 100) {
+          clearInterval(timer);
+          row.classList.remove("is-run");
+          if (rowTrack) {
+            rowTrack.classList.remove("is-run");
+            // 真实 .item-bar.is-done .item-bar__fill 用 width:100% !important
+            rowTrack.classList.add("is-done");
+          }
+          if (rowFill) rowFill.style.width = "100%";
+          if (dot) {
+            dot.className = "cep-dot is-done";
+            dot.innerHTML =
+              '<svg viewBox="0 0 24 24"><path d="M22 11.1V12a10 10 0 1 1-5.9-9.1"/><path d="m22 4-10 10-3-3"/></svg>';
+          }
+          syncProgress();
+          setNote("导出完成 · " + (row.dataset.name || "") + " → " + (row.dataset.fmt || "APNG"));
+        }
+      }, 180);
+    }
+    const startBtn = document.getElementById("ae-start");
+    if (startBtn) startBtn.addEventListener("click", runConvert);
+    if (goBtn) {
+      goBtn.addEventListener("click", function () {
+        closeOverlay();
+        runConvert();
+      });
+    }
+
+    /* ---- 视图切换：任务列表⇄ 合成树 ----
+       真实是两个独立组件（projectList / compTree）整块替换，不是同一批 DOM 改样式；
+       这里用 .cep 的 is-tree class 切换显隐，两套 DOM 各自保留自己的交互。 */
+    let isTree = false;
+
+    /* 合成树：勾选 ⇄ 行高亮 ⇄ 全选三态 ⇄ 搜索过滤 ⇄ 列表头排序 */
+    const treeList = document.getElementById("ae-tree-list");
+    const treeSearch = document.getElementById("ae-tree-search");
+    const allBox3 = document.getElementById("ae-all3");
+    let treeRows = treeList
+      ? Array.prototype.slice.call(treeList.querySelectorAll(".cep-ct__row"))
+      : [];
+
+    function syncTree() {
+      let sel = 0;
+      let vis = 0;
+      treeRows.forEach(function (r) {
+        const cb = r.querySelector('.cep-cb > input');
+        const on = !!(cb && cb.checked);
+        r.classList.toggle("is-on", on);
+        r.setAttribute("aria-selected", on ? "true" : "false");
+        if (on) sel++;
+        if (r.style.display !== "none") vis++;
+      });
+      if (allBox3) {
+        allBox3.checked = vis > 0 && sel === vis;
+        allBox3.indeterminate = sel > 0 && sel < vis;
+      }
+      return sel;
+    }
+
+    if (treeList) {
+      treeRows.forEach(function (r) {
+        const cb = r.querySelector('.cep-cb > input');
+        const name = r.dataset.name || "";
+        if (cb) {
+          cb.addEventListener("change", function () {
+            const n = syncTree();
+            setNote(
+              cb.checked ? "已选 " + name + " · " + n + " 个合成"
+                         : "已取消 " + name + " · 当前选中 " + n + " 个合成"
+            );
+          });
+        }
+        r.addEventListener("click", function () {
+          if (!cb) return;
+          cb.checked = !cb.checked;
+          syncTree();
+        });
+      });
+
+      if (allBox3) {
+        allBox3.addEventListener("change", function () {
+          treeRows.forEach(function (r) {
+            const cb = r.querySelector('.cep-cb > input');
+            if (cb && r.style.display !== "none") cb.checked = allBox3.checked;
+          });
+          const n = syncTree();
+          // 取消全选不提示（同上：无信息量）
+          if (allBox3.checked) setNote("已全选 " + n + " 个合成");
+        });
+      }
+
+      if (treeSearch) {
+        treeSearch.addEventListener("input", function () {
+          const kw = treeSearch.value.trim().toLowerCase();
+          treeRows.forEach(function (r) {
+            const hit = !kw || (r.dataset.name || "").toLowerCase().indexOf(kw) >= 0;
+            r.style.display = hit ? "" : "none";
+          });
+          syncTree();
+        });
+      }
+
+      /* 列表头排序：尺寸 / 帧率 / 帧数（真实 compTree 的 sortBy + sortMark） */
+      panel &&
+        panel.querySelectorAll(".cep-ct__c--num[data-sort]").forEach(function (btn) {
+          btn.addEventListener("click", function () {
+            const key = btn.dataset.sort;
+            const dir = btn.classList.contains("is-desc") ? -1 : 1;
+            panel
+              .querySelectorAll(".cep-ct__c--num[data-sort]")
+              .forEach(function (b) {
+                b.classList.remove("is-on", "is-desc");
+                const i = b.querySelector("i");
+                if (i) i.remove();
+              });
+            btn.classList.add("is-on");
+            btn.classList.toggle("is-desc", dir < 0);
+            const mark = document.createElement("i");
+            mark.textContent = dir > 0 ? " ↑" : " ↓";
+            btn.appendChild(mark);
+
+            const num = function (r) {
+              const v = r.dataset[key] || "";
+              return key === "size" ? parseFloat(v) || 0 : Number(v) || 0;
+            };
+            treeRows
+              .slice()
+              .sort(function (a, b) {
+                const x = num(a), y = num(b);
+                if (key === "size") return x * dir === y * dir ? 0 : (x < y ? -1 : 1) * dir;
+                return (x - y) * dir;
+              })
+              .forEach(function (r) {
+                treeList.appendChild(r);
+              });
+            setNote("按" + btn.textContent.trim() + (dir > 0 ? "升序" : "降序") + "排列");
+          });
+        });
+      syncTree();
+    }
+
+    if (views) {
+      views.addEventListener("click", function () {
+        isTree = !isTree;
+        views.classList.toggle("is-on", isTree);
+        if (panel) panel.classList.toggle("is-tree", isTree);
+        setNote(
+          isTree
+            ? "合成树视图 · 表格列出全部合成，可按尺寸 / 帧率 / 帧数排序"
+            : "任务列表视图 · 卡片列出合成，含帧率 / 循环 / 格式摘要"
+        );
+      });
+    }
+
+    /* ---- 主题：面板主题键与真实一致，点一下切换整站明暗（便于对比两套 UI） ---- */
+    if (themeBtn) {
+      themeBtn.addEventListener("click", function () {
+        var root = document.documentElement;
+        var toDark = root.getAttribute("data-theme") !== "dark";
+        try {
+          root.setAttribute("data-theme", toDark ? "dark" : "light");
+          window.localStorage.setItem("uiTheme", toDark ? "dark" : "light");
+        } catch (e) {}
+        setNote(toDark ? "面板切到暗色主题 · 与应用共用一套令牌" : "面板切到亮色主题 · 与应用共用一套令牌");
+      });
+    }
+    if (logBtn) {
+      logBtn.addEventListener("click", function () {
+        logBtn.classList.remove("has-dot");
+        setNote("运行日志 · 扫描 / 编码 / 降质每一步都留痕");
+      });
+    }
+
+    /* ---- 初始态 ---- */
+    syncSelection();
+    const st = syncProgress();
+    setNote("读到 " + items.length + " 个合成 · 已完成 " + st.done + " · 转换中 " + st.run);
   }
+
   resolveLatestDownloads();
 
   setupAeStage();

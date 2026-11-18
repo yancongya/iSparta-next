@@ -1252,8 +1252,59 @@ html[data-theme="dark"] .hero-actions .btn-primary {
   padding: 20px 20px 16px;
 }
 
+/* 压缩路线切换：质量系数 / 色深档位 */
+.gate-route {
+  display: inline-flex;
+  gap: 3px;
+  padding: 3px;
+  margin-bottom: 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+}
+
+.gate-route__btn {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  padding: 7px 14px;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.gate-route__btn:hover {
+  color: var(--ink);
+}
+
+.gate-route__btn.is-on {
+  background: var(--accent);
+  color: #fff;
+}
+
 .gate-quality {
   margin-bottom: 14px;
+}
+
+.gate-quality[hidden] {
+  display: none;
+}
+
+.gate-depth-ticks {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 5px;
+  font-size: 10px;
+  color: var(--muted);
+}
+
+.gate-fmt.is-muted {
+  opacity: 0.38;
+  cursor: not-allowed;
 }
 
 .gate-quality__head {
@@ -1472,6 +1523,47 @@ html[data-theme="dark"] .hero-actions .btn-primary {
 
 .gate-log .st {
   font-weight: 700;
+}
+
+/* 演示「自动重设档位」时，质量/色数数字的跳动反馈 */
+#q-val.is-reset,
+#c-val.is-reset {
+  animation: qReset 0.42s ease;
+}
+@keyframes qReset {
+  0% { opacity: 0.25; transform: translateY(-4px) scale(1.18); color: var(--accent); }
+  60% { opacity: 1; transform: translateY(0) scale(1); color: var(--accent); }
+  100% { color: var(--ink); }
+}
+
+/* 演示「重新压缩中」结果卡状态：体积区轻微处理中观感 */
+.gate-result.is-recoding .gate-result__size {
+  opacity: 0.45;
+  animation: gateRecoding 0.7s ease-in-out infinite;
+}
+.gate-result.is-recoding .gate-meter__fill {
+  opacity: 0.5;
+}
+@keyframes gateRecoding {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.75; }
+}
+
+.gate-badge.is-recoding {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+  background: color-mix(in srgb, var(--accent) 8%, var(--card));
+  font-weight: 700;
+}
+
+/* 演示新增的两类日志：估算起始画质 / 重设质量 */
+.gate-log li.is-est {
+  border-style: dashed;
+  color: var(--muted);
+}
+.gate-log li.is-resetlog {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+  color: var(--accent);
 }
 
 .gate-panel {
@@ -4723,25 +4815,6 @@ html[data-theme="dark"] .cep {
 .ae-panel {
   margin: 0;
 }
-.ae-live-preview {
-  position: relative;
-  flex: 1;
-  min-height: 520px;
-  overflow: hidden;
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background: var(--card);
-}
-.ae-live-preview__fallback,
-.ae-live-preview__frame {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-}
-.ae-live-preview__fallback { object-fit: contain; object-position: center top; transition: opacity .25s ease; }
-.ae-live-preview__frame { border: 0; background: var(--card); }
-.ae-live-preview.is-live .ae-live-preview__fallback { opacity: 0; pointer-events: none; }
 .ae-panel-cap {
   display: flex;
   align-items: center;

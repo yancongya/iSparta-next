@@ -46,7 +46,7 @@
 - **AE panel:** one-button switch between comp tree and task list; the comp tree shows run status and output size, supports draggable column widths and per-comp output formats; double-click a row to open output settings, right-click to jump to a comp / open its location / output folder / stop task; with multiple tasks selected, the toolbar batch settings button opens shared settings; pinned filter bar
 - **Tasks and output:** per-comp settings persist; default output names come from composition names, while custom names are preserved; completed rows show final output size plus clickable format badges; copying files reports progress and result
 - **Grouped settings:** output and global settings use pinned top tabs (Basics / Paths / Animation / Compression); the narrow AE panel collapses to icon-only tabs, with no height jump between tabs
-- **Size estimate & self-check:** starting quality is estimated from the target size before conversion, and the estimated output size (≈xx KB/MB, hover for details) shows on task cards and in the comp-tree status column; encoder binaries are hash-checked with automatic fallback to a healthy copy, with results viewable under "About"
+- **Size estimate & self-check:** the starting setting is estimated from the target size before conversion, and the estimated output size (≈xx KB/MB, click a badge to cycle formats, hover for the full breakdown) stays visible on task cards and in the comp-tree status column even with the limit off; sequences count every frame's source size; encoder binaries are hash-checked with automatic fallback to a healthy copy, with results viewable under "About"
 - **Output actions:** copy completed files; hold Alt while hovering the toolbar button to open the output folder
 - **Bundled install:** system-wide installation (UAC prompt, CEP under Common Files, a single copy per machine); auto-detects the AE version; version shown in both the desktop title bar and the AE panel
 - **Onboarding (7 pages):** Welcome → Import → Output → Naming → Path variables → AE → Done, covering import methods, output settings and naming rules in one pass
@@ -225,17 +225,28 @@ More troubleshooting: the **Run log** panel in the app, and [`docs/ACCEPTANCE-RU
 | APNG | GIF | APNG → GIF |
 | APNG | APNG | Lossless / lossy compress |
 
+APNG / GIF compression offers **two routes** (old configs and tasks behave unchanged):
+
+- **Quality coefficient** — Q-based compression, fully compatible with the original workflow; the APNG lossy-quality bug (quality had no effect) is fixed.
+- **Color depth** — fixed 2 / 4 / 8 / 16 / 32 / 64 / 128 / 256 palettes for smaller, more predictable output; GIFs are quantized precisely with gifsicle (one global palette across all frames, frame count unchanged). WebP has no color count and is greyed out on this route.
+
+Both routes auto-retry on size overflow: quality lowers Q step by step, color depth goes 256→128→…→2. Estimate badges cycle through formats on click and show the full breakdown on hover.
+
 ### Workflow
 
 - **First-run onboarding** — a 7-step tour (import → output → naming → paths → AE) on first launch, skippable and only shown once  
 - **Batch** — many tasks, per-task options, batch start, shared output dir  
 - **Drag & paste** — files/folders or pasted screenshots  
 - **Path templates** — source / beside / custom with variables  
-- **Size limit** — default 1MB; automatic re-encoding from a size limit and retry count
+- **Size limit** — default 1MB; auto re-encodes on overflow (quality route lowers Q, color-depth route lowers color count)
+- **Size estimate** — starting setting inferred from the target size; task cards and the comp tree always show the estimated output (sequences count every frame), click a badge to cycle formats and hover for details
+- **Sequence folder (AE)** — intermediate PNG path is separate from the finished animation, with presets, folder picker and variable templates, defaulting to a comp-named folder beside the project
+- **Batch output settings** — select multiple comps in the AE panel, then open shared path / format / quality settings from the toolbar
+- **Settings layout** — switch output / global settings between grouped tabs and a single page, preference remembered; narrow panels collapse to icon tabs
 - **Compare slider** — original vs output  
 - **Themes** — light, dark, system  
 - **i18n** — 简体中文, 繁體中文, English  
-- **Global defaults** — formats, quality, suffix, limits  
+- **Global defaults** — formats, compression route, quality / color count, suffix, limits  
 
 ## Requirements
 
@@ -442,7 +453,10 @@ Thanks to everyone who contributed to iSparta and its community forks.
 - [apng2webp](https://github.com/Benny-/apng2webp)  
 - [pngout](http://advsys.net/ken/utils.htm)  
 - [pngquant](https://pngquant.org/)  
+- [gifsicle](https://www.lcdf.org/gifsicle/) (GPL-2.0, GIF color quantization)  
 - [libwebp](https://developers.google.com/speed/webp/)  
+
+The pngquant-family tools (GPL-family baseline) and gifsicle (GPL-2.0) ship as standalone binaries; their sources and retrieval instructions are documented in [`targets/cep/bin/README.md`](targets/cep/bin/README.md) and in each platform package. The toolchain integrity check verifies their hashes.
 
 ## License
 
