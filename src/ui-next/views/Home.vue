@@ -574,12 +574,14 @@ export default {
       document.addEventListener('visibilitychange', this.onCompPollVisibility)
     }
     // 启动延迟自动检查：失败静默，由 updateService 写日志
-    updateService.bootstrapUpdateFromStorage()
-    updateService.bindAutoIpcListener()
-    updateService.refreshAutoUpdateState().catch(() => {})
-    this._updateTimer = setTimeout(() => {
-      updateService.runUpdateCheck({ force: false }).catch(() => {})
-    }, 8000)
+    if (process.env.VUE_APP_LANDING_DEMO !== '1') {
+      updateService.bootstrapUpdateFromStorage()
+      updateService.bindAutoIpcListener()
+      updateService.refreshAutoUpdateState().catch(() => {})
+      this._updateTimer = setTimeout(() => {
+        updateService.runUpdateCheck({ force: false }).catch(() => {})
+      }, 8000)
+    }
   },
   beforeDestroy () {
     window.removeEventListener('paste', this.onPaste)

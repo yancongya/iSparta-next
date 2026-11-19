@@ -59,7 +59,7 @@ export default {
       typeof window !== 'undefined' &&
       /[?&]mock=1(?:&|$)/.test(window.location.search) &&
       /[?&]embed=landing(?:&|$)/.test(window.location.search)
-    if (!landingEmbed && shouldAutoOpen()) { openOnboarding() }
+    if (process.env.VUE_APP_LANDING_DEMO !== '1' && !landingEmbed && shouldAutoOpen()) { openOnboarding() }
     if (this.isStandalone) {
       try {
         const api = typeof window !== 'undefined' && window.ispartaAPI

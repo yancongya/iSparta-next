@@ -779,8 +779,6 @@
     });
     window.gsap.from(".hero-stage", {
       opacity: 0,
-      y: 40,
-      scale: 0.97,
       duration: 0.9,
       ease: "power2.out",
       delay: 0.25,
@@ -971,8 +969,8 @@
       settingParts.forEach((part, index) => reveal(part, smooth(ramp(merge, 0.58 + index * 0.11, 0.85 + index * 0.07)), index === 0 ? -14 : 12, 16));
 
       // 速度由滚动「进度位置」决定，而非滚动动作快慢：停在第几段，就持续以该段速度运转。
-      // 帧带在 0.20 出现后先静止一段，到 0.34 才开始加速——同一位置无论怎么滚，速度都一致。
-      const speed = 36 * ramp(progress, 0.34, 0.85);
+      // 帧带先静止，到 0.38 起步，再缓慢加速。
+      const speed = 22 * Math.pow(ramp(progress, 0.38, 0.88), 1.5);
       frame += direction * delta * speed / 1000;
       const stripSize = sizeCanvas(strip);
       const stripCtx = strip.getContext("2d");
@@ -1916,9 +1914,20 @@
     const themeBtn = document.getElementById("ae-theme");
     const logBtn = document.getElementById("ae-log");
 
-    function setNote(t) {
-      if (note) note.textContent = t;
+    let noteKey;
+    let noteValues;
+    function renderNote() {
+      if (!note || !noteKey) return;
+      note.textContent = tRel("ae.note." + noteKey).replace(/\{(\w+)\}/g, function (_, key) {
+        return typeof noteValues[key] === "function" ? noteValues[key]() : noteValues[key];
+      });
     }
+    function setNote(key, values = {}) {
+      noteKey = key;
+      noteValues = values;
+      renderNote();
+    }
+    document.addEventListener("is:lang-applied", renderNote);
 
     /* ---- 选中态：勾选 ⇄ 条目高亮 ⇄ 计数 ⇄ 全选框三态 ---- */
     function syncSelection() {
@@ -1964,11 +1973,9 @@
       if (cb) {
         cb.addEventListener("change", function () {
           const sel = syncSelection();
-          setNote(
-            cb.checked
-              ? "已选 " + name + " · " + (it.dataset.fmt || "APNG") + " → " + (it.dataset.path || "ae-comp")
-              : "已取消 " + name + " · 当前选中 " + sel + " 个合成"
-          );
+          setNote(cb.checked ? "selected" : "deselected", {
+            name, format: it.dataset.fmt || "APNG", path: it.dataset.path || "ae-comp", count: sel
+          });
         });
       }
       // 点行任意处切换勾选（真实面板是点行选中 + 点勾选框多选，这里合成一处）
@@ -2002,7 +2009,7 @@
       });
       const sel = syncSelection();
       // 取消全选不再提示（"已清空选择 · 当前 0 个合成" 这类文案无信息量）
-      if (anyOff) setNote("已全选 " + sel + " 个合成");
+      if (anyOff) setNote("all", { count: sel });
     }
     if (allBox) allBox.addEventListener("change", toggleAll);
     if (allBox2) allBox2.addEventListener("change", toggleAll);
@@ -2017,7 +2024,7 @@
           it.style.display = hit ? "" : "none";
           if (hit) shown++;
         });
-        setNote(kw ? "搜索「" + search.value.trim() + "」· 命中 " + shown + " 个合成" : "输入项目 · 共 " + items.length + " 个合成");
+        setNote(kw ? "search" : "project", { query: search.value.trim(), count: kw ? shown : items.length });
       });
     }
 
@@ -2032,9 +2039,13 @@
       items.forEach(function (it) {
         list.appendChild(it);
       });
-      setNote(
-        "按 " + (sortKey === "fps" ? "帧率" : "帧数") + (sortAsc ? "升序" : "降序") + " 排序 · 共 " + items.length + " 个合成"
-      );
+      noteSort(sortKey, sortAsc);
+    }
+    function noteSort(key, ascending) {
+      setNote("sorted", {
+        column: () => tRel("ae.note." + key),
+        direction: () => tRel(ascending ? "ae.note.asc" : "ae.note.desc")
+      });
     }
     chips.forEach(function (chip) {
       chip.addEventListener("click", function () {
@@ -2058,7 +2069,7 @@
     function openOverlay() {
       if (!overlay) return;
       overlay.hidden = false;
-      setNote("输出配置 · 输出名 / 压缩质量 / 输出格式 / 输出路径");
+      setNote("settings");
     }
     function closeOverlay() {
       if (!overlay) return;
@@ -2073,7 +2084,7 @@
         return it.querySelector(".cep-dot.is-run");
       });
       if (!running.length) {
-        setNote("没有正在转换的合成 · 勾选合成后点开始");
+        setNote("idle");
         return;
       }
       const row = running[0];
@@ -2117,7 +2128,7 @@
               '<svg viewBox="0 0 24 24"><path d="M22 11.1V12a10 10 0 1 1-5.9-9.1"/><path d="m22 4-10 10-3-3"/></svg>';
           }
           syncProgress();
-          setNote("导出完成 · " + (row.dataset.name || "") + " → " + (row.dataset.fmt || "APNG"));
+          setNote("exported", { name: row.dataset.name || "", format: row.dataset.fmt || "APNG" });
         }
       }, 180);
     }
@@ -2168,10 +2179,7 @@
         if (cb) {
           cb.addEventListener("change", function () {
             const n = syncTree();
-            setNote(
-              cb.checked ? "已选 " + name + " · " + n + " 个合成"
-                         : "已取消 " + name + " · 当前选中 " + n + " 个合成"
-            );
+            setNote(cb.checked ? "treeSelected" : "deselected", { name, count: n });
           });
         }
         r.addEventListener("click", function () {
@@ -2189,7 +2197,7 @@
           });
           const n = syncTree();
           // 取消全选不提示（同上：无信息量）
-          if (allBox3.checked) setNote("已全选 " + n + " 个合成");
+          if (allBox3.checked) setNote("all", { count: n });
         });
       }
 
@@ -2237,7 +2245,7 @@
               .forEach(function (r) {
                 treeList.appendChild(r);
               });
-            setNote("按" + btn.textContent.trim() + (dir > 0 ? "升序" : "降序") + "排列");
+            noteSort(key, dir > 0);
           });
         });
       syncTree();
@@ -2248,41 +2256,196 @@
         isTree = !isTree;
         views.classList.toggle("is-on", isTree);
         if (panel) panel.classList.toggle("is-tree", isTree);
-        setNote(
-          isTree
-            ? "合成树视图 · 表格列出全部合成，可按尺寸 / 帧率 / 帧数排序"
-            : "任务列表视图 · 卡片列出合成，含帧率 / 循环 / 格式摘要"
-        );
+        setNote(isTree ? "tree" : "list");
       });
     }
 
     /* ---- 主题：面板主题键与真实一致，点一下切换整站明暗（便于对比两套 UI） ---- */
     if (themeBtn) {
       themeBtn.addEventListener("click", function () {
-        var root = document.documentElement;
-        var toDark = root.getAttribute("data-theme") !== "dark";
-        try {
-          root.setAttribute("data-theme", toDark ? "dark" : "light");
-          window.localStorage.setItem("uiTheme", toDark ? "dark" : "light");
-        } catch (e) {}
-        setNote(toDark ? "面板切到暗色主题 · 与应用共用一套令牌" : "面板切到亮色主题 · 与应用共用一套令牌");
+        const mode = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+        window.LandingI18n.setTheme(mode);
+        setNote("theme", { mode: () => tRel("theme." + mode) });
       });
     }
     if (logBtn) {
       logBtn.addEventListener("click", function () {
         logBtn.classList.remove("has-dot");
-        setNote("运行日志 · 扫描 / 编码 / 降质每一步都留痕");
+        setNote("log");
       });
     }
 
     /* ---- 初始态 ---- */
     syncSelection();
     const st = syncProgress();
-    setNote("读到 " + items.length + " 个合成 · 已完成 " + st.done + " · 转换中 " + st.run);
+    setNote("summary", { count: items.length, done: st.done, running: st.run });
   }
 
   resolveLatestDownloads();
 
+  function setupHeroDemo() {
+    const panel = document.getElementById("hero-demo");
+    const screenshot = panel.previousElementSibling;
+    const frame = document.createElement("iframe");
+    frame.width = screenshot.getAttribute("width");
+    frame.height = screenshot.getAttribute("height");
+    frame.setAttribute("sandbox", "allow-scripts");
+    frame.title = document.getElementById("hero-stage").getAttribute("aria-label");
+    frame.src = "demo/index.html?lang=" + encodeURIComponent(document.documentElement.lang);
+    let ready = false;
+    let progress = 0;
+
+    const fit = new ResizeObserver(function () {
+      const wideWidth = getComputedStyle(panel).getPropertyValue("--hero-demo-width").trim();
+      const width = wideWidth || screenshot.getAttribute("width");
+      if (frame.width !== width) frame.width = width;
+      frame.style.transform = "scale(" + panel.clientWidth / Number(frame.width) + ")";
+    });
+    fit.observe(panel);
+
+    window.addEventListener("message", function onReady(event) {
+      if (event.source !== frame.contentWindow || event.data !== "isparta-demo-ready") return;
+      panel.classList.add("hero-demo--ready");
+      ready = true;
+      sendProgress(progress);
+      sendAppearance();
+      screenshot.setAttribute("aria-hidden", "true");
+      window.removeEventListener("message", onReady);
+    });
+    panel.appendChild(frame);
+    document.addEventListener("is:lang-applied", sendAppearance);
+    document.addEventListener("is:theme-change", sendAppearance);
+
+    function sendAppearance() {
+      if (!ready) return;
+      const root = document.documentElement;
+      frame.contentWindow.postMessage({
+        type: "isparta-demo-appearance", language: root.lang, theme: root.dataset.theme
+      }, "*");
+    }
+
+    function sendProgress(value) {
+      progress = value;
+      if (ready) frame.contentWindow.postMessage({ type: "isparta-demo-scroll", progress }, "*");
+    }
+    return sendProgress;
+  }
+
+  function setupHeroPresentation(updateDemo) {
+    const stage = document.getElementById("hero-stage");
+    const hero = stage.closest(".hero");
+    const copy = hero.querySelector(".hero-copy");
+    const header = document.querySelector("header.top");
+    const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const demoStops = [0, 0.08, 0.49, 0.65, 0.86, 1];
+    let pending = false;
+    let demoTarget = 0;
+    let demoPosition = 0;
+    let demoFrame = 0;
+    let demoTime = 0;
+
+    function advanceDemo(time) {
+      const elapsed = time - demoTime;
+      demoTime = time;
+      demoPosition += (demoTarget - demoPosition) * (1 - Math.exp(-elapsed / 65));
+      if (Math.abs(demoTarget - demoPosition) < 0.001) {
+        demoPosition = demoTarget;
+        demoFrame = 0;
+      } else {
+        demoFrame = window.requestAnimationFrame(advanceDemo);
+      }
+      updateDemo(demoPosition);
+    }
+
+    function queueDemo(progress) {
+      if (motion.matches) {
+        window.cancelAnimationFrame(demoFrame);
+        demoFrame = 0;
+        demoPosition = demoTarget = 0;
+        updateDemo(0);
+        return;
+      }
+
+      // 在框选落点、按下开始和完成处放慢，保留一部分线性速度以免动作卡住。
+      const index = demoStops.findIndex(stop => progress < stop);
+      if (index < 0) {
+        demoTarget = 1;
+      } else {
+        const from = demoStops[index - 1];
+        const span = demoStops[index] - from;
+        const t = (progress - from) / span;
+        demoTarget = from + span * (0.3 * t + 0.7 * t * t * (3 - 2 * t));
+      }
+
+      if (!demoFrame && demoPosition !== demoTarget) {
+        demoTime = performance.now();
+        demoFrame = window.requestAnimationFrame(advanceDemo);
+      }
+    }
+
+    function render() {
+      pending = false;
+      const headerHeight = header ? header.offsetHeight : 0;
+      const height = window.innerHeight - headerHeight;
+      const runway = Math.round(Math.min(560, Math.max(320, height * 0.55)));
+      const demoStart = runway * 0.28;
+      const demoDistance = Math.round(Math.max(600, height * 0.68));
+      const hold = 260;
+      const gap = height < 720 ? 16 : 28;
+      const copyHeight = copy.offsetHeight;
+      const panelHeight = stage.offsetHeight || stage.offsetWidth * 0.75;
+      if (!copyHeight || !panelHeight || height <= 0) return;
+
+      const copyScale = Math.min(0.78, height * 0.38 / copyHeight);
+      const panelScale = Math.min(1, (height - gap * 3 - copyHeight * copyScale) / panelHeight);
+      const combinedHeight = copyHeight * copyScale + gap + panelHeight * panelScale;
+      const finalCopyY = (height - combinedHeight) / 2;
+      const finalPanelY = finalCopyY + copyHeight * copyScale + gap;
+      const initialCopyY = Math.max(gap, (height - copyHeight) / 2);
+      const initialPanelY = initialCopyY + copyHeight + gap;
+      const scroll = headerHeight - hero.getBoundingClientRect().top;
+      const progress = motion.matches ? 1 : Math.max(0, Math.min(1, scroll / runway));
+      const blend = (start, end) => start + (end - start) * progress;
+
+      hero.style.setProperty("--hero-header", headerHeight + "px");
+      hero.style.setProperty("--hero-height", height + "px");
+      const sceneDistance = Math.max(runway, demoStart + demoDistance) + hold;
+      hero.style.setProperty("--hero-runway", motion.matches ? "0px" : sceneDistance + "px");
+      hero.style.setProperty("--hero-copy-y", blend(initialCopyY, finalCopyY) + "px");
+      hero.style.setProperty("--hero-copy-scale", blend(1, copyScale));
+      hero.style.setProperty("--hero-panel-y", blend(initialPanelY, finalPanelY) + "px");
+      hero.style.setProperty("--hero-panel-scale", blend(1, panelScale));
+      hero.style.setProperty("--hero-reveal", progress);
+      queueDemo(Math.max(0, Math.min(1, (scroll - demoStart) / demoDistance)));
+    }
+
+    function schedule() {
+      if (pending) return;
+      pending = true;
+      window.requestAnimationFrame(render);
+    }
+
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule);
+    motion.addEventListener("change", schedule);
+    hero.addEventListener("pointermove", function (event) {
+      if (motion.matches || event.pointerType === "touch") return;
+      const bounds = hero.getBoundingClientRect();
+      hero.style.setProperty("--hero-light-x", ((event.clientX - bounds.left) / bounds.width - 0.5) * 150 + "px");
+      hero.style.setProperty("--hero-light-y", (event.clientY / window.innerHeight - 0.5) * 100 + "px");
+    }, { passive: true });
+    hero.addEventListener("pointerleave", function () {
+      hero.style.removeProperty("--hero-light-x");
+      hero.style.removeProperty("--hero-light-y");
+    });
+    hero.classList.add("hero--scroll-scene");
+    render();
+    const layout = new ResizeObserver(schedule);
+    layout.observe(copy);
+    layout.observe(stage);
+  }
+
+  setupHeroPresentation(setupHeroDemo());
   setupAeStage();
   setupScroll();
   setupCurrentDevice();
@@ -2458,7 +2621,43 @@
       });
     });
 
+    Object.values(panes).forEach(setupShotsCarousel);
     setupShotLightbox();
+  }
+
+  function setupShotsCarousel(pane) {
+    const grid = pane.querySelector(".shots-grid");
+    const shots = Array.from(grid.querySelectorAll(".shot"));
+    if (shots.length < 2) return;
+
+    const controls = document.createElement("div");
+    controls.className = "shots-carousel-controls";
+    const count = document.createElement("span");
+    count.className = "mono";
+    count.setAttribute("aria-live", "polite");
+    let index = 0;
+
+    function show(offset) {
+      index = (index + offset + shots.length) % shots.length;
+      shots.forEach((shot, current) => shot.classList.toggle("shot--current", current === index));
+      count.textContent = (index + 1) + " / " + shots.length;
+    }
+
+    function arrow(offset, key, glyph) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "nav-icon";
+      button.textContent = glyph;
+      button.setAttribute("data-i18n-aria", key);
+      button.setAttribute("aria-label", tRel(key));
+      button.addEventListener("click", () => show(offset));
+      return button;
+    }
+
+    controls.append(arrow(-1, "shots.lbPrev", "‹"), count, arrow(1, "shots.lbNext", "›"));
+    grid.after(controls);
+    grid.classList.add("shots-grid--carousel");
+    show(0);
   }
 
   /**

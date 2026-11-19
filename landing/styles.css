@@ -74,10 +74,6 @@ html[data-theme="dark"] .noise {
   opacity: 0.04;
 }
 
-html[data-theme="dark"] .icon-sun { display: none; }
-html[data-theme="dark"] .icon-moon { display: block; }
-html:not([data-theme="dark"]) .icon-moon { display: none; }
-html:not([data-theme="dark"]) .icon-sun { display: block; }
 
 *,
 *::before,
@@ -687,6 +683,12 @@ html[data-theme="dark"] .nav-cta {
   color: var(--accent);
 }
 
+.nav-theme svg { display: none; }
+html[data-theme-mode="light"] .nav-theme .icon-sun,
+html[data-theme-mode="dark"] .nav-theme .icon-moon,
+html[data-theme-mode="system"] .nav-theme .icon-auto,
+html:not([data-theme-mode]) .nav-theme .icon-auto { display: block; }
+
 .nav-icon:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
@@ -729,6 +731,22 @@ html[data-theme="dark"] .nav-cta {
       color-mix(in srgb, #2b8aef 22%, transparent), transparent 70%);
   filter: blur(56px);
   opacity: 0.55;
+  translate: var(--hero-light-x, 0px) var(--hero-light-y, 0px);
+  transition: translate 420ms ease-out;
+  animation: hero-light-drift 14s ease-in-out infinite alternate;
+}
+
+@keyframes hero-light-drift {
+  from { transform: translate(-24px, 8px) scale(1); }
+  to { transform: translate(34px, 56px) scale(1.18); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero::before {
+    translate: none;
+    animation: none;
+    transition: none;
+  }
 }
 
 html[data-theme="dark"] .hero::before {
@@ -741,6 +759,41 @@ html[data-theme="dark"] .hero::before {
   align-items: center;
   min-width: 0;
   max-width: 100%;
+}
+
+.hero-scene {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.hero.hero--scroll-scene {
+  display: block;
+  padding-top: 0;
+  min-height: calc(var(--hero-height) + var(--hero-runway));
+}
+
+.hero--scroll-scene .hero-scene {
+  position: sticky;
+  top: var(--hero-header);
+  height: var(--hero-height);
+}
+
+.hero--scroll-scene .hero-copy,
+.hero--scroll-scene .hero-stage {
+  position: absolute;
+  top: 0;
+  margin: 0;
+  transform-origin: top center;
+}
+
+.hero--scroll-scene .hero-copy {
+  transform: translateY(var(--hero-copy-y)) scale(var(--hero-copy-scale));
+}
+
+.hero--scroll-scene .hero-stage {
+  transform: translateY(var(--hero-panel-y)) scale(var(--hero-panel-scale));
 }
 
 .eyebrow {
@@ -955,10 +1008,33 @@ html[data-theme="dark"] .hero-actions .btn-primary {
 .hero-shot {
   position: relative;
   width: 100%;
+  transform-origin: center top;
+  transform: perspective(1600px)
+    rotateX(calc(13deg * (1 - var(--hero-reveal, 1))))
+    scale(calc(1 + 0.12 * (1 - var(--hero-reveal, 1))));
   /* 刻意不加 border / box-shadow / drop-shadow：
      drop-shadow 是按元素 alpha 剪影算的，而这里元素里含一层不透明的渐隐遮罩，
      剪影就是个完整矩形 —— 投影会连着遮罩一起投到页面上，底部永远收不干净，
      看起来就是「一块带描边和阴影的图」。想要浮起感就交给顶部极轻的高光。 */
+}
+
+.hero-demo {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: 12px 12px 0 0;
+  visibility: hidden;
+  background: var(--card);
+}
+
+.hero-demo--ready {
+  visibility: visible;
+}
+
+.hero-demo iframe {
+  display: block;
+  border: 0;
+  transform-origin: top left;
 }
 
 .hero-shot img {
@@ -967,6 +1043,25 @@ html[data-theme="dark"] .hero-actions .btn-primary {
   /* 只圆顶部两角：底部交给渐隐遮罩收口，带圆角会在遮罩边缘留两个小凹角 */
   border-radius: 12px 12px 0 0;
   background: var(--card);
+}
+
+@media (min-width: 1050px) {
+  .hero-stage {
+    --hero-demo-width: 1440;
+    width: min(1280px, calc(100vw - 84px));
+    max-width: none;
+  }
+
+  .hero-shot {
+    aspect-ratio: var(--hero-demo-width) / 900;
+  }
+
+  .hero-shot img {
+    position: absolute;
+    inset: 0;
+    height: 100%;
+    object-fit: contain;
+  }
 }
 
 /* 底部渐隐遮罩：从透明过渡到当前主题纸色，让截图底部「沉」进页面。
@@ -979,6 +1074,7 @@ html[data-theme="dark"] .hero-actions .btn-primary {
   /* 渐隐要够「狠」：截图内容是「工作中」的界面（开始按钮、阈值开关都在下半部），
      曲线太缓只会像蒙了层灰。72% 处就压到近不透明，末段留纯 paper 收口。 */
   height: 58%;
+  opacity: calc(1 - var(--hero-reveal, 1));
   pointer-events: none;
   background: linear-gradient(
     to bottom,
@@ -2192,10 +2288,8 @@ html[data-theme="dark"] .dl-badge {
     padding: 12px 16px;
     gap: 10px;
   }
-  /* 顶栏在 375 宽放不下「品牌 + GitHub + EN + 主题 + 下载」：
-     GitHub 图标与主题按钮收起（主题仍可用系统偏好），保住品牌与下载。 */
-  .nav-gh,
-  #theme-toggle {
+  /* 窄屏收起 GitHub 链接，为语言、主题和下载留出空间。 */
+  .nav-gh {
     display: none;
   }
   .brand-text {
@@ -3138,15 +3232,31 @@ html[data-theme="dark"] .cmp-tab.is-on { color: #0c0f0e; }
   outline-offset: 3px;
 }
 
-@media (max-width: 900px) {
-  .shots-grid {
-    grid-template-columns: 1fr 1fr;
-  }
+.shots-carousel-controls {
+  display: none;
 }
 
-@media (max-width: 560px) {
+@media (max-width: 900px) {
   .shots-grid {
     grid-template-columns: 1fr;
+  }
+
+  .shots-grid--carousel .shot:not(.shot--current) {
+    display: none;
+  }
+
+  .shots-carousel-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    margin-top: 14px;
+    color: var(--muted);
+    font-size: 12px;
+  }
+
+  .shots-carousel-controls button {
+    font-size: 22px;
   }
 }
 
@@ -3376,19 +3486,15 @@ html[data-theme="dark"] .cmp-tab.is-on { color: #0c0f0e; }
   background: linear-gradient(155deg, color-mix(in srgb, var(--card) 92%, var(--accent) 8%), var(--card) 58%);
   border: 1px solid color-mix(in srgb, var(--line) 85%, var(--accent) 15%);
   border-radius: 16px;
-  box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 6%, transparent), 0 16px 36px rgba(0, 0, 0, 0.1);
-  transition: transform 0.35s cubic-bezier(.2,.8,.2,1), border-color 0.35s ease, box-shadow 0.35s ease;
+  box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 6%, transparent);
+  transition: transform 0.35s cubic-bezier(.2,.8,.2,1), border-color 0.35s ease;
 }
 
 .rail__track > .about-card:hover,
 .rail__track > .why-card:hover {
-  transform: translateY(-7px);
+  transform: none;
   border-color: color-mix(in srgb, var(--accent) 48%, var(--line));
-  box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 9%, transparent), 0 24px 48px rgba(0, 0, 0, 0.2), 0 0 28px color-mix(in srgb, var(--accent) 8%, transparent);
-}
-
-.rail__track > .about-card--ill:hover {
-  box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 9%, transparent), 0 24px 48px rgba(0, 0, 0, 0.2), 0 0 28px color-mix(in srgb, var(--accent) 8%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 22%, transparent);
 }
 
 .rail__track > .about-card::after,
@@ -3701,6 +3807,11 @@ html[data-theme="dark"] .cmp-tab.is-on { color: #0c0f0e; }
 
 .rail--driven .rail__viewport {
   overflow-x: hidden;
+}
+
+@media (max-width: 900px) {
+  .rail__viewport { scrollbar-width: none; }
+  .rail__viewport::-webkit-scrollbar { display: none; }
 }
 
 .rail--driven .rail__track {
@@ -4596,87 +4707,56 @@ html[data-theme="dark"] .cmp-tab.is-on { color: #0c0f0e; }
   flex-direction: column;
 }
 
-/* 右：2 列 × 4 行 = 8 张；行高均分，卡内文字按容器高度缩放 */
 .ae-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  grid-auto-rows: minmax(0, 1fr);
-  gap: 14px;
-  margin: 0;
-  container-type: size;
+  grid-auto-rows: minmax(min-content, 1fr);
+  column-gap: clamp(18px, 2.5vw, 36px);
+  border-bottom: 1px solid var(--line);
 }
 .ae-card {
-  container-type: size;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  overflow: hidden;
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: var(--radius, 14px);
-  /* 内边距 / 字号按卡片自身高度（cqh）等比缩放：
-     面板拉高 → 卡片变高 → 文字同步放大，始终填满不溢出 */
-  padding: clamp(8px, 9cqh, 16px) clamp(11px, 12cqh, 20px);
-  transition: transform 0.2s cubic-bezier(0.34, 1.4, 0.64, 1),
-    border-color 0.2s ease, box-shadow 0.2s ease;
+  min-width: 0;
+  padding: clamp(15px, 1.65vw, 25px) 0;
+  border-top: 1px solid var(--line);
 }
-.ae-card:hover {
-  transform: translateY(-3px);
-  border-color: var(--accent);
-  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.08);
+.ae-card:nth-child(-n+2) {
+  border-top-color: var(--accent);
 }
-/* 标题行：图标与标题同行（窄卡片里竖排会挤掉正文行数） */
 .ae-card-head {
   display: flex;
   align-items: center;
-  gap: clamp(5px, 6cqh, 10px);
-  margin-bottom: clamp(3px, 4cqh, 7px);
+  gap: 9px;
+  margin-bottom: 8px;
 }
 .ae-card-ico {
   display: grid;
   place-items: center;
-  flex: none;
-  width: clamp(20px, 22cqh, 36px);
-  height: clamp(20px, 22cqh, 36px);
-  border-radius: 9px;
-  background: var(--accent-soft);
-  border: 1px solid var(--line);
+  flex: 0 0 22px;
+  color: var(--accent);
 }
 .ae-card-ico svg {
-  width: 55%;
-  height: 55%;
+  width: 22px;
+  height: 22px;
   fill: none;
-  stroke: var(--ink);
-  stroke-width: 1.7;
+  stroke: currentColor;
+  stroke-width: 1.6;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
-/* 描边型 path（ae-f-d）/ 圆角矩形（ae-f-r）/ 高亮圆点（ae-f-dot） */
-.ae-card-ico .ae-f-r { fill: none; }
-.ae-card-ico .ae-f-dot { fill: var(--accent); stroke: none; }
+.ae-card-ico .ae-f-dot {
+  fill: currentColor;
+  stroke: none;
+}
 .ae-card h3 {
   margin: 0;
-  font-size: clamp(12px, 13cqh, 16px);
-  line-height: 1.3;
-  min-width: 0;
+  font-size: clamp(14px, 1.2vw, 17px);
+  line-height: 1.28;
 }
 .ae-card p {
   margin: 0;
-  font-size: clamp(10px, 10cqh, 12.5px);
-  line-height: 1.45;
+  font-size: clamp(12px, .96vw, 14px);
+  line-height: 1.55;
   color: var(--muted);
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 6;
-  overflow: hidden;
-}
-.ae-card code {
-  font-family: var(--mono);
-  font-size: 0.78em;
-  background: var(--accent-soft);
-  color: var(--accent);
-  padding: 1px 4px;
-  border-radius: 4px;
 }
 
 @media (max-width: 1080px) {
@@ -4684,47 +4764,13 @@ html[data-theme="dark"] .cmp-tab.is-on { color: #0c0f0e; }
 }
 @media (max-width: 900px) {
   .ae-stage-grid { grid-template-columns: minmax(0, 1fr); gap: 22px; }
-  .ae-stage-grid > .ae-panel { width: min(100%, 360px); max-width: 100%; min-height: 0; margin: 0 auto; }
-  .ae-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: auto; }
-  .ae-card { padding: 15px 14px; }
-  .ae-card-ico { width: 34px; height: 34px; margin-bottom: 9px; }
-  .ae-card h3 { font-size: 0.92rem; }
-  .ae-card p { font-size: 0.8rem; }
+  .ae-stage-grid > .ae-panel { width: 100%; max-width: 100%; min-height: 0; margin: 0; }
+  .ae-grid { grid-auto-rows: auto; }
 }
-@media (max-width: 620px) {
-  .ae-grid {
-    grid-template-columns: minmax(0, 1fr);
-    grid-auto-rows: auto;
-    container-type: normal;
-  }
-  .ae-card {
-    container-type: normal;
-    min-height: 0;
-    padding: 14px;
-    justify-content: flex-start;
-    overflow: visible;
-  }
-  .ae-card-head {
-    gap: 8px;
-    margin-bottom: 8px;
-  }
-  .ae-card-ico {
-    width: 32px;
-    height: 32px;
-    margin: 0;
-  }
-  .ae-card h3 {
-    font-size: 0.95rem;
-    line-height: 1.35;
-    overflow-wrap: anywhere;
-  }
-  .ae-card p {
-    display: block;
-    overflow: visible;
-    font-size: 0.82rem;
-    line-height: 1.55;
-    -webkit-line-clamp: unset;
-  }
+@media (max-width: 540px) {
+  .ae-grid { grid-template-columns: minmax(0, 1fr); }
+  .ae-card:nth-child(2) { border-top-color: var(--line); }
+  .ae-card p { font-size: 13px; }
 }
 
 /* 左：CEP 面板 mockup —— 结构与配色都对齐真实应用
@@ -5574,7 +5620,6 @@ html[data-theme="dark"] .cep {
 
 @media (max-width: 760px) {
   .ae-stage-grid { gap: 22px; }
-  .ae-panel { max-width: 360px; margin: 0 auto; }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -15,7 +15,7 @@
         显示 16px 用 64px 源，留足高分屏余量。
       -->
       <span class="wbar__mark" aria-hidden="true">
-        <img src="app://./icons/icon-64.png" width="16" height="16" alt="" decoding="async" />
+        <img src="icons/icon-64.png" width="16" height="16" alt="" decoding="async" />
       </span>
       <span class="wbar__name">{{ appName }}</span>
       <span class="wbar__ver mono">{{ appVersion }}</span>

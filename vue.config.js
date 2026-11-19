@@ -19,11 +19,14 @@ module.exports = {
     // （targets/cep/ui），导致 ui/install/ 污染包内容——安装辅助应只存在于
     // 包根 install/（由 prepare-cep-payload / pack-cep-zip / CI 播种）。
     // ignore glob 相对 from 目录（public/），故写 install 与 install/**
-    if (process.env.BUILD_TARGET === 'cep') {
+    if (process.env.BUILD_TARGET === 'cep' || process.env.VUE_APP_LANDING_DEMO === '1') {
       config.plugin('copy').tap((args) => {
         const patterns = args[0]
         for (const p of patterns) {
           p.ignore = [...(p.ignore || []), 'install', 'install/**']
+          if (process.env.VUE_APP_LANDING_DEMO === '1') {
+            p.ignore.push('bin', 'bin/**', 'lib', 'lib/**')
+          }
         }
         return args
       })
@@ -42,6 +45,11 @@ module.exports = {
       ? require('path').join(__dirname, 'targets', 'cep')
       : undefined
   }
+}
+
+if (process.env.VUE_APP_LANDING_DEMO === '1') {
+  module.exports.outputDir = 'landing/demo'
+  module.exports.publicPath = './'
 }
 
 // CEP 面板（W2u）：独立 entry 输出到 targets/cep/ui，复用 src/ui-next + util/processor

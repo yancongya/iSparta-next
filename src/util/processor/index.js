@@ -16,6 +16,7 @@ import hostAdapter 	from '../host-env'
 import appLog from '../../ui-next/log'
 import i18n from '../../i18n'
 import { sampleTimedFrameIndices } from '../frameRemap'
+import { outputFilesOf } from '../task-output'
 
 function stat (label) {
   try {
@@ -123,6 +124,19 @@ function runWithConcurrency (tasks, limit) {
 
 export default function (store, sameOutputPath, locale) {
   var action = new Action(store)
+  if (process.env.VUE_APP_LANDING_DEMO === '1') {
+    return Promise.resolve().then(() => {
+      action.items.forEach(item => {
+        outputFilesOf(item).forEach(file => fs.writeFileSync(file, 'demo output\n'.repeat(256)))
+        store.dispatch('editProcess', {
+          index: item.index,
+          text: locale.convertSuccess,
+          detail: '',
+          schedule: 1
+        })
+      })
+    })
+  }
   var taskFactories = []
   // 输出目录尾空格会并行渲出「闪闪」和「闪闪 」两套帧
   if (sameOutputPath != null && sameOutputPath !== '') {

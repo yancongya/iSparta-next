@@ -28,7 +28,7 @@
 
   <link rel="icon" href="assets/icon.png" />
   <link rel="apple-touch-icon" href="assets/icon.png" />
-  <link rel="stylesheet" href="styles.css?v=20261015-download-count" />
+  <link rel="stylesheet" href="styles.css?v=20261119-narrow-layout" />
 
   <!-- Structured data -->
   <script type="application/ld+json">
@@ -129,9 +129,10 @@
 
       <div class="nav-side">
         <button type="button" class="nav-icon" id="lang-toggle" data-i18n-aria="lang.toggle" title="Language">EN</button>
-        <button type="button" class="nav-icon" id="theme-toggle" data-i18n-aria="theme.toggle" title="Theme">
+        <button type="button" class="nav-icon nav-theme" id="theme-toggle" aria-label="主题">
           <svg class="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.6"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
           <svg class="icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 019.5 4 7 7 0 1019 15.5 8.5 8.5 0 0020 14.5z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+          <svg class="icon-auto" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M12 17v3m-4 0h8"/></svg>
         </button>
 
         <a class="nav-gh" href="https://github.com/yancongya/iSparta-next" target="_blank" rel="noopener" data-i18n-aria="nav.github" title="GitHub">
@@ -198,6 +199,7 @@
        信息条放在标题与截图之间（参考站即如此）：它解释「这是什么 / 跑在什么上」，
        压在截图下方会显得是图的注脚，反而抢走截图的位置。 -->
   <section class="hero">
+    <div class="hero-scene">
     <div class="hero-copy">
       <h1 class="hero-title hero-title--scramble" data-i18n="hero.h1" id="hero-title">图片变动图</h1>
       <p class="hero-sub" data-i18n="hero.sub">
@@ -231,11 +233,13 @@
     <figure class="hero-stage" id="hero-stage"  data-i18n-aria="a11y.heroFig"aria-label="iSparta-next 工作台界面">
       <div class="hero-shot">
         <img src="assets/shots/desktop-workspace-hd.webp"  data-i18n-alt="a11y.shot.workbench"alt="iSparta-next 工作台：任务列表与输出设置" width="1200" height="900" fetchpriority="high" />
+        <div class="hero-demo" id="hero-demo"></div>
         <!-- 渐隐遮罩：只盖住底部一段，让截图「沉」进背景而不是硬边收口。
              两端色都取自当前主题的 paper，暗色下改用深色，亮色下用纸色。 -->
         <span class="hero-shot__fade" aria-hidden="true"></span>
       </div>
     </figure>
+    </div>
   </section>
 
   <!-- 可抓取产品说明（SEO 静态正文，不依赖 JS） -->
@@ -915,79 +919,57 @@
           </div>
         </figure>
 
-        <!-- 右：AE 四大特色 -->
+        <!-- 右：AE 功能要点 -->
         <div class="ae-grid" role="list">
-          <article class="ae-card">
+          <article class="ae-card" role="listitem">
             <div class="ae-card-head">
               <span class="ae-card-ico" aria-hidden="true">
                 <svg viewBox="0 0 24 24"><path class="ae-f-d" d="M20 12a8 8 0 1 1-2.3-5.6"/><path class="ae-f-d" d="M17.7 3.5v3.2h-3.2"/><circle cx="12" cy="12" r="2.4" class="ae-f-dot"/></svg>
             </span>
-              <h3 data-i18n="ae.f1t">刷新即识别，直接出片</h3>
+              <h3 data-i18n="ae.f1t">合成同步，直接导出</h3>
             </div>
-            <p data-i18n="ae.f1d">面板开着就自动同步工程里的合成，嵌套的子合成也一并列出；勾选即可导出 APNG / WebP / GIF，不必回到桌面端。</p>
+            <p data-i18n="ae.f1d">自动同步当前工程的合成，包括嵌套合成。勾选后直接在 AE 导出 APNG、WebP 或 GIF。</p>
           </article>
-          <article class="ae-card">
+          <article class="ae-card" role="listitem">
             <div class="ae-card-head">
               <span class="ae-card-ico" aria-hidden="true">
                 <svg viewBox="0 0 24 24"><rect class="ae-f-r" x="3" y="4" width="7.5" height="16" rx="2"/><rect class="ae-f-r" x="13.5" y="4" width="7.5" height="16" rx="2"/><path class="ae-f-d" d="M3 9h7.5M13.5 9H21"/></svg>
             </span>
-              <h3 data-i18n="ae.f2t">两种视图，随意切换</h3>
+              <h3 data-i18n="ae.f2t">用合成树管理工程</h3>
             </div>
-            <p data-i18n="ae.f2d">任务列表与合成树视图一键切换，右键合成可在 AE 里直接定位，双击则打开输出设置，管理一整个工程也不费劲。</p>
+            <p data-i18n="ae.f2d">在合成树与任务列表之间切换，按尺寸或帧率排序。双击合成打开输出设置，随时查看进度和产物大小。</p>
           </article>
-          <article class="ae-card">
+          <article class="ae-card" role="listitem">
             <div class="ae-card-head">
               <span class="ae-card-ico" aria-hidden="true">
                 <svg viewBox="0 0 24 24"><path class="ae-f-d" d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path class="ae-f-d" d="M9.5 13.5c1.6-2 3.4 2 5 0"/></svg>
             </span>
-              <h3 data-i18n="ae.f3t">变量输出路径，归档不乱</h3>
+              <h3 data-i18n="ae.f3t">多选，一次配好</h3>
             </div>
-            <p data-i18n="ae.f3d">输出目录支持 <code>{srcPath}</code>、<code>{srcName}</code>、<code>{parent}</code>、<code>{date}</code> 等变量模板，按源目录与工程目录自动归档，批量导出后依然条理清晰。</p>
+            <p data-i18n="ae.f3d">一次为多条合成设置格式、质量和输出目录，各条任务仍可单独命名。</p>
           </article>
-          <article class="ae-card">
+          <article class="ae-card" role="listitem">
             <div class="ae-card-head">
               <span class="ae-card-ico" aria-hidden="true">
-                <svg viewBox="0 0 24 24"><rect class="ae-f-r" x="6" y="2.5" width="12" height="19" rx="2.5"/><path class="ae-f-d" d="M10 5h4"/><path class="ae-f-d" d="M9 9.5h6M9 13h6M9 16.5h3.5"/></svg>
+                <svg viewBox="0 0 24 24"><path d="M4 17a8 8 0 1 1 16 0M12 17l4-5M6 17h12"/><circle class="ae-f-dot" cx="12" cy="17" r="1.8"/></svg>
             </span>
-              <h3 data-i18n="ae.f4t">为 CEP 小屏重新排版</h3>
+              <h3 data-i18n="ae.f4t">开跑前预估产物大小</h3>
             </div>
-            <p data-i18n="ae.f4d">不是把桌面界面硬塞进窄面板：控件、字号与间距都按 CEP 面板宽度重新适配，窄窗口一样完整可用。</p>
+            <p data-i18n="ae.f4d">按 APNG、WebP 或 GIF 查看体积预估，导出前了解哪种格式可能超出目标。</p>
           </article>
-          <article class="ae-card">
+          <article class="ae-card" role="listitem">
             <div class="ae-card-head">
-              <span class="ae-card-ico" aria-hidden="true">
-                <svg viewBox="0 0 24 24"><path class="ae-f-d" d="M13 2 4.5 13H11l-1 9 8.5-11H12z"/><path class="ae-f-d" d="M3 7h4M3 12h3M3 17h4"/></svg>
-            </span>
-              <h3 data-i18n="ae.f5t">开发热更新，改完即生效</h3>
+              <span class="ae-card-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="8" cy="6" r="2" class="ae-f-dot"/><circle cx="15" cy="12" r="2" class="ae-f-dot"/><circle cx="10" cy="18" r="2" class="ae-f-dot"/></svg></span>
+              <h3 data-i18n="ae.f5t">按画质或色数压缩</h3>
             </div>
-            <p data-i18n="ae.f5d">面板与主程序都接上开发服务器：改代码自动热替换，CEP 面板不用重装、不用重启 AE，迭代调试快得多。</p>
+            <p data-i18n="ae.f5d">按质量或色数调整体积。需要保留原位深时，APNG 可输出 32 位 RGBA。</p>
           </article>
-          <article class="ae-card">
+          <article class="ae-card" role="listitem">
             <div class="ae-card-head">
-              <span class="ae-card-ico" aria-hidden="true">
-                <svg viewBox="0 0 24 24"><rect class="ae-f-r" x="2.5" y="4" width="19" height="13" rx="2"/><path class="ae-f-d" d="M8 21h8M12 17v4"/><path class="ae-f-d" d="M6.5 11.5 9 9l2.5 3 3-4.5 3 4"/></svg>
-            </span>
-              <h3 data-i18n="ae.f6t">CEP 端能力对齐桌面版</h3>
+              <span class="ae-card-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 7h7l2 2h9v11H3zM5 4h14M8 15h8"/></svg></span>
+              <h3 data-i18n="ae.f6t">按工程或日期归档</h3>
             </div>
-            <p data-i18n="ae.f6d">扩展面板不是附庸品：任务列表、设置、命名、日志一应俱全，桌面端有的能力这里都能用到。</p>
-          </article>
-          <article class="ae-card">
-            <div class="ae-card-head">
-              <span class="ae-card-ico" aria-hidden="true">
-                <svg viewBox="0 0 24 24"><path class="ae-f-d" d="M12 3v3M12 18v3M3 12h3M18 12h3"/><circle class="ae-f-dot" cx="12" cy="12" r="4.2"/><path class="ae-f-d" d="M5.6 5.6 7.8 7.8M16.2 16.2l2.2 2.2M18.4 5.6 16.2 7.8M7.8 16.2l-2.2 2.2"/></svg>
-            </span>
-              <h3 data-i18n="ae.f7t">贴合 AE 工作流</h3>
-            </div>
-            <p data-i18n="ae.f7d">从工程面板到导出都在 AE 里完成，省去在文件夹与软件之间来回切换，节奏不被打断。</p>
-          </article>
-          <article class="ae-card">
-            <div class="ae-card-head">
-              <span class="ae-card-ico" aria-hidden="true">
-                <svg viewBox="0 0 24 24"><rect class="ae-f-r" x="2.5" y="5" width="14" height="11" rx="2"/><path class="ae-f-d" d="M6.5 20h12a3 3 0 0 0 3-3v-6a3 3 0 0 0-3-3h-1.5"/><circle class="ae-f-dot" cx="7" cy="10.5" r="1.6"/></svg>
-            </span>
-              <h3 data-i18n="ae.f8t">两端同源，产出一致</h3>
-            </div>
-            <p data-i18n="ae.f8d">与桌面端共用同一套压缩 / 合成 / 降质算法，输出的大小规则与命名习惯完全一致，跨端协作不返工。</p>
+            <p data-i18n="ae.f6d">用路径变量生成目标目录，批量导出的文件自动落到对应位置。</p>
           </article>
         </div>
       </div>
@@ -1391,7 +1373,7 @@
        本地副本 72KB + 43KB，GreenSock 标准许可允许自托管部署，许可头保留在文件内 -->
   <script src="assets/vendor/gsap.min.js"></script>
   <script src="assets/vendor/ScrollTrigger.min.js"></script>
-  <script src="i18n.js?v=20261012-navcap7"></script>
-  <script src="main.js?v=20261015-hero-platform"></script>
+  <script src="i18n.js?v=20261119-ae-six"></script>
+  <script src="main.js?v=20261119-narrow-layout"></script>
 </body>
 </html>

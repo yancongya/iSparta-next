@@ -203,22 +203,18 @@
       "ae.pToLbl": "输出到",
       "ae.pRefresh": "刷新合成",
       "ae.pPathLbl": "输出路径",
-      "ae.f1t": "刷新即识别，直接出片",
-      "ae.f1d": "面板开着就自动同步工程里的合成，嵌套的子合成也一并列出；勾选即可导出 APNG / WebP / GIF，不必回到桌面端。",
-      "ae.f2t": "两种视图，随意切换",
-      "ae.f2d": "任务列表与合成树视图一键切换，右键合成可在 AE 里直接定位，双击则打开输出设置，管理一整个工程也不费劲。",
-      "ae.f3t": "变量输出路径，归档不乱",
-      "ae.f3d": "输出目录支持 {srcPath}、{srcName}、{parent}、{date} 等变量模板，按源目录与工程目录自动归档，批量导出后依然条理清晰。",
-      "ae.f4t": "为 CEP 小屏重新排版",
-      "ae.f4d": "不是把桌面界面硬塞进窄面板：控件、字号与间距都按 CEP 面板宽度重新适配，窄窗口一样完整可用。",
-      "ae.f5t": "批量设置，布局随你切换",
-      "ae.f5d": "多选合成后顶栏一键进入批量输出设置，共享路径、格式与质量一次配好；设置面板可在分类标签与「全部一页」间切换，偏好自动记住。",
-      "ae.f6t": "CEP 端能力对齐桌面版",
-      "ae.f6d": "扩展面板不是附庸品：任务列表、设置、命名、日志一应俱全，桌面端有的能力这里都能用到。",
-      "ae.f7t": "贴合 AE 工作流",
-      "ae.f7d": "从工程面板到导出都在 AE 里完成，省去在文件夹与软件之间来回切换，节奏不被打断。",
-      "ae.f8t": "两端同源，产出一致",
-      "ae.f8d": "与桌面端共用同一套压缩 / 合成 / 降质算法，输出的大小规则与命名习惯完全一致，跨端协作不返工。",
+      "ae.f1t": "合成同步，直接导出",
+      "ae.f1d": "自动同步当前工程的合成，包括嵌套合成。勾选后直接在 AE 导出 APNG、WebP 或 GIF。",
+      "ae.f2t": "用合成树管理工程",
+      "ae.f2d": "在合成树与任务列表之间切换，按尺寸或帧率排序。双击合成打开输出设置，随时查看进度和产物大小。",
+      "ae.f3t": "多选，一次配好",
+      "ae.f3d": "一次为多条合成设置格式、质量和输出目录，各条任务仍可单独命名。",
+      "ae.f4t": "开跑前预估产物大小",
+      "ae.f4d": "按 APNG、WebP 或 GIF 查看体积预估，导出前了解哪种格式可能超出目标。",
+      "ae.f5t": "按画质或色数压缩",
+      "ae.f5d": "按质量或色数调整体积。需要保留原位深时，APNG 可输出 32 位 RGBA。",
+      "ae.f6t": "按工程或日期归档",
+      "ae.f6d": "用路径变量生成目标目录，批量导出的文件自动落到对应位置。",
       "dl.eb": "07 · 免费开始 · 开源可商用",
       "dl.h2": "立即下载，专注出片",
       "dl.sub":
@@ -279,7 +275,30 @@
       "foot.c3t": "文档",
       "foot.c4t": "联系",
       "foot.copyright": "Copyright © 2026 iSparta-next · MIT License",
-      "theme.toggle": "切换主题",
+      "theme.toggle": "主题",
+      "theme.system": "自动",
+      "theme.light": "亮色",
+      "theme.dark": "暗色",
+      "ae.note.summary": "读到 {count} 个合成 · 已完成 {done} · 转换中 {running}",
+      "ae.note.selected": "已选 {name} · {format} → {path}",
+      "ae.note.treeSelected": "已选 {name} · {count} 个合成",
+      "ae.note.deselected": "已取消 {name} · 当前选中 {count} 个合成",
+      "ae.note.all": "已全选 {count} 个合成",
+      "ae.note.search": "搜索「{query}」· 命中 {count} 个合成",
+      "ae.note.project": "输入项目 · 共 {count} 个合成",
+      "ae.note.sorted": "按 {column}（{direction}）排序",
+      "ae.note.asc": "升序",
+      "ae.note.size": "尺寸",
+      "ae.note.fps": "帧率",
+      "ae.note.frames": "帧数",
+      "ae.note.desc": "降序",
+      "ae.note.settings": "输出配置 · 输出名 / 压缩质量 / 输出格式 / 输出路径",
+      "ae.note.idle": "没有正在转换的合成 · 勾选合成后点开始",
+      "ae.note.exported": "导出完成 · {name} → {format}",
+      "ae.note.tree": "合成树视图 · 可按尺寸、帧率或帧数排序",
+      "ae.note.list": "任务列表视图 · 显示帧率、循环和格式",
+      "ae.note.theme": "当前主题 · {mode}",
+      "ae.note.log": "运行日志 · 记录扫描、编码和降质",
       "lang.toggle": "切换语言",
     },
     "en-US": {
@@ -475,22 +494,18 @@
       "ae.pToLbl": "Output to",
       "ae.pRefresh": "Refresh comps",
       "ae.pPathLbl": "Output path",
-      "ae.f1t": "Refresh detects, exports instantly",
-      "ae.f1d": "The panel syncs your project's compositions automatically — nested ones included. Tick and export APNG / WebP / GIF without going back to the desktop.",
-      "ae.f2t": "Two views, switch freely",
-      "ae.f2d": "Flip between task-list and comp-tree views in one click; right-click a comp to locate it in AE, double-click to open output settings. Whole projects stay manageable.",
-      "ae.f3t": "Variable output paths, tidy archives",
-      "ae.f3d": "Output folders accept {srcPath}, {srcName}, {parent} and {date} variable templates, auto-filing by source and project folder so batch exports stay organized.",
-      "ae.f4t": "Re-laid out for CEP's small screen",
-      "ae.f4d": "Not a desktop UI squeezed into a narrow panel: controls, type and spacing are re-tuned to CEP's width — fully usable even in a tiny window.",
-      "ae.f5t": "Batch settings, layout your way",
-      "ae.f5d": "Select multiple comps for one-click batch output settings — share path, format and quality at once; switch settings between grouped tabs and a single page, with your choice remembered.",
-      "ae.f6t": "CEP side matches the desktop",
-      "ae.f6d": "The extension panel is no afterthought: task list, settings, naming and logs are all here — everything the desktop can do.",
-      "ae.f7t": "Fits the AE workflow",
-      "ae.f7d": "From the project panel to export, everything happens inside AE — no more shuttling between folders and apps.",
-      "ae.f8t": "One source, identical output",
-      "ae.f8d": "Shares the exact compress / assemble / quality engine with the desktop, so size rules and naming stay identical across both.",
+      "ae.f1t": "Sync comps and export in AE",
+      "ae.f1d": "The panel syncs your project, including nested comps. Select what you need and export APNG, WebP or GIF directly in AE.",
+      "ae.f2t": "Manage comps in two views",
+      "ae.f2d": "Switch between the composition tree and task list, sort by size or frame rate, and double-click a comp to edit its output. See progress and file sizes in the list.",
+      "ae.f3t": "Set up multiple comps at once",
+      "ae.f3d": "Apply format, quality and destination to several comps while keeping a separate name for each.",
+      "ae.f4t": "Estimate file size before exporting",
+      "ae.f4d": "Compare APNG, WebP and GIF estimates to see which formats may exceed your target before exporting.",
+      "ae.f5t": "Compress by quality or color count",
+      "ae.f5d": "Adjust quality or palette size to control file size. APNG can also preserve 32-bit RGBA.",
+      "ae.f6t": "Organize by project or date",
+      "ae.f6d": "Build destinations with path variables so batch exports land in the right folders.",
       "dl.eb": "07 · GET STARTED",
       "dl.h2": "Download now, stay focused",
       "dl.sub":
@@ -551,7 +566,30 @@
       "foot.c3t": "Docs",
       "foot.c4t": "Contact",
       "foot.copyright": "Copyright © 2026 iSparta-next · MIT License",
-      "theme.toggle": "Toggle theme",
+      "theme.toggle": "Theme",
+      "theme.system": "Auto",
+      "theme.light": "Light",
+      "theme.dark": "Dark",
+      "ae.note.summary": "{count} compositions · {done} complete · {running} converting",
+      "ae.note.selected": "Selected {name} · {format} → {path}",
+      "ae.note.treeSelected": "Selected {name} · {count} selected",
+      "ae.note.deselected": "Deselected {name} · {count} selected",
+      "ae.note.all": "Selected all {count} compositions",
+      "ae.note.search": "Search “{query}” · Matches: {count}",
+      "ae.note.project": "Input project · {count} compositions",
+      "ae.note.sorted": "Sorted by {column} ({direction})",
+      "ae.note.asc": "ascending",
+      "ae.note.size": "size",
+      "ae.note.fps": "frame rate",
+      "ae.note.frames": "frame count",
+      "ae.note.desc": "descending",
+      "ae.note.settings": "Output settings · Name / Quality / Format / Path",
+      "ae.note.idle": "No conversion running · Select compositions and press Start",
+      "ae.note.exported": "Exported · {name} → {format}",
+      "ae.note.tree": "Composition tree · Sort by size, frame rate or frame count",
+      "ae.note.list": "Task list · Shows frame rate, loop and format",
+      "ae.note.theme": "Current theme · {mode}",
+      "ae.note.log": "Process log · Tracks scanning, encoding and quality retries",
       "lang.toggle": "Toggle language",
     },
   };
@@ -594,12 +632,12 @@
     document.documentElement.setAttribute("data-theme-mode", themeMode);
     var btn = document.getElementById("theme-toggle");
     if (btn) {
-      btn.setAttribute(
-        "aria-label",
-        (DICT[lang]["theme.toggle"] || "Theme") + " (" + themeMode + ")"
-      );
-      btn.title = themeMode;
+      const pack = DICT[lang];
+      const label = pack["theme.toggle"] + " · " + pack["theme." + themeMode];
+      btn.setAttribute("aria-label", label);
+      btn.title = label;
     }
+    document.dispatchEvent(new CustomEvent("is:theme-change", { detail: currentTheme }));
   }
 
   function applyLang() {
@@ -654,10 +692,8 @@
     } catch (e) {}
   }
 
-  function cycleTheme() {
-    // system → light → dark → system（与应用三态一致）
-    themeMode =
-      themeMode === "system" ? "light" : themeMode === "light" ? "dark" : "system";
+  function setTheme(mode) {
+    themeMode = mode;
     try {
       localStorage.setItem(THEME_KEY, themeMode);
     } catch (e) {}
@@ -673,6 +709,7 @@
   }
 
   window.LandingI18n = {
+    setTheme: setTheme,
     t: function (key) {
       return (DICT[lang] || {})[key];
     },
@@ -690,7 +727,9 @@
     applyLang();
     var themeBtn = document.getElementById("theme-toggle");
     var langBtn = document.getElementById("lang-toggle");
-    if (themeBtn) themeBtn.addEventListener("click", cycleTheme);
+    if (themeBtn) themeBtn.addEventListener("click", function () {
+      setTheme(themeMode === "system" ? "light" : themeMode === "light" ? "dark" : "system");
+    });
     if (langBtn) langBtn.addEventListener("click", toggleLang);
     try {
       window

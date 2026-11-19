@@ -1,5 +1,5 @@
 /**
- * 浏览器调试 mock 桥（dev only）
+ * 浏览器调试与落地页独立演示构建的 mock 桥
  *
  * 用途：`vue-cli-service serve` 纯浏览器运行渲染层，用于 UI/动效快速迭代，
  *       无需启动 Electron。真实桥见 src/preload.js —— 改 preload 时同步维护此处语义。
@@ -30,6 +30,7 @@ const MOCK_NEXT_VERSION = MOCK_VERSION.replace(/\d+$/, (patch) => String(Number(
 /* ---------- 内存文件系统 ---------- */
 
 function fsLoad () {
+  if (process.env.VUE_APP_LANDING_DEMO === '1') return {}
   try {
     return JSON.parse(window.localStorage.getItem(FS_LS_KEY)) || {}
   } catch (e) {
@@ -38,9 +39,105 @@ function fsLoad () {
 }
 
 function fsSave (files) {
+  if (process.env.VUE_APP_LANDING_DEMO === '1') return
   try {
     window.localStorage.setItem(FS_LS_KEY, JSON.stringify(files))
   } catch (e) { /* 配额满时静默降级为会话内存储 */ }
+}
+
+function demoThumb (file) {
+  const scenes = {
+    banner: `
+      <style>
+        .sun{animation:rise 3s ease-in-out infinite alternate}.road{animation:road 1s linear infinite}
+        @keyframes rise{to{transform:translateY(-13px)}} @keyframes road{to{stroke-dashoffset:-19}}
+      </style>
+      <defs><linearGradient id="sky" x2="0" y2="1">
+        <stop stop-color="#251346"/><stop offset="1" stop-color="#d65a6c"/>
+      </linearGradient></defs>
+      <rect width="80" height="80" fill="url(#sky)"/>
+      <circle class="sun" cx="40" cy="37" r="19" fill="#ffbb72"/>
+      <path d="M0 47 13 34l17 15 16-8 10 8 13-18 11 14v35H0Z" fill="#432044"/>
+      <path d="m32 49 17 0 25 31H5Z" fill="#211831"/>
+      <path class="road" d="m40 50 0 32" stroke="#ffd78b" stroke-width="2.5" stroke-dasharray="9 10"/>
+      <path d="m32 49-27 31m44-31 25 31" stroke="#ff749f" stroke-width="1.5"/>
+    `,
+    loading: `
+      <style>
+        .orbit{transform-origin:40px 40px;animation:spin 2.4s linear infinite}
+        .reverse{animation-direction:reverse;animation-duration:3.6s}
+        .beam{animation:pulse 1.2s ease-in-out infinite alternate}
+        @keyframes spin{to{transform:rotate(360deg)}} @keyframes pulse{to{opacity:.3}}
+      </style>
+      <rect width="80" height="80" fill="#10292f"/>
+      <path d="M0 20h80M0 40h80M0 60h80M20 0v80M40 0v80M60 0v80" stroke="#2f5758" opacity=".6"/>
+      <circle cx="40" cy="40" r="29" fill="none" stroke="#3e7b73"/>
+      <circle cx="40" cy="40" r="21" fill="none" stroke="#477c79" stroke-dasharray="2 3"/>
+      <g class="orbit"><path d="M40 11a29 29 0 0 1 29 29" fill="none" stroke="#6ae8c1" stroke-width="3"/><circle cx="69" cy="40" r="4" fill="#e4ffab"/></g>
+      <g class="orbit reverse"><circle cx="40" cy="61" r="3.5" fill="#6ee0fb"/></g>
+      <path class="beam" d="m40 28 10 12-10 12-10-12Z" fill="#b5f0a4"/>
+    `,
+    walk: `
+      <style>
+        .floor{animation:track 1.2s linear infinite}.body{animation:step .6s ease-in-out infinite alternate}
+        .leg{transform-origin:40px 48px;animation:stride .6s ease-in-out infinite alternate}
+        .back{animation-direction:alternate-reverse}
+        @keyframes track{to{stroke-dashoffset:17}} @keyframes step{to{transform:translateY(-4px)}}
+        @keyframes stride{from{transform:rotate(-22deg)}to{transform:rotate(22deg)}}
+      </style>
+      <rect width="80" height="80" fill="#f2bd64"/>
+      <circle cx="60" cy="19" r="9" fill="#fce6a1"/>
+      <path d="m0 42 18-15 19 16 24-25 19 14v48H0Z" fill="#d18053"/>
+      <path d="M0 62q14-9 28-4t29 1 23-2v23H0Z" fill="#754157"/>
+      <path class="floor" d="M0 71h80" stroke="#e69d6d" stroke-width="2" stroke-dasharray="9 8"/>
+      <path class="leg back" d="m40 48 8 12 8 1" fill="none" stroke="#312740" stroke-width="5" stroke-linecap="round"/>
+      <path class="leg" d="m40 48-5 13-7 3" fill="none" stroke="#593450" stroke-width="5" stroke-linecap="round"/>
+      <g class="body"><rect x="25" y="30" width="27" height="21" rx="8" fill="#fff0bc"/>
+        <path d="M27 39h-5v9h5" fill="none" stroke="#a95052" stroke-width="4"/>
+        <rect x="36" y="36" width="12" height="7" rx="3" fill="#49314b"/>
+        <circle cx="44" cy="39" r="1.6" fill="#ffc86d"/>
+      </g>
+    `,
+    emotion: `
+      <style>
+        .face{transform-origin:40px 42px;animation:bounce 1.8s ease-in-out infinite}
+        .spark{transform-origin:40px 40px;animation:spark 1.8s ease-out infinite}
+        @keyframes bounce{0%,100%{transform:translateY(6px) scale(1.12,.86)}45%{transform:translateY(-9px) scale(.96,1.08)}}
+        @keyframes spark{0%{opacity:.1;transform:scale(.65)}55%{opacity:1}100%{opacity:0;transform:scale(1.2)}}
+      </style>
+      <rect width="80" height="80" fill="#64264a"/>
+      <circle cx="40" cy="40" r="28" fill="#83355f"/>
+      <ellipse cx="40" cy="64" rx="19" ry="4" fill="#3d1c3d" opacity=".65"/>
+      <path class="spark" d="m14 16 2 5 5 2-5 2-2 5-2-5-5-2 5-2Zm49 5 2 4 5 1-4 3v5l-4-3-5 1 2-5-2-4Z" fill="#ffd17e"/>
+      <g class="face">
+        <path d="M18 45c0-11 9-20 22-20s22 9 22 20-8 15-22 15-22-4-22-15Z" fill="#ff8fae"/>
+        <path d="M21 43c2-11 10-16 18-16-7 4-10 9-11 15Z" fill="#ffc7ce"/>
+        <path d="m30 43 3-3 3 3m8 0 3-3 3 3m-15 5q5 7 10 0" fill="none" stroke="#562846" stroke-width="2.4" stroke-linecap="round"/>
+        <path d="M25 47h4m22 0h4" stroke="#e65f8c" stroke-width="2.5" stroke-linecap="round"/>
+      </g>
+    `,
+    photo: `
+      <style>
+        .water{animation:tide 2.2s ease-in-out infinite alternate}.boat{animation:sail 4s ease-in-out infinite alternate}
+        .cloud{animation:cloud 4s ease-in-out infinite alternate}
+        @keyframes tide{to{transform:translateX(-19px) translateY(3px)}}
+        @keyframes sail{to{transform:translate(19px,-4px) rotate(-6deg)}}
+        @keyframes cloud{to{transform:translateX(14px)}}
+      </style>
+      <rect width="80" height="80" fill="#20436a"/>
+      <circle cx="55" cy="23" r="10" fill="#ffe7ab"/>
+      <path class="cloud" d="M4 21h24M0 27h18" stroke="#8bbed5" stroke-width="2.5" stroke-linecap="round"/>
+      <path d="m0 49 17-19 16 17L47 35l17 14 16-12v43H0Z" fill="#527a94"/>
+      <path d="M0 54h80v26H0Z" fill="#245879"/>
+      <path class="water" d="M-10 61q8-4 16 0t16 0 16 0 16 0 16 0 16 0 16 0m-110 12q8-4 16 0t16 0 16 0 16 0 16 0 16 0 16 0" fill="none" stroke="#73bfc9" stroke-width="2"/>
+      <g class="boat"><path d="m34 36-12 18h12Z" fill="#fff0c2"/><path d="m36 40 8 14h-8Z" fill="#e8987b"/>
+        <path d="M19 56h28l-6 5H24Z" fill="#f6a164"/></g>
+    `
+  }
+  const key = Object.keys(scenes).find(name => file.includes('/' + name)) || 'banner'
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80">' +
+    scenes[key] + '<style>@media(prefers-reduced-motion:reduce){*{animation:none!important}}</style></svg>'
+  return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg)
 }
 
 function createMockFs () {
@@ -79,9 +176,13 @@ function createMockFs () {
       const virtual = files['__size__:' + p]
       return { ok: true, size: virtual ? Number(virtual) : 1024 }
     },
-    // 1px 透明 PNG 占位，保证缩略图链路形状一致
     readDataUrl: (p) => (Object.prototype.hasOwnProperty.call(files, p)
-      ? { ok: true, dataUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==' }
+      ? {
+          ok: true,
+          dataUrl: process.env.VUE_APP_LANDING_DEMO === '1' && String(p).startsWith('/mock-assets/')
+            ? demoThumb(String(p))
+            : 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='
+        }
       : { ok: false })
   }
 }
@@ -384,6 +485,7 @@ function installMockBridge () {
   window.__ispartaMockBridge = true
 
   seedItems(fs, path, storage)
+  if (process.env.VUE_APP_LANDING_DEMO === '1') return
   if (window.__ispartaMockup) {
     // eslint-disable-next-line no-console
     console.info('[mock-bridge] CEP mockup 仅使用示例合成；__ispartaMockReset() 可重置')
@@ -564,7 +666,7 @@ function installMockBridge () {
 // 例外：CEP 浏览器 mockup（?mock=1）虽然挂着 cep-bridge / ispartaCS，
 // 但没有 AE 宿主，必须强制启用 mock 桥才能显示任务；仅 dev 生效。
 const forceMockup = typeof window !== 'undefined' && !!window.__ispartaMockup
-if (process.env.NODE_ENV === 'development' &&
+if ((process.env.NODE_ENV === 'development' || process.env.VUE_APP_LANDING_DEMO === '1') &&
     typeof window !== 'undefined' &&
     (forceMockup ||
       (!window.__adobe_cep__ && !window.cep && !window.ispartaCS && !window.ispartaCepBridge &&

@@ -72,3 +72,4 @@ build.status
 /targets/cep/ui/bin/*/gifsicle*
 # playwright-cli 的截图与快照落点（本地核验用，不入库）
 .playwright-cli/
+/landing/demo/

@@ -15,6 +15,8 @@
     "dev": "vue-cli-service electron:serve",
     "serve": "node scripts/dev/ui-service.js serve --port 8081",
     "landing:serve": "node scripts/sync-screenshots.js && node scripts/serve-landing.js",
+    "landing:build-demo": "node scripts/dev/ui-service.js build --mode landing-demo",
+    "postlanding:build-demo": "node scripts/dev/clean-build.js --cache-only --apply",
     "sync:shots": "node scripts/sync-screenshots.js",
     "check:shots": "node scripts/sync-screenshots.js --check",
     "preview:guide": "node scripts/dev/serve-guide-preview.js",

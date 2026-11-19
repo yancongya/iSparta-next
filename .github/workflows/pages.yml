@@ -5,6 +5,13 @@ on:
     branches: [master]
     paths:
       - 'landing/**'
+      - 'src/**'
+      - 'public/**'
+      - 'package*.json'
+      - 'vue.config.js'
+      - 'scripts/dev/ui-service.js'
+      - 'scripts/dev/clean-build.js'
+      - '.nvmrc'
       # 截图唯一真相源在 docs/screenshots/：改了它落地页也要跟着更新
       - 'docs/screenshots/**'
       - 'scripts/sync-screenshots.js'
@@ -47,7 +54,13 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version-file: '.nvmrc'
+          cache: npm
+
+      - name: Build workbench demo
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm run landing:build-demo
 
       - name: Sync screenshots
         run: node scripts/sync-screenshots.js
