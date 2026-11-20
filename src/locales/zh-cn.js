@@ -116,6 +116,17 @@ module.exports = {
     "assembling":"正在合成动画",
     "compressing":"正在压缩图片",
     "outputing":"正在输出",
+    // 防覆盖 / 后缀胶囊
+    "suffixCapsuleTip":"点亮后给输出名加 _{format} 后缀，避免覆盖源文件（再点一次取消）",
+    "noticeAutoSuffixTitle":"已自动加后缀",
+    "noticeAutoSuffixTip":"检测到输出会覆盖源文件，已为 {names} 等 {count} 项加后缀。",
+    "noticeOverwriteSourceTitle":"将覆盖源文件",
+    "noticeOverwriteSourceBody":"以下 {count} 项的输出目标就是源文件，继续将直接覆盖原文件：\n{paths}",
+    "overwriteConfirm":"仍要覆盖并开始",
+    "noticeOverwriteExistingTitle":"目标文件已存在",
+    "noticeOverwriteExistingBody":"以下 {count} 个产物已存在，本次将被覆盖：\n{paths}",
+    "noticeFallbackRenameTitle":"已避开源文件覆盖",
+    "noticeFallbackRenameBody":"{from} 会覆盖源文件，已改为写入 {to}。",
     // delay dialog
     "delayTitle":"延时配置",
     // compare dialog

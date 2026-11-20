@@ -116,6 +116,17 @@ module.exports = {
     "assembling":"正在合成動畫",
     "compressing":"正在壓縮圖片",
     "outputing":"正在輸出",
+    // 防覆蓋 / 後綴膠囊
+    "suffixCapsuleTip":"點亮後為輸出名加上 _{format} 後綴，避免覆蓋來源檔（再點一次取消）",
+    "noticeAutoSuffixTitle":"已自動加上後綴",
+    "noticeAutoSuffixTip":"偵測到輸出會覆蓋來源檔，已為 {names} 等 {count} 項加上後綴。",
+    "noticeOverwriteSourceTitle":"將覆蓋來源檔",
+    "noticeOverwriteSourceBody":"以下 {count} 項的輸出目標就是來源檔，繼續將直接覆蓋原檔：\n{paths}",
+    "overwriteConfirm":"仍要覆蓋並開始",
+    "noticeOverwriteExistingTitle":"目標檔案已存在",
+    "noticeOverwriteExistingBody":"以下 {count} 個產物已存在，本次將被覆蓋：\n{paths}",
+    "noticeFallbackRenameTitle":"已避開來源檔覆蓋",
+    "noticeFallbackRenameBody":"{from} 會覆蓋來源檔，已改為寫入 {to}。",
     // delay dialog
     "delayTitle": "延時配置",
     // compare dialog

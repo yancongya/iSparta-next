@@ -117,6 +117,19 @@
             >{{ tokText(t) }}</button>
           </div>
         </div>
+
+        <!-- 防覆盖后缀：按当前勾选格式生成，单选；点亮即在输出名尾部加 _{format} -->
+        <div v-if="formatList.length" class="name-tokens suffix-tokens">
+          <button
+            v-for="format in formatList"
+            :key="'suffix-' + format"
+            type="button"
+            class="tok"
+            :class="{ 'is-off': outputSuffix.toLowerCase() !== format.toLowerCase() }"
+            v-tip="$t('suffixCapsuleTip', { format: format })"
+            @click.stop="toggleOutputSuffix(format)"
+          >_{{ format.toLowerCase() }}</button>
+        </div>
       </div>
 
       <!-- 输出格式：三等分；色深路线下 WEBP 置灰（WebP 无色数概念，保持 quality 编码） -->
@@ -482,7 +495,7 @@ import {
   upsertCustomPreset,
   removeCustomPreset
 } from '../../util/outputPresets'
-import { tokenizeName, joinTokens } from '../../util/tokenizeName'
+import { tokenizeName, joinTokens, applySuffix, resolveSuffixState } from '../../util/tokenizeName'
 import { PALETTE_COLOR_PRESETS, normalizePalette, isPreserveBitDepth } from '../../util/paletteConfig'
 import PathVars from '../../ui-next/components/PathVars.vue'
 import IsPresetBar from '../../ui-next/components/IsPresetBar.vue'
@@ -705,8 +718,17 @@ export default {
     outputName: {
       get () { return (this.curtSetting && this.curtSetting.outputName) || '' },
       set (value) {
-        this.writeOptions({ outputName: value })
+        // 手输以 _{format} 结尾时反解胶囊点亮态，与点胶囊走同一份真相源
+        const hit = resolveSuffixState(value, this.formatList)
+        const patch = { outputName: value }
+        if (String(hit || '').toLowerCase() !== String(this.outputSuffix || '').toLowerCase()) {
+          patch.outputSuffix = hit ? hit.toLowerCase() : ''
+        }
+        this.writeOptions(patch)
       }
+    },
+    outputSuffix () {
+      return (this.curtSetting && this.curtSetting.outputSuffix) || ''
     },
     // 「只留文字」态：文字全选且至少一个分隔符被取消
     wordsOnly () {
@@ -942,6 +964,23 @@ export default {
         return
       }
       this.$store.dispatch('editMultiOptions', patch)
+    },
+    /** 防覆盖后缀胶囊：每项各自增删尾部后缀，多选不会串成同一个名字 */
+    toggleOutputSuffix (format) {
+      const s = String(format || '').toLowerCase()
+      if (!s) return
+      const on = String(this.outputSuffix || '').toLowerCase() !== s
+      const next = on ? s : ''
+      this.selectedList.forEach((item) => {
+        const all = this.$store.getters.getterItems
+        const index = all.indexOf(item)
+        if (index < 0) return
+        const name = (item.options && item.options.outputName) || ''
+        this.$store.dispatch('editOptionsAt', {
+          index,
+          patch: { outputSuffix: next, outputName: applySuffix(name, s, on) }
+        })
+      })
     },
     // ---------- 输出名拆词胶囊 ----------
     syncNameTokens (v) {
@@ -1190,6 +1229,12 @@ export default {
       var index = all.indexOf(item)
       if (index < 0) { return }
       this.$store.dispatch('editOutputNameAt', { index: index, name: value })
+      // 手输尾部后缀同步该项胶囊状态（多选时只影响被编辑的那一项）
+      const hit = resolveSuffixState(value, item.options && item.options.outputFormat)
+      const suffix = hit ? hit.toLowerCase() : ''
+      if (suffix !== String((item.options && item.options.outputSuffix) || '').toLowerCase()) {
+        this.$store.dispatch('editOptionsAt', { index: index, patch: { outputSuffix: suffix } })
+      }
       // 输入后按新名字重建该项拆词
       var k = this.itemKeyOf(item, selectedIdx)
       this.$set(this.nameTokenMap, k, this.buildTokens(value))
@@ -1263,9 +1308,12 @@ export default {
       var outputPath = this.selectedList[0].basic.outputPath
       ipc.send('change-multiItem-fold', outputPath)
     },
-    start (sameOutputPath) {
+    async start (sameOutputPath) {
       // 开始转换前再次提交输入草稿，避免点击按钮与宿主 blur 顺序差异导致沿用旧阈值。
       this.commitSizeDraft()
+      // 覆盖预检通过才收起设置面板；取消时用户可直接改输出名/后缀再试
+      const allowed = await this.$store.dispatch('preflightOutputs', this.selectedList)
+      if (!allowed) return
       let locale = this.$i18n.messages[this.$i18n.locale]
       for (var i = 0; i < this.selectedList.length; i++) {
         this.$store.dispatch('editProcess', {

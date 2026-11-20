@@ -440,7 +440,8 @@ ipcMain.on('get-app-path', function (event) {
 ipcMain.handle('dialog:openFiles', async (event, options = {}) => {
   const result = await dialog.showOpenDialog(win, {
     defaultPath: options.defaultPath,
-    properties: options.properties || ['openFile', 'openDirectory', 'multiSelections']
+    properties: options.properties || ['openFile', 'openDirectory', 'multiSelections'],
+    filters: options.filters || undefined
   })
   return { canceled: result.canceled, filePaths: result.filePaths }
 })

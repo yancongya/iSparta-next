@@ -32,7 +32,7 @@
 - 载体：`options.outputSuffix`（**单值**，空=无后缀），已有字段 + `buildInitialOutputName` 已支持拼接。
 - 胶囊集合 = 当前勾选的输出格式（APNG/GIF/WEBP 各一枚）；**单选点亮**其一 → `outputSuffix = apng|gif|webp`。
 - 后缀作用于输出名整体 → 所有格式产物统一带后缀 → 一次点亮消除所有格式碰撞。
-- 自动点亮判定：按格式逐一算「`join(输出目录, base+'_'+fmt小写+ext) === 源文件路径`」（大小写不敏感）；任一格式命中 → 点亮该格式胶囊。
+- 自动点亮判定（实施时按根因修正）：按格式逐一算「`join(输出目录, base+ext) === 源文件路径`」（大小写不敏感）；任一格式命中说明不加后缀就会覆盖源 → 点亮该格式胶囊，加后缀后目标即不再是源。
 
 ## 3. 文件级改动清单
 
@@ -199,3 +199,10 @@
 - L1 扩到 48/48（新增 tone 透传、白名单、「kv 文字异色且无底色/边框/胶囊 / 文件行无底色」断言）；CEP ≤320 断点仅收窄 gap。
 - 真浏览器 mockup（`:8082/?mock=1`，跳过引导）验收：亮/暗两套主题下标签文字/标题确有不同的 `computedStyle`；380px 视口气泡宽 280px、left/right 82/362 完整不裁切，无竖排。控制台仅 `lib/forge.js` 的 `require is not defined`（既有 mock 噪音，见 2026-11-11 记录）。
 - lint 绿；CEP 编译通过并 `git restore` 产物；本轮全部未 commit。
+
+## 11. 防覆盖主体实施（2026-11-20 14:32，批次1）
+- 范围：§3 #1/#2/#3/#4/#6/#7/#8 全部落地；#5/#9 任务条 UI 留批次2。
+- §6 默认取值（按清单推荐执行）：confirm 正文全路径逐行、保底改名 `_1` 递增、L3 并入 `compression-toggle.l3.js`、多格式封面角标显示全部、去框仅限任务条。
+- 新增 `src/util/outputConflict.js` 纯计算层：`detectSourceCollision` 用 `base+ext` 判定（原文案的 `base+_fmt+ext` 会把已加后缀的源误判），`fallbackRenameForSource` 命中源时追加 `_1`，`classifyOutputConflicts` 分出 source/existing。
+- `tokenizeName.js` 增 `resolveSuffixState`/`applySuffix`；`drag/file.js` 导入命中即设 `outputSuffix` 并轻提示；`setting.vue` 增后缀胶囊、手输反解；`store/index.js` 增 `preflightOutputs`，`sortBar`/`setting` 两个开始入口都先 await；`background.js` 透传 filters；`processor/index.js` 三处 fs.copy 前调用保底改名并落日志（同步改 `outputName` 让 sizeGate 找得到产物）；三语各补 10 个 key。
+- 验证：L1 `comp-output-name.l1.js` 扩到 32 checks（双平台 suffix/碰撞/保底/分类）；L3 场景 D 源文件 SHA256 不变 + `_1` 产物落盘；全量 L1 14 脚本绿、lint 绿。

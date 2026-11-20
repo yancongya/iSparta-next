@@ -28,7 +28,7 @@ for (const [platform, paths, projectPath] of [
   const state = { items: [] }
   const context = vm.createContext({ _, path: paths, npath: paths, window: { storage }, storage, state,
     hostAdapter: { supportsCompImport: true }, registerHostSource: () => {}, persistItems: () => {}, console })
-  for (const file of ['src/util/tokenizeName.js', 'src/util/outputPath.js', 'src/cep/comp-source.js']) {
+  for (const file of ['src/util/tokenizeName.js', 'src/util/outputPath.js', 'src/util/outputConflict.js', 'src/cep/comp-source.js']) {
     vm.runInContext(moduleBody(file), context, { filename: file })
   }
   vm.runInContext('this.sync = ({' + storeSource.slice(syncStart, syncEnd) + '}).syncCompTasks', context)
@@ -69,7 +69,69 @@ for (const [platform, paths, projectPath] of [
       assert.strictEqual(current.options.outputName, '广告工程')
     })
   }
+
+  // ---- 防覆盖：后缀反解 / 碰撞判定 / 落盘保底 / 预检分类 ----
+  check(platform + ' suffix resolve/apply is idempotent', () => {
+    assert.strictEqual(context.resolveSuffixState('cool_apng', 'APNG'), 'APNG')
+    assert.strictEqual(context.resolveSuffixState('cool_APNG', ['GIF', 'APNG']), 'APNG')
+    assert.strictEqual(context.resolveSuffixState('cool', ['APNG']), '')
+    assert.strictEqual(context.applySuffix('cool', 'apng', true), 'cool_apng')
+    assert.strictEqual(context.applySuffix('cool_apng', 'apng', true), 'cool_apng')
+    assert.strictEqual(context.applySuffix('cool_apng', 'apng', false), 'cool')
+  })
+  const dir = paths.join('dir')
+  const src = paths.join(dir, 'cool.png')
+  check(platform + ' source collision detected for matching format', () => {
+    assert.strictEqual(context.detectSourceCollision(src, dir, 'cool', ['APNG', 'GIF', 'WEBP']), 'APNG')
+    assert.strictEqual(context.detectSourceCollision(src, dir, 'cool', ['GIF', 'WEBP']), '')
+  })
+  check(platform + ' fallback rename appends _1 before extension', () => {
+    assert.strictEqual(context.fallbackRenameForSource(src, [src]), paths.join(dir, 'cool_1.png'))
+    assert.strictEqual(context.fallbackRenameForSource(paths.join(dir, 'out.png'), [src]), paths.join(dir, 'out.png'))
+  })
+  check(platform + ' preflight classifies source vs existing output', () => {
+    const sourceHit = [{
+      basic: { outputPath: dir, fileList: [src] },
+      options: { outputName: 'cool', outputFormat: ['APNG'] }
+    }]
+    const a = context.classifyOutputConflicts(sourceHit, () => false)
+    assert.strictEqual(a.source.length, 1)
+    assert.strictEqual(a.existing.length, 0)
+    const existingHit = [{
+      basic: { outputPath: dir, fileList: [paths.join(dir, 'other.png')] },
+      options: { outputName: 'cool', outputFormat: ['APNG'] }
+    }]
+    const b = context.classifyOutputConflicts(existingHit, () => true)
+    assert.strictEqual(b.source.length, 0)
+    assert.strictEqual(b.existing.length, 1)
+  })
 }
+
+check('store preflight action uses confirm + warning', () => {
+  const store = read('src/store/index.js')
+  const start = store.indexOf('  async preflightOutputs (context, items) {')
+  assert(start >= 0)
+  const body = store.slice(start, store.indexOf('\n  },', start))
+  assert(/notice\.confirm/.test(body) && /notice\.warning/.test(body))
+  assert(/classifyOutputConflicts/.test(body))
+})
+check('both start entries wait for preflight', () => {
+  const sortBar = read('src/components/sortBar/sortBar.vue')
+  const setting = read('src/components/setting/setting.vue')
+  assert(/dispatch\('preflightOutputs', selected\)/.test(sortBar))
+  assert(/dispatch\('preflightOutputs', this\.selectedList\)/.test(setting))
+})
+check('setting exposes suffix capsules wired to applySuffix', () => {
+  const setting = read('src/components/setting/setting.vue')
+  assert(/toggleOutputSuffix\(format\)/.test(setting))
+  assert(/applySuffix\(name, s, on\)/.test(setting))
+  assert(/resolveSuffixState\(value, this\.formatList\)/.test(setting))
+})
+check('processor fallback guards all three output formats', () => {
+  const proc = read('src/util/processor/index.js')
+  assert.strictEqual((proc.match(/safeTarget\(path\.join\(item\.basic\.outputPath/g) || []).length, 3)
+  assert(/item\.options\.outputName = path\.basename\(renamed/.test(proc))
+})
 if (failures.length) {
   console.error(failures.join('\n'))
   process.exitCode = 1

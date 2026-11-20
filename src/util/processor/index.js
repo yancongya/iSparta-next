@@ -17,6 +17,7 @@ import appLog from '../../ui-next/log'
 import i18n from '../../i18n'
 import { sampleTimedFrameIndices } from '../frameRemap'
 import { outputFilesOf } from '../task-output'
+import { fallbackRenameForSource } from '../outputConflict'
 
 function stat (label) {
   try {
@@ -327,6 +328,19 @@ function remapApng (item, store, locale) {
 
 function apng2other (item, store, locale) {
   var funcArr = []
+  // 后面会把 fileList[0] 换成临时 out.png，先留住真实源文件用于落盘保底比对
+  const sourceFiles = ((item.basic && item.basic.fileList) || []).slice()
+  const safeTarget = function (target) {
+    const renamed = fallbackRenameForSource(target, sourceFiles)
+    if (renamed !== target) {
+      appLog.warn(i18n.t('noticeFallbackRenameTitle'), i18n.t('noticeFallbackRenameBody', {
+        from: target, to: renamed
+      }))
+      // 让后续 sizeGate / 产物复制按改名后的名字找文件，避免「落盘成功但找不到产物」
+      item.options.outputName = path.basename(renamed, path.extname(renamed))
+    }
+    return renamed
+  }
   // 输出模板可能展开出一个尚不存在的新目录（如 {srcPath}/输出）。CEP 桥的 fs.copy
   // 走 link/copyFile 异步快路径，不自动建父目录，目标缺失则 ENOENT copyfile；
   // 默认 {srcPath} 指向已建好的序列帧目录才一直没暴露。写入前先确保目录存在。
@@ -341,7 +355,7 @@ function apng2other (item, store, locale) {
       case TYPE.APNG:
         funcArr.push(fs.copy(
 				path.join(item.basic.tmpOutputDir, 'out.png'),
-				path.join(item.basic.outputPath, item.options.outputName + '.png')
+				safeTarget(path.join(item.basic.outputPath, item.options.outputName + '.png'))
 			))
         break
 
@@ -349,7 +363,7 @@ function apng2other (item, store, locale) {
         funcArr.push(apng2gif(item, store, locale).then(() => {
           return fs.copy(
 					path.join(item.basic.tmpOutputDir, 'out.gif'),
-					path.join(item.basic.outputPath, item.options.outputName + '.gif')
+					safeTarget(path.join(item.basic.outputPath, item.options.outputName + '.gif'))
 				)
         }))
         break
@@ -358,7 +372,7 @@ function apng2other (item, store, locale) {
         funcArr.push(apng2webp(item, store, locale).then(() => {
           return fs.copy(
 					path.join(item.basic.tmpOutputDir, 'out.webp'),
-					path.join(item.basic.outputPath, item.options.outputName + '.webp')
+					safeTarget(path.join(item.basic.outputPath, item.options.outputName + '.webp'))
 				)
         }))
     }

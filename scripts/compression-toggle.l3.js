@@ -6,6 +6,7 @@
 // 另含 WebP 保真回归：关压缩时 cwebp 必须走 -lossless -exact，产物逐像素与源一致。
 // 用法：node scripts/compression-toggle.l3.js（需 static/bin/win64 真实二进制）
 const assert = require('assert')
+const crypto = require('crypto')
 const fs = require('fs')
 const os = require('os')
 const path = require('path')
@@ -35,6 +36,20 @@ const gpCtx = { Object, Array, console }
 vm.createContext(gpCtx)
 vm.runInContext(gpSrc, gpCtx)
 const { applyGlobalCompressionPatch } = gpCtx.gp
+
+// 防覆盖保底纯函数：与 store/processor 同一份源码
+const ocSrc = fs.readFileSync(path.join(__dirname, '../src/util/outputConflict.js'), 'utf8')
+  .replace(/^import .*$/gm, '')
+  .replace(/^export /gm, '')
+  + '\n;globalThis.oc = { fallbackRenameForSource, classifyOutputConflicts }'
+const ocCtx = { path, Object, Array, String, Boolean }
+vm.createContext(ocCtx)
+vm.runInContext(ocSrc, ocCtx)
+const { fallbackRenameForSource, classifyOutputConflicts } = ocCtx.oc
+
+function sha256 (file) {
+  return crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex')
+}
 
 function ihdr (file) {
   const d = fs.readFileSync(file)
@@ -219,7 +234,27 @@ function run () {
       console.log('ok - 场景C 对照：-q 有损确实有可见像素差异（逐像素断言有效）')
     }
 
-    console.log('\ncompression-toggle L3: 配置生命周期 + 真实色深 + WebP 无损，端到端通过')
+    // ---- 场景 D：关掉后缀胶囊仍要覆盖时，落盘保底改名，源文件 SHA256 不变 ----
+    {
+      const source = path.join(tmp, 'source.png')
+      fs.copyFileSync(master, source)
+      const before = sha256(source)
+      const planned = path.join(tmp, 'source.png') // 输出名同名、输出目录=源目录
+      const guarded = fallbackRenameForSource(planned, [source])
+      assert.strictEqual(guarded, path.join(tmp, 'source_1.png'), '保底应改名到 _1')
+      // 模拟 processor 的 fs.copy：写改名后的目标，绝不写 planned
+      fs.copyFileSync(master, guarded)
+      assert.strictEqual(sha256(source), before, '源文件 SHA256 必须不变')
+      assert(fs.existsSync(guarded), '产物应落在 _1 文件')
+      const classified = classifyOutputConflicts([{
+        basic: { outputPath: tmp, fileList: [source] },
+        options: { outputName: 'source', outputFormat: ['APNG'] }
+      }], () => false)
+      assert.strictEqual(classified.source.length, 1, '预检应识别目标===源')
+      console.log('ok - 场景D：落盘保底改名 _1，源文件 SHA256 不变，预检分类正确')
+    }
+
+    console.log('\ncompression-toggle L3: 配置生命周期 + 真实色深 + WebP 无损 + 防覆盖保底，端到端通过')
   } finally {
     fs.rmSync(tmp, { recursive: true, force: true })
   }

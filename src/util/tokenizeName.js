@@ -47,4 +47,29 @@ export function buildInitialOutputName (baseName, options) {
   return suffix ? joined + '_' + suffix : joined
 }
 
+/**
+ * 从输出名反解当前点亮的格式后缀（大小写不敏感，返回值保留原大小写）。
+ * 传数组时按数组顺序返回第一个命中的格式——调用方给 formatList 即可。
+ */
+export function resolveSuffixState (name, formats) {
+  const lower = String(name || '').toLowerCase()
+  const list = Array.isArray(formats) ? formats : [formats]
+  for (let i = 0; i < list.length; i++) {
+    const fmt = String(list[i] || '')
+    if (fmt && lower.endsWith('_' + fmt.toLowerCase())) return fmt
+  }
+  return ''
+}
+
+/** 打开/关闭输出名尾部的 `_suffix`（只动尾部，缺失/重复均幂等） */
+export function applySuffix (name, suffix, on) {
+  const base = String(name || '')
+  const s = String(suffix || '')
+  if (!s) return base
+  const hit = !!resolveSuffixState(base, [s])
+  if (on && !hit) return base + '_' + s
+  if (!on && hit) return base.slice(0, base.length - s.length - 1)
+  return base
+}
+
 export default tokenizeName

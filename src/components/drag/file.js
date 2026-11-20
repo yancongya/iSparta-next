@@ -1,7 +1,8 @@
 // 依赖库
 import { fs, path } from '../../util/node-env'
 import { resolveOutputPath } from '../../util/outputPath'
-import { buildInitialOutputName } from '../../util/tokenizeName'
+import { buildInitialOutputName, applySuffix } from '../../util/tokenizeName'
+import { detectSourceCollision } from '../../util/outputConflict'
 import notice from '../../ui-next/notice'
 import { t } from '../../i18n'
 import _ from 'lodash'
@@ -15,6 +16,8 @@ const reg = {
 
 // 记录每次操作的文件
 var recordPng = []
+// 导入时自动加后缀的任务名（readerFiles 末尾统一轻提示，避免一条一个 toast）
+var autoSuffixNames = []
 
 // 按 PNG chunk 结构扫描 acTL 判定 APNG（acTL 必在 IDAT 之前，位置不固定）
 function isApngBuffer (buffer) {
@@ -141,11 +144,23 @@ class actionFiles {
       temp.basic.outputPath = resolveOutputPath(temp, temp.options)
     } else {
       // 去除文件名空格；后缀为空时不拼出悬尾的下划线（与 Comp 初始名同函数）
-      let baseName = path.basename(fileList[0]).split('.')[0]
-      temp.options.outputName = buildInitialOutputName(baseName, temp.options)
-      temp.basic.inputPath = address + '/' + path.basename(fileList[0]).split('.')[0]
+      const fileName = path.basename(fileList[0])
+      temp.options.outputName = buildInitialOutputName(fileName.split('.')[0], temp.options)
+      temp.basic.inputPath = address + '/' + fileName.split('.')[0]
       temp.basic.fileList = fileList
       temp.basic.outputPath = resolveOutputPath(temp, temp.options)
+      // 默认「输出到源目录 + 同名」时产物会直接覆盖源文件：任一格式命中就点亮对应后缀胶囊。
+      // 比较基于去掉旧后缀的名字，避免用户上次设过后缀就永远判不中。
+      const plainName = applySuffix(temp.options.outputName, temp.options.outputSuffix || '', false)
+      const hit = detectSourceCollision(fileList[0], temp.basic.outputPath, plainName, temp.options.outputFormat)
+      if (hit) {
+        const suffix = hit.toLowerCase()
+        temp.options.outputSuffix = suffix
+        temp.options.outputName = applySuffix(temp.options.outputName, suffix, true)
+        // 自定义模板可能含 {name}：改名后输出目录要跟着重算
+        temp.basic.outputPath = resolveOutputPath(temp, temp.options)
+        autoSuffixNames.push(fileName)
+      }
     }
     items.push(temp)
   }
@@ -182,7 +197,7 @@ export const f = {
   readerFiles (dir) {
     return new Promise(function (resolve, reject) {
             //
-      items = [], recordPng = []
+      items = [], recordPng = [], autoSuffixNames = []
 
       let operateFiles = new actionFiles()
 
@@ -218,6 +233,14 @@ export const f = {
               d.indexOf(apngDir + path.sep) === 0
           })
         })
+      }
+      if (autoSuffixNames.length) {
+        const names = autoSuffixNames.slice(0, 3).join('、')
+        notice.info(
+          t('noticeAutoSuffixTitle'),
+          t('noticeAutoSuffixTip', { names: names, count: autoSuffixNames.length })
+        )
+        autoSuffixNames = []
       }
       resolve(items)
     })

@@ -116,6 +116,17 @@ module.exports = {
     "assembling":"Assembling animation",
     "compressing":"Compressing images",
     "outputing":"Writing output",
+    // Overwrite guard / suffix capsules
+    "suffixCapsuleTip":"Add _{format} to the output name to avoid overwriting the source file (click again to disable)",
+    "noticeAutoSuffixTitle":"Suffix added automatically",
+    "noticeAutoSuffixTip":"Output would overwrite the source file. Added a suffix to {names} and {count} item(s).",
+    "noticeOverwriteSourceTitle":"Source file will be overwritten",
+    "noticeOverwriteSourceBody":"The output of {count} item(s) points at the source file itself. Continuing will overwrite it:\n{paths}",
+    "overwriteConfirm":"Overwrite and start",
+    "noticeOverwriteExistingTitle":"Output file already exists",
+    "noticeOverwriteExistingBody":"{count} output file(s) already exist and will be overwritten:\n{paths}",
+    "noticeFallbackRenameTitle":"Source overwrite avoided",
+    "noticeFallbackRenameBody":"{from} would overwrite the source file; it was redirected to {to}.",
     // delay dialog
     "delayTitle": "Frame delay",
     // compare dialog

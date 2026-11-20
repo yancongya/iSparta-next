@@ -218,9 +218,12 @@ export default {
       }
     },
     // 与设置页「开始」同一条转换链：只跑勾选项
-    startSelected () {
+    async startSelected () {
       if (!this.canStart) return
       var selected = this.$store.getters.getterSelected
+      // 覆盖源文件必须确认；用户取消时保持待处理，不进入锁/processor
+      const allowed = await this.$store.dispatch('preflightOutputs', selected)
+      if (!allowed) return
       var locale = this.$i18n.messages[this.$i18n.locale]
       for (var i = 0; i < selected.length; i++) {
         this.$store.dispatch('editProcess', {

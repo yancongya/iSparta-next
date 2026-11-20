@@ -10,7 +10,9 @@ import { resolveOutputPath, SEQ_DIR_DEFAULT_TEMPLATE } from '../util/outputPath'
 import { buildInitialOutputName } from '../util/tokenizeName'
 import { existingOutputFilesOf } from '../util/task-output'
 import { applyGlobalCompressionPatch } from '../util/globalPrefs'
+import { classifyOutputConflicts } from '../util/outputConflict'
 import appLog from '../ui-next/log'
+import notice from '../ui-next/notice'
 import i18n from '../i18n'
 const _ = require("lodash");
 // 【bug fix】修复初次使用时读取缓存错误的问题
@@ -412,7 +414,8 @@ const mutations = {
       return false
     }
     if (!selectedItem[0].options) { selectedItem[0].options = {} }
-    _.extend(selectedItem[0].options, _.cloneDeep(keyValue))
+    const patch = _.cloneDeep(keyValue)
+    Object.keys(patch).forEach(function (key) { Vue.set(selectedItem[0].options, key, patch[key]) })
     persistItems()
   },
   [types.ITEMS_EDIT_MULTI_OPTIONS](state, keyValue) {
@@ -423,7 +426,9 @@ const mutations = {
     // 每项独立深拷贝，防止 quality/sizeLimit 等嵌套对象被多项共用
     _.each(state.items, function (item) {
       if (!item.isSelected) { return }
-      _.extend(item.options, _.cloneDeep(keyValue))
+      if (!item.options) { item.options = {} }
+      const patch = _.cloneDeep(keyValue)
+      Object.keys(patch).forEach(function (key) { Vue.set(item.options, key, patch[key]) })
     })
     persistItems()
   },
@@ -509,6 +514,44 @@ const actions = {
   removeAt (context, index) {
     context.commit('REMOVE_AT', index)
   },
+  /**
+   * 开始转换前的覆盖预检（桌面/CEP 同一入口）：
+   * 目标 === 源文件 → 阻断确认；目标已存在但非源 → 8s warning，不阻断。
+   * 返回 false 时调用方必须放弃本次启动。
+   */
+  async preflightOutputs (context, items) {
+    const list = (items && items.length) ? items : context.rootState.items
+    const conflicts = classifyOutputConflicts(list, function (file) {
+      try { return fs.existsSync(file) } catch (e) { return false }
+    })
+    const limit = 8
+    const fmt = function (rows) {
+      const paths = rows.slice(0, limit).map(function (r) { return r.path }).join('\n')
+      return paths + (rows.length > limit ? '\n…' : '')
+    }
+    if (conflicts.source.length) {
+      const ok = await notice.confirm({
+        title: i18n.t('noticeOverwriteSourceTitle'),
+        text: i18n.t('noticeOverwriteSourceBody', {
+          count: conflicts.source.length,
+          paths: fmt(conflicts.source)
+        }),
+        confirmText: i18n.t('overwriteConfirm'),
+        cancelText: i18n.t('cancel')
+      })
+      if (!ok) return false
+    }
+    if (conflicts.existing.length) {
+      notice.warning(
+        i18n.t('noticeOverwriteExistingTitle'),
+        i18n.t('noticeOverwriteExistingBody', {
+          count: conflicts.existing.length,
+          paths: fmt(conflicts.existing)
+        })
+      )
+    }
+    return true
+  },
   add(context, data) {
     context.commit('ITEMS_ADD', data)
   },
@@ -591,7 +634,10 @@ const actions = {
     var item = context.rootState.items[payload.index]
     if (!item) { return }
     if (!item.options) { item.options = {} }
-    _.extend(item.options, _.cloneDeep(payload.patch || {}))
+    // Vue 2 对「新增属性」不触发依赖通知：outputSuffix 等后加字段若原任务没有，
+    // 用 _.extend 写入会让依赖它的 computed（如设置面板胶囊）保持旧值。逐键 Vue.set。
+    const patch = _.cloneDeep(payload.patch || {})
+    Object.keys(patch).forEach(function (key) { Vue.set(item.options, key, patch[key]) })
     persistItems()
   },
   /**

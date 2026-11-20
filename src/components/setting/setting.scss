@@ -654,6 +654,12 @@ body.side-narrow .mod-setting .mod-tabs-bar .is-segmented__item {
   margin-top: var(--is-s-2);
 }
 
+// 防覆盖后缀胶囊与拆词胶囊同款，但用正文体区分「文件名尾巴」语义
+.suffix-tokens {
+  margin-top: var(--is-s-1);
+  .tok { font-family: var(--is-font); }
+}
+
 .tok {
   display: inline-flex;
   align-items: center;
