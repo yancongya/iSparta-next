@@ -423,6 +423,7 @@ iSparta-next/
 | [`docs/SIGNPATH.md`](docs/SIGNPATH.md) | 手册 | Windows 免费代码签名申请 |
 | [`docs/SEO_SUBMIT.md`](docs/SEO_SUBMIT.md) | 手册 | 落地页搜索收录提交 |
 | [`docs/ACCEPTANCE-RUNBOOK.md`](docs/ACCEPTANCE-RUNBOOK.md) | 手册 | 双端真机验收步骤 |
+| [`docs/CEP-DEV-SWITCH.md`](docs/CEP-DEV-SWITCH.md) | 手册 | CEP 开发版/真实版切换（Windows，含加载判定规则） |
 | [`docs/PLAN-DUAL-TARGET.md`](docs/PLAN-DUAL-TARGET.md) | 现状 | 双端共享实现、宿主边界与当前状态 |
 | [`docs/maintenance/optimization-log.md`](docs/maintenance/optimization-log.md) | 记录 | 文档/目录梳理记录与验收边界 |
 | [`targets/cep/README.md`](targets/cep/README.md) | 手册 | CEP 开发、构建与安全挂载 |

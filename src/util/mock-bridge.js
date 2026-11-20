@@ -179,7 +179,10 @@ function createMockFs () {
     readDataUrl: (p) => (Object.prototype.hasOwnProperty.call(files, p)
       ? {
           ok: true,
-          dataUrl: process.env.VUE_APP_LANDING_DEMO === '1' && String(p).startsWith('/mock-assets/')
+          // 演示封面 SVG 动画：seed 任务路径统一以 /mock-assets/ 开头（真实导入文件不会命中）。
+          // 之前仅 landing-demo 构建启用，普通 mockup（8081）封面是 1x1 空白；
+          // 现在所有 mock 场景统一走 demoThumb，8081 与落地页 demo 封面一致、共用一份源码。
+          dataUrl: String(p).startsWith('/mock-assets/')
             ? demoThumb(String(p))
             : 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='
         }

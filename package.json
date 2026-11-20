@@ -16,6 +16,7 @@
     "serve": "node scripts/dev/ui-service.js serve --port 8081",
     "landing:serve": "node scripts/sync-screenshots.js && node scripts/serve-landing.js",
     "landing:build-demo": "node scripts/dev/ui-service.js build --mode landing-demo",
+    "landing:build-demo:watch": "node scripts/dev/ui-service.js build --mode landing-demo --watch",
     "postlanding:build-demo": "node scripts/dev/clean-build.js --cache-only --apply",
     "sync:shots": "node scripts/sync-screenshots.js",
     "check:shots": "node scripts/sync-screenshots.js --check",

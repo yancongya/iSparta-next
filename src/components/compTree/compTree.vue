@@ -238,6 +238,7 @@ import {
   stateOf as taskStateOf, iconOfState, existingOutputFilesOf,
   sizeTextOfFiles, sizeTipOfFiles, lastLineOf
 } from '../../util/task-output'
+import { buildStateTipBlocks } from '../../util/detailTipBlocks'
 import notice from '../../ui-next/notice'
 import hostAdapter from '../../util/host-env'
 import { OUTPUT_FORMATS, defaultOutputFormats } from '../../util/outputFormats'
@@ -246,9 +247,10 @@ import {
   loadColumnLayout, saveColumnLayout, CT_NAME_KEY, CT_NAME_MIN
 } from '../../util/compTreeColumns'
 import { fs } from '../../util/node-env'
-import { estimateOutput, estimateSourceBytes, humanSize, humanSizeCompact, formatLetter, pickEstDetail } from '../../util/qualityEstimate'
+import { estimateOutput, estimateSourceBytes, humanSizeCompact, formatLetter, pickEstDetail } from '../../util/qualityEstimate'
+import { buildEstimateTipBlocks } from '../../util/estimateTipBlocks'
 import { createLazyEstimate } from '../../util/lazyEstimate'
-import { readPngBitDepth } from '../../util/pngBitDepth'
+import { readPngBitDepth, formatCanPreserveBitDepth } from '../../util/pngBitDepth'
 import { isPreserveBitDepth } from '../../util/paletteConfig'
 
 /** 合成节点的估算源字节：转换前序列未渲染，按 宽×高×帧数 估一个量级 */
@@ -738,30 +740,38 @@ export default {
     stateTipOf (node) {
       const state = this.stateOf(node)
       const size = this.stateSizeOf(node)
-      const lines = [state === 'done' && size
-        ? this.stateNameOf(node) + ' · ' + size
-        : this.stateNameOf(node)]
+      const name = this.stateNameOf(node)
+      const data = {
+        stateLabel: state === 'done' && size ? name + ' · ' + size : name,
+        stateTone: state === 'fail' ? 'bad' : (state === 'done' ? 'ok' : 'idle'),
+        badgeText: state === 'fail' ? this.$t('statFail') : '',
+        detail: '',
+        files: [],
+        copyText: ''
+      }
       if (state !== 'done') {
         const detail = String(this.stateDetailOf(node) || '').replace(/\r/g, '').trim()
         // 失败原因常是 stderr 多行原文，hover 给全文；没有原因时退回最近一条过程文案
-        if (detail) {
-          lines.push(detail)
-        } else {
-          const log = lastLineOf(this.stateLogOf(node))
-          if (log) lines.push(log)
-        }
-      }
-      if (state === 'done') {
+        data.detail = detail || lastLineOf(this.stateLogOf(node)) || ''
+      } else {
+        let tip = ''
         if (typeof window !== 'undefined' && window.__ispartaMockup) {
-          lines.push('/mock/output/' + String((node && node.name) || 'comp') + ' — ' + size)
+          tip = '/mock/output/' + String((node && node.name) || 'comp') + ' — ' + size
         } else {
           const task = this.taskOf(node)
-          const tip = task ? sizeTipOfFiles(existingOutputFilesOf(task)) : ''
-          if (tip) lines.push(tip)
+          tip = task ? sizeTipOfFiles(existingOutputFilesOf(task)) : ''
         }
-        lines.push(this.$t('compStateCopy'))
+        // sizeTipOfFiles 每行为「路径 — 大小」，拆成两列交给 filelist（保留全文于 title）
+        if (tip) {
+          data.files = tip.split('\n').filter(Boolean).map(function (line) {
+            const at = line.lastIndexOf(' — ')
+            if (at >= 0) return { name: line.slice(0, at), size: line.slice(at + 3) }
+            return { name: line, size: '' }
+          })
+        }
+        data.copyText = this.$t('compStateCopy')
       }
-      return lines.join('\n')
+      return { blocks: buildStateTipBlocks(data) }
     },
     /** 点击状态列复制产物：复用顶栏同一套宿主桥与通知文案 */
     async onStateClick (node) {
@@ -838,6 +848,10 @@ export default {
         value.srcBits = info.bits
         value.srcIndexed = info.colorType === 3
         value.preserve = isPreserveBitDepth(task.options)
+        // 保真时按所选格式区分能力：GIF 格式硬上限 256 色索引，保不住 32-bit
+        value.limitedFormats = (value.details || [])
+          .filter(function (d) { return !formatCanPreserveBitDepth(d.format) })
+          .map(function (d) { return d.format })
       }
       return value
     },
@@ -850,39 +864,12 @@ export default {
       if (!node) return null
       return this._lazyEstimate.get(node.id, node, this.nodeEstimateStamp(node))
     },
-    /** 角标 hover：预估产物大小 + 分格式明细 + 规划值 + 尺寸估算声明（色深路线显示 C 档） */
+    /** 角标 hover：结构化富气泡（方案 B 仪表），与 projectList 共用单一构建源 */
     estimateTipOf (node) {
       const e = this.estimateOf(node)
       if (!e) return ''
-      const lines = []
-      if (e.mode === 'colors') {
-        lines.push(this.$t('estimateColorsHover', { size: e.text, c: e.colors }))
-      } else {
-        lines.push(this.$t('estimateHover', { size: e.text, q: e.quality }))
-      }
-      if (e.details && e.details.length > 1) {
-        e.details.forEach((d) => {
-          const over = d.over ? ' ' + this.$t('estimateFormatOver') : ''
-          lines.push(d.format + ' ' + humanSize(d.bytes) + over)
-        })
-        lines.push(this.$t('estimateCycleHint'))
-      }
-      if (e.over) lines.push(this.$t('estimateOver', { target: humanSize(e.target) }))
-      // 无目标（未开 OUTPUT SIZE LIMITED）时不显示「目标」行，只交代源量级
-      lines.push(e.hasTarget
-        ? this.$t('estimateDetail', { source: humanSize(e.sourceBytes), target: humanSize(e.target) })
-        : this.$t('estimateDetailSource', { source: humanSize(e.sourceBytes) }))
-      // 位深行：源首帧探测到才显示。保真=保留源位深无损；压缩=产物 8-bit 索引
-      if (e.srcBits) {
-        const srcLabel = e.srcIndexed
-          ? this.$t('bitDepthIndexed', { bits: e.srcBits })
-          : this.$t('bitDepthTrue', { bits: e.srcBits })
-        lines.push(e.preserve
-          ? this.$t('bitDepthPreserved', { src: srcLabel })
-          : this.$t('bitDepthForward', { src: srcLabel, dst: this.$t('bitDepthIndexed', { bits: 8 }) }))
-      }
-      lines.push(this.$t('estimateDisclaimerEstimated'))
-      return lines.join('\n')
+      const t = (key, vars) => this.$t(key, vars)
+      return { blocks: buildEstimateTipBlocks(e, t) }
     },
     /**
      * 角标当前显示的格式：默认最坏格式，点击轮换后按 estFmtIdx 显示。

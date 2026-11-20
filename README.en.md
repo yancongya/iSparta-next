@@ -375,6 +375,7 @@ Double-click friendly wrappers under `scripts/dev/`: `run-all-dev`, `run-dev-cep
 | [`docs/SIGNPATH.md`](docs/SIGNPATH.md) | Guide | Free Windows code signing application |
 | [`docs/SEO_SUBMIT.md`](docs/SEO_SUBMIT.md) | Guide | Landing page search submission |
 | [`docs/ACCEPTANCE-RUNBOOK.md`](docs/ACCEPTANCE-RUNBOOK.md) | Guide | Dual-target on-device acceptance steps |
+| [`docs/CEP-DEV-SWITCH.md`](docs/CEP-DEV-SWITCH.md) | Guide | CEP dev/real version switching on Windows (incl. load-decision rules) |
 | [`docs/PLAN-DUAL-TARGET.md`](docs/PLAN-DUAL-TARGET.md) | Current | Shared desktop/CEP implementation, host boundaries, and status |
 | [`docs/maintenance/optimization-log.md`](docs/maintenance/optimization-log.md) | Log | Documentation/layout maintenance and verification boundaries |
 | [`targets/cep/README.md`](targets/cep/README.md) | Guide | CEP development, build, and safe local mounting |

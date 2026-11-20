@@ -72,7 +72,10 @@ function push (options) {
 function schedule (item) {
   if (!item.duration) return
   const entry = { startedAt: Date.now(), remaining: item.duration, handle: null }
-  entry.handle = setTimeout(() => close(item.id), item.remaining)
+  // 延迟必须取 entry.remaining（剩余时长），不是 item.remaining。
+  // toast 对象上没有 remaining 字段，误用会得到 undefined → setTimeout 按 0ms 处理，
+  // 导致每一条 toast 在 push 后下一个事件循环就被 close，肉眼永远看不到（延续多版的根因）。
+  entry.handle = setTimeout(() => close(item.id), entry.remaining)
   timers[item.id] = entry
 }
 

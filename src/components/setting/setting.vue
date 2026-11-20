@@ -332,8 +332,11 @@
         <!-- 压缩设置固定一行：左=模式 tab（左对齐），右=开启压缩开关＋对应控件（右对齐）。
              两模式共用同一个总开关，色深模式也有开关（消掉旧版只有质量模式有「启用」的不一致）。
              关压缩=保真（保留源 32-bit，仅 apngopt 无损）。 -->
-        <div class="compression-settings__row" :class="{ 'is-compression-off': !compressionEnabled }">
-          <div class="compression-settings__mode">
+        <!-- 置灰类只加到从属控件（模式 tab / 质量框 / 色数下拉），绝不加在整行容器上：
+             总开关 checkbox 必须与整行解耦，否则关压缩后 pointer-events 会连带罩住它，真实鼠标点不开。
+             从属控件本身都传了 :disabled，交互已被 DOM 阻断，CSS 只负责视觉置灰。 -->
+        <div class="compression-settings__row">
+          <div class="compression-settings__mode" :class="{ 'is-compression-off': !compressionEnabled }">
             <is-segmented
               v-model="paletteMode"
               :options="paletteModeOptions"
@@ -351,6 +354,7 @@
               v-model="quality"
               type="number"
               class="num"
+              :class="{ 'is-compression-off': !compressionEnabled }"
               :disabled="!compressionEnabled"
               :max="100"
               :min="0"
@@ -362,6 +366,7 @@
               v-model="paletteColors"
               :options="paletteColorOptions"
               class="num"
+              :class="{ 'is-compression-off': !compressionEnabled }"
               :aria-label="$t('paletteColors')"
               :disabled="!compressionEnabled"
             />
@@ -728,9 +733,17 @@ export default {
     compressionEnabled: {
       get () { return !isPreserveBitDepth(this.curtSetting) },
       set (value) {
-        this.writeOptions({
+        const patch = {
           preserveBitDepth: !value,
           quality: { checked: value ? true : this.curtSetting.quality.checked, value: this.quality }
+        }
+        this.writeOptions(patch)
+        // 同步全局默认：新导入任务从 globalSetting 派生，不同步则关压缩后
+        // 新序列仍拿到 preserveBitDepth=false → 走量化出 8-bit（issue #3 反馈 02）。
+        // 只传压缩相关字段，其他默认原样保留；开压缩时顺带把质量路线 checked 打开。
+        this.$store.dispatch('syncGlobalCompression', {
+          preserveBitDepth: !value,
+          quality: { checked: patch.quality.checked }
         })
       }
     },

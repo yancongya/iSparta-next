@@ -44,8 +44,10 @@ export function parsePngBitDepth (header) {
 /** 从文件读首帧位深（惰性调度里调用；读失败返回 null） */
 export function readPngBitDepth (file) {
   if (!file) return null
+  // mock 探测独立一层 try：'__bitdepth__:' 虚拟键只在浏览器 mock 环境存在，
+  // 真机（桌面 / CEP）的 fs 读这个畸形路径会抛错——绝不能让它吞掉下面的真实读取。
   try {
-    // mock 环境：源文件是 'mock' 占位，无法真读 IHDR；预置 __bitdepth__:<path>
+    // 源文件是 'mock' 占位时无法真读 IHDR；预置 __bitdepth__:<path>
     // 虚拟键（形如 '32|6'，bitDepth|colorType）供浏览器预览演示位深行。
     const demo = fs.readFileSync('__bitdepth__:' + file)
     if (demo && typeof demo === 'string' && demo.indexOf('|') > 0) {
@@ -58,6 +60,10 @@ export function readPngBitDepth (file) {
         return { bitDepth: bitDepth, colorType: colorType, bits: bits }
       }
     }
+  } catch (e) {
+    // 真机无虚拟键，忽略，继续走真实文件读取
+  }
+  try {
     const data = fs.readFileSync(file)
     return parsePngBitDepth(data && data.length >= 26 ? data.slice(0, 26) : data)
   } catch (e) {
@@ -78,4 +84,16 @@ export function bitDepthText (info) {
     outputBits: 8,
     outputIndexed: true
   }
+}
+
+/**
+ * 目标格式能否承载源位深（保真输出的格式能力）。
+ * - APNG：PNG 系容器，colorType 6 可承载 32-bit RGBA → 能
+ * - WEBP：VP8L（cwebp -lossless -exact）可承载 RGBA 且逐像素一致 → 能
+ * - GIF：GIF89a 硬上限 256 色索引，**格式层面**就无法承载 32-bit → 不能
+ *   （与是否关压缩无关；关压缩时它仍会降到 8-bit 索引，必须如实告知，
+ *    不能笼统宣称「保留 32-bit 无损」）
+ */
+export function formatCanPreserveBitDepth (format) {
+  return String(format || '').toUpperCase() !== 'GIF'
 }

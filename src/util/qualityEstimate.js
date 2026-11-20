@@ -11,8 +11,8 @@
 
 import { normalizeSizeLimit } from './processor/sizeGate'
 import { effectiveQualityStart } from './sizeLimitConfig'
-import { planStartingQuality, planStartingColors, estimateColorsBytes, estimateBytes } from './sizePlanner'
-import { normalizePalette } from './paletteConfig'
+import { planStartingQuality, planStartingColors, estimateColorsBytes, estimateBytes, estimatePreserveBytes } from './sizePlanner'
+import { normalizePalette, isPreserveBitDepth } from './paletteConfig'
 
 const MB = 1024 * 1024
 
@@ -90,12 +90,40 @@ export function estimateQuality (options, sourceBytes, estimated) {
 export function estimateOutput (options, sourceBytes, estimated) {
   const opts = options || {}
   const sl = opts.sizeLimit
-  const hasTarget = !!(sl && sl.enabled)
   const formats = Array.isArray(opts.outputFormat) ? opts.outputFormat.slice() : []
   if (!formats.length) return null
   const src = Number(sourceBytes)
   if (!(src > 0)) return null
 
+  // 保真输出（关压缩）：整条链路不走量化，也没有质量/色数档位——只有无损路线。
+  // 体积按格式的实测无损系数估（见 sizePlanner.estimatePreserveBytes）。
+  // 体积闸此时整段失效（sizeGate.enforceSizeLimit 保真分支返回 preserved），
+  // 因此不设目标、不标超限——否则会出现「后端闸门已失效、前端仍在报警」的口径不一致。
+  if (isPreserveBitDepth(opts)) {
+    let maxBytesP = 0
+    const detailsP = formats.map(function (format) {
+      const bytes = estimatePreserveBytes(src, format)
+      if (bytes > maxBytesP) maxBytesP = bytes
+      return { format: format, bytes: bytes, over: false }
+    })
+    return {
+      mode: 'preserve',
+      text: humanSize(maxBytesP),
+      bytes: maxBytesP,
+      target: 0,
+      quality: 0,
+      baseline: 0,
+      colors: 0,
+      sourceBytes: src,
+      over: false,
+      estimated: !!estimated,
+      feasible: true,
+      details: detailsP,
+      hasTarget: false
+    }
+  }
+
+  const hasTarget = !!(sl && sl.enabled)
   const pal = normalizePalette(opts)
   const baseline = effectiveQualityStart(opts.quality && opts.quality.value, opts.quality && opts.quality.checked)
 

@@ -273,6 +273,7 @@ import {
   stateOf, statusIcon, outputFilesOf, sizeBytesOfFiles, outputSizeOf, outputSizeTip,
   outputGroupsOf, sizeTextOfFiles
 } from '../../util/task-output'
+import { buildTitleTipBlocks, buildBadgeTipBlocks, buildOutputSizeTipBlocks } from '../../util/detailTipBlocks'
 import rightMenu from './menu'
 import DelayDialog from '../delayDialog/index.vue'
 import CompareDialog from '../compareDialog/index.vue'
@@ -283,11 +284,12 @@ import notice from '../../ui-next/notice'
 import hostAdapter, { getSourceAdapter } from '../../util/host-env'
 import { fs } from '../../util/node-env'
 import {
-  estimateOutput, estimateSourceBytes, humanSize, humanSizeCompact,
+  estimateOutput, estimateSourceBytes, humanSizeCompact,
   formatLetter, pickEstDetail
 } from '../../util/qualityEstimate'
+import { buildEstimateTipBlocks } from '../../util/estimateTipBlocks'
 import { createLazyEstimate } from '../../util/lazyEstimate'
-import { readPngBitDepth } from '../../util/pngBitDepth'
+import { readPngBitDepth, formatCanPreserveBitDepth } from '../../util/pngBitDepth'
 import { isPreserveBitDepth } from '../../util/paletteConfig'
 
 /**
@@ -394,6 +396,10 @@ export default {
             value.srcBits = info.bits
             value.srcIndexed = info.colorType === 3
             value.preserve = isPreserveBitDepth(project.options)
+            // 保真时按所选格式区分能力：GIF 格式硬上限 256 色索引，保不住 32-bit
+            value.limitedFormats = (value.details || [])
+              .filter(function (d) { return !formatCanPreserveBitDepth(d.format) })
+              .map(function (d) { return d.format })
           }
         }
         return { stamp: estimateStamp(project), value: value }
@@ -629,39 +635,12 @@ export default {
       void this.estimateTick
       return this._lazyEstimate.get(project, project, estimateStamp(project))
     },
-    /** 角标 hover：预估产物大小 + 分格式明细 + 规划值 + 源/目标量级 + 仅供参考声明（色深路线显示 C 档） */
+    /** 角标 hover：结构化富气泡（方案 B 仪表），与 compTree 共用单一构建源 */
     estimateTipOf (project) {
       const e = this.estimateOf(project)
       if (!e) return ''
-      const lines = []
-      if (e.mode === 'colors') {
-        lines.push(this.$t('estimateColorsHover', { size: e.text, c: e.colors }))
-      } else {
-        lines.push(this.$t('estimateHover', { size: e.text, q: e.quality }))
-      }
-      if (e.details && e.details.length > 1) {
-        e.details.forEach((d) => {
-          const over = d.over ? ' ' + this.$t('estimateFormatOver') : ''
-          lines.push(d.format + ' ' + humanSize(d.bytes) + over)
-        })
-        lines.push(this.$t('estimateCycleHint'))
-      }
-      if (e.over) lines.push(this.$t('estimateOver', { target: humanSize(e.target) }))
-      // 无目标（未开 OUTPUT SIZE LIMITED）时不显示「目标」行，只交代源量级
-      lines.push(e.hasTarget
-        ? this.$t('estimateDetail', { source: humanSize(e.sourceBytes), target: humanSize(e.target) })
-        : this.$t('estimateDetailSource', { source: humanSize(e.sourceBytes) }))
-      // 位深行：源首帧探测到才显示。保真=保留源位深无损；压缩=产物 8-bit 索引
-      if (e.srcBits) {
-        const srcLabel = e.srcIndexed
-          ? this.$t('bitDepthIndexed', { bits: e.srcBits })
-          : this.$t('bitDepthTrue', { bits: e.srcBits })
-        lines.push(e.preserve
-          ? this.$t('bitDepthPreserved', { src: srcLabel })
-          : this.$t('bitDepthForward', { src: srcLabel, dst: this.$t('bitDepthIndexed', { bits: 8 }) }))
-      }
-      lines.push(e.estimated ? this.$t('estimateDisclaimerEstimated') : this.$t('estimateDisclaimer'))
-      return lines.join('\n')
+      const t = (key, vars) => this.$t(key, vars)
+      return { blocks: buildEstimateTipBlocks(e, t) }
     },
     /**
      * 角标当前显示的格式：默认最坏格式（决定超限），点击轮换后按 estFmtIdxMap 显示。
@@ -744,20 +723,20 @@ export default {
     },
     titleTipOf (project) {
       var b = (project && project.basic) || {}
-      var lines = []
-      if (b.compName) lines.push(b.compName)
+      var rows = []
       // 输入目录仅桌面显示：CEP 的输入是 AE 合成，展示它只会让人误以为
       // 「读取源目录」，而用户真正要确认的是输出落在哪、叫什么名字。
       if (this.showOutPath && b.inputPath && this.isRealFsPath(b.inputPath)) {
-        lines.push(this.$t('tipInputDir') + '：' + b.inputPath)
+        rows.push({ label: this.$t('tipInputDir'), value: b.inputPath, mono: true, tone: 'cool' })
       }
       var out = this.outPathOf(project)
       if (out && this.isRealFsPath(out)) {
-        lines.push(this.$t('tipOutputDir') + '：' + out)
+        rows.push({ label: this.$t('tipOutputDir'), value: out, mono: true, tone: 'accent' })
       }
       var name = this.outNameOf(project)
-      if (name) lines.push(this.$t('outputName') + '：' + name)
-      return lines.join('\n')
+      if (name) rows.push({ label: this.$t('outputName'), value: name, mono: true, tone: 'ok' })
+      // 标题用任务名（compName / outputName 回退），与卡片标题一致；不再因 compName 为空而丢头
+      return { blocks: buildTitleTipBlocks({ name: this.titleOf(project), rows: rows }) }
     },
     // ---------- 第二/三行摘要取值 ----------
     outPathOf (project) {
@@ -812,20 +791,35 @@ export default {
     outputFilesOf,
     outputSizeBytesOf (project) { return sizeBytesOfFiles(this.outputFilesOf(project)) },
     outputSizeOf,
-    outputSizeTip,
+    // 产物大小 hover：逐文件完整路径 + 精确字节，改结构化气泡（util 的纯文本版仍保留供非 tip 场景）
+    outputSizeTip (project) {
+      const files = this.outputFilesOf(project) || []
+      const rows = files.map((file) => {
+        let n = -1
+        try { const r = fs.statSize(file); n = typeof r === 'number' && r >= 0 ? r : -1 } catch (e) { /* 不可读 */ }
+        return { name: file, size: n >= 0 ? n.toLocaleString() + ' B' : this.$t('unreadable') }
+      })
+      return { blocks: buildOutputSizeTipBlocks({ label: this.$t('outputSizeTipLabel'), files: rows }) }
+    },
     /**
      * 角标 hover：格式 + 该格式总大小，逐文件列「产物名 — 大小」（重试版本也列出），
      * 末行说明点击行为。只显示 basename——要看全路径用 hover 卡片的产物大小。
      */
     badgeTipOf (badge) {
-      const total = sizeTextOfFiles(badge.files)
-      const lines = [badge.format + (total ? ' · ' + total : '')]
-      badge.files.forEach((file) => {
-        const size = sizeTextOfFiles([file])
-        lines.push(this.baseNameOf(file) + ' — ' + (size || '—'))
-      })
-      lines.push(this.$t('outputBadgeCopy', { format: badge.format }))
-      return lines.join('\n')
+      const files = (badge && badge.files) || []
+      const total = sizeTextOfFiles(files)
+      const rows = files.map((file) => ({
+        name: this.baseNameOf(file),
+        size: sizeTextOfFiles([file]) || '—'
+      }))
+      return {
+        blocks: buildBadgeTipBlocks({
+          label: (badge && badge.format) || '',
+          total: total,
+          files: rows,
+          copyText: this.$t('outputBadgeCopy', { format: (badge && badge.format) || '' })
+        })
+      }
     },
     /** 点击角标：只复制该格式（含阈值重试版本）的产物，与顶栏复制同一套接口与 toast */
     async copyFormatOutput (badge) {

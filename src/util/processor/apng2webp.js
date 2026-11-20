@@ -1,5 +1,6 @@
 import { fs, path } from '../node-env'
 import action from './action'
+import { isPreserveBitDepth } from '../paletteConfig'
 
 export default function (item, store, locale, opts) {
   store.dispatch('editProcess', {
@@ -16,11 +17,19 @@ export default function (item, store, locale, opts) {
     var data = fs.readFileSync(path.join(tmpDir, 'apngframe_metadata.json'), {encoding: 'utf-8'})
     var animation = JSON.parse(data)
     var frames = animation['frames']
+    // 保真输出（关压缩、保留源 32-bit RGBA）：cwebp 必须走无损。
+    // 实测 static/bin/win64/cwebp.exe 为 0.6.0——**不给 -lossless 即为有损 VP8**，
+    // 透明区 RGB 还会被清零；`-exact` 单独给会被忽略，必须与 -lossless 同时给，
+    // 才是「保留透明像素隐藏 RGB」的语义。两者组合实测逐像素完全一致
+    // （含 alpha=0 区域的隐藏 RGB），故保真链路固定 -lossless -exact。
+    var preserve = isPreserveBitDepth(item.options)
     var promises = frames.map(function (frame) {
       var png_frame_file = path.join(tmpDir, frame['src'])
       var webp_frame_file = path.join(tmpDir, frame['src'] + '.webp')
       var cwebpArgs = []
-      if (item.options.quality.checked) {
+      if (preserve) {
+        cwebpArgs.push('-lossless', '-exact')
+      } else if (item.options.quality.checked) {
         cwebpArgs.push('-q', String(item.options.quality.value))
       }
       cwebpArgs.push(png_frame_file, '-o', webp_frame_file)

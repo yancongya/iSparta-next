@@ -1158,6 +1158,320 @@ body.is-scroll-locked {
     opacity: 1;
     transform: translateY(0);
   }
+
+  // 结构化富气泡（预估角标）：容器改纵向分区，去掉纯文本的白整行折叠
+  &--rich {
+    padding: 11px 12px;
+    white-space: normal;
+    word-break: normal;
+    line-height: 1.45;
+    text-align: left;
+  }
+}
+
+// 富气泡内部区块。所有文案由 tip.js 用 textContent 写入，样式只做语义分色。
+.is-tip-r {
+  // 语义色：标题主值用强调色，状态头按 ok/bad/cool 分色，和下方明细拉开层次
+  &__head {
+    margin-bottom: 9px;
+    &.is-tone-accent .is-tip-r__value { color: var(--is-accent-fg); }
+    &.is-tone-cool .is-tip-r__value { color: var(--is-cool-fg); }
+    &.is-tone-ok .is-tip-r__value { color: var(--is-ok-fg); }
+    &.is-tone-warn .is-tip-r__value { color: var(--is-warn-fg); }
+    &.is-tone-bad .is-tip-r__value { color: var(--is-bad-fg); }
+  }
+  &__label {
+    font-size: var(--is-fs-xs);
+    color: var(--is-text-3);
+    line-height: 1.3;
+  }
+  &__headrow {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 2px;
+  }
+  &__value {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--is-text);
+    line-height: 1.2;
+    font-variant-numeric: tabular-nums;
+  }
+  &__badge {
+    flex: none;
+    font-size: var(--is-fs-xs);
+    line-height: 1;
+    padding: 3px 7px;
+    border-radius: 999px;
+    color: var(--is-bad-fg);
+    background: var(--is-bad-bg);
+  }
+  &__gauge { margin-bottom: 10px; }
+  &__track {
+    position: relative;
+    height: 6px;
+    border-radius: 3px;
+    background: var(--is-inset);
+    overflow: hidden;
+  }
+  &__fill {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    border-radius: 3px;
+    background: var(--is-ok);
+    &.is-over { background: var(--is-bad); }
+  }
+  &__mark {
+    position: absolute;
+    top: -1px;
+    bottom: -1px;
+    width: 2px;
+    background: var(--is-text);
+    transform: translateX(-1px);
+  }
+  &__gaugecap {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 4px;
+    font-size: var(--is-fs-xs);
+    color: var(--is-text-2);
+    &.is-over { color: var(--is-bad-fg); }
+  }
+  &__metrics {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin-bottom: 9px;
+  }
+  &__metric {
+    min-width: 0;
+    padding: 6px 8px;
+    border-radius: var(--is-r-sm);
+    background: var(--is-inset);
+  }
+  &__mkey {
+    font-size: var(--is-fs-xs);
+    color: var(--is-text-3);
+    line-height: 1.3;
+  }
+  &__mval {
+    margin-top: 1px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--is-text);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  &__sub {
+    margin-bottom: 5px;
+    font-size: var(--is-fs-xs);
+    color: var(--is-text-2);
+    line-height: 1.4;
+    word-break: break-word;
+    &.is-tone-accent { color: var(--is-accent-fg); }
+    &.is-tone-cool { color: var(--is-cool-fg); }
+    &.is-tone-ok { color: var(--is-ok-fg); }
+    &.is-tone-warn { color: var(--is-warn-fg); }
+    &.is-tone-bad { color: var(--is-bad-fg); }
+  }
+  // 估算依据：带 ⓘ 图标的弱底色说明，和下面的格式列表在视觉上分开
+  &__basis {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    margin-bottom: 9px;
+    padding: 5px 7px;
+    border-radius: var(--is-r-sm);
+    font-size: var(--is-fs-xs);
+    line-height: 1.4;
+    color: var(--is-text-2);
+    word-break: break-word;
+    &.is-tip-basis-info { background: var(--is-inset); }
+    // 文字 span 占满剩余宽度；配合 min-width:0 防窄面板下逐字竖排。
+    > span:last-child { flex: 1; min-width: 0; }
+  }
+  &__basis-ic {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 13px;
+    height: 13px;
+    margin-top: 1px;
+    border-radius: 50%;
+    background: var(--is-cool-fg);
+    color: var(--is-elevated);
+    font-size: 9px;
+    font-style: italic;
+    font-weight: 700;
+    line-height: 1;
+  }
+  // 格式明细：格式名彩色胶囊 + 右对齐数值，超目标整行标红
+  &__fmtlist {
+    margin-bottom: 5px;
+    border-top: 1px solid var(--is-inset);
+    padding-top: 6px;
+  }
+  &__fmtrow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 22px;
+    font-size: var(--is-fs-xs);
+    color: var(--is-text-2);
+    &.is-over { color: var(--is-bad-fg); }
+  }
+  &__fmtcap {
+    flex: none;
+    min-width: 44px;
+    padding: 2px 6px;
+    border-radius: var(--is-r-sm);
+    background: var(--is-inset);
+    color: var(--is-text);
+    font-size: var(--is-fs-xs);
+    font-weight: 600;
+    text-align: center;
+  }
+  &__fmtval {
+    flex: 1;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  &__fmtover {
+    flex: none;
+    font-size: var(--is-fs-xs);
+  }
+  // 交互提示：↻ 图标 + 弱脚注，和格式列表拉开层次
+  &__hint {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-bottom: 8px;
+    font-size: var(--is-fs-xs);
+    color: var(--is-text-3);
+    line-height: 1.35;
+  }
+  &__hint-ic {
+    flex: none;
+    font-size: 13px;
+    line-height: 1;
+    color: var(--is-text-3);
+  }
+  &__note {
+    margin-bottom: 6px;
+    padding: 5px 7px;
+    border-radius: var(--is-r-sm);
+    font-size: var(--is-fs-xs);
+    line-height: 1.4;
+    color: var(--is-cool-fg);
+    background: var(--is-cool-bg);
+    word-break: break-word;
+    &.is-warn {
+      color: var(--is-warn-fg);
+      background: var(--is-warn-bg);
+    }
+  }
+  &__foot {
+    font-size: var(--is-fs-xs);
+    color: var(--is-text-3);
+    line-height: 1.4;
+    word-break: break-word;
+  }
+  // 键值对列表（标题提示：输入/输出目录、输出名等）
+  // 标签列固定宽、值列 flex:1 + min-width:0 可换行；长路径 break-all 不撑破气泡
+  &__kvlist { margin-bottom: 4px; }
+  // 最简方案：没有底色/边框/胶囊，只有标签文字本身带语义色，值是正文色。
+  &__kvrow {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 5px;
+    font-size: var(--is-fs-xs);
+    line-height: 1.4;
+  }
+  &__kvkey {
+    flex: none;
+    min-width: 4.5em;
+    color: var(--is-text-2);
+    font-weight: 600;
+    .is-tone-accent & { color: var(--is-accent-fg); }
+    .is-tone-cool & { color: var(--is-cool-fg); }
+    .is-tone-ok & { color: var(--is-ok-fg); }
+    .is-tone-warn & { color: var(--is-warn-fg); }
+    .is-tone-bad & { color: var(--is-bad-fg); }
+  }
+  &__kvval {
+    flex: 1;
+    min-width: 0;
+    color: var(--is-text);
+    word-break: break-all;
+    &.is-mono { font-family: var(--is-font-mono, monospace); }
+  }
+  // 文件列表（格式角标 / 产物大小）：文件名省略号 + 大小右列不换行
+  &__filelist {
+    margin-bottom: 5px;
+    border-top: 1px solid var(--is-inset);
+    padding-top: 6px;
+  }
+  &__filerow {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 3px;
+    font-size: var(--is-fs-xs);
+    line-height: 1.4;
+    &.is-tone-accent .is-tip-r__filename { color: var(--is-accent-fg); }
+    &.is-tone-cool .is-tip-r__filename { color: var(--is-cool-fg); }
+    &.is-tone-ok .is-tip-r__filename { color: var(--is-ok-fg); }
+    &.is-tone-warn .is-tip-r__filename { color: var(--is-warn-fg); }
+    &.is-tone-bad .is-tip-r__filename { color: var(--is-bad-fg); }
+  }
+  &__filename {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: var(--is-font-mono, monospace);
+    color: var(--is-text-2);
+  }
+  &__filesize {
+    flex: none;
+    color: var(--is-text-3);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  // 多行原文块（失败 stderr）：等宽字体 + 红底，pre-wrap 保留换行，break-all 防长行撑破
+  &__stderr {
+    margin-bottom: 8px;
+    padding: 6px 8px;
+    border-radius: var(--is-r-sm);
+    background: var(--is-bad-bg);
+    color: var(--is-bad-fg);
+    font-family: var(--is-font-mono, monospace);
+    font-size: 11px;
+    line-height: 1.45;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+}
+
+// CEP 窄面板：指标双卡改纵向堆叠，键值对标签收窄、原文块不再额外缩进
+// 气泡宽度已在 place() 按 window.innerWidth 收敛，这里只处理内部布局防溢出
+@media (max-width: 320px) {
+  .is-tip-r__metrics { grid-template-columns: 1fr; }
+  .is-tip-r__kvkey { min-width: 3.8em; }
+  .is-tip-r__kvrow { gap: 5px; }
+  .is-tip-r__filerow { gap: 5px; }
+  .is-tip-r__stderr { padding: 5px 6px; }
 }
 
 // --------------------------------------------------------------------------

@@ -70,6 +70,30 @@ export function planStartingQuality (input) {
   return { plannedQuality, suggestions, feasible: allFeasible, reason: 'planned' }
 }
 
+// ---------- 保真输出（preserveBitDepth = true）----------
+// 关压缩 = 不走量化，只做无损操作。三种格式的无损路线与实测体积系数（相对源序列字节）：
+// - APNG：apngasm 组帧 + apngopt -z2 无损优化 → 约等于源序列体积（实测 0.81）
+// - WEBP：cwebp -lossless -exact → VP8L 无损，逐像素一致（实测 0.56）
+// - GIF：apng2gif 必转 256 色索引（格式硬上限）→ 显著小于源（实测 0.25）
+// 系数来自 13 帧 300×300 32-bit RGBA 真机实测（源 1.03 MB → APNG 845 KB /
+// WebP 无损 581 KB / GIF 258 KB），属经验量级估算，与 Q 曲线模型同口径。
+const PRESERVE_RATIO = { APNG: 0.81, WEBP: 0.56, GIF: 0.25 }
+
+/**
+ * 估算「保真输出（关压缩）下，格式 format 的输出体积」。
+ * 无损路线不存在质量/色数档位，体积只由源本身与格式决定，故不走 Q/C 曲线。
+ * @param {number} sourceBytes 源字节
+ * @param {string} format 'APNG' | 'WEBP' | 'GIF'
+ * @returns {number} 预估字节；源无效时返回 0
+ */
+export function estimatePreserveBytes (sourceBytes, format) {
+  const src = finite(sourceBytes, 0)
+  if (src <= 0) { return 0 }
+  const f = String(format || '').toUpperCase()
+  const ratio = PRESERVE_RATIO[f] !== undefined ? PRESERVE_RATIO[f] : 0.81
+  return src * ratio
+}
+
 // ---------- 色深路线（palette.mode === 'colors'）----------
 // 与 paletteConfig.PALETTE_COLOR_PRESETS 同源的档位表。这里本地再声明一份是为了
 // 保持 sizePlanner 零依赖可被 vm 沙箱逐源拼接测试（paletteConfig 由测试脚本一并注入）。

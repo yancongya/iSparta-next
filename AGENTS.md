@@ -209,6 +209,7 @@ CI：`release.yml` 校验版本化 Release 文案、负责 bump、打包、挂 R
 ## 8. Agent 行为
 
 - **固定约束（用户明示，强制）：禁止新建脚本**。启动任何服务 / 预览 / 体检一律只用仓库已有脚本与 `npm run *`，不得为了启动服务或调试验证落地新的 `.js` / `.ps1` / `.cmd` / `.bat` 文件（含临时脚本）。预览统一走 `node scripts/dev/preview.js <web|cep|landing|guide|desktop> [--mock] [--no-open]`（入口清单见 §1.1），其余用 `npm run dev:all` / `serve` / `serve:cep` / `lint` 等现成 scripts；浏览器 / CDP 验证复用既有调试工具，表达式内联传入，不另写脚本文件。已有脚本不覆盖的场景先问用户，不要自己造一个绕过
+  - **唯一例外（用户明确授权）**：`scripts/dev/cep-mode.js`（CEP 开发/真实版模式切换三合一）及其文档 `docs/CEP-DEV-SWITCH.md`。此为例外，不代表放宽其余禁建脚本约束；后续仍需新脚本时依旧先问用户
 - 先搜代码/文档/脚本再改；架构与交互以本文、`docs/CHANGELOG.md`（版本记录 + 应用内更新机制）、`docs/RELEASE.md` 为准
 - 优先 `scripts\` 与 `npm run *`；不要为 lint/发版/图标另起临时流程
 - **未经用户明确要求，禁止 commit 以外的发版/release**（见 §2.2）

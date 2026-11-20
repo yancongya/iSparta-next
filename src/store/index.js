@@ -9,6 +9,7 @@ import { MODE_SYSTEM } from '../util/system-locale'
 import { resolveOutputPath, SEQ_DIR_DEFAULT_TEMPLATE } from '../util/outputPath'
 import { buildInitialOutputName } from '../util/tokenizeName'
 import { existingOutputFilesOf } from '../util/task-output'
+import { applyGlobalCompressionPatch } from '../util/globalPrefs'
 import appLog from '../ui-next/log'
 import i18n from '../i18n'
 const _ = require("lodash");
@@ -592,6 +593,18 @@ const actions = {
     if (!item.options) { item.options = {} }
     _.extend(item.options, _.cloneDeep(payload.patch || {}))
     persistItems()
+  },
+  /**
+   * 把「开启压缩」总开关同步进全局默认，使新导入任务继承同一保真选择。
+   * 只写压缩相关字段，其他 options 原样保留（见 globalPrefs.applyGlobalCompressionPatch）。
+   * 任务面板单项编辑本身不透传 globalSetting，新任务从 globalSetting 派生，
+   * 缺了这一步会出现「关掉压缩后新导入的 32-bit 序列仍出 8-bit」（issue #3 反馈 02）。
+   */
+  syncGlobalCompression(context, patch) {
+    var raw = null
+    try { raw = JSON.parse(storage.getItem('globalSetting')) } catch (e) { raw = null }
+    var next = applyGlobalCompressionPatch(raw, patch)
+    storage.setItem('globalSetting', JSON.stringify(next))
   },
   /** 按 items 下标改 basic（如 thumbPath），不影响其他项 */
   editBasicAt(context, payload) {

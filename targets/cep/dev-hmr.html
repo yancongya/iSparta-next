@@ -4,12 +4,29 @@
     <meta charset="utf-8" />
     <title>iSparta-next CEP</title>
     <script>
-      // MainPath 必须是相对文件；此处再跳到 dev server（HMR）
-      // 请先 npm run dev:cep
-      location.replace('http://127.0.0.1:8082/')
+      // MainPath 必须是相对文件；此处先探测 dev server（HMR 8082），可达才跳转。
+      // 不可达（未启动 / 已停止）时回退到同目录已构建的 ui/index.html，
+      // 避免「HMR 停了 → 面板断连死页 → 重启 AE 也不恢复」（CEP 同 ID 无失败回退，
+      // 会一直加载 manifest 更新的用户级副本）。彻底切回系统级仍须运行：
+      //   node scripts/dev/cep-mode.js restore
+      var navigated = false
+      function goHmr () { navigated = true; location.replace('http://127.0.0.1:8082/') }
+      function goBuilt () { navigated = true; location.replace('./ui/index.html') }
+      try {
+        var probe = new XMLHttpRequest()
+        probe.open('GET', 'http://127.0.0.1:8082/dev-hmr-probe?t=' + Date.now(), true)
+        probe.timeout = 1500
+        probe.onload = function () { goHmr() }
+        probe.onerror = probe.ontimeout = function () { goBuilt() }
+        probe.send()
+      } catch (e) { goBuilt() }
+      // 探测异常挂起时的兜底：1.6s 后仍未跳转就走已构建版
+      setTimeout(function () { if (!navigated) goBuilt() }, 1600)
     </script>
   </head>
   <body style="font:14px/1.5 sans-serif;padding:24px">
-    正在连接开发服务器…若无响应请运行 <code>npm run dev:cep</code>
+    正在连接开发服务器（HMR 8082）…<br />
+    若开发服务未启动，将自动回退到已构建版本；<br />
+    彻底切回真实版请运行 <code>node scripts/dev/cep-mode.js restore</code>
   </body>
 </html>
