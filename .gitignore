@@ -29,7 +29,19 @@ yarn-error.log*
 
 #Electron-builder output
 /dist_electron
-test
+
+# 测试素材：只入库原始素材，任何转换产物/临时输出都不入库。
+# 默认忽略 test 下所有内容，再白名单放行 16 个原文件；
+# pngs.* 等既有产物与 cool_apng / cool_1 等未来输出自动排除。
+test/**
+!test/apng/
+!test/apng/cool.png
+!test/gif/
+!test/gif/cool.gif
+!test/pngs/
+!test/pngs/cool_[0-9][0-9].png
+!test/webp/
+!test/webp/cool.webp
 
 # local dev helpers (worktree)
 .dev-pid
