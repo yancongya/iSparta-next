@@ -280,10 +280,11 @@
       pointer-events: none;
     }
 
-    // 单文件动图：格式角标沿用类型胶囊的强调色语义
+    // 单文件动图：与帧数角标完全同款深色半透明底 + 白字，不再按格式上强调色。
+    // 旧版文字用 --is-accent（深主题荧光绿/浅主题砖红），在封面上过于扎眼。
     &__badge--fmt {
-      background: var(--is-accent-soft);
-      color: var(--is-accent);
+      background: rgba(0, 0, 0, 0.66);
+      color: #fff;
     }
   }
 

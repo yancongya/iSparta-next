@@ -53,6 +53,7 @@ async function main () {
   assert(/\$t\('statePending'\)/.test(vue), '状态空态须固定文案占位')
   assert(/<is-icon name="eye" size="sm" \/><\/button>/.test(vue), '预览入口图标须为 eye')
   assert(/isAnimatedSingle\(project\).*thumb__badge--fmt/s.test(vue), '动图封面须显示格式角标')
+  assert(/&__badge--fmt \{[\s\S]*?background: rgba\(0, 0, 0, 0\.66\)[\s\S]*?color: #fff/.test(scss), '格式角标须深色底白字、不按格式上强调色')
   assert(/splitImportButtons \(\)/.test(vue) && /openFolder\('file'\)/.test(vue) && /openFolder\('directory'\)/.test(vue), 'Win/Linux 须拆分导入按钮')
   assert(/\.side__btns \.iconbtn \{[\s\S]*?border-color: transparent[\s\S]*?background: transparent/.test(scss), '任务条按钮须去框')
   for (const f of ['zh-cn', 'zh-tw', 'en-us']) {
