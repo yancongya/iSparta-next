@@ -44,7 +44,22 @@ async function main () {
   context.ipc.invoke = (...args) => { electronCalls.push(args); return Promise.resolve('') }
   openOsDir('/Users/name/output')
   assert.deepStrictEqual(electronCalls[0], ['shell:openPath', '/Users/name/output'])
-  console.log('projectList menu L1 OK')
+
+  // 任务条 UI 微调（§8）静态守卫：桌面/CEP 共用同一份源码
+  const vue = fs.readFileSync(path.join(__dirname, '../src/components/projectList/projectList.vue'), 'utf8')
+  const scss = fs.readFileSync(path.join(__dirname, '../src/components/projectList/projectList.scss'), 'utf8')
+  assert(!/is-tag v-if="showOutPath"/.test(vue), '类型胶囊必须删除')
+  assert(/class="item-headrow"/.test(vue) && /class="item-proc is-ellipsis"/.test(vue), '标题+路径同行、状态独立第二行')
+  assert(/\$t\('statePending'\)/.test(vue), '状态空态须固定文案占位')
+  assert(/<is-icon name="eye" size="sm" \/><\/button>/.test(vue), '预览入口图标须为 eye')
+  assert(/isAnimatedSingle\(project\).*thumb__badge--fmt/s.test(vue), '动图封面须显示格式角标')
+  assert(/splitImportButtons \(\)/.test(vue) && /openFolder\('file'\)/.test(vue) && /openFolder\('directory'\)/.test(vue), 'Win/Linux 须拆分导入按钮')
+  assert(/\.side__btns \.iconbtn \{[\s\S]*?border-color: transparent[\s\S]*?background: transparent/.test(scss), '任务条按钮须去框')
+  for (const f of ['zh-cn', 'zh-tw', 'en-us']) {
+    const loc = fs.readFileSync(path.join(__dirname, '../src/locales/' + f + '.js'), 'utf8')
+    assert(/"openFile"/.test(loc) && /"importImageFilter"/.test(loc) && /"statePending"/.test(loc), f + ' 缺 UI 文案 key')
+  }
+  console.log('projectList menu + task UI L1 OK')
 }
 
 main().catch((error) => { console.error(error); process.exitCode = 1 })

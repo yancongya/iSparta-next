@@ -17,6 +17,9 @@ module.exports = {
     "toTabbed":"還原分類標籤",
     "clearAll":"清除全部",
     "openFolder":"打開目錄…",
+    "openFile":"開啟檔案…",
+    "importImageFilter":"圖片檔案",
+    "statePending":"待轉換",
     //global setting
     "defaultSetting": "默認設置",
     "helpTip": "說明 / 開啟官網",

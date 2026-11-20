@@ -17,6 +17,9 @@ module.exports = {
     "toTabbed":"恢复分类标签",
     "clearAll":"清除全部",
     "openFolder":"打开目录…",
+    "openFile":"打开文件…",
+    "importImageFilter":"图片文件",
+    "statePending":"待转换",
     //global setting
     "defaultSetting": "默认设置",
     "helpTip": "帮助 / 打开官网",

@@ -206,3 +206,9 @@
 - 新增 `src/util/outputConflict.js` 纯计算层：`detectSourceCollision` 用 `base+ext` 判定（原文案的 `base+_fmt+ext` 会把已加后缀的源误判），`fallbackRenameForSource` 命中源时追加 `_1`，`classifyOutputConflicts` 分出 source/existing。
 - `tokenizeName.js` 增 `resolveSuffixState`/`applySuffix`；`drag/file.js` 导入命中即设 `outputSuffix` 并轻提示；`setting.vue` 增后缀胶囊、手输反解；`store/index.js` 增 `preflightOutputs`，`sortBar`/`setting` 两个开始入口都先 await；`background.js` 透传 filters；`processor/index.js` 三处 fs.copy 前调用保底改名并落日志（同步改 `outputName` 让 sizeGate 找得到产物）；三语各补 10 个 key。
 - 验证：L1 `comp-output-name.l1.js` 扩到 32 checks（双平台 suffix/碰撞/保底/分类）；L3 场景 D 源文件 SHA256 不变 + `_1` 产物落盘；全量 L1 14 脚本绿、lint 绿。
+
+## 12. 任务条 UI 微调实施（2026-11-20 14:50，批次2）
+- §3 #5/#9 全部落地：Win/Linux 拆「打开文件…/打开目录…」并排按钮（mac 保持单按钮）；预览入口 ▶→眼睛；类型胶囊删除；单文件动图封面右下角显示当前输出格式（多格式取第一项），序列仍显示 `13F`；标题+路径合并第一行、状态独立第二行且空态固定 `min-height:15px` + 「待转换」；任务条 `.side__btns .iconbtn` 去边框/底色，hover 保留圆形淡底。顶栏 `.ib-iconbtn` 未动。
+- 三语补 `openFile`/`importImageFilter`/`statePending`；`projectList-menu.l1.js` 增静态守卫（胶囊删除、同行/状态占位、eye、格式角标、拆按钮、去框、三语 key）。
+- 真浏览器 mockup（`:8081`）验收：类型胶囊 0、标题/路径 top 61/63 同行、状态「待转换」min-height 15px、角标 `APNG`、右侧按钮 border/background 均 transparent、两个导入按钮同排 top=611；预览按钮 SVG 为 eye。CEP 构建/lint/全量 L1 绿。
+- **坑**：`editOptionsAt` 原用 `_.extend` 写任务 options，Vue 2 对「原任务不存在的后加字段」不触发依赖更新 → 后缀胶囊点后输出名变了但点亮态不刷。三处 options mutation 统一改 `Vue.set` 逐键写入。

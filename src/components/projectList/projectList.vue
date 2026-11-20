@@ -76,7 +76,9 @@
           />
           <is-icon v-else name="image" class="thumb__ph" />
           <span v-if="durationOf(project)" class="thumb__dur">{{ durationOf(project) }}</span>
-          <span v-if="frameCount(project) > 1" class="thumb__badge">{{ frameCount(project) }}F</span>
+          <!-- 序列仍显示帧数；单文件动图改显示当前输出格式，类型信息不再重复放胶囊 -->
+          <span v-if="isAnimatedSingle(project)" class="thumb__badge thumb__badge--fmt">{{ primaryFormatOf(project) }}</span>
+          <span v-else-if="frameCount(project) > 1" class="thumb__badge">{{ frameCount(project) }}F</span>
           <span v-if="stateOf(project.process) === 'done'" class="thumb__cmp-hint">
             <is-icon name="eye" size="xs" />
           </span>
@@ -85,38 +87,37 @@
         <div class="info">
           <!-- 第一行：类型标签 + 主标题（合成名/输出名）；路径降为次要行 -->
           <div class="input">
-            <!-- CEP 全是合成，Comp 胶囊无信息量；桌面混类型才显示 -->
-            <is-tag v-if="showOutPath" :tone="tagTone(project.basic && project.basic.type)">
-              {{ project.basic && project.basic.type }}
-            </is-tag>
             <div class="item-names">
-              <div class="item-title is-ellipsis" v-tip="titleTipOf(project)">
-                {{ displayTitleOf(project, index) }}
+              <!-- 标题 + 路径合并为一行：标题优先收窄，路径占剩余宽度 -->
+              <div class="item-headrow">
+                <div class="item-title is-ellipsis" v-tip="titleTipOf(project)">
+                  {{ displayTitleOf(project, index) }}
+                </div>
+                <!-- 桌面：点击改输出目录；CEP：只读短路径（勿把 ae-comp/路径当名字） -->
+                <button
+                  v-if="showOutPath && isRealFsPath(outPathOf(project))"
+                  type="button"
+                  class="outpath is-ellipsis"
+                  v-tip="$t('tipChangeOutput') + '：' + outPathOf(project)"
+                  @click.stop="changeFold(project.basic && project.basic.outputPath, index)"
+                >
+                  <is-icon name="folder" size="xs" />
+                  <span class="is-ellipsis">{{ pathLabelOf(project) }}</span>
+                </button>
+                <span
+                  v-else-if="!showOutPath && pathLabelOf(project)"
+                  class="outpath outpath--static is-ellipsis"
+                  v-tip="titleTipOf(project)"
+                >
+                  <is-icon name="folder" size="xs" />
+                  <span class="is-ellipsis">{{ pathLabelOf(project) }}</span>
+                </span>
               </div>
+              <!-- 状态独立第二行且始终占位，四态切换不抖动；空态显示中性文案 -->
               <div
-                v-if="project.process && project.process.text"
                 class="item-proc is-ellipsis"
-                :class="'is-' + stateOf(project.process)"
-              >{{ project.process.text }}</div>
-              <!-- 桌面：点击改输出目录；CEP：只读短路径（勿把 ae-comp/路径当名字） -->
-              <button
-                v-if="showOutPath && isRealFsPath(outPathOf(project))"
-                type="button"
-                class="outpath is-ellipsis"
-                v-tip="$t('tipChangeOutput') + '：' + outPathOf(project)"
-                @click.stop="changeFold(project.basic && project.basic.outputPath, index)"
-              >
-                <is-icon name="folder" size="xs" />
-                <span class="is-ellipsis">{{ pathLabelOf(project) }}</span>
-              </button>
-              <span
-                v-else-if="!showOutPath && pathLabelOf(project)"
-                class="outpath outpath--static is-ellipsis"
-                v-tip="titleTipOf(project)"
-              >
-                <is-icon name="folder" size="xs" />
-                <span class="is-ellipsis">{{ pathLabelOf(project) }}</span>
-              </span>
+                :class="['is-' + stateOf(project.process), { 'is-empty': !project.process || !project.process.text }]"
+              >{{ (project.process && project.process.text) || $t('statePending') }}</div>
             </div>
           </div>
           <!-- 第二行：默认参数摘要（帧频/循环/格式/阈值） -->
@@ -218,7 +219,7 @@
                 class="iconbtn"
                 :title="framePanelTitle(project)"
                 @click.stop="onDelaySetting(project)"
-              ><is-icon name="play" size="sm" /></button>
+              ><is-icon name="eye" size="sm" /></button>
             </div>
           </div>
         </div>
@@ -256,7 +257,7 @@
     ></compare-dialog>
 
     <button
-      v-if="showOutPath"
+      v-if="showOutPath && !splitImportButtons"
       type="button"
       class="open-folder"
       :disabled="isLocked"
@@ -265,10 +266,31 @@
       <is-icon name="folder-plus" size="sm" />
       {{ $t('openFolder') }}
     </button>
+    <!-- Win/Linux：openFile + openDirectory 互斥，拆成两个按钮各自传 properties -->
+    <div v-else-if="showOutPath" class="import-btns">
+      <button
+        type="button"
+        class="open-folder"
+        :disabled="isLocked"
+        @click="openFolder('file')"
+      >
+        <is-icon name="image" size="sm" />
+        {{ $t('openFile') }}
+      </button>
+      <button
+        type="button"
+        class="open-folder"
+        :disabled="isLocked"
+        @click="openFolder('directory')"
+      >
+        <is-icon name="folder-plus" size="sm" />
+        {{ $t('openFolder') }}
+      </button>
+    </div>
   </section>
 </template>
 <script>
-import { ipc } from '../../util/node-env'
+import { ipc, getProcessBridge } from '../../util/node-env'
 import {
   stateOf, statusIcon, outputFilesOf, sizeBytesOfFiles, outputSizeOf, outputSizeTip,
   outputGroupsOf, sizeTextOfFiles
@@ -540,6 +562,10 @@ export default {
     showOutPath () {
       return !(hostAdapter && (hostAdapter.supportsCompImport || hostAdapter.kind === 'cep'))
     },
+    // mac 原生对话框可同时选文件+目录；Win/Linux 必须拆两个按钮
+    splitImportButtons () {
+      try { return getProcessBridge().platform !== 'darwin' } catch (e) { return false }
+    },
     marqueeStyle () {
       return {
         left: this.marquee.x + 'px',
@@ -597,6 +623,17 @@ export default {
     frameCount (project) {
       var list = project && project.basic && project.basic.fileList
       return list && list.length ? list.length : Number(project && project.basic && project.basic.frameCount) || 0
+    },
+    // 单文件动图（APNG/GIF/WEBP）用封面角标承载类型信息；序列/合成仍显示帧数
+    isAnimatedSingle (project) {
+      const basic = (project && project.basic) || {}
+      const list = basic.fileList || []
+      return list.length === 1 && String(basic.type || '').toUpperCase() !== 'PNGS' && String(basic.type || '').toUpperCase() !== 'COMP'
+    },
+    primaryFormatOf (project) {
+      const formats = (project && project.options && project.options.outputFormat) || []
+      const raw = formats.length ? formats[0] : ((project && project.basic && project.basic.type) || '')
+      return String(raw || '').toUpperCase() || '—'
     },
     // ---------- 摘要项的完整说明气泡 ----------
     tipOf (labelKey, value) {
@@ -1246,10 +1283,14 @@ export default {
       if (this.stateOf(project.process) !== 'done') return
       this.compareProject = project
     },
-    openFolder () {
+    openFolder (mode) {
       if (this.isLocked || !this.showOutPath) return
+      const props = mode === 'file'
+        ? ['openFile', 'multiSelections']
+        : mode === 'directory' ? ['openDirectory'] : ['openFile', 'openDirectory', 'multiSelections']
       ipc.invoke('dialog:openFiles', {
-        properties: ['openFile', 'openDirectory', 'multiSelections']
+        properties: props,
+        filters: mode === 'file' ? [{ name: this.$t('importImageFilter'), extensions: ['png', 'gif', 'webp'] }] : undefined
       }).then((result) => {
         if (!result || result.canceled || !result.filePaths.length) { return false }
         return this.importPaths(result.filePaths)

@@ -17,6 +17,9 @@ module.exports = {
     "toTabbed":"Back to category tabs",
     "clearAll":"Clear all",
     "openFolder":"Open folder…",
+    "openFile":"Open file…",
+    "importImageFilter":"Image files",
+    "statePending":"Pending",
     //global setting
     "defaultSetting": "Default settings",
     "helpTip": "Help / open website",
