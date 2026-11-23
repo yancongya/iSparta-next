@@ -38,6 +38,17 @@ export function getIpc () {
   throw new Error('ispartaAPI.ipc missing: preload not loaded?')
 }
 
+/**
+ * 是否纯浏览器 mock 环境（桌面 mockup :8081 / CEP mockup :8082 / 落地页 demo）。
+ * 单一真相源：processor 的模拟转换、store 的覆盖预检豁免都读这里，避免各处各写判据。
+ * 判据与 mock-bridge 安装标志一致（installMockBridge 会置 __ispartaMockBridge=true）；
+ * 落地页 demo 构建另用构建标志兜底。真实 Electron / CEP 宿主下二者皆假，恒走真实链路。
+ */
+export function isMockEnv () {
+  if (process.env.VUE_APP_LANDING_DEMO === '1') return true
+  return typeof window !== 'undefined' && window.__ispartaMockBridge === true
+}
+
 export const ipc = {
   invoke: (...args) => getIpc().invoke(...args),
   send: (...args) => getIpc().send(...args),

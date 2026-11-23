@@ -251,8 +251,10 @@ function checkCep () {
     expect(missing.length === 0, pair[0] + ' 缺 key：' + missing.slice(0, 8).join(', ') + (missing.length > 8 ? ' …' : ''))
   })
 
-  // 4) tip 单例归属域：任务条须打归属标记，指令须有恢复逻辑（防 CEP 详情被子树 tip 劫持）
-  expect(/data-tip-owner/.test(list), 'projectList.vue 任务条缺 data-tip-owner 归属标记')
+  // 4) tip 归属域能力保留（通用机制）；但任务条信息已完整显示，整条 item 不再挂详情气泡/归属标记
+  expect(!/data-tip-owner/.test(list), 'projectList.vue 不应再保留无主详情的 data-tip-owner 归属标记')
+  expect(!/class="item"[\s\S]{0,220}v-tip="titleTipOf\(project\)"/.test(list),
+    'projectList.vue 整条 item 不应再挂 titleTipOf 详情气泡')
   const tip = read('src/ui-next/tip.js')
   expect(/function ownerOf/.test(tip) && /data-tip-owner/.test(tip), 'tip.js 缺 ownerOf 归属域判定')
   expect(/function onLeave/.test(tip) && /show\(from, from\._tip\.binding, evt\)/.test(tip),
@@ -260,7 +262,7 @@ function checkCep () {
   expect(/leave: \(evt\) => onLeave\(el, evt\)/.test(tip), 'tip.js 的 leave 未挂 onLeave（会退回单例被劫持）')
 
   if (problems.length === 0) {
-    console.log('  CEP 兼容静态守卫：通过（共享源 / 宿主门控 / 三语 / tip 归属域）')
+    console.log('  CEP 兼容静态守卫：通过（共享源 / 宿主门控 / 三语 / tip 能力保留）')
     console.log('  提醒：本检查不替代 mock 实测，收尾仍需按 AGENTS.md §8.6 在 :8082/?mock=1 逐项验证。')
     return { code: 0 }
   }

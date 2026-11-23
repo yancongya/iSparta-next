@@ -312,7 +312,7 @@
     min-width: 0;
   }
 
-  // 标题 + 路径同一行：标题优先收窄省略，路径占剩余宽度
+  // 第一行三要素紧凑并排：输入目录 → 文件名 → 源体积；各自按内容宽度，gap 分隔，不撑满不右对齐
   .item-headrow {
     display: flex;
     align-items: center;
@@ -321,39 +321,65 @@
   }
 
   .item-title {
+    display: flex;
+    align-items: center;
     flex: 0 1 auto;
-    color: var(--is-text-1);
-    font-size: var(--is-fs-md);
-    font-weight: var(--is-fw-medium);
-    line-height: 1.3;
     min-width: 0;
 
-    // 序列帧类型标识：胶囊化，与文件名纯文本区分，避免误读成文件名的一部分。
-    // 用 var-2 语义色实底，与摘要行格式胶囊同色系；不放大、不占多余行高。
-    .seq-chip {
+    // 文件名/序列帧胶囊共用形态：固定 18px 行高 + pill 圆角，不撑高第一行。
+    .seq-chip,
+    .name-chip {
       display: inline-flex;
       align-items: center;
+      gap: 4px;
       height: 18px;
       padding: 0 var(--is-s-2);
-      border: 1px solid rgba(var(--is-var-2), 0.32);
       border-radius: 999px;
+      line-height: 1;
+      white-space: nowrap;
+      user-select: none;
+
+      .is-icon { flex: none; }
+    }
+
+    // 序列帧：var-2 语义色 + film 图标，与文件名胶囊区分类型
+    .seq-chip {
+      flex: none;
+      border: 1px solid rgba(var(--is-var-2), 0.32);
       background: rgba(var(--is-var-2), 0.14);
       color: rgb(var(--is-var-2));
       font-size: var(--is-fs-xs);
       font-weight: var(--is-fw-bold);
-      line-height: 1;
       letter-spacing: 0.02em;
-      white-space: nowrap;
-      user-select: none;
+    }
+
+    // 普通文件名：accent 淡底 + image 图标，按内容宽度、过长可省略让位
+    .name-chip {
+      flex: 0 1 auto;
+      min-width: 0;
+      max-width: 100%;
+      border: 1px solid rgba(var(--is-accent-rgb), 0.22);
+      background: rgba(var(--is-accent-rgb), 0.10);
+      color: var(--is-text-1);
+      font-size: var(--is-fs-sm);
+      font-weight: var(--is-fw-medium);
+
+      .is-icon {
+        color: var(--is-accent);
+        opacity: 0.8;
+      }
+      > span { min-width: 0; }
     }
   }
 
-  // 第一行路径 = 输出目录入口：超链接式常显高亮（次要信息，不再充当标题）
+  // 第一行路径 = 输入目录入口：超链接式常显高亮（次要信息，不再充当标题）。
+  // flex:0 1 auto：按内容宽度参与「输入目录 → 文件名 → 大小」紧凑并排，不撑满、不把大小推向最右；
+  // min-width:0 + is-ellipsis 让过长路径先省略，给文件名和大小让位。
   .outpath {
     display: inline-flex;
     align-items: center;
     gap: var(--is-s-1);
-    flex: 1;
+    flex: 0 1 auto;
     min-width: 0;
     padding: 0;
     border: none;
@@ -410,6 +436,25 @@
 
       &:active { transform: none; }
     }
+  }
+
+  // 第一行源体积胶囊：单文件=文件大小，序列帧=逐帧求和（KB/MB）。
+  // 与文件名胶囊同形态（18px pill），中性描边更低调；flex:none 固定占位挤压路径；tabular-nums 数字对齐不跳。
+  .src-size {
+    display: inline-flex;
+    align-items: center;
+    flex: none;
+    height: 18px;
+    padding: 0 var(--is-s-2);
+    border: 1px solid var(--is-border);
+    border-radius: 999px;
+    background: var(--is-inset);
+    color: var(--is-text-2);
+    font-size: var(--is-fs-xs);
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    white-space: nowrap;
+    user-select: none;
   }
 
   // CEP：类型旁显示输出名（无路径入口）
@@ -667,31 +712,53 @@
     color: var(--is-on-accent);
   }
 
-  /* 进度：覆在任务条底边，不占横向布局（小屏不溢出） */
+  /* 进度指示：卡片底边内侧的胶囊轨道，不再是一条贯穿贴边的亮线。
+     - 左右内缩到与内容对齐（--is-s-3），落在底部 padding 内（bottom:4 / h:4），不压最后一行文字
+     - 轨道常驻低对比底色，填充圆角渐变；此前 is-shimmer 的流光动画写在被
+       display:none 的死代码 .progress 上从未生效，这里真正接到 running 态
+     - 完成/失败整条降饱和（半透明），不再是刺眼的满格亮绿/亮红实线 */
   .item-bar {
     position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    height: 3px;
+    left: var(--is-s-3);
+    right: var(--is-s-3);
+    bottom: 4px;
+    height: 4px;
     overflow: hidden;
     pointer-events: none;
-    border-radius: 0 0 var(--is-r-md, 8px) var(--is-r-md, 8px);
+    border-radius: var(--is-r-pill);
+    background: var(--is-track);
     z-index: 2;
   }
   .item-bar__fill {
+    position: relative;
     display: block;
     height: 100%;
     width: 0;
+    overflow: hidden;
+    border-radius: var(--is-r-pill);
     background: var(--is-accent, #8ab84a);
-    transition: width 0.25s ease;
+    transition: width 0.3s var(--is-ease-std);
   }
   .item-bar.is-pending { display: none; }
   .item-bar.is-running .item-bar__fill {
-    background: linear-gradient(90deg, var(--is-accent, #8ab84a), color-mix(in srgb, var(--is-accent, #8ab84a) 55%, #fff));
+    background: linear-gradient(90deg, rgba(var(--is-accent-rgb), 0.8), var(--is-accent));
   }
-  .item-bar.is-done .item-bar__fill { background: var(--is-ok); width: 100% !important; }
-  .item-bar.is-fail .item-bar__fill { background: var(--is-bad); width: 100% !important; }
+  .item-bar.is-running .item-bar__fill.is-shimmer::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
+    transform: translateX(-100%);
+    animation: is-shimmer 1.5s ease-in-out infinite;
+  }
+  .item-bar.is-done .item-bar__fill {
+    background: rgba(var(--is-ok-rgb), 0.72);
+    width: 100% !important;
+  }
+  .item-bar.is-fail .item-bar__fill {
+    background: rgba(var(--is-bad-rgb), 0.8);
+    width: 100% !important;
+  }
 
   .item-proc {
     margin-top: 2px;
@@ -854,7 +921,7 @@
     }
 
     .outpath { font-size: var(--is-fs-md); }
-    .item-title { font-size: var(--is-fs-base); }
+    .name-chip { font-size: var(--is-fs-md); }
   }
 }
 
@@ -896,7 +963,7 @@
     .summary--out .sum--tpl { display: none; }
 
     .comp-name,
-    .item-title,
+    .name-chip,
     .outpath { font-size: var(--is-fs-sm); }
 
     .progress { width: 40px; }

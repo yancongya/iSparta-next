@@ -71,7 +71,12 @@ export default {
     closeOnClickModal: { type: Boolean, default: true },
     closeOnEsc: { type: Boolean, default: true },
     lockScroll: { type: Boolean, default: true },
-    zIndex: { type: [String, Number], default: '' }
+    zIndex: { type: [String, Number], default: '' },
+    // 模态框默认提升到 body：成为真正的全局浮层。弹窗常在 .mod-list 内声明，
+    // 若留在原地，里面的 mousedown/click 会沿 DOM 冒泡触发列表框选/空白全选
+    // （拖动对比分割线时选中背景卡片）。提升到 body 后与列表是兄弟节点，
+    // 事件链彻底断开，无需在各处加 .stop 拦截。
+    toBody: { type: Boolean, default: true }
   },
   data () {
     return { showModel: false }
@@ -112,9 +117,21 @@ export default {
       }
       document.addEventListener('keydown', this._onKey)
       this.$nextTick(() => {
+        this.teleportToBody()
         const panel = this.$refs.panel
         if (panel) panel.focus()
       })
+    },
+    // 把弹窗根节点移到 body，成为真正的全局浮层：
+    // 弹窗多在 .mod-list 等容器内部声明，留在原地时内部 mousedown/click
+    // 会沿 DOM 冒泡触发列表框选、空白取消/全选（拖动对比分割线选中背景卡片）。
+    // 移到 body 后与列表脱离父子关系，事件不再互通；transition/vue 实例引用不变。
+    teleportToBody () {
+      if (!this.toBody) return
+      const el = this.$el
+      if (el && el.parentNode !== document.body) {
+        document.body.appendChild(el)
+      }
     },
     close () {
       if (!this.showModel) return

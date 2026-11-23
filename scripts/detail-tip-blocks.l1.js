@@ -119,7 +119,8 @@ function main () {
   ok('tip: 非归属域回退 scheduleHide（40+ 普通 tip 零变化）', /function onLeave[\s\S]*?scheduleHide\(\)/.test(tipSrc), null)
   ok('tip: bind 的 leave 走 onLeave 而非直接 scheduleHide', /leave: \(evt\) => onLeave\(el, evt\)/.test(tipSrc) && !/leave: scheduleHide/.test(tipSrc), null)
   const plSrc = read('../src/components/projectList/projectList.vue')
-  ok('接入: 任务条根标 data-tip-owner', /data-tip-owner[\s\S]{0,120}v-tip="titleTipOf\(project\)"/.test(plSrc), null)
+  ok('接入: 任务条信息已完整，整条 item 不再挂详情气泡/归属标记',
+    !/data-tip-owner/.test(plSrc) && !/class="item"[\s\S]{0,220}v-tip="titleTipOf\(project\)"/.test(plSrc), null)
 
   // 7) 样式：窄屏适配与防溢出（CEP 小尺寸硬约束）
   const scss = read('../src/ui-next/styles/ui.scss')

@@ -463,6 +463,7 @@
         :icon="isArraySetting ? 'layers' : 'play'"
         :disabled="isStarted || !canStart"
         :loading="isStarted"
+        v-tip="isArraySetting ? $t('batchStartTip') : ''"
         @click="start('')"
       >{{ isArraySetting ? $t("batchStart") : $t("start") }}</is-button>
 
@@ -471,6 +472,7 @@
         block
         icon="folder"
         :disabled="isStarted"
+        v-tip="$t('outputTofolderTip')"
         @click="changeOutput"
       >{{ $t("outputTofolder") }}</is-button>
     </div>

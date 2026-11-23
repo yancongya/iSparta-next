@@ -5,7 +5,7 @@ import gif2apng 	from './gif2apng'
 import PNGs2apng 	from './pngs2apng'
 import webp2apng 	from './webp2apng'
 import Action 		from './action'
-import { fs, path, os } 	from '../node-env'
+import { fs, path, os, isMockEnv } 	from '../node-env'
 import TYPE 		from '../../store/enum/type'
 import { enforceSizeLimit, normalizeSizeLimit } from './sizeGate'
 import { planStartingQuality, planStartingColors, estimateColorsBytes } from '../sizePlanner'
@@ -88,6 +88,39 @@ function applyStartPlan (item) {
   }
 }
 
+/**
+ * 纯浏览器 mock 环境（mockup / 落地页 demo）的模拟转换。
+ * mock fs 里源文件只是 'mock' 占位字符串、也没有真实编码器，走真实链路必然
+ * 「invalid PNG frame / 转换中断」。这里不碰编码器，写一份可读产物并分段推进
+ * 进度到完成态，让 mockup 下点「开始」能完整演示任务条 / 进度 / 产物角标链路。
+ * 与真实链路的同构点：同样写 outputFilesOf 指向的产物、同样发 editProcess。
+ */
+function mockConvert (items, store, locale) {
+  items.forEach(function (item) {
+    outputFilesOf(item).forEach(function (file) {
+      fs.writeFileSync(file, 'mock output\n'.repeat(256))
+    })
+  })
+  var steps = [0.25, 0.55, 0.85, 1]
+  return steps.reduce(function (chain, schedule) {
+    return chain.then(function () {
+      return new Promise(function (resolve) {
+        setTimeout(function () {
+          items.forEach(function (item) {
+            store.dispatch('editProcess', {
+              index: item.index,
+              text: schedule === 1 ? (locale.convertSuccess || 'Success') : (locale.startConvert || 'Converting') + '...',
+              detail: '',
+              schedule: schedule
+            })
+          })
+          resolve()
+        }, 220)
+      })
+    })
+  }, Promise.resolve())
+}
+
 function runWithConcurrency (tasks, limit) {
   return new Promise(function (resolve, reject) {
     var index = 0
@@ -126,18 +159,10 @@ function runWithConcurrency (tasks, limit) {
 
 export default function (store, sameOutputPath, locale) {
   var action = new Action(store)
-  if (process.env.VUE_APP_LANDING_DEMO === '1') {
-    return Promise.resolve().then(() => {
-      action.items.forEach(item => {
-        outputFilesOf(item).forEach(file => fs.writeFileSync(file, 'demo output\n'.repeat(256)))
-        store.dispatch('editProcess', {
-          index: item.index,
-          text: locale.convertSuccess,
-          detail: '',
-          schedule: 1
-        })
-      })
-    })
+  // 纯浏览器 mock：无真实编码器 / 真实帧内容，走模拟转换（含进度推进），
+  // 覆盖桌面 mockup :8081、CEP mockup :8082 与落地页 demo，三处共用同一判据。
+  if (isMockEnv()) {
+    return mockConvert(action.items, store, locale)
   }
   var taskFactories = []
   // 输出目录尾空格会并行渲出「闪闪」和「闪闪 」两套帧

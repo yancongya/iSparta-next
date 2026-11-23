@@ -399,7 +399,7 @@ function seedItems (fs, path, storage) {
   const EXT_OF_FORMAT = { APNG: '.png', GIF: '.gif', WEBP: '.webp' }
   // srcMB：演示用的「源体积」量级，写入 __size__ 虚拟键供 statSize 读取，
   // 让右上角预估角标显示有意义的降质值（否则源恒为 1KB，预估总是「无需降质」）。
-  const mk = (type, fileList, outputName, isSelected, formats, srcMB) => {
+  const mk = (type, fileList, outputName, isSelected, formats, srcMB, anim) => {
     fileList.forEach((p) => fs.writeFileSync(p, 'mock'))
     if (srcMB && srcMB > 0) {
       const perFile = Math.round(srcMB * 1024 * 1024 / fileList.length)
@@ -425,10 +425,13 @@ function seedItems (fs, path, storage) {
         type,
         inputPath: outputDir + '/' + path.basename(fileList[0]).split('.')[0],
         fileList,
-        outputPath: outputDir
+        outputPath: outputDir,
+        // 单文件动图：真实导入会从文件头解析帧数/延时，mock 用anim参数模拟同一效果
+        ...(anim && anim.frameCount ? { frameCount: anim.frameCount } : {})
       },
       options: {
         frameRate: 25,
+        ...(anim && anim.delays ? { delays: anim.delays } : {}),
         frameRemap: { enabled: false, targetFrameRate: 12 },
         loop: 0,
         outputSuffix: '',
@@ -448,10 +451,10 @@ function seedItems (fs, path, storage) {
   const items = isCepMockup ? [] : [
     // 首条seed 三格式齐全：用来演示完成态的三枚格式角标；srcMB 给足量级演示降质预估。
     // 量级错落开：多数达标（≈0.9MB / Q 错落），walk 故意给超大源演示「超目标」警告态。
-    mk('APNG', ['/mock-assets/banner.apng'], 'banner', true, ['APNG', 'GIF', 'WEBP'], 1.5),
-    mk('APNG', ['/mock-assets/loading.apng'], 'loading', false, undefined, 1.2),
+    mk('APNG', ['/mock-assets/banner.apng'], 'banner', true, ['APNG', 'GIF', 'WEBP'], 1.5, { frameCount: 60, delays: Array(60).fill(0.05) }),
+    mk('APNG', ['/mock-assets/loading.apng'], 'loading', false, undefined, 1.2, { frameCount: 50, delays: Array(50).fill(0.04) }),
     mk('PNGs', ['/mock-assets/frames/walk_001.png', '/mock-assets/frames/walk_002.png', '/mock-assets/frames/walk_003.png'], 'walk', false, undefined, 40),
-    mk('GIF', ['/mock-assets/emotion.gif'], 'emotion', false, undefined, 3),
+    mk('GIF', ['/mock-assets/emotion.gif'], 'emotion', false, undefined, 3, { frameCount: 20, delays: Array(20).fill(0.08) }),
     mk('WEBP', ['/mock-assets/photo.webp'], 'photo', false, undefined, 2)
   ]
   // 演示色深路线：banner seed 切到 colors 256（浏览器 mockup 验收角标「C256」文案与

@@ -762,6 +762,12 @@
   }
 }
 
+// 背景任务列表是独立滚动容器（.ib-main__list），body 的 overflow:hidden 拦不住滚动链：
+// 弹窗内滚到底后继续滚会传导到背景列表。contain 把滚动限制在弹窗体内。
+.is-dialog__body {
+  overscroll-behavior: contain;
+}
+
 body.is-scroll-locked {
   overflow: hidden;
 }

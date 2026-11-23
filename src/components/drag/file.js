@@ -3,6 +3,7 @@ import { fs, path } from '../../util/node-env'
 import { resolveOutputPath } from '../../util/outputPath'
 import { buildInitialOutputName } from '../../util/tokenizeName'
 import { detectSourceCollision } from '../../util/outputConflict'
+import { parseAnimationMeta } from '../../util/animationMeta'
 import notice from '../../ui-next/notice'
 import { t } from '../../i18n'
 import _ from 'lodash'
@@ -105,18 +106,20 @@ class actionFiles {
     }
   }
   getImageFormat (files) {
-    var isApng
-    let tempPng = []
     let pathname = path.dirname(files)
     for (var i in reg) {
       if (reg[i].test(files)) {
         if (i == 'PNGs') {
           var buffer = fs.readFileSync(files)
           if (isApngBuffer(buffer)) {
-            this.writeBasic('APNG', pathname, [files])
+            // APNG 真实帧数/延时藏在文件头，导入时解析一次供封面时长角标使用
+            this.writeBasic('APNG', pathname, [files], parseAnimationMeta('APNG', buffer))
           } else {
             recordPng.push(files)
           }
+        } else if (i == 'GIF') {
+          // GIF 每帧延时在 GCE 块里，fileList.length=1 无法推出时长
+          this.writeBasic('GIF', pathname, [files], parseAnimationMeta('GIF', fs.readFileSync(files)))
         } else {
           this.writeBasic(i, pathname, [files])
         }
@@ -124,7 +127,7 @@ class actionFiles {
     }
   }
 
-  writeBasic (format, address, fileList) {
+  writeBasic (format, address, fileList, animMeta) {
 
     let temp = {}
     let globalSetting = JSON.parse(window.storage.getItem('globalSetting'))
@@ -157,6 +160,12 @@ class actionFiles {
       if (hit) {
         temp.options.conflictFormat = hit.toUpperCase()
         autoSuffixNames.push(fileName)
+      }
+      // 单文件动图真实帧数/逐帧延时：封面时长角标与延时面板共用。
+      // 解析失败（mock 字符串 / 损坏文件）时保持缺省，由 durationOf 回退到帧率估算。
+      if (animMeta && animMeta.frameCount > 0) {
+        temp.basic.frameCount = animMeta.frameCount
+        temp.options.delays = animMeta.delays
       }
     }
     items.push(temp)

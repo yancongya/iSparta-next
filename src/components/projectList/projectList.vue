@@ -45,8 +45,6 @@
         class="item"
         :class="itemClass(project)"
         :data-index="index"
-        data-tip-owner
-        v-tip="titleTipOf(project)"
         @contextmenu.prevent="itemRightClick($event, project, index)"
         @click="onItemClick(index)"
         @dblclick="onItemDblclick($event, project)"
@@ -87,16 +85,11 @@
         </div>
 
         <div class="info">
-          <!-- 第一行：左侧原文件名（序列帧=序列标识），右侧输入路径；详情气泡挂整个任务条 -->
+          <!-- 第一行：输入目录 → 文件名 → 源体积，紧凑并排；信息已完整显示，整条任务条不再挂详情气泡 -->
           <div class="input">
             <div class="item-names">
-              <!-- 标题 + 路径合并为一行：标题优先收窄，路径占剩余宽度 -->
+              <!-- 第一行三要素紧凑并排：输入目录 → 文件名 → 源体积（不撑开、不右对齐） -->
               <div class="item-headrow">
-                <!-- 序列帧：类型标识做胶囊，与文件名纯文本明确区分；CEP 合成名仍走文本分支 -->
-                <div class="item-title" :class="{ 'is-ellipsis': !(showOutPath && isSeqLike(project)) }">
-                  <span v-if="showOutPath && isSeqLike(project)" class="seq-chip">{{ $t('seqFrameMark') }}</span>
-                  <template v-else>{{ showOutPath ? sourceNameOf(project) : displayTitleOf(project, index) }}</template>
-                </div>
                 <!-- 桌面：路径显示输入源，点击仍是改输出目录；CEP：只读输出短路径（勿把 ae-comp/路径当名字） -->
                 <button
                   v-if="showOutPath && isRealFsPath(outPathOf(project))"
@@ -116,6 +109,18 @@
                   <is-icon name="folder" size="xs" />
                   <span class="is-ellipsis">{{ pathLabelOf(project) }}</span>
                 </span>
+                <!-- 文件名胶囊：序列帧=类型胶囊(film)，普通文件=文件名胶囊(image)；CEP 合成名同样胶囊化 -->
+                <div class="item-title">
+                  <span v-if="showOutPath && isSeqLike(project)" class="seq-chip" v-tip="nameTipOf(project, index)">
+                    <is-icon name="film" size="xs" />{{ $t('seqFrameMark') }}
+                  </span>
+                  <span v-else class="name-chip" v-tip="nameTipOf(project, index)">
+                    <is-icon name="image" size="xs" />
+                    <span class="is-ellipsis">{{ showOutPath ? sourceNameOf(project) : displayTitleOf(project, index) }}</span>
+                  </span>
+                </div>
+                <!-- 源体积胶囊：单文件=文件大小，序列帧=逐帧求和；与预估角标共用惰性结果，不额外打盘 -->
+                <span v-if="sourceSizeOf(project)" class="src-size" v-tip="srcSizeTipOf(project)">{{ sourceSizeOf(project) }}</span>
               </div>
               <!-- 状态独立第二行且始终占位，四态切换不抖动；空态显示中性文案 -->
               <div
@@ -150,16 +155,16 @@
               <is-icon name="save" size="xs" /><span class="sum-v">{{ outputSizeOf(project) }}</span>
             </span>
           </div>
-          <!-- 第三行：输出名 + 输出路径（仅桌面）。路径默认显示完整真实路径（行内截断，
+          <!-- 第三行：输出路径（左）+ 输出名（右）（仅桌面）。路径默认显示完整真实路径（行内截断，
                hover 气泡给全文），hover 时行内切换为 {srcPath} 变量写法 -->
           <div v-if="showOutPath" class="summary summary--out">
-            <span class="sum sum--name is-ellipsis" v-tip="tipOf('outputName', outNameOf(project))">
-              <is-icon name="save" size="xs" /><span class="is-ellipsis">{{ outNameOf(project) || '—' }}</span>
-            </span>
             <span class="sum sum--tpl is-ellipsis" v-tip="$t('tipOutputDir') + '：' + outPathOf(project)">
               <is-icon name="sliders" size="xs" />
               <span class="tpl-real is-ellipsis">{{ outPathOf(project) || '—' }}</span>
               <span class="tpl-var is-ellipsis">{{ outTplOf(project) || '—' }}</span>
+            </span>
+            <span class="sum sum--name is-ellipsis" v-tip="tipOf('outputName', outNameOf(project))">
+              <is-icon name="save" size="xs" /><span class="is-ellipsis">{{ outNameOf(project) || '—' }}</span>
             </span>
           </div>
         </div>
@@ -294,7 +299,7 @@ import hostAdapter, { getSourceAdapter } from '../../util/host-env'
 import { fs } from '../../util/node-env'
 import {
   estimateOutput, estimateSourceBytes, humanSizeCompact,
-  formatLetter, pickEstDetail
+  formatLetter, pickEstDetail, sourceSizeText
 } from '../../util/qualityEstimate'
 import { buildEstimateTipBlocks } from '../../util/estimateTipBlocks'
 import { createLazyEstimate } from '../../util/lazyEstimate'
@@ -592,20 +597,40 @@ export default {
       // 按类型分流已无意义。保留键位只是不动 i18n 结构，实际统一取一个。
       return this.$t('framePanelTip')
     },
-    // 帧数/帧率 = 时长（秒），左上角显示
+    // 时长角标：优先用逐帧延时总和（导入时从 APNG/GIF 文件头解析，或延时面板写入），
+    // 才回退到帧数/帧率。旧逻辑固定 frameCount/frameRate，而单文件动图
+    // frameCount=fileList.length=1 → 1/25≈0.04s → 显示「0s」，是开口错。
     durationOf (project) {
-      var fc = this.frameCount(project)
-      var basic = project && project.basic
-      var fps = basic && basic.type === 'Comp' && Number(basic.compFps) > 0
-        ? Number(basic.compFps)
-        : Number(project && project.options && project.options.frameRate)
-      if (!fc || !isFinite(fps) || fps <= 0) return ''
-      var sec = fc / fps
-      return String(Math.round(sec * 10) / 10).replace(/\.0$/, '') + 's'
+      var opts = (project && project.options) || {}
+      var delays = opts.delays
+      var sec = 0
+      if (Array.isArray(delays) && delays.length) {
+        for (var i = 0; i < delays.length; i++) {
+          var d = Number(delays[i])
+          if (isFinite(d) && d > 0) sec += d
+        }
+      }
+      if (!(sec > 0)) {
+        var fc = this.frameCount(project)
+        var basic = project && project.basic
+        var fps = basic && basic.type === 'Comp' && Number(basic.compFps) > 0
+          ? Number(basic.compFps)
+          : Number(opts.frameRate)
+        if (!fc || !isFinite(fps) || fps <= 0) return ''
+        sec = fc / fps
+      }
+      if (!(sec > 0)) return ''
+      // 不足 0.05s 会被四舍五入成「0s」——与其显示误导角标，不如不显示
+      var rounded = Math.round(sec * 10) / 10
+      if (!(rounded > 0)) return ''
+      return String(rounded).replace(/\.0$/, '') + 's'
     },
     frameCount (project) {
-      var list = project && project.basic && project.basic.fileList
-      return list && list.length ? list.length : Number(project && project.basic && project.basic.frameCount) || 0
+      var basic = (project && project.basic) || {}
+      // 单文件动图导入时解析了真实帧数（basic.frameCount），优先于 fileList.length=1
+      if (Number(basic.frameCount) > 0) return Number(basic.frameCount)
+      var list = basic.fileList
+      return list && list.length ? list.length : Number(basic.frameCount) || 0
     },
     // 单文件动图（APNG/GIF/WEBP）用封面角标承载类型信息；序列/合成仍显示帧数
     isAnimatedSingle (project) {
@@ -654,6 +679,35 @@ export default {
       // 读一次 tick 建立模板依赖：调度器算完自增后触发本方法重估
       void this.estimateTick
       return this._lazyEstimate.get(project, project, estimateStamp(project))
+    },
+    /**
+     * 第一行路径右侧源体积胶囊：单文件 = 文件大小，目录/序列帧 = 逐帧求和；
+     * CEP 合成尚未渲染，sourceOf 按尺寸×帧数给出估算（estimate 标 estimated）。
+     * 两条路径共用预估角标的惰性结果，文案统一走 sourceSizeText（估算值前置 ≈），
+     * 首帧无结果返回空串（不显示），空闲算完由 estimateTick 触发重渲染。
+     */
+    sourceSizeOf (project) {
+      return sourceSizeText(this.estimateOf(project))
+    },
+    /**
+     * 名字胶囊 hover：与胶囊显示共用同一变量——桌面取 sourceNameOf（序列帧取首帧名），
+     * CEP 取 displayTitleOf（合成名）。两端同一方法、同一 tipOf 纯文本气泡，不另造数据。
+     */
+    nameTipOf (project, index) {
+      var name = this.showOutPath ? this.sourceNameOf(project) : this.displayTitleOf(project, index)
+      return this.tipOf('sourceFileName', name)
+    },
+    /**
+     * 大小胶囊 hover：数值直接复用 sourceSizeOf（同一个 sourceSizeText 变量），
+     * 再按 estimated 补一句口径——桌面文件/逐帧求和 vs CEP 尺寸×帧数估算。
+     * 两端同一方法，只是 estimated 由 sourceOf 决定，不在此重复判断宿主。
+     */
+    srcSizeTipOf (project) {
+      var size = this.sourceSizeOf(project)
+      if (!size) return ''
+      var e = this.estimateOf(project)
+      var basis = e && e.estimated ? this.$t('srcSizeBasisEstimated') : this.$t('srcSizeBasisActual')
+      return this.tipOf('estRichMetricSource', size + ' · ' + basis)
     },
     /** 角标 hover：结构化富气泡（方案 B 仪表），与 compTree 共用单一构建源 */
     estimateTipOf (project) {

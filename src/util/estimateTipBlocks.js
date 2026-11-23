@@ -9,7 +9,7 @@
  * 仅呈现方式由「一段灰字」改为分区仪表。
  */
 
-import { humanSize } from './qualityEstimate'
+import { humanSize, sourceSizeText } from './qualityEstimate'
 
 /**
  * @param {object} e    estimateOutput 结果（含组件注入的 srcBits/srcIndexed/preserve/limitedFormats）
@@ -48,7 +48,8 @@ export function buildEstimateTipBlocks (e, t) {
   if (basis) blocks.push({ type: 'basis', text: basis, tone: 'info' })
 
   // 双指标：源大小 + 目标（无目标时不显示目标卡，也不显示对比条，见上）
-  const metrics = [{ label: t('estRichMetricSource'), value: humanSize(e.sourceBytes) }]
+  // 源大小文案与任务条第一行的源体积胶囊共用 sourceSizeText：估算值统一带 ≈
+  const metrics = [{ label: t('estRichMetricSource'), value: sourceSizeText(e) }]
   if (e.hasTarget && e.target > 0) {
     metrics.push({ label: t('estRichMetricTarget'), value: '≤ ' + humanSize(e.target) })
   }

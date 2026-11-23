@@ -4,7 +4,7 @@ import Vuex from 'vuex'
 import modules from './modules'
 
 import * as types from './mutation-types'
-import { fs, storage, os, path, getProcessBridge, ipc } from '../util/node-env'
+import { fs, storage, os, path, getProcessBridge, ipc, isMockEnv } from '../util/node-env'
 import { MODE_SYSTEM } from '../util/system-locale'
 import { resolveOutputPath, SEQ_DIR_DEFAULT_TEMPLATE } from '../util/outputPath'
 import { buildInitialOutputName } from '../util/tokenizeName'
@@ -542,6 +542,9 @@ const actions = {
    * 返回 false 时调用方必须放弃本次启动。
    */
   async preflightOutputs (context, items) {
+    // 纯浏览器 mock：种子预写产物供完成态角标演示，必然命中「目标文件已存在」，
+    // 而 mock 转换写的是内存模拟产物、不碰真实文件，这类覆盖告警是假阳性，直接放行。
+    if (isMockEnv()) { return true }
     const list = (items && items.length) ? items : context.rootState.items
     const conflicts = classifyOutputConflicts(list, function (file) {
       try { return fs.existsSync(file) } catch (e) { return false }

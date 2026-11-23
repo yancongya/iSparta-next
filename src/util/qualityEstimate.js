@@ -253,3 +253,14 @@ export function humanSize (bytes) {
   // 源字节可能很大（长序列），保留两位避免 10.00 与 10.01 看起来一样
   return (n / MB).toFixed(2) + ' MB'
 }
+
+/**
+ * 源体积显示文案：任务条第一行源体积胶囊 与 预估角标 hover 的「源大小」指标共用。
+ * 桌面真实文件（statSize / 逐帧求和）不带前缀；CEP 合成未渲染时 sourceOf 按
+ * 尺寸×帧数估算（estimateOutput 标 estimated:true），前置 ≈ 与右上角预估角标同口径。
+ * 两处读同一个 e.sourceBytes / e.estimated，避免显示层各自拼出不一致的文案。
+ */
+export function sourceSizeText (e) {
+  if (!e || !(e.sourceBytes > 0)) return ''
+  return (e.estimated ? '≈' : '') + humanSize(e.sourceBytes)
+}
