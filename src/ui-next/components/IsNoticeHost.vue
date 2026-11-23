@@ -9,12 +9,13 @@
         @mouseenter="pause(item)"
         @mouseleave="resume(item)"
       >
-        <is-icon class="is-notice-item__icon" :name="item.icon" :spin="item.icon === 'loader'" size="xl" />
+        <span class="is-notice-item__badge">
+          <is-icon :name="item.icon" :spin="item.icon === 'loader'" size="sm" />
+        </span>
 
         <div class="is-notice-item__body">
           <strong v-if="item.title" class="is-notice-item__title">{{ item.title }}</strong>
-          <p v-if="item.text" class="is-notice-item__text">{{ item.text }}</p>
-
+          <span v-if="item.text" class="is-notice-item__text">{{ item.text }}</span>
           <div v-if="item.action" class="is-notice-item__actions">
             <is-button size="sm" type="text" @click="item.action.onCancel()">
               {{ item.action.cancelText || $t('cancel') }}
@@ -26,11 +27,11 @@
         </div>
 
         <button
-          v-if="item.closable"
+          v-if="item.closable && !item.action"
           type="button"
-          class="is-notice-item__close"
+          class="is-notice-item__ok"
           @click="close(item.id)"
-        ><is-icon name="close" /></button>
+        >{{ $t('gotIt') }}</button>
 
         <span
           v-if="item.duration"

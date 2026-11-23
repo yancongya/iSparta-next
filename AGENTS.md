@@ -18,6 +18,7 @@
 | 预估角标测试 | `node scripts\estimate-badge.l1.js`；验证角标按格式轮换的纯函数（formatLetter / humanSizeCompact / pickEstDetail）与 estimateOutput 分格式明细、逐格式 over 标记 |
 | 色深压缩测试 | `node scripts\palette-compress.l1.js`；验证 `src\util\paletteConfig.js`（档位吸附 / 旧配置回退 quality / 逐级降色数）、apngCompress 色数参数分发、applyStartPlan 色深规划、apng2gif→gifsicle GIF 色深链路（`--colors N` + 失败兜底） |
 | 体积闸测试 | `node scripts\sizeGate.l1.js`；验证 sizeGate 双路线重试（quality 逐级降 / colors 逐档降色数）、临时产物路径与原始 quality 恢复（沙箱 path 用 posix 形态，与 sizes 键一致） |
+| CEP 兼容守卫 | `node scripts\dev\check.js cep`；静态检查桌面/CEP 共享源未分叉、关键宿主门控存在、三语 key 齐。**改任何桌面 UI / 交互逻辑后必须跑**（见 §8.6） |
 | 图标再生 | 见 `scripts\build-app-icons.js`、`scripts\make-icons-from-png.py`、`scripts\make-installer-images.py`（勿手改位图当源） |
 
 ### 1.1 统一入口脚本（`scripts/dev/`）——**先查这里，不要现敲命令**
@@ -29,7 +30,7 @@
 |------|---------------|------|
 | `scripts\dev\preview.js`<br>`scripts\dev\run-preview.cmd` | `guide` :8090 · `landing` :8080 · `web` :8081 · `desktop` :8081 · `cep` :8082 | 起服务 → **按页面独有标记确认「应答方确实是我们」** → 打开默认浏览器。`--port N` 指定端口，`--no-open` 只起服务，`--mock`（仅 `cep`）自动附加 `?mock=1` 打开 CEP mockup |
 | `scripts\dev\build.js`<br>`scripts\dev\run-build-win.cmd`<br>`scripts\dev\run-build-cep.cmd` | `win` · `cep` · `mac-pkg`；`--backup` · `--dry`(`-n`) | 构建入口。mac-pkg 从已构建 `.app` 生成系统级安装包。 |
-| `scripts\dev\check.js`<br>`scripts\dev\run-check.cmd` | `lint` · `pack` · `ports` · `all` | 体检：lint / `doctor:pack` 出包自检 / 8080–8099 端口占用与**归属识别**（附可复制 `taskkill`） |
+| `scripts\dev\check.js`<br>`scripts\dev\run-check.cmd` | `lint` · `pack` · `version` · `ports` · `cep` · `all` | 体检：lint / `doctor:pack` 出包自检 / 版本一致性 / 8080–8099 端口占用与**归属识别**（附可复制 `taskkill`）/ CEP 兼容静态守卫（§8.6） |
 
 ```powershell
 node scripts\dev\preview.js guide            # 引导页原型台
@@ -37,7 +38,7 @@ node scripts\dev\preview.js cep --mock        # CEP 浏览器 mockup：:8082/?mo
 node scripts\dev\build.js win                # 本机打 Windows 安装包
 node scripts\dev\build.js cep                # 仅需要本地 CEP 产物时重建
 node scripts/dev/build.js mac-pkg             # macOS 从已构建 .app 打 pkg
-node scripts\dev\check.js all                # lint + pack + ports
+node scripts\dev\check.js all                # lint + pack + version + cep + ports
 ```
 
 预览入口内部调用的就是仓库原有的服务脚本（`landing` → `npm run landing:serve`、`web` → `npm run serve`、`cep` → `npm run serve:cep`、`guide` → `npm run preview:guide`（:8090 原型台）、`desktop` → `npm run dev`）—— 单独调试服务本身时仍可直接跑它们，日常预览走 `preview.js` 以便拿到标记校验与真实端口提示。
@@ -214,7 +215,7 @@ CI：`release.yml` 校验版本化 Release 文案、负责 bump、打包、挂 R
 - 优先 `scripts\` 与 `npm run *`；不要为 lint/发版/图标另起临时流程
 - **未经用户明确要求，禁止 commit 以外的发版/release**（见 §2.2）
 - 主树（`master`）大范围写入前按会话规则确认 worktree；发版后 `git pull` 同步 bump
-- 完成后：lint 通过 → commit（规范见上）→ 更新 CHANGELOG/README（如有用户可见变化）→ **等用户点名再 release**
+- 完成后：lint 通过 → `node scripts\dev\check.js cep`（CEP 兼容静态守卫，§8.6）→ **CEP mock 实测（§8.6 第 3 步）** → commit（规范见上）→ 更新 CHANGELOG/README（如有用户可见变化）→ **等用户点名再 release**
 
 ## 8.1 双端目标（桌面 + AE CEP）
 
@@ -231,7 +232,7 @@ CI：`release.yml` 校验版本化 Release 文案、负责 bump、打包、挂 R
 - **不用** Bolt/Nx；复用现有构建、CEP 载荷和发布流程；发版仍须用户点名（§2.2）。
 - **macOS 系统级安装**：`scripts/build-mac-pkg.js` 生成 pkg，`scripts/mac-pkg/postinstall` 检测 After Effects 并部署系统级 CEP。桌面启动的 `cepSync.js` 只做检查，避免无权限时改写系统目录。
 - **Windows 系统级安装**：NSIS 固定 `perMachine: true`，主程序落 Program Files，CEP 落 Common Files；检测到 After Effects 才部署扩展；清理本产品旧的用户级副本，安装状态写入结果文件。
-- 实现变化后同步更新本节与 `docs/PLAN-DUAL-TARGET.md` 的已验证状态；实机验收状态单独记录，不能用代码实现状态代替。
+- 实现变化后同步更新本节与 `docs/PLAN-DUAL-TARGET.md` 的已验证状态；**桌面逻辑改动收尾必须走 §8.6 的 CEP 兼容调研与 mock 实测**；实机验收状态单独记录，不能用代码实现状态代替。
 
 ## 8.2 视口断点统一约束（强制）
 
@@ -315,6 +316,35 @@ CEP 下弹窗要铺满时必须三件套同时做，缺一就会被内联样式 
 2. 截图必须 `new BrowserWindow({ show: true })` —— `capturePage()` 对隐藏窗口返回**旧帧**
    （新图层不重绘），截出来是一张「没有弹窗」的假图。离屏 + `backgroundThrottling:false` 也不行。
 3. 页内若有会被离屏冻结的过渡（如 dialog 的 enter），截图前先把 `opacity` / `transition` 内联中性化。
+
+## 8.6 桌面逻辑改动 → 必做 CEP 兼容调研（强制）
+
+**触发条件**：只要改了桌面 UI / 交互逻辑（模板、样式、组件方法、`v-tip`、`locales`、store 字段等），
+无论当时是否"看起来只影响桌面"，收尾前都要走一遍本节。双端共用大量源文件（见 §8.1），
+桌面一处改动经常会改变 CEP 的行为——不要等真机出问题才发现。
+
+**为什么强制**：CEP 与桌面共用 `projectList.vue` / `setting.vue` / `src/ui-next/tip.js` / `locales/*` / `processor/*`
+等单一可编辑源（CEP 入口 `src/cep/main.js`、`settings.js` 都 `import ../ui-next/tip`，i18n 读同一 `src/locales`）。
+"桌面独有"分支靠宿主门控区分，不是靠复制文件；新增分支若忘记门控，CEP 就会跟着变。
+
+**收尾清单（按顺序）**：
+
+1. **静态守卫**：`node scripts\dev\check.js cep`（并入 `check.js all`）。检查共享源未被分叉（CEP 侧不得出现平行副本）、
+   宿主门控仍在（`showOutPath` / `isCepHost` / `supportsCompImport`）、三语 key 齐、tip 归属域标记完整。
+2. **判定影响面**：本次改动的文件是否属于双端共享源？若是桌面独有分支，是否用宿主门控隔离？
+   CEP 下该分支应走哪条路径（常见：`showOutPath=false` 走合成名 / 静态路径 / 无第三行）。
+3. **CEP mock 实测**：`node scripts\dev\preview.js cep --mock`（:8082/?mock=1，dev server **实时编译源码**，
+   验证的是最新代码）。逐项确认新增/修改的 UI 在 CEP 下的实际表现，重点是那些"桌面有、CEP 该没有"的元素
+   （如序列帧胶囊、可点路径按钮）确实不误显；同时看 console 无 `warn` / `error`。
+4. **普通 tip / 共享浮层回归**：若动了 `v-tip` 或单例浮层，验证 CEP 设置面板、合成树的普通提示仍悬停显示 / 移出隐藏，
+   只有打了归属标记的区域走新逻辑（归属域判定见 `src/ui-next/tip.js` 的 `ownerOf` / `onLeave`）。
+5. **产物时效说明**：`targets/cep/ui/` 是 tracked 产物，日常不手工重建；发版 `release.yml` / `build.yml`
+   会自动 `npm run build:cep` 从源码重建。mockup 通过 ≠ 真机通过——涉及桥接 / 渲染 / 安装 / 更新，
+   另按 [`docs/ACCEPTANCE-RUNBOOK.md`](docs/ACCEPTANCE-RUNBOOK.md) 做 AE 实机验收。
+
+**反例（本仓真实踩过）**：给任务条详情 tip 做防劫持归属域时，若只在桌面 mock 验证，
+CEP 的 6 条合成任务虽共用同一 `tip.js`，却无法确认 CEP 下合成名 / 静态路径分支是否被误伤；
+必须按上表在 8082 逐项量过才算完成。细节与可执行步骤见验收手册的"桌面改动 → CEP 兼容回归"章节。
 
 ## 9. 文档索引
 

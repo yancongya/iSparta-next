@@ -5,6 +5,7 @@
  * 方便 L1 沙箱直接断言；真正的 notice.confirm / warning 在 store 的 preflight action。
  */
 import { path } from './node-env'
+import { outputNameFor } from './outputName'
 
 export const EXTENSIONS = { APNG: '.png', GIF: '.gif', WEBP: '.webp' }
 export const SUFFIX_FORMATS = ['APNG', 'GIF', 'WEBP']
@@ -78,7 +79,7 @@ export function classifyOutputConflicts (items, exists) {
     const options = (item && item.options) || {}
     const formats = Array.isArray(options.outputFormat) ? options.outputFormat : []
     formats.forEach(function (fmt) {
-      const file = outputPathFor(basic.outputPath, options.outputName, fmt)
+      const file = path.join(basic.outputPath, outputNameFor(item, fmt) + (EXTENSIONS[String(fmt).toUpperCase()] || '.png'))
       const key = normalizePath(file)
       if (!key || seen[key]) return
       seen[key] = true

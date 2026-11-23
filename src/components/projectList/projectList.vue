@@ -45,6 +45,8 @@
         class="item"
         :class="itemClass(project)"
         :data-index="index"
+        data-tip-owner
+        v-tip="titleTipOf(project)"
         @contextmenu.prevent="itemRightClick($event, project, index)"
         @click="onItemClick(index)"
         @dblclick="onItemDblclick($event, project)"
@@ -85,24 +87,26 @@
         </div>
 
         <div class="info">
-          <!-- 第一行：类型标签 + 主标题（合成名/输出名）；路径降为次要行 -->
+          <!-- 第一行：左侧原文件名（序列帧=序列标识），右侧输入路径；详情气泡挂整个任务条 -->
           <div class="input">
             <div class="item-names">
               <!-- 标题 + 路径合并为一行：标题优先收窄，路径占剩余宽度 -->
               <div class="item-headrow">
-                <div class="item-title is-ellipsis" v-tip="titleTipOf(project)">
-                  {{ displayTitleOf(project, index) }}
+                <!-- 序列帧：类型标识做胶囊，与文件名纯文本明确区分；CEP 合成名仍走文本分支 -->
+                <div class="item-title" :class="{ 'is-ellipsis': !(showOutPath && isSeqLike(project)) }">
+                  <span v-if="showOutPath && isSeqLike(project)" class="seq-chip">{{ $t('seqFrameMark') }}</span>
+                  <template v-else>{{ showOutPath ? sourceNameOf(project) : displayTitleOf(project, index) }}</template>
                 </div>
-                <!-- 桌面：点击改输出目录；CEP：只读短路径（勿把 ae-comp/路径当名字） -->
+                <!-- 桌面：路径显示输入源，点击仍是改输出目录；CEP：只读输出短路径（勿把 ae-comp/路径当名字） -->
                 <button
                   v-if="showOutPath && isRealFsPath(outPathOf(project))"
                   type="button"
                   class="outpath is-ellipsis"
-                  v-tip="$t('tipChangeOutput') + '：' + outPathOf(project)"
+                  v-tip="$t('tipInputDir') + '：' + inputFullPathOf(project)"
                   @click.stop="changeFold(project.basic && project.basic.outputPath, index)"
                 >
                   <is-icon name="folder" size="xs" />
-                  <span class="is-ellipsis">{{ pathLabelOf(project) }}</span>
+                  <span class="is-ellipsis">{{ inputLabelOf(project) }}</span>
                 </button>
                 <span
                   v-else-if="!showOutPath && pathLabelOf(project)"
@@ -146,13 +150,16 @@
               <is-icon name="save" size="xs" /><span class="sum-v">{{ outputSizeOf(project) }}</span>
             </span>
           </div>
-          <!-- 第三行：输出名 + 变量路径（仅桌面；CEP 名已在第一行） -->
+          <!-- 第三行：输出名 + 输出路径（仅桌面）。路径默认显示完整真实路径（行内截断，
+               hover 气泡给全文），hover 时行内切换为 {srcPath} 变量写法 -->
           <div v-if="showOutPath" class="summary summary--out">
             <span class="sum sum--name is-ellipsis" v-tip="tipOf('outputName', outNameOf(project))">
               <is-icon name="save" size="xs" /><span class="is-ellipsis">{{ outNameOf(project) || '—' }}</span>
             </span>
-            <span class="sum sum--tpl is-ellipsis" v-tip="tipOf('pathVar', outTplOf(project))">
-              <is-icon name="sliders" size="xs" /><span class="is-ellipsis">{{ outTplOf(project) || '—' }}</span>
+            <span class="sum sum--tpl is-ellipsis" v-tip="$t('tipOutputDir') + '：' + outPathOf(project)">
+              <is-icon name="sliders" size="xs" />
+              <span class="tpl-real is-ellipsis">{{ outPathOf(project) || '—' }}</span>
+              <span class="tpl-var is-ellipsis">{{ outTplOf(project) || '—' }}</span>
             </span>
           </div>
         </div>
@@ -257,44 +264,24 @@
     ></compare-dialog>
 
     <button
-      v-if="showOutPath && !splitImportButtons"
+      v-if="showOutPath"
       type="button"
       class="open-folder"
       :disabled="isLocked"
-      @click="openFolder"
+      @click="openFolder($event)"
     >
       <is-icon name="folder-plus" size="sm" />
-      {{ $t('openFolder') }}
+      {{ $t('openFolderHint') }}
     </button>
-    <!-- Win/Linux：openFile + openDirectory 互斥，拆成两个按钮各自传 properties -->
-    <div v-else-if="showOutPath" class="import-btns">
-      <button
-        type="button"
-        class="open-folder"
-        :disabled="isLocked"
-        @click="openFolder('file')"
-      >
-        <is-icon name="image" size="sm" />
-        {{ $t('openFile') }}
-      </button>
-      <button
-        type="button"
-        class="open-folder"
-        :disabled="isLocked"
-        @click="openFolder('directory')"
-      >
-        <is-icon name="folder-plus" size="sm" />
-        {{ $t('openFolder') }}
-      </button>
-    </div>
   </section>
 </template>
 <script>
-import { ipc, getProcessBridge } from '../../util/node-env'
+import { ipc } from '../../util/node-env'
 import {
   stateOf, statusIcon, outputFilesOf, sizeBytesOfFiles, outputSizeOf, outputSizeTip,
   outputGroupsOf, sizeTextOfFiles
 } from '../../util/task-output'
+import { displayNameOf } from '../../util/outputName'
 import { buildTitleTipBlocks, buildBadgeTipBlocks, buildOutputSizeTipBlocks } from '../../util/detailTipBlocks'
 import rightMenu from './menu'
 import DelayDialog from '../delayDialog/index.vue'
@@ -562,10 +549,6 @@ export default {
     showOutPath () {
       return !(hostAdapter && (hostAdapter.supportsCompImport || hostAdapter.kind === 'cep'))
     },
-    // mac 原生对话框可同时选文件+目录；Win/Linux 必须拆两个按钮
-    splitImportButtons () {
-      try { return getProcessBridge().platform !== 'darwin' } catch (e) { return false }
-    },
     marqueeStyle () {
       return {
         left: this.marquee.x + 'px',
@@ -714,6 +697,35 @@ export default {
       if (name) return name
       return this.baseNameOf(b.inputPath) || b.type || '—'
     },
+    // 序列帧类任务（PNG 序列 / CEP 合成 / 多文件）：第一行左侧改显示胶囊标识而非文件名
+    isSeqLike (project) {
+      var b = (project && project.basic) || {}
+      var type = String(b.type || '').toUpperCase()
+      var list = b.fileList || []
+      return type === 'PNGS' || type === 'COMP' || list.length > 1
+    },
+    // 第一行左侧文件名：单文件动图显示原文件名（含扩展名）。
+    // 序列帧不再返回标识文案（改由模板的 seq-chip 胶囊渲染），合成名/输出名仍保留在整条 hover 详情气泡里。
+    sourceNameOf (project) {
+      var b = (project && project.basic) || {}
+      var list = b.fileList || []
+      var first = b.sourceFile || (list.length ? list[0] : '') || b.inputPath || ''
+      return this.baseNameOf(first) || this.titleOf(project)
+    },
+    // 第一行右侧路径：桌面显示输入源短路径；CEP 沿用输出短路径（ae-comp 假路径不当输入展示）
+    inputLabelOf (project) {
+      if (!this.showOutPath) return this.pathLabelOf(project)
+      var b = (project && project.basic) || {}
+      var p = b.inputPath || (b.fileList && b.fileList[0]) || ''
+      if (!this.isRealFsPath(p)) return this.pathLabelOf(project)
+      return this.shortPathOf(p)
+    },
+    // 第一行路径 hover 全文：与 inputLabelOf 取值口径一致，返回未截断的输入源路径。
+    // 之前这里误用「修改输出目录 + 输出路径」，与行内显示的输入路径对不上。
+    inputFullPathOf (project) {
+      var b = (project && project.basic) || {}
+      return b.inputPath || (b.fileList && b.fileList[0]) || ''
+    },
     // 同名多条时追加短路径区分（清单：多条同名可区分）
     displayTitleOf (project, index) {
       var title = this.titleOf(project)
@@ -780,7 +792,9 @@ export default {
       return (project && project.basic && project.basic.outputPath) || ''
     },
     outNameOf (project) {
-      return (project && project.options && project.options.outputName) || ''
+      // 与设置面板输入框同一口径：基础名 +（开关启用且有源冲突时）冲突格式后缀。
+      // 之前只读 options.outputName 基础名，导致输入框显示 cool_apng、任务条仍显示 cool。
+      return displayNameOf(project)
     },
     // 变量路径：模板为空时回退为当前 mode 的语义写法，行内仍有信息量
     outTplOf (project) {
@@ -1283,14 +1297,14 @@ export default {
       if (this.stateOf(project.process) !== 'done') return
       this.compareProject = project
     },
-    openFolder (mode) {
+    openFolder (e) {
       if (this.isLocked || !this.showOutPath) return
-      const props = mode === 'file'
-        ? ['openFile', 'multiSelections']
-        : mode === 'directory' ? ['openDirectory'] : ['openFile', 'openDirectory', 'multiSelections']
+      // 默认点击 = 选目录（沿用旧版行为）；Ctrl/⌘ + 点击 = 选文件。
+      // 与空态面板同一套交互，跨平台一致，且绕开 Win/Linux 上两属性同传静默降级的问题。
+      const pickFile = !!(e && (e.ctrlKey || e.metaKey))
       ipc.invoke('dialog:openFiles', {
-        properties: props,
-        filters: mode === 'file' ? [{ name: this.$t('importImageFilter'), extensions: ['png', 'gif', 'webp'] }] : undefined
+        properties: pickFile ? ['openFile', 'multiSelections'] : ['openDirectory'],
+        filters: pickFile ? [{ name: this.$t('importImageFilter'), extensions: ['png', 'gif', 'webp'] }] : undefined
       }).then((result) => {
         if (!result || result.canceled || !result.filePaths.length) { return false }
         return this.importPaths(result.filePaths)

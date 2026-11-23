@@ -18,6 +18,7 @@ import i18n from '../../i18n'
 import { sampleTimedFrameIndices } from '../frameRemap'
 import { outputFilesOf } from '../task-output'
 import { fallbackRenameForSource } from '../outputConflict'
+import { outputNameFor } from '../outputName'
 
 function stat (label) {
   try {
@@ -330,14 +331,16 @@ function apng2other (item, store, locale) {
   var funcArr = []
   // 后面会把 fileList[0] 换成临时 out.png，先留住真实源文件用于落盘保底比对
   const sourceFiles = ((item.basic && item.basic.fileList) || []).slice()
-  const safeTarget = function (target) {
+  const safeTarget = function (target, format) {
     const renamed = fallbackRenameForSource(target, sourceFiles)
     if (renamed !== target) {
       appLog.warn(i18n.t('noticeFallbackRenameTitle'), i18n.t('noticeFallbackRenameBody', {
         from: target, to: renamed
       }))
-      // 让后续 sizeGate / 产物复制按改名后的名字找文件，避免「落盘成功但找不到产物」
-      item.options.outputName = path.basename(renamed, path.extname(renamed))
+      // 让后续 sizeGate / 产物复制按改名后的名字找文件，避免「落盘成功但找不到产物」。
+      // 只记当前格式的覆盖名——不能写共享 outputName，否则三个格式又一起变名。
+      if (!item.basic.outputNameOverride) { item.basic.outputNameOverride = {} }
+      item.basic.outputNameOverride[String(format || '').toUpperCase()] = path.basename(renamed, path.extname(renamed))
     }
     return renamed
   }
@@ -355,7 +358,7 @@ function apng2other (item, store, locale) {
       case TYPE.APNG:
         funcArr.push(fs.copy(
 				path.join(item.basic.tmpOutputDir, 'out.png'),
-				safeTarget(path.join(item.basic.outputPath, item.options.outputName + '.png'))
+				safeTarget(path.join(item.basic.outputPath, outputNameFor(item, TYPE.APNG) + '.png'), TYPE.APNG)
 			))
         break
 
@@ -363,7 +366,7 @@ function apng2other (item, store, locale) {
         funcArr.push(apng2gif(item, store, locale).then(() => {
           return fs.copy(
 					path.join(item.basic.tmpOutputDir, 'out.gif'),
-					safeTarget(path.join(item.basic.outputPath, item.options.outputName + '.gif'))
+					safeTarget(path.join(item.basic.outputPath, outputNameFor(item, TYPE.GIF) + '.gif'), TYPE.GIF)
 				)
         }))
         break
@@ -372,7 +375,7 @@ function apng2other (item, store, locale) {
         funcArr.push(apng2webp(item, store, locale).then(() => {
           return fs.copy(
 					path.join(item.basic.tmpOutputDir, 'out.webp'),
-					safeTarget(path.join(item.basic.outputPath, item.options.outputName + '.webp'))
+					safeTarget(path.join(item.basic.outputPath, outputNameFor(item, TYPE.WEBP) + '.webp'), TYPE.WEBP)
 				)
         }))
     }

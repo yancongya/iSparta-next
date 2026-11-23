@@ -66,7 +66,7 @@
             <div class="name-row">
               <is-input
                 class="is-input--fluid"
-                :value="item.options.outputName"
+                :value="multiDisplayName(i)"
                 placeholder="output"
                 @input="onMultiNameInput(i, $event)"
               />
@@ -78,6 +78,14 @@
                 v-tip="multiWordsOnly(i) ? $t('restoreAll') : $t('keepWordsOnly')"
                 @click.stop="toggleMultiWordsOnly(i)"
               ><is-icon name="filter" size="sm" /></button>
+              <button
+                type="button"
+                class="name-row__filter name-row__suffix"
+                :class="{ 'is-on': multiSuffixEnabled(i) }"
+                :disabled="!multiConflictFormat(i)"
+                v-tip="suffixTipOf(i)"
+                @click.stop="toggleMultiSuffix(i)"
+              ><is-icon name="edit" size="sm" /></button>
             </div>
             <div v-if="tokensOf(i).length" class="name-tokens">
               <button
@@ -95,7 +103,7 @@
 
         <div v-else>
           <div class="name-row">
-            <is-input v-model="outputName" class="is-input--fluid" placeholder="output" />
+            <is-input v-model="displayName" class="is-input--fluid" placeholder="output" />
             <button
               v-if="nameTokens.length"
               type="button"
@@ -104,6 +112,14 @@
               v-tip="wordsOnly ? $t('restoreAll') : $t('keepWordsOnly')"
               @click.stop="toggleWordsOnly"
             ><is-icon name="filter" size="sm" /></button>
+            <button
+              type="button"
+              class="name-row__filter name-row__suffix"
+              :class="{ 'is-on': autoSuffix }"
+              :disabled="!conflictFormat"
+              v-tip="suffixTip"
+              @click.stop="toggleAutoSuffix"
+            ><is-icon name="edit" size="sm" /></button>
           </div>
           <div v-if="nameTokens.length" class="name-tokens">
             <button
@@ -116,19 +132,6 @@
               @click.stop="toggleNameToken(i)"
             >{{ tokText(t) }}</button>
           </div>
-        </div>
-
-        <!-- 防覆盖后缀：按当前勾选格式生成，单选；点亮即在输出名尾部加 _{format} -->
-        <div v-if="formatList.length" class="name-tokens suffix-tokens">
-          <button
-            v-for="format in formatList"
-            :key="'suffix-' + format"
-            type="button"
-            class="tok"
-            :class="{ 'is-off': outputSuffix.toLowerCase() !== format.toLowerCase() }"
-            v-tip="$t('suffixCapsuleTip', { format: format })"
-            @click.stop="toggleOutputSuffix(format)"
-          >_{{ format.toLowerCase() }}</button>
         </div>
       </div>
 
@@ -495,7 +498,8 @@ import {
   upsertCustomPreset,
   removeCustomPreset
 } from '../../util/outputPresets'
-import { tokenizeName, joinTokens, applySuffix, resolveSuffixState } from '../../util/tokenizeName'
+import { tokenizeName, joinTokens } from '../../util/tokenizeName'
+import { displayNameOf, stripConflictSuffix, suffixEnabledOf } from '../../util/outputName'
 import { PALETTE_COLOR_PRESETS, normalizePalette, isPreserveBitDepth } from '../../util/paletteConfig'
 import PathVars from '../../ui-next/components/PathVars.vue'
 import IsPresetBar from '../../ui-next/components/IsPresetBar.vue'
@@ -717,18 +721,31 @@ export default {
     },
     outputName: {
       get () { return (this.curtSetting && this.curtSetting.outputName) || '' },
+      // 拆词胶囊改的是基础名（不含冲突后缀）
+      set (value) { this.writeOptions({ outputName: value }) }
+    },
+    // 输入框显示值：开关启用且有源冲突时，动态显示「基础名 + _{冲突格式}」。
+    // 用户手输时反解掉后缀写回基础名——输入框所见即冲突格式的最终名字。
+    // 注意 curtSetting 就是 options 对象本身（不是 item），工具函数需传 { options } 包装。
+    displayName: {
+      get () { return displayNameOf({ options: this.curtSetting }) },
       set (value) {
-        // 手输以 _{format} 结尾时反解胶囊点亮态，与点胶囊走同一份真相源
-        const hit = resolveSuffixState(value, this.formatList)
-        const patch = { outputName: value }
-        if (String(hit || '').toLowerCase() !== String(this.outputSuffix || '').toLowerCase()) {
-          patch.outputSuffix = hit ? hit.toLowerCase() : ''
-        }
-        this.writeOptions(patch)
+        const fmt = this.conflictFormat
+        this.writeOptions({ outputName: stripConflictSuffix(value, fmt) })
       }
     },
-    outputSuffix () {
-      return (this.curtSetting && this.curtSetting.outputSuffix) || ''
+    // 与源文件同扩展名的格式：落盘时系统自动给它加后缀
+    conflictFormat () {
+      return (this.curtSetting && this.curtSetting.conflictFormat) || ''
+    },
+    autoSuffix () {
+      return suffixEnabledOf({ options: this.curtSetting })
+    },
+    suffixTip () {
+      if (!this.conflictFormat) return this.$t('suffixNoConflictTip')
+      return this.autoSuffix
+        ? this.$t('suffixOnTip', { name: this.conflictFormat.toLowerCase() + '.' })
+        : this.$t('suffixOffTip', { name: this.conflictFormat.toLowerCase() + '.' })
     },
     // 「只留文字」态：文字全选且至少一个分隔符被取消
     wordsOnly () {
@@ -965,23 +982,6 @@ export default {
       }
       this.$store.dispatch('editMultiOptions', patch)
     },
-    /** 防覆盖后缀胶囊：每项各自增删尾部后缀，多选不会串成同一个名字 */
-    toggleOutputSuffix (format) {
-      const s = String(format || '').toLowerCase()
-      if (!s) return
-      const on = String(this.outputSuffix || '').toLowerCase() !== s
-      const next = on ? s : ''
-      this.selectedList.forEach((item) => {
-        const all = this.$store.getters.getterItems
-        const index = all.indexOf(item)
-        if (index < 0) return
-        const name = (item.options && item.options.outputName) || ''
-        this.$store.dispatch('editOptionsAt', {
-          index,
-          patch: { outputSuffix: next, outputName: applySuffix(name, s, on) }
-        })
-      })
-    },
     // ---------- 输出名拆词胶囊 ----------
     syncNameTokens (v) {
       // 由点选胶囊自己改出来的名字不重建，否则取消状态会被立刻冲掉
@@ -1003,6 +1003,12 @@ export default {
         return { text: t.text, sep: t.sep, on: toWordsOnly ? !t.sep : true }
       })
       this.outputName = joinTokens(this.nameTokens)
+    },
+    // 防覆盖后缀开关：只切状态，基础名与 conflictFormat 都不动，
+    // 输入框显示值由 displayName 计算属性自动跟着变（启用加后缀 / 关闭去后缀）
+    toggleAutoSuffix () {
+      if (!this.conflictFormat) return
+      this.writeOptions({ suffixEnabled: !this.autoSuffix })
     },
     // 空格本身看不见，用可见符号代替
     tokText (t) {
@@ -1228,16 +1234,43 @@ export default {
       var all = this.$store.getters.getterItems
       var index = all.indexOf(item)
       if (index < 0) { return }
-      this.$store.dispatch('editOutputNameAt', { index: index, name: value })
-      // 手输尾部后缀同步该项胶囊状态（多选时只影响被编辑的那一项）
-      const hit = resolveSuffixState(value, item.options && item.options.outputFormat)
-      const suffix = hit ? hit.toLowerCase() : ''
-      if (suffix !== String((item.options && item.options.outputSuffix) || '').toLowerCase()) {
-        this.$store.dispatch('editOptionsAt', { index: index, patch: { outputSuffix: suffix } })
-      }
-      // 输入后按新名字重建该项拆词
+      // 输入框显示带后缀名，写回时反解成基础名
+      const base = stripConflictSuffix(value, this.multiConflictFormat(selectedIdx))
+      this.$store.dispatch('editOutputNameAt', { index: index, name: base })
+      // 输入后按新名字重建该项拆词（拆词基于基础名）
       var k = this.itemKeyOf(item, selectedIdx)
-      this.$set(this.nameTokenMap, k, this.buildTokens(value))
+      this.$set(this.nameTokenMap, k, this.buildTokens(base))
+    },
+    // 多选：每项的输入显示值 / 冲突格式 / 开关态 / hover 文案 / 切换
+    multiConflictFormat (selectedIdx) {
+      var item = this.selectedList[selectedIdx]
+      return (item && item.options && item.options.conflictFormat) || ''
+    },
+    multiDisplayName (selectedIdx) {
+      var item = this.selectedList[selectedIdx]
+      return displayNameOf(item)
+    },
+    multiSuffixEnabled (selectedIdx) {
+      var item = this.selectedList[selectedIdx]
+      return suffixEnabledOf(item)
+    },
+    suffixTipOf (selectedIdx) {
+      const fmt = this.multiConflictFormat(selectedIdx)
+      if (!fmt) return this.$t('suffixNoConflictTip')
+      return this.multiSuffixEnabled(selectedIdx)
+        ? this.$t('suffixOnTip', { name: fmt.toLowerCase() + '.' })
+        : this.$t('suffixOffTip', { name: fmt.toLowerCase() + '.' })
+    },
+    toggleMultiSuffix (selectedIdx) {
+      var item = this.selectedList[selectedIdx]
+      if (!item || !this.multiConflictFormat(selectedIdx)) return
+      var all = this.$store.getters.getterItems
+      var index = all.indexOf(item)
+      if (index < 0) return
+      this.$store.dispatch('editOptionsAt', {
+        index: index,
+        patch: { suffixEnabled: !this.multiSuffixEnabled(selectedIdx) }
+      })
     },
     tokensOf (selectedIdx) {
       var item = this.selectedList[selectedIdx]

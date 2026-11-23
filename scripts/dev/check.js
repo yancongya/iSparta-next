@@ -6,7 +6,12 @@
  *   node scripts/dev/check.js pack         # npm run doctor:pack（出包前自检）
  *   node scripts/dev/check.js version      # npm run doctor:version（版本一致性守卫）
  *   node scripts/dev/check.js ports        # 8080–8099 监听占用 + 归属识别
- *   node scripts/dev/check.js all          # lint + pack + version + ports
+ *   node scripts/dev/check.js cep          # CEP 兼容静态守卫（改桌面 UI/交互后必跑，见 AGENTS.md §8.6）
+ *   node scripts/dev/check.js all          # lint + pack + version + cep + ports
+ *
+ * cep 为什么值得做：桌面与 CEP 共用大量源文件（component / tip / locales），桌面一处改动
+ * 经常悄悄改变 CEP 行为。这里静态守住"共享源未分叉 + 宿主门控在 + 三语齐 + tip 归属域完整"，
+ * 浏览器 mock 实测仍需人工按 AGENTS.md §8.6 / ACCEPTANCE-RUNBOOK.md G 章做，本命令不替代真机。
  *
  * ports 为什么值得单独做：
  *   桌面 dev :8081 / CEP :8082 / 落地页 :8080 / 引导台 :8090 会互相顺延抢占，
@@ -14,9 +19,11 @@
  *   摊开，并给出可直接执行的清理命令。
  */
 const http = require('http')
+const fs = require('fs')
+const path = require('path')
 const { spawn, execFileSync } = require('child_process')
 
-const ROOT = require('path').join(__dirname, '..', '..')
+const ROOT = path.join(__dirname, '..', '..')
 const npmCmd = process.platform === 'win32' ? 'npm.cmd' : 'npm'
 
 /** 关注端口区间：本仓库所有 dev / 预览端口都落在这里 */
@@ -37,13 +44,14 @@ function usage () {
   console.log('')
   console.log('  iSparta-next · 体检入口')
   console.log('')
-  console.log('  用法：node scripts/dev/check.js <lint|pack|version|ports|all>')
+  console.log('  用法：node scripts/dev/check.js <lint|pack|version|ports|cep|all>')
   console.log('')
   console.log('    lint     vue-cli 全仓 lint（pre-commit 也跑这个）')
   console.log('    pack     出包前自检：图标 / 向导图 / 编码器目录 / CEP payload / NSIS 钩子')
   console.log('    version  版本一致性：package.json / lock / release notes / CEP payload / mac 清单')
   console.log('    ports    ' + PORT_FROM + '–' + PORT_TO + ' 监听占用、所属进程与归属识别')
-  console.log('    all      上面四项依次跑')
+  console.log('    cep      CEP 兼容静态守卫：共享源 / 宿主门控 / 三语 / tip 归属域（改桌面 UI 后必跑）')
+  console.log('    all      上面五项依次跑')
   console.log('')
 }
 
@@ -189,9 +197,81 @@ async function checkPorts () {
   return { code: 0, stray: rows.length }
 }
 
+/**
+ * CEP 兼容静态守卫：守住 §8.6 里"能用文本静态查"的部分。
+ * 浏览器 mock / 真机实测不在这里——那是 AGENTS.md §8.6 第 3 步与验收手册 G 章的事。
+ * 任何一项失败都返回 code 1，让 check.js all 一并失败。
+ */
+function checkCep () {
+  hr('CEP 兼容静态守卫')
+  const problems = []
+  const read = function (rel) {
+    const abs = path.join(ROOT, rel)
+    if (!fs.existsSync(abs)) { problems.push('缺文件：' + rel); return '' }
+    return fs.readFileSync(abs, 'utf8')
+  }
+  const expect = function (ok, msg) { if (!ok) { problems.push(msg) } }
+
+  // 1) 共享源未分叉：CEP 两个入口都引同一 tip / i18n，且 CEP 侧不得出现平行组件副本
+  const cepMain = read('src/cep/main.js')
+  const cepSettings = read('src/cep/settings.js')
+  expect(/import .*['"]\.\.\/ui-next\/tip['"]/.test(cepMain), 'src/cep/main.js 未引用共享 ui-next/tip')
+  expect(/import .*['"]\.\.\/ui-next\/tip['"]/.test(cepSettings), 'src/cep/settings.js 未引用共享 ui-next/tip')
+  expect(/import .*['"]\.\.\/i18n['"]/.test(cepMain), 'src/cep/main.js 未引用共享 i18n')
+  const cepDir = path.join(ROOT, 'src', 'cep')
+  if (fs.existsSync(cepDir)) {
+    const dup = fs.readdirSync(cepDir).filter(function (f) {
+      return /^(projectList|setting|projectList\.vue|setting\.vue)$/i.test(f)
+    })
+    expect(dup.length === 0, 'CEP 侧出现平行组件副本（应复用共享源）：' + dup.join(', '))
+  }
+
+  // 2) 宿主门控：桌面/CEP 分流的关键判定仍在（被误删会让 CEP 误显桌面专属 UI）
+  const list = read('src/components/projectList/projectList.vue')
+  expect(/showOutPath/.test(list), 'projectList.vue 缺 showOutPath 门控（CEP 路径/第三行分流）')
+  expect(/showOutPath \? sourceNameOf\(project\) : displayTitleOf\(project, index\)/.test(list),
+    'projectList.vue 合成名分流被改：CEP 应走 displayTitleOf 文本分支')
+  const setting = read('src/components/setting/setting.vue')
+  expect(/isCepHost|supportsCompImport/.test(setting), 'setting.vue 缺 CEP 宿主门控（isCepHost/supportsCompImport）')
+
+  // 3) 三语 key 齐：以 zh-cn 为基准，zh-tw / en-us 不得缺 key
+  const keySet = function (src) {
+    const out = new Set()
+    const re = /"([A-Za-z0-9_]+)"\s*:/g
+    let m
+    while ((m = re.exec(src)) !== null) { out.add(m[1]) }
+    return out
+  }
+  const zh = keySet(read('src/locales/zh-cn.js'))
+  const tw = keySet(read('src/locales/zh-tw.js'))
+  const en = keySet(read('src/locales/en-us.js'))
+  ;[['zh-tw', tw], ['en-us', en]].forEach(function (pair) {
+    const missing = []
+    zh.forEach(function (k) { if (!pair[1].has(k)) { missing.push(k) } })
+    expect(missing.length === 0, pair[0] + ' 缺 key：' + missing.slice(0, 8).join(', ') + (missing.length > 8 ? ' …' : ''))
+  })
+
+  // 4) tip 单例归属域：任务条须打归属标记，指令须有恢复逻辑（防 CEP 详情被子树 tip 劫持）
+  expect(/data-tip-owner/.test(list), 'projectList.vue 任务条缺 data-tip-owner 归属标记')
+  const tip = read('src/ui-next/tip.js')
+  expect(/function ownerOf/.test(tip) && /data-tip-owner/.test(tip), 'tip.js 缺 ownerOf 归属域判定')
+  expect(/function onLeave/.test(tip) && /show\(from, from\._tip\.binding, evt\)/.test(tip),
+    'tip.js 缺 onLeave 同域恢复详情逻辑')
+  expect(/leave: \(evt\) => onLeave\(el, evt\)/.test(tip), 'tip.js 的 leave 未挂 onLeave（会退回单例被劫持）')
+
+  if (problems.length === 0) {
+    console.log('  CEP 兼容静态守卫：通过（共享源 / 宿主门控 / 三语 / tip 归属域）')
+    console.log('  提醒：本检查不替代 mock 实测，收尾仍需按 AGENTS.md §8.6 在 :8082/?mock=1 逐项验证。')
+    return { code: 0 }
+  }
+  console.log('  ✘ CEP 兼容静态守卫发现 ' + problems.length + ' 项问题：')
+  problems.forEach(function (p) { console.log('    - ' + p) })
+  return { code: 1 }
+}
+
 async function main () {
   const opt = parseArgv(process.argv.slice(2))
-  const known = ['lint', 'pack', 'version', 'ports', 'all']
+  const known = ['lint', 'pack', 'version', 'ports', 'cep', 'all']
   if (opt.help || !opt.cmd) {
     usage()
     process.exit(opt.help ? 0 : 1)
@@ -243,6 +323,11 @@ async function main () {
   if (opt.cmd === 'ports' || opt.cmd === 'all') {
     const r = await checkPorts()
     results.push({ name: 'ports', code: r.code })
+  }
+
+  if (opt.cmd === 'cep' || opt.cmd === 'all') {
+    const r = checkCep()
+    results.push({ name: 'cep', code: r.code })
   }
 
   if (results.length > 1) {

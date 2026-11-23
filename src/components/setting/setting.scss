@@ -91,7 +91,9 @@
   }
 
   // 固定底部：跨分类提示 + 开始按钮常驻
-  &__footer {
+  // 注意：模板类名为 mod-form__footer（见 setting.vue），此处须用后代选择器对齐，
+  // 不要用 &__footer（会编译成 .mod-setting__footer，与模板失配导致样式全失效）。
+  .mod-form__footer {
     flex: none;
     display: flex;
     flex-direction: column;
@@ -654,12 +656,6 @@ body.side-narrow .mod-setting .mod-tabs-bar .is-segmented__item {
   margin-top: var(--is-s-2);
 }
 
-// 防覆盖后缀胶囊与拆词胶囊同款，但用正文体区分「文件名尾巴」语义
-.suffix-tokens {
-  margin-top: var(--is-s-1);
-  .tok { font-family: var(--is-font); }
-}
-
 .tok {
   display: inline-flex;
   align-items: center;
@@ -823,6 +819,20 @@ body.side-narrow .mod-setting .mod-tabs-bar .is-segmented__item {
       border-color: var(--is-accent);
       background: var(--is-accent-dim);
       color: var(--is-accent);
+    }
+
+    // 防覆盖后缀开关：无源冲突时不可用，弱化但保留 hover 提示可读
+    &.name-row__suffix:disabled {
+      cursor: default;
+      opacity: 0.45;
+      border-color: var(--is-input-border);
+      background: var(--is-input-bg);
+      color: var(--is-text-3);
+
+      &:hover {
+        border-color: var(--is-input-border);
+        color: var(--is-text-3);
+      }
     }
   }
 }

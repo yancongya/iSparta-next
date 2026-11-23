@@ -38,12 +38,15 @@ vm.runInContext(gpSrc, gpCtx)
 const { applyGlobalCompressionPatch } = gpCtx.gp
 
 // 防覆盖保底纯函数：与 store/processor 同一份源码
+const onSrc = fs.readFileSync(path.join(__dirname, '../src/util/outputName.js'), 'utf8')
+  .replace(/^export /gm, '')
 const ocSrc = fs.readFileSync(path.join(__dirname, '../src/util/outputConflict.js'), 'utf8')
   .replace(/^import .*$/gm, '')
   .replace(/^export /gm, '')
   + '\n;globalThis.oc = { fallbackRenameForSource, classifyOutputConflicts }'
 const ocCtx = { path, Object, Array, String, Boolean }
 vm.createContext(ocCtx)
+vm.runInContext(onSrc, ocCtx) // outputNameFor：outputConflict 分类时按格式解析名字
 vm.runInContext(ocSrc, ocCtx)
 const { fallbackRenameForSource, classifyOutputConflicts } = ocCtx.oc
 

@@ -1130,7 +1130,7 @@ export default {
     },
 
     // ---------- 导入 ----------
-    onPick () {
+    onPick (e) {
       // CEP：空面板点击 = 刷新扫描合成列表（不是粘贴/选文件）
       if (this.supportsCompImport) {
         this.loadAllCompsAsTasks()
@@ -1138,12 +1138,19 @@ export default {
       }
       var ipc = window.ispartaAPI && window.ispartaAPI.ipc
       if (!ipc) { return }
-      ipc.invoke('dialog:openFiles', {
-        properties: ['openFile', 'openDirectory', 'multiSelections']
-      }).then((result) => {
+      // 默认点击 = 选目录（沿用旧版行为）；Ctrl/⌘ + 点击 = 选文件。
+      // 分开传可绕开 Win/Linux 上 openFile 与 openDirectory 同传时静默降级为目录的限制。
+      var pickFile = !!(e && (e.ctrlKey || e.metaKey))
+      var opts = pickFile
+        ? {
+            properties: ['openFile', 'multiSelections'],
+            filters: [{ name: this.$t('importImageFilter'), extensions: ['png', 'gif', 'webp'] }]
+          }
+        : { properties: ['openDirectory'] }
+      ipc.invoke('dialog:openFiles', opts).then((result) => {
         if (!result || result.canceled || !result.filePaths.length) { return }
         this.importPaths(result.filePaths)
-      }).catch((e) => { console.error(e) })
+      }).catch((err) => { console.error(err) })
     },
     importPaths (list) {
       if (this.isLocked) return

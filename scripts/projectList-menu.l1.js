@@ -54,11 +54,12 @@ async function main () {
   assert(/<is-icon name="eye" size="sm" \/><\/button>/.test(vue), '预览入口图标须为 eye')
   assert(/isAnimatedSingle\(project\).*thumb__badge--fmt/s.test(vue), '动图封面须显示格式角标')
   assert(/&__badge--fmt \{[\s\S]*?background: rgba\(0, 0, 0, 0\.66\)[\s\S]*?color: #fff/.test(scss), '格式角标须深色底白字、不按格式上强调色')
-  assert(/splitImportButtons \(\)/.test(vue) && /openFolder\('file'\)/.test(vue) && /openFolder\('directory'\)/.test(vue), 'Win/Linux 须拆分导入按钮')
+  assert(/openFolder \(e\)/.test(vue) && /e\.ctrlKey \|\| e\.metaKey/.test(vue) && /@click="openFolder\(\$event\)"/.test(vue),
+    '导入按钮须为单按钮 + Ctrl/⌘ 修饰键分流（目录/文件），跨平台一致')
   assert(/\.side__btns \.iconbtn \{[\s\S]*?border-color: transparent[\s\S]*?background: transparent/.test(scss), '任务条按钮须去框')
   for (const f of ['zh-cn', 'zh-tw', 'en-us']) {
     const loc = fs.readFileSync(path.join(__dirname, '../src/locales/' + f + '.js'), 'utf8')
-    assert(/"openFile"/.test(loc) && /"importImageFilter"/.test(loc) && /"statePending"/.test(loc), f + ' 缺 UI 文案 key')
+    assert(/"openFile"/.test(loc) && /"importImageFilter"/.test(loc) && /"statePending"/.test(loc) && /"openFolderHint"/.test(loc), f + ' 缺 UI 文案 key')
   }
   console.log('projectList menu + task UI L1 OK')
 }

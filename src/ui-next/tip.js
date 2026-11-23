@@ -326,13 +326,42 @@ function show (el, binding, evt) {
   }, SHOW_DELAY)
 }
 
+// 归属域：向上找最近的 data-tip-owner 祖先（含自身）。
+// 普通 tip 无标记 → 返回自身，维持「各自独立」的原有行为；
+// 任务条项显式标记后，内部子 tip 与详情 tip 共属一个归属域，可互相让位而非互相灭掉。
+function ownerOf (el) {
+  let p = el
+  while (p && p !== document.body) {
+    if (p.hasAttribute && p.hasAttribute('data-tip-owner')) return p
+    p = p.parentElement
+  }
+  return el
+}
+
+// 移出处理（归属判定核心）：
+// 单例浮层下，子 tip 的 leave 若一律 hide()，会把同一归属域里的父级详情一起灭掉，
+// 于是「hover 任务条看详情」经常被子元素（文件名/路径/帧频/角标…）劫持后消失。
+// 修法：移出时若鼠标进入的元素仍属于同一归属域，恢复该域的主 tip（详情），不隐藏；
+// 只有真正离开归属域才走隐藏宽限。40+ 处普通 tip 无 data-tip-owner，行为零变化。
+function onLeave (el, evt) {
+  const from = ownerOf(el)
+  const to = evt && evt.relatedTarget ? ownerOf(evt.relatedTarget) : null
+  const isOwnerDomain = from && from !== document.body && from.hasAttribute &&
+    from.hasAttribute('data-tip-owner')
+  if (isOwnerDomain && to === from && from._tip) {
+    show(from, from._tip.binding, evt)
+    return
+  }
+  scheduleHide()
+}
+
 export default {
   bind (el, binding) {
     el._tip = {
       // 存引用而非闭包捕获初次 binding：文案会随任务状态/产物大小变化
       binding: binding,
       enter: (evt) => show(el, el._tip.binding, evt),
-      leave: scheduleHide,
+      leave: (evt) => onLeave(el, evt),
       text: normalize(binding.value),
       point: null
     }

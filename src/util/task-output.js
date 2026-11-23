@@ -8,6 +8,7 @@
  * fs / path 一律走 node-env 桥，渲染层不直接碰 window.process / require('fs')。
  */
 import { fs, path } from './node-env'
+import { outputNameFor } from './outputName'
 
 const EXTENSIONS = { APNG: '.png', GIF: '.gif', WEBP: '.webp' }
 
@@ -65,7 +66,7 @@ export function outputFilesOf (item) {
   if (!basic.outputPath || !options.outputName || !formats.length) return []
   return formats.map(function (format) {
     const ext = format === 'GIF' ? '.gif' : format === 'WEBP' ? '.webp' : '.png'
-    return path.join(basic.outputPath, options.outputName + ext)
+    return path.join(basic.outputPath, outputNameFor(item, format) + ext)
   })
 }
 
@@ -89,9 +90,10 @@ export function outputCandidatesOf (item) {
   formats.forEach(function (format) {
     const ext = EXTENSIONS[String(format).toUpperCase()]
     if (!ext) return
-    files.push(path.join(dir, name + ext))
+    const fmtName = outputNameFor(item, format)
+    files.push(path.join(dir, fmtName + ext))
     for (let version = 2; version <= retryCount + 1; version++) {
-      files.push(path.join(dir, name + '_v' + version + ext))
+      files.push(path.join(dir, fmtName + '_v' + version + ext))
     }
   })
   return files

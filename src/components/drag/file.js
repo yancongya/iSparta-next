@@ -1,7 +1,7 @@
 // 依赖库
 import { fs, path } from '../../util/node-env'
 import { resolveOutputPath } from '../../util/outputPath'
-import { buildInitialOutputName, applySuffix } from '../../util/tokenizeName'
+import { buildInitialOutputName } from '../../util/tokenizeName'
 import { detectSourceCollision } from '../../util/outputConflict'
 import notice from '../../ui-next/notice'
 import { t } from '../../i18n'
@@ -136,7 +136,7 @@ class actionFiles {
     temp.basic.type = format
     if (format === 'PNGs') {
       // 序列帧：默认输出到 {帧目录}（预设 1 已不再追加 /output），可由 outputTo 策略覆盖
-      // 不再自动追加 _apng 后缀，输出名交给用户在「输出名字」里用胶囊自行决定
+      // 序列帧不会与单个源文件同名，无需冲突后缀，输出名就是纯基础名
       let folderName = path.basename(address)
       temp.options.outputName = buildInitialOutputName(folderName, temp.options)
       temp.basic.inputPath = address
@@ -149,16 +149,13 @@ class actionFiles {
       temp.basic.inputPath = address + '/' + fileName.split('.')[0]
       temp.basic.fileList = fileList
       temp.basic.outputPath = resolveOutputPath(temp, temp.options)
-      // 默认「输出到源目录 + 同名」时产物会直接覆盖源文件：任一格式命中就点亮对应后缀胶囊。
-      // 比较基于去掉旧后缀的名字，避免用户上次设过后缀就永远判不中。
-      const plainName = applySuffix(temp.options.outputName, temp.options.outputSuffix || '', false)
-      const hit = detectSourceCollision(fileList[0], temp.basic.outputPath, plainName, temp.options.outputFormat)
+      // 默认「输出到源目录 + 同名」时，只有与源文件同扩展名的那个格式会覆盖源文件
+      // （导入 cool.png 勾 PNG/GIF/WEBP → 只有 PNG 输出撞源，GIF/WEBP 不撞）。
+      // 只记 conflictFormat：落盘/查找由 outputNameFor 按格式决定是否加后缀，
+      // 绝不把后缀写进共享 outputName，否则三个格式会一起变名。
+      const hit = detectSourceCollision(fileList[0], temp.basic.outputPath, temp.options.outputName, temp.options.outputFormat)
       if (hit) {
-        const suffix = hit.toLowerCase()
-        temp.options.outputSuffix = suffix
-        temp.options.outputName = applySuffix(temp.options.outputName, suffix, true)
-        // 自定义模板可能含 {name}：改名后输出目录要跟着重算
-        temp.basic.outputPath = resolveOutputPath(temp, temp.options)
+        temp.options.conflictFormat = hit.toUpperCase()
         autoSuffixNames.push(fileName)
       }
     }

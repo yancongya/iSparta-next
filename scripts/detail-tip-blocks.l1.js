@@ -113,6 +113,14 @@ function main () {
   ok('tip: 语义色白名单仅 5 种', /const TONES = \['accent', 'cool', 'ok', 'warn', 'bad'\]/.test(tipSrc), null)
   ok('tip: head/sub/kvrow/filerow 均接入 toneClass', /head\.className = 'is-tip-r__head' \+ toneClass\(b\.tone\)/.test(renderFn) && /sub\.className = 'is-tip-r__sub' \+ toneClass\(b\.tone\)/.test(renderFn) && /row\.className = 'is-tip-r__kvrow' \+ toneClass\(it\.tone\)/.test(renderFn) && /row\.className = 'is-tip-r__filerow' \+ toneClass\(it\.tone\)/.test(renderFn), null)
 
+  // 6b) 归属域判定：单例浮层下，同域内子 tip 让位后恢复父级详情，不被 hide 劫持
+  ok('tip: ownerOf 向上找 data-tip-owner 祖先', /function ownerOf[\s\S]*?hasAttribute\('data-tip-owner'\)[\s\S]*?p = p\.parentElement/.test(tipSrc), null)
+  ok('tip: onLeave 同域恢复主 tip 而非 hide', /function onLeave[\s\S]*?to === from && from\._tip[\s\S]*?show\(from, from\._tip\.binding, evt\)/.test(tipSrc), null)
+  ok('tip: 非归属域回退 scheduleHide（40+ 普通 tip 零变化）', /function onLeave[\s\S]*?scheduleHide\(\)/.test(tipSrc), null)
+  ok('tip: bind 的 leave 走 onLeave 而非直接 scheduleHide', /leave: \(evt\) => onLeave\(el, evt\)/.test(tipSrc) && !/leave: scheduleHide/.test(tipSrc), null)
+  const plSrc = read('../src/components/projectList/projectList.vue')
+  ok('接入: 任务条根标 data-tip-owner', /data-tip-owner[\s\S]{0,120}v-tip="titleTipOf\(project\)"/.test(plSrc), null)
+
   // 7) 样式：窄屏适配与防溢出（CEP 小尺寸硬约束）
   const scss = read('../src/ui-next/styles/ui.scss')
   ok('scss: kvval min-width:0 + break-all', /&__kvval \{[\s\S]*?min-width: 0;[\s\S]*?word-break: break-all/.test(scss), null)

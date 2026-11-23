@@ -18,10 +18,20 @@ const state = Vue.observable({ items: [] })
 
 const ICONS = {
   info: 'info',
-  success: 'check-circle',
+  // 用已注册图标名（原 check-circle / x-circle 未在 icons.js 注册，图标位一直是空白）
+  success: 'check',
   warning: 'alert',
-  error: 'x-circle',
+  error: 'close',
   confirm: 'question'
+}
+
+// toast 是「一行长条」短提示：过长的错误堆栈/路径会撑爆胶囊布局。
+// 源头统一截断，hover 展开看到的也是有限文本；confirm 的路径列表放宽上限。
+const MAX_TEXT = 180
+const MAX_TEXT_CONFIRM = 600
+function clampText (value, limit) {
+  const s = String(value == null ? '' : value)
+  return s.length > limit ? s.slice(0, limit) + '…' : s
 }
 
 const DEFAULT_DURATION = {
@@ -51,8 +61,8 @@ function push (options) {
     id,
     type,
     icon: opts.icon || ICONS[type],
-    title: opts.title || '',
-    text: opts.text || opts.message || '',
+    title: clampText(opts.title || '', 80),
+    text: clampText(opts.text || opts.message || '', type === 'confirm' ? MAX_TEXT_CONFIRM : MAX_TEXT),
     // 0 表示不自动关闭
     duration: opts.duration === undefined ? (DEFAULT_DURATION[type] || 0) : opts.duration,
     closable: opts.closable !== false,

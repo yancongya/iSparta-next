@@ -771,89 +771,112 @@ body.is-scroll-locked {
 // --------------------------------------------------------------------------
 .is-notice {
   position: fixed;
-  top: var(--is-s-4);
-  right: var(--is-s-4);
+  top: var(--is-s-5);
+  left: 50%;
+  transform: translateX(-50%);
   z-index: var(--is-z-notice);
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: var(--is-s-2);
-  width: 320px;
-  max-width: calc(100vw - var(--is-s-8));
+  width: max-content;
+  max-width: calc(100vw - var(--is-s-6));
   pointer-events: none;
 }
 
+// 全局统一：一条大圆角胶囊，左侧圆形徽章 + 单行文字 + 右侧操作。
+// 文字默认单行省略，hover 展开完整（文本在 notice.js 已按上限截断，不会无限长）。
 .is-notice-item {
   position: relative;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: var(--is-s-3);
-  padding: var(--is-s-3) var(--is-s-4);
+  max-width: 100%;
+  min-height: 46px;
+  padding: var(--is-s-2) var(--is-s-2) var(--is-s-2) var(--is-s-3);
   border: 1px solid var(--is-border-strong);
-  border-left: 3px solid var(--is-text-3);
-  border-radius: var(--is-r-sm);
+  border-radius: var(--is-r-pill);
   background: var(--is-elevated);
   box-shadow: var(--is-shadow-md);
   overflow: hidden;
   pointer-events: auto;
+  transform-origin: top center;
 
-  &__icon {
-    flex: none;
-    margin-top: 1px;
-    font-size: var(--is-fs-xl);
-    color: var(--is-text-3);
-  }
-
-  &__body { flex: 1; min-width: 0; }
-
-  &__title {
-    display: block;
-    font-size: var(--is-fs-md);
-    font-weight: var(--is-fw-semi);
-    color: var(--is-text);
-    word-break: break-word;
-  }
-
-  &__title + .is-notice-item__text { margin-top: 2px; }
-
-  &__text {
-    font-size: var(--is-fs-sm);
-    line-height: 1.55;
-    color: var(--is-text-2);
-    word-break: break-word;
-  }
-
-  &__close {
+  &__badge {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     flex: none;
-    width: 20px;
-    height: 20px;
-    margin: -2px -4px 0 0;
-    padding: 0;
-    border: none;
-    border-radius: var(--is-r-xs);
-    background: transparent;
-    color: var(--is-text-3);
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
     font-size: var(--is-fs-md);
-    cursor: pointer;
-    opacity: 0.7;
-    transition: opacity var(--is-dur-fast) var(--is-ease-std),
-      background-color var(--is-dur-fast) var(--is-ease-std),
-      color var(--is-dur-fast) var(--is-ease-std);
+  }
 
-    &:hover {
-      opacity: 1;
-      background: var(--is-hover);
-      color: var(--is-text);
-    }
+  &__body {
+    flex: 1;
+    min-width: 0;
+    font-size: var(--is-fs-md);
+    line-height: 1.45;
+    // 默认单行省略；hover 展开完整文本（见下方 :hover）
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: white-space 0s;
+  }
+
+  &:hover &__body {
+    white-space: normal;
+    text-overflow: clip;
+  }
+
+  &__title {
+    font-weight: var(--is-fw-semi);
+    color: var(--is-text);
+  }
+
+  &__text {
+    color: var(--is-text-2);
+
+    &:not(:first-child) { margin-left: var(--is-s-2); }
+  }
+
+  // confirm 的路径列表含 \n，允许换行读取全文，不套单行省略
+  &--confirm &__body {
+    white-space: pre-line;
+    text-overflow: clip;
+    max-height: 220px;
+    overflow-y: auto;
   }
 
   &__actions {
     display: flex;
+    flex: none;
     justify-content: flex-end;
     gap: var(--is-s-2);
-    margin-top: var(--is-s-3);
+    margin-left: var(--is-s-2);
+  }
+
+  &__ok {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    padding: 6px var(--is-s-3);
+    border: none;
+    border-radius: var(--is-r-pill);
+    background: var(--is-violet-bg);
+    color: var(--is-violet-fg);
+    font-family: inherit;
+    font-size: var(--is-fs-sm);
+    font-weight: var(--is-fw-semi);
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background-color var(--is-dur-fast) var(--is-ease-std),
+      transform var(--is-dur-fast) var(--is-ease-std);
+
+    &:hover { background: var(--is-violet-bg); filter: brightness(1.12); }
+    &:active { transform: scale(0.95); }
   }
 
   &__bar {
@@ -870,20 +893,27 @@ body.is-scroll-locked {
     &.is-paused { animation-play-state: paused; }
   }
 
-  &--info    { border-left-color: var(--is-accent); color: var(--is-accent-fg); }
-  &--info .is-notice-item__icon { color: var(--is-accent); }
-
-  &--success { border-left-color: var(--is-ok); color: var(--is-ok-fg); }
-  &--success .is-notice-item__icon { color: var(--is-ok); }
-
-  &--warning { border-left-color: var(--is-warn); color: var(--is-warn-fg); }
-  &--warning .is-notice-item__icon { color: var(--is-warn); }
-
-  &--error   { border-left-color: var(--is-bad); color: var(--is-bad-fg); }
-  &--error .is-notice-item__icon { color: var(--is-bad); }
-
-  &--confirm { border-left-color: var(--is-cool); color: var(--is-cool-fg); }
-  &--confirm .is-notice-item__icon { color: var(--is-cool); }
+  // 语义色通过徽章底色 + 图标前景 + 进度条 currentColor 体现，形态保持统一
+  &--info {
+    color: var(--is-violet-fg);
+    .is-notice-item__badge { background: var(--is-violet-bg); color: var(--is-violet-fg); }
+  }
+  &--success {
+    color: var(--is-ok-fg);
+    .is-notice-item__badge { background: var(--is-ok-bg); color: var(--is-ok); }
+  }
+  &--warning {
+    color: var(--is-warn-fg);
+    .is-notice-item__badge { background: var(--is-warn-bg); color: var(--is-warn); }
+  }
+  &--error {
+    color: var(--is-bad-fg);
+    .is-notice-item__badge { background: var(--is-bad-bg); color: var(--is-bad); }
+  }
+  &--confirm {
+    color: var(--is-cool-fg);
+    .is-notice-item__badge { background: var(--is-cool-bg); color: var(--is-cool); }
+  }
 }
 
 @keyframes is-countdown {
@@ -975,9 +1005,9 @@ body.is-scroll-locked {
   transform: translateY(-8px) scale(0.99);
 }
 
-// 通知：右侧滑入，收起时高度归零
+// 通知：从顶部落下 + 纵向拉伸入场（位移 + scaleY），收起时反向归零
 .is-notice-enter-active {
-  transition: transform var(--is-dur-slow) var(--is-ease-out),
+  transition: transform var(--is-dur-slow) var(--is-ease-overshoot),
     opacity var(--is-dur-base) var(--is-ease-std);
 }
 
@@ -986,47 +1016,35 @@ body.is-scroll-locked {
     opacity var(--is-dur-base) var(--is-ease-std),
     max-height var(--is-dur-base) var(--is-ease-std),
     margin var(--is-dur-base) var(--is-ease-std);
-  max-height: 220px;
+  max-height: 320px;
 }
 
 .is-notice-enter {
   opacity: 0;
-  transform: translateX(110%);
+  transform: translateY(-40px) scaleY(0.4);
 }
 
 .is-notice-leave-to {
   opacity: 0;
   max-height: 0;
   margin-top: calc(-1 * var(--is-s-2));
-  transform: translateX(60%) scale(0.94);
+  transform: translateY(-16px) scaleY(0.7);
 }
 
-// CEP 面板窄且高度有限：toast 收到底部居中，避开顶栏与右侧操作区。
-// 使用唯一断点 token；桌面版保留右上角通知位置。
+// 小屏（含 CEP 面板）：胶囊收窄、字号/内边距降档，位置仍顶部居中（统一全局）。
+// CEP 面板高度有限，顶部居中且留出安全距离即可，不再单独挪到底部。
 @media (max-width: $bp-compact) {
-  body.is-cep .is-notice {
-    top: auto;
-    right: 50%;
-    bottom: var(--is-s-3);
-    width: calc(100vw - var(--is-s-6));
-    max-width: none;
-    transform: translateX(50%);
-  }
-
-  body.is-cep .is-notice-enter,
-  body.is-cep .is-notice-leave-to {
-    transform: translateY(8px) scale(0.98);
-  }
+  .is-notice { width: calc(100vw - var(--is-s-4)); }
 }
 
 @media (max-width: $bp-narrow) {
-  body.is-cep .is-notice-item {
+  .is-notice-item {
     gap: var(--is-s-2);
-    padding: var(--is-s-2) var(--is-s-3);
+    padding: var(--is-s-1) var(--is-s-2);
   }
-
-  body.is-cep .is-notice-item__icon { font-size: var(--is-fs-lg); }
-  body.is-cep .is-notice-item__title { font-size: var(--is-fs-sm); }
+  .is-notice-item__badge { width: 24px; height: 24px; font-size: var(--is-fs-sm); }
+  .is-notice-item__body { font-size: var(--is-fs-sm); }
+  .is-notice-item__ok { padding: 5px var(--is-s-2); }
 }
 
 // 列表：FLIP 位移 + 进出场；位移用过冲曲线，重排后「弹一下」落位

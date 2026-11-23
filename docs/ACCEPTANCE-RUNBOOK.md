@@ -5,7 +5,7 @@
 > **本机命令优先走统一入口**（`scripts/dev/preview.js` / `build.js` / `check.js`，见 `AGENTS.md` §1.1）——
 > 它们内置了删除守卫豁免与产物定位，比裸跑 `npm run build:*` 少踩坑。
 >
-> **章节索引**：0 准备 · A 开发态 CEP · B 桌面回归 · C 一体安装 · D 双端一起更 · **F 防覆盖/后缀/长提示（真机手动，2026-11 新增）** · E 记录。
+> **章节索引**：0 准备 · A 开发态 CEP · B 桌面回归 · C 一体安装 · D 双端一起更 · **F 防覆盖/后缀/长提示（真机手动，2026-11 新增）** · **G 桌面改动→CEP 兼容回归（每次改桌面 UI/交互必做）** · E 记录。
 
 ---
 
@@ -192,6 +192,55 @@ Get-FileHash C:\isparta-verify\cool.png -Algorithm SHA256
 
 ---
 
+## G. 桌面改动 → CEP 兼容回归（每次改桌面 UI/交互必做）
+
+> 与 A–F 的"真机验收"不同，本章是**每次改完桌面逻辑都要走的回归**：CEP 与桌面共用
+> `projectList.vue` / `setting.vue` / `src/ui-next/tip.js` / `locales/*` 等源，桌面一处改动经常改变 CEP 行为。
+> 先在浏览器 mock 做（快、即时编译源码），只有涉及桥接/渲染/安装/更新时才追加 A–F 真机步骤。
+> 规范入口见 `AGENTS.md` §8.6。
+
+### G0. 静态守卫（必做，秒级）
+
+| # | 命令 | 期望 |
+|---|------|------|
+| G0.1 | `node scripts\dev\check.js cep`（或 `check.js all` 的一部分） | 全绿：共享源未分叉、宿主门控在、三语 key 齐、tip 归属域标记完整 |
+| G0.2 | `npm run lint` | DONE |
+| G0.3 | 本次相关 L1：`for f in scripts\*.l1.js; do node $f || exit 1; done` | 全过（14 个） |
+
+### G1. 影响面判定（动手改之前先想清楚）
+
+| # | 检查 | 若"是"要做什么 |
+|---|------|----------------|
+| G1.1 | 改动的文件是否双端共享？（`src/components/**`、`src/ui-next/**`、`src/locales/**`、`src/store/**`、`src/util/**`） | CEP 必然受影响，走完 G2 |
+| G1.2 | 新增的 UI 元素 / 分支是否该"桌面有、CEP 没有"？ | 必须挂宿主门控：`showOutPath`（桌面 true / CEP false）、`isCepHost`、`supportsCompImport`；反例：序列帧胶囊未门控会在 CEP 合成树误显 |
+| G1.3 | 新增文案 key 是否三语齐？ | `zh-cn` / `zh-tw` / `en-us` 都要有，G0.1 会静态校验 |
+| G1.4 | 改了 `v-tip` / 单例浮层？ | 验证 CEP 设置面板、合成树的普通提示仍"悬停显示/移出隐藏"，只有归属域标记内的区域走新逻辑 |
+
+### G2. CEP mock 实测（`?mock=1`，验证的是最新源码）
+
+```powershell
+node scripts\dev\preview.js cep --mock     # :8082/?mock=1，dev server 实时编译
+```
+
+| # | 操作 | 期望 |
+|---|------|------|
+| G2.1 | 打开 `:8082/?mock=1`，看任务列表 / 合成树 | 6 条示例任务正常渲染；本次改动的 CEP 表现符合 G1.2 的门控判定 |
+| G2.2 | "桌面有、CEP 该没有"的元素逐个确认 | 不误显（如序列帧胶囊数 = 0、可点输出路径按钮不存在，合成名走文本分支） |
+| G2.3 | hover 任务条详情 → 移到内部子 tip → 移回任务条 | 详情富气泡正常显示、移回后恢复（单例浮层归属域判定生效） |
+| G2.4 | hover CEP 设置面板 / 合成树的普通提示 | 悬停显示、移出隐藏，不受归属逻辑影响 |
+| G2.5 | 打开 DevTools Console | 无 `warn` / `error` |
+| G2.6 | 切语言（简/繁/英） | 本次新增文案三语均正确显示，不出现 key 名 |
+
+> **mock 的边界**：`?mock=1` 走 dev server 实时编译，验证的是源码最新状态；但 `targets/cep/ui/` 是 tracked 产物，
+> 日常不手工重建，发版由 CI 自动 `npm run build:cep`。mock 通过 ≠ 真机通过——涉及 AE 桥接 / 合成读取 / 渲染 /
+> 安装 / 更新的改动，仍要追加 A–F 相应真机步骤。
+
+### G3. 记录
+
+在下方 E 表"G 桌面改动→CEP 兼容回归"行勾选，注明本次改了什么、G1 判定结论、G2 实测结果。
+
+---
+
 ## E. 记录
 
 | 项 | 结果 | 备注 |
@@ -205,6 +254,7 @@ Get-FileHash C:\isparta-verify\cool.png -Algorithm SHA256
 | **F2 系统对话框** | ☐ | Win/Linux/macOS |
 | **F3 CEP 面板** | ☐ | 含富气泡窄屏 |
 | **F4 状态行高度** | ☐ | |
+| **G 桌面改动→CEP 兼容回归** | ☐ | 每次改桌面 UI/交互必做；注明 G1 判定 + G2 实测结果 |
 | 截图/日志路径 | | |
 
 ---

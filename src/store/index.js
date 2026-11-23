@@ -63,6 +63,11 @@ const defaultState = {
     'loop': 0,
     'outputSuffix': '',
     'outputName': '',
+    // 与源文件同扩展名的冲突格式（大写 APNG/GIF/WEBP），空=无冲突。
+    // 只给这一种格式加 _{format} 后缀，其余格式保持基础名——后加字段，旧任务经 loadSetting 兜底为空。
+    'conflictFormat': '',
+    // 防覆盖后缀开关：false=关闭（有冲突也不加后缀），缺省 true（维持旧行为）。
+    'suffixEnabled': true,
     'outputFormat': ['APNG', 'GIF', 'WEBP'],
     'floyd': {
       checked: true,
@@ -175,6 +180,15 @@ if (!globalSetting) {
         parsed.options.outputSuffix = ''
         changed = true
       }
+      // 后加字段：冲突格式缺省为空（旧任务沿用 outputName 原值，不改行为）
+      if (typeof parsed.options.conflictFormat !== 'string') {
+        parsed.options.conflictFormat = ''
+        changed = true
+      }
+      if (typeof parsed.options.suffixEnabled !== 'boolean') {
+        parsed.options.suffixEnabled = true
+        changed = true
+      }
       if (!parsed.options.sizeLimit) {
         parsed.options.sizeLimit = _.cloneDeep(defaultState.options.sizeLimit)
         changed = true
@@ -285,6 +299,14 @@ if (localData) {
       // 老任务没有序列帧模板时补齐默认；桌面任务同样带上，字段语义与 CEP 解耦
       if (typeof item.options.seqDirTemplate !== 'string') {
         item.options.seqDirTemplate = SEQ_DIR_DEFAULT_TEMPLATE
+      }
+      // 冲突格式后加字段：旧任务为空 → outputNameFor 回退到 outputName 原值，行为不变
+      if (typeof item.options.conflictFormat !== 'string') {
+        item.options.conflictFormat = ''
+      }
+      // 后缀开关后加字段：旧任务缺省启用，outputNameFor/suffixEnabledOf 也按 !==false 兜底
+      if (typeof item.options.suffixEnabled !== 'boolean') {
+        item.options.suffixEnabled = true
       }
       if (!item.options.sizeLimit) {
         item.options.sizeLimit = _.cloneDeep(defaultState.options.sizeLimit)

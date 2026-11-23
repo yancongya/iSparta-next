@@ -24,6 +24,10 @@ const remapSource = fs.readFileSync(path.join(__dirname, '../src/util/frameRemap
   .replace(/^import TYPE from .*$/m, '')
   .replace(/^export function /gm, 'function ')
   .concat('\n globalThis.frameRemapApi = { sampleFrameIndices, sampleTimedFrameIndices, frameRemapSettings, remapSequence }')
+// sizeGate 通过 outputNameFor 解析「基础名 + 冲突后缀」；沙箱注入同逻辑实现，
+// 让本测试继续聚焦 sizeGate 自身的重试/清理行为。
+const outputNameSource = fs.readFileSync(path.join(__dirname, '../src/util/outputName.js'), 'utf8')
+  .replace(/^export function /gm, 'function ')
 
 function makeHarness (autoDelete, maxTries, maxKB, staysOverAtQualityFloor) {
   const sizes = Object.create(null)
@@ -81,6 +85,7 @@ function makeHarness (autoDelete, maxTries, maxKB, staysOverAtQualityFloor) {
     }
   }
   // paletteConfig / sizePlanner 的顶层函数声明会挂到 context 全局，sizeGate 源码直接引用
+  vm.runInNewContext(outputNameSource, context, { filename: 'outputName.js' })
   vm.runInNewContext(paletteSource, context, { filename: 'paletteConfig.js' })
   vm.runInNewContext(plannerSource, context, { filename: 'sizePlanner.js' })
   vm.runInNewContext(configSource, context, { filename: 'sizeLimitConfig.js' })

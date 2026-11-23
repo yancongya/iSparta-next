@@ -9,6 +9,7 @@ import i18n from '../../i18n'
 import { automaticRetryCount, automaticRetryQuality, effectiveQualityStart } from '../sizeLimitConfig'
 import { planStartingQuality, planStartingColors, estimateColorsBytes } from '../sizePlanner'
 import { normalizePalette, automaticRetryColors, automaticRetryColorsCount, isPreserveBitDepth } from '../paletteConfig'
+import { outputNameFor } from '../outputName'
 
 export function normalizeSizeLimit (options, quality) {
   const s = (options && options.sizeLimit) || {}
@@ -119,7 +120,7 @@ function plannedRetryBaselineColors (item, limit, baselineColors) {
 
 function outputPathFor (item, format) {
   const ext = format === TYPE.GIF ? '.gif' : format === TYPE.WEBP ? '.webp' : '.png'
-  return path.join(item.basic.outputPath, item.options.outputName + ext)
+  return path.join(item.basic.outputPath, outputNameFor(item, format) + ext)
 }
 
 function cleanupRetryVersions (item, format) {
@@ -128,7 +129,7 @@ function cleanupRetryVersions (item, format) {
   }
   const ext = format === TYPE.GIF ? '.gif' : format === TYPE.WEBP ? '.webp' : '.png'
   const dir = item.basic.outputPath
-  const prefix = String(item.options.outputName || '') + '_v'
+  const prefix = outputNameFor(item, format) + '_v'
   let names = []
   try {
     names = fs.readdirSync(dir) || []
