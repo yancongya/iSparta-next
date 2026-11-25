@@ -188,6 +188,15 @@ export default {
   .own-title { font-size: var(--is-fs-xl); }
 }
 
+/* CEP 面板内铺满可用宽度（与 IsUpdateDialog 的 .is-dialog.upd-dialog padding:6px + .upd-panel--full width:100% 同口径）；
+   桌面端仍是 460px 居中卡片。放在媒体查询之后，避免 compact 下的 .own padding 覆盖。 */
+.own--cep {
+  padding: 6px;
+}
+.own--cep .own-card {
+  max-width: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .own-card { transition: none; }
 }
