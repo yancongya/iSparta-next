@@ -92,7 +92,12 @@
     <div class="ob-screen">
       <div class="ob-step-scroll">
         <transition :name="dir === 'prev' ? 'ob-step-prev' : 'ob-step-next'" mode="out-in">
-          <component :is="currentComponent" :key="current.key" class="ob-step" />
+          <component
+            :is="currentComponent"
+            :key="current.key"
+            class="ob-step"
+            :class="'ob-step--' + current.key"
+          />
         </transition>
       </div>
     </div>
@@ -804,6 +809,113 @@ export default {
   .ob-card { padding: var(--is-s-3); }
   .ob-cta { padding-top: 0; }
 }
+
+/* ==========================================================================
+   CEP 指导页：按面板高度铺满，不滚动
+   AE 面板只有 ~400–520px 高，桌面那套「内容自然高度 + 上下滚动」在 CEP 下
+   会把第二/第三种导入方式、末页卡片挤出首屏。这里只针对两页做 CEP 降档：
+     · 三种导入方式：单列三行、三等分吃满剩余高度，图形左 / 文案右；
+     · 准备就绪：缩小动图，2×2 卡片两等分吃满剩余高度。
+   桌面端（无 .ob--cep）完全不受影响；其余步骤仍保留原有滚动能力。
+   ========================================================================== */
+.ob--cep .ob-step--import,
+.ob--cep .ob-step--finish {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  /* 裸 .ob-step 的 margin:auto 会抢走 flex 剩余空间，必须归零才能铺满 */
+  margin: 0 auto;
+  overflow: hidden;
+}
+
+.ob--cep .ob-step--import .ob-pane,
+.ob--cep .ob-step--finish .ob-pane {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* ---------- 三种导入方式：竖向三等分 ---------- */
+.ob--cep .ob-step--import .ob-h2,
+.ob--cep .ob-step--import .ob-sub { flex: 0 0 auto; }
+
+.ob--cep .ob-step--import .ob-ways {
+  flex: 1 1 auto;
+  min-height: 0;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: repeat(3, minmax(0, 1fr));
+  gap: var(--is-s-2);
+}
+
+.ob--cep .ob-step--import .ob-way {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  align-content: center;
+  align-items: center;
+  column-gap: var(--is-s-3);
+  min-height: 0;
+}
+
+.ob--cep .ob-step--import .ob-way__art {
+  grid-column: 1;
+  grid-row: 1 / 3;
+  width: 96px;
+  height: 100%;
+  min-height: 0;
+  padding: var(--is-s-2);
+}
+
+.ob--cep .ob-step--import .ia__svg {
+  width: 96px;
+  height: 68px;
+}
+
+.ob--cep .ob-step--import .ob-way__t {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: end;
+  margin: 0;
+}
+
+.ob--cep .ob-step--import .ob-way__d {
+  grid-column: 2;
+  grid-row: 2;
+  align-self: start;
+  margin: 0;
+  text-align: left;
+}
+
+/* ---------- 准备就绪：动图收缩 + 卡片两等分铺满 ---------- */
+.ob--cep .ob-step--finish .ob-pane--center {
+  gap: var(--is-s-2);
+  padding-top: 0;
+}
+
+.ob--cep .ob-step--finish .demo__svg {
+  width: 84px;
+  height: 84px;
+}
+
+.ob--cep .ob-step--finish .ob-h1 { font-size: var(--is-fs-lg); }
+.ob--cep .ob-step--finish .ob-sub { flex: 0 0 auto; }
+
+.ob--cep .ob-step--finish .ob-cards {
+  flex: 1 1 auto;
+  min-height: 0;
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  gap: var(--is-s-2);
+}
+
+.ob--cep .ob-step--finish .ob-card {
+  min-height: 0;
+  padding: var(--is-s-2);
+  gap: var(--is-s-2);
+}
+
+.ob--cep .ob-step--finish .ob-card__title { font-size: var(--is-fs-sm); }
+.ob--cep .ob-step--finish .ob-card__text { font-size: var(--is-fs-xs); line-height: 1.45; }
+.ob--cep .ob-step--finish .ob-cta { flex: 0 0 auto; padding-top: 0; }
 
 /* 降低动效：卡片只留描边/底色变化，不位移 */
 @media (prefers-reduced-motion: reduce) {
