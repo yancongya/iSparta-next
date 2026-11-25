@@ -79,16 +79,55 @@ h1,h2,h3,p{margin:0}
 button{font-family:inherit;color:inherit}
 
 /* ============================ 外壳 ============================ */
-.app{display:grid;grid-template-columns:264px 1fr;height:100vh}
+.app{height:100vh;position:relative}
 
-/* --- 左侧控制台 --- */
+/* --- dev 控制台：面板内抽屉（默认收起，面板右上 DEV 入口展开） ---
+   定位在 .frame 内部，不再作为面板外的独立框架。 */
 .ctrl{
+  position:absolute;left:0;top:0;bottom:0;z-index:35;
+  width:min(214px,44%);
   background:var(--is-panel);border-right:1px solid var(--is-border);
-  padding:var(--is-s-6) var(--is-s-5);overflow-y:auto;
-  display:flex;flex-direction:column;gap:var(--is-s-6);
+  box-shadow:10px 0 34px rgba(0,0,0,.26);
+  padding:var(--is-s-4);overflow-y:auto;
+  display:flex;flex-direction:column;gap:var(--is-s-4);
+  transform:translateX(-102%);opacity:0;pointer-events:none;
+  transition:transform var(--is-dur-base) var(--is-ease-out),opacity var(--is-dur-fast) var(--is-ease-std);
 }
-.ctrl h1{font-size:var(--is-fs-lg);font-weight:var(--is-fw-bold);letter-spacing:.2px}
-.ctrl .ver{font-size:var(--is-fs-xs);color:var(--is-text-3);margin-top:2px}
+.ctrl.open{transform:translateX(0);opacity:1;pointer-events:auto}
+/* 「落地页复用」视图：面板隐藏，控制台脱离为独立侧栏，保证 dev 主题切换可用 */
+.ctrl.detached{
+  position:fixed;left:0;top:0;bottom:0;width:264px;z-index:60;
+  transform:none;opacity:1;pointer-events:auto;box-shadow:none;
+  padding:var(--is-s-6) var(--is-s-5);gap:var(--is-s-6);
+}
+/* 抽屉在 500px 面板内要一屏放下 7 个步骤：压缩节奏、次要信息降级 */
+.ctrl{gap:8px;padding:12px}
+.ctrl h1{font-size:13px;font-weight:var(--is-fw-bold);letter-spacing:.2px}
+.ctrl .ver{font-size:9px;color:var(--is-text-3);margin-top:1px}
+.ctrl .group{gap:4px}
+.ctrl .lbl{font-size:9px}
+.ctrl .seg{padding:2px}
+.ctrl .seg button{font-size:10px;padding:4px 2px}
+.ctrl .steps{gap:0}
+.ctrl .steps button{font-size:11px;padding:3px 6px}
+.ctrl .steps .n{width:16px;height:16px;flex-basis:16px;font-size:9px}
+.ctrl .envbox{font-size:9px;line-height:1.4;padding:5px 7px;max-height:54px;overflow:hidden}
+.ctrl .envbox .hint{display:none}
+.ctrl .note{display:none}
+/* 脱离面板后空间充足，恢复完整信息 */
+.ctrl.detached{padding:var(--is-s-6) var(--is-s-5);gap:var(--is-s-6)}
+.ctrl.detached h1{font-size:var(--is-fs-lg)}
+.ctrl.detached .ver{font-size:var(--is-fs-xs)}
+.ctrl.detached .group{gap:var(--is-s-2)}
+.ctrl.detached .lbl{font-size:var(--is-fs-xs)}
+.ctrl.detached .seg{padding:var(--is-s-1)}
+.ctrl.detached .seg button{font-size:var(--is-fs-sm);padding:6px 4px}
+.ctrl.detached .steps{gap:2px}
+.ctrl.detached .steps button{font-size:var(--is-fs-md);padding:7px var(--is-s-2)}
+.ctrl.detached .steps .n{width:18px;height:18px;flex-basis:18px;font-size:var(--is-fs-xs)}
+.ctrl.detached .envbox{font-size:var(--is-fs-xs);line-height:1.6;max-height:none;padding:var(--is-s-2) var(--is-s-3)}
+.ctrl.detached .envbox .hint{display:block}
+.ctrl.detached .note{display:block;font-size:10px;line-height:1.55}
 .group{display:flex;flex-direction:column;gap:var(--is-s-2)}
 .group[hidden]{display:none}
 .group > .lbl{
@@ -159,6 +198,17 @@ button{font-family:inherit;color:inherit}
 .tb-set:hover,.tb-set[aria-expanded="true"]{border-color:var(--is-border-hi);color:var(--is-text)}
 .tb-set svg{width:11px;height:11px;flex:0 0 11px;display:block}
 .tb-set .sep{opacity:.55}
+/* 面板内 dev 控制台入口 */
+.dev-toggle{
+  border:1px solid var(--is-border);background:var(--is-card);color:var(--is-text-3);
+  border-radius:var(--is-r-pill);padding:5px 8px;
+  font-family:var(--is-mono);font-size:9px;line-height:1;letter-spacing:.06em;
+  cursor:pointer;
+  transition:border-color var(--is-dur-fast) var(--is-ease-std),color var(--is-dur-fast) var(--is-ease-std),background var(--is-dur-fast) var(--is-ease-std);
+}
+.dev-toggle:hover,.dev-toggle[aria-expanded="true"]{
+  border-color:var(--is-border-hi);color:var(--is-text);background:var(--is-accent-soft);
+}
 .pop{
   position:absolute;top:calc(100% + 8px);right:0;width:206px;z-index:40;
   background:var(--is-elevated);border:1px solid var(--is-border-strong);
@@ -675,78 +725,81 @@ button{font-family:inherit;color:inherit}
 <body>
 <div class="app" id="app">
 
-  <!-- ==================== 控制台 ==================== -->
-  <aside class="ctrl">
-    <div>
-      <h1 data-t="h1">引导页预览台</h1>
-      <div class="ver" data-t="sub">iSparta-next · dev only · 无构建、无依赖</div>
-    </div>
 
-    <div class="group">
-      <span class="lbl" data-t="lblView">视图</span>
-      <div class="seg" id="segView">
-        <button data-v="wizard" class="on" data-t="viewWizard">引导向导</button>
-        <button data-v="reuse" data-t="viewReuse">落地页复用</button>
-      </div>
-    </div>
-
-    <div class="group">
-      <span class="lbl" data-t="lblRuntime">运行时</span>
-      <div class="seg" id="segRuntime">
-        <button data-v="desktop" class="on" data-t="rtDesktop">桌面</button>
-        <button data-v="cep" data-t="rtCep">CEP</button>
-      </div>
-    </div>
-
-    <div class="group">
-      <span class="lbl" data-t="lblMotion">动效</span>
-      <div class="seg" id="segMotion">
-        <button data-v="on" class="on" data-t="motionOn">开</button>
-        <button data-v="off" data-t="motionOff">关</button>
-      </div>
-    </div>
-
-    <!-- 只读：生产环境会从电脑取到什么（本预览不自动应用） -->
-    <div class="group">
-      <span class="lbl" data-t="lblEnv">系统环境 · 生产参考</span>
-      <div class="envbox" id="envBox"></div>
-    </div>
-
-    <!-- 仅"落地页复用"视图（dev 参考区）需要主题切换；引导向导视图下主题/语言由面板自身右上角控制 -->
-    <div class="group" id="devThemeGroup" hidden>
-      <span class="lbl">主题 · dev</span>
-      <div class="seg" id="dTheme">
-        <button data-v="dark" class="on" data-t="thDark">暗色</button>
-        <button data-v="light" data-t="thLight">亮色</button>
-      </div>
-    </div>
-
-    <div class="group">
-      <span class="lbl" data-t="lblSteps">步骤</span>
-      <div class="steps" id="stepList">
-        <button data-i="0"><span class="n">1</span><span data-t="step0">欢迎</span></button>
-        <button data-i="1"><span class="n">2</span><span data-t="step1">导入方式</span></button>
-        <button data-i="2"><span class="n">3</span><span data-t="step2">输出设置</span></button>
-        <button data-i="3"><span class="n">4</span><span data-t="step3">文件名切分</span></button>
-        <button data-i="4"><span class="n">5</span><span data-t="step4">输出路径</span></button>
-        <button data-i="5"><span class="n">6</span><span data-t="step5">AE 扩展</span></button>
-        <button data-i="6"><span class="n">7</span><span data-t="step6">完成导览</span></button>
-      </div>
-    </div>
-
-    <div class="note" data-t="note"></div>
-  </aside>
 
   <!-- ==================== 舞台 ==================== -->
   <main class="stage">
 
     <div class="frame" id="frame" data-runtime="desktop">
+
+      <!-- ==================== 控制台 ==================== -->
+      <aside class="ctrl">
+        <div>
+          <h1 data-t="h1">引导页预览台</h1>
+          <div class="ver" data-t="sub">iSparta-next · dev only · 无构建、无依赖</div>
+        </div>
+
+        <div class="group">
+          <span class="lbl" data-t="lblView">视图</span>
+          <div class="seg" id="segView">
+            <button data-v="wizard" class="on" data-t="viewWizard">引导向导</button>
+            <button data-v="reuse" data-t="viewReuse">落地页复用</button>
+          </div>
+        </div>
+
+        <div class="group">
+          <span class="lbl" data-t="lblRuntime">运行时</span>
+          <div class="seg" id="segRuntime">
+            <button data-v="desktop" class="on" data-t="rtDesktop">桌面</button>
+            <button data-v="cep" data-t="rtCep">CEP</button>
+          </div>
+        </div>
+
+        <div class="group">
+          <span class="lbl" data-t="lblMotion">动效</span>
+          <div class="seg" id="segMotion">
+            <button data-v="on" class="on" data-t="motionOn">开</button>
+            <button data-v="off" data-t="motionOff">关</button>
+          </div>
+        </div>
+
+        <!-- 只读：生产环境会从电脑取到什么（本预览不自动应用） -->
+        <div class="group">
+          <span class="lbl" data-t="lblEnv">系统环境 · 生产参考</span>
+          <div class="envbox" id="envBox"></div>
+        </div>
+
+        <!-- 仅"落地页复用"视图（dev 参考区）需要主题切换；引导向导视图下主题/语言由面板自身右上角控制 -->
+        <div class="group" id="devThemeGroup" hidden>
+          <span class="lbl">主题 · dev</span>
+          <div class="seg" id="dTheme">
+            <button data-v="dark" class="on" data-t="thDark">暗色</button>
+            <button data-v="light" data-t="thLight">亮色</button>
+          </div>
+        </div>
+
+        <div class="group">
+          <span class="lbl" data-t="lblSteps">步骤</span>
+          <div class="steps" id="stepList">
+            <button data-i="0"><span class="n">1</span><span data-t="step0">欢迎</span></button>
+            <button data-i="1"><span class="n">2</span><span data-t="step1">导入方式</span></button>
+            <button data-i="2"><span class="n">3</span><span data-t="step2">输出设置</span></button>
+            <button data-i="3"><span class="n">4</span><span data-t="step3">文件名切分</span></button>
+            <button data-i="4"><span class="n">5</span><span data-t="step4">输出路径</span></button>
+            <button data-i="5"><span class="n">6</span><span data-t="step5">AE 扩展</span></button>
+            <button data-i="6"><span class="n">7</span><span data-t="step6">完成导览</span></button>
+          </div>
+        </div>
+
+        <div class="note" data-t="note"></div>
+      </aside>
       <div class="titlebar">
         <span class="tl"><i></i><i></i><i></i></span>
         <span class="tb-name" id="tbName">iSparta-next — 首次使用引导</span>
 
         <!-- 面板右上角：主题 + 语言（属于指导面板自身的能力） -->
         <div class="tb-right">
+          <button class="dev-toggle" id="devToggle" aria-label="打开预览控制台" aria-expanded="false">DEV</button>
           <button class="tb-set" id="setBtn" aria-haspopup="true" aria-expanded="false">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <circle cx="12" cy="12" r="3.2"/>
@@ -1195,6 +1248,9 @@ button{font-family:inherit;color:inherit}
 (function () {
   var root = document.documentElement
   var frame = document.getElementById('frame')
+  var appRoot = document.getElementById('app')
+  var ctrl = document.querySelector('.ctrl')
+  var devToggle = document.getElementById('devToggle')
   var tbName = document.getElementById('tbName')
   var dots = document.getElementById('dots')
   var steps = Array.prototype.slice.call(document.querySelectorAll('.step'))
@@ -1517,12 +1573,35 @@ button{font-family:inherit;color:inherit}
     })
   }
 
+  /* dev 控制台开合：入口在面板内，展开浮在面板左侧；点步骤后自动收起 */
+  function closeDev () {
+    ctrl.classList.remove('open')
+    devToggle.setAttribute('aria-expanded', 'false')
+  }
+  devToggle.addEventListener('click', function (e) {
+    e.stopPropagation()
+    closePop()
+    var open = !ctrl.classList.contains('open')
+    ctrl.classList.toggle('open', open)
+    devToggle.setAttribute('aria-expanded', open ? 'true' : 'false')
+  })
+  ctrl.addEventListener('click', function (e) { e.stopPropagation() })
+
   initSeg('segView', function (v) {
     var wizard = v === 'wizard'
     frame.hidden = !wizard
     gallery.hidden = wizard
     devThemeGroup.hidden = wizard
-    if (wizard) { closePop() }
+    if (wizard) {
+      closePop()
+      frame.insertBefore(ctrl, frame.firstChild)
+      ctrl.classList.remove('detached')
+    } else {
+      /* 面板隐藏时控制台脱离为独立侧栏，dev 主题切换仍可用 */
+      appRoot.insertBefore(ctrl, appRoot.firstChild)
+      ctrl.classList.add('detached')
+      closeDev()
+    }
   })
   initSeg('segRuntime', function (v) {
     runtime = v
@@ -1540,12 +1619,12 @@ button{font-family:inherit;color:inherit}
   btnNext.addEventListener('click', function () { go(cur + 1) })
   document.getElementById('btnSkip').addEventListener('click', function () { go(steps.length - 1) })
   stepBtns.forEach(function (b) {
-    b.addEventListener('click', function () { go(Number(b.dataset.i)) })
+    b.addEventListener('click', function () { go(Number(b.dataset.i)); closeDev() })
   })
   document.addEventListener('keydown', function (e) {
     if (e.key === 'ArrowRight') { go(cur + 1) }
     if (e.key === 'ArrowLeft') { go(cur - 1) }
-    if (e.key === 'Escape') { closePop() }
+    if (e.key === 'Escape') { closePop(); closeDev() }
   })
 
   /* ------------------------------------------------- 面板右上角设置弹层 */
