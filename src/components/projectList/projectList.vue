@@ -1382,7 +1382,7 @@ export default {
       const pickFile = !!(e && (e.ctrlKey || e.metaKey))
       ipc.invoke('dialog:openFiles', {
         properties: pickFile ? ['openFile', 'multiSelections'] : ['openDirectory'],
-        filters: pickFile ? [{ name: this.$t('importImageFilter'), extensions: ['png', 'gif', 'webp'] }] : undefined
+        filters: pickFile ? [{ name: this.$t('importImageFilter'), extensions: ['png', 'gif'] }] : undefined
       }).then((result) => {
         if (!result || result.canceled || !result.filePaths.length) { return false }
         return this.importPaths(result.filePaths)

@@ -167,9 +167,11 @@ Get-FileHash C:\isparta-verify\cool.png -Algorithm SHA256
 
 | # | 操作 | 期望 |
 |---|------|------|
-| F2.1 | Win/Linux：点底部「打开文件…」 | 原生对话框**只能选文件**，文件类型过滤只显示 png/gif/webp |
+| F2.1 | Win/Linux：主入口「打开」（默认点选目录，**Ctrl/⌘+点选文件**） | 原生对话框**只能选文件**，文件类型过滤只显示 **png/gif**（WebP 只能输出不能当源，不列）；任务列表的「打开文件夹」按钮 Ctrl+点走同一过滤 |
 | F2.2 | Win/Linux：点「打开目录…」 | 原生对话框**只能选目录** |
 | F2.3 | macOS（本轮未改，确认无回归） | 单按钮，可同时选文件和目录 |
+
+> F2.1 回归（2026-11-25）：上一批去 WebP 只改了 Home.vue 主入口（`onPick`），**漏改** `projectList.vue` 的「打开文件夹」按钮（`openFolder`，桌面专属 `v-if="showOutPath"`）——其 Ctrl+点选文件对话框仍列 webp。已改为 `['png', 'gif']` 与主入口一致，`import-format-guard.l1.js` 锁死两入口过滤器一致且均无 webp。三个对话框 handler 在 `background.js`：`dialog:openFiles`（透传 renderer 的 properties/filters）、`dialog:openDirectory`（强制 `openDirectory`）、`change-item-fold`/`change-multiItem-fold`（强制 `openDirectory`）。
 
 ### F3. CEP 面板内（需 AE 宿主）
 
@@ -378,7 +380,7 @@ CEP 侧按 A1/A2 挂 junction + PlayerDebugMode，`npm run dev:cep`。
 | **F2 系统对话框** | ☐ | Win/Linux/macOS |
 | **F3 CEP 面板** | ☐ | 含富气泡窄屏 |
 | **F4 状态行高度** | ☐ | |
-| **G 桌面改动→CEP 兼容回归** | ☐ | 每次改桌面 UI/交互必做；注明 G1 判定 + G2 实测结果 |
+| **G 桌面改动→CEP 兼容回归** | ☑ 通过（mock） | 2026-11-25 对 4 批未 push 改动（e93a54a/39fab36/288be47/12f3325）回归。G0：check.js cep + lint + 24 支 L1 全绿；G1：共享源大量改动→CEP 受影响，新 UI（调试日志/布局/日志面板/询问/toast host）两端都要有故不门控，原门控保留，三语齐，动了 v-tip 与单例浮层；G2：`:8082/?mock=1` 浏览器 13/13——6 任务渲染、is-cep 生效、序列帧胶囊 0、输出路径静态文本、普通 tip 悬停显示/移出隐藏、复制按钮无 title 只弹拟态气泡、布局切换存在、Console 无新增报错、三语齐。归属域分支无模板使用者故无误伤；H3/F3 真机（需 AE 工程）未做 |
 | **H 本轮改动快验** | ☑ 桌面通过 | 用户 11-25 确认：H1 防覆盖(源哈希不变) + H2.1–H2.15 全通过（含 H2.6–H2.9d 冲突链路、H2.10–H2.10b toast、H2.11–H2.15 新功能含 H2.11c 重启自启 / H2.12c 占用端口 / H2.16–H2.16c 同行+复制图标）；H3 CEP 未验（无 AE 工程）；后续待验见各章 |
 | 截图/日志路径 | | |
 

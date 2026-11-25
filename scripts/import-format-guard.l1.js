@@ -89,8 +89,15 @@ for (const [platform, paths] of [['macOS', path.posix], ['Windows', path.win32]]
   ok('Home 导入失败分支识别 .webp', /hasWebp = srcNames\.some/.test(home) && /\.webp\$/i.test(home))
   ok('Home WebP 走专门文案而非通用兜底',
     /\$t\('noticeWebpInputTitle'\)/.test(home) && /\$t\('noticeWebpInputTip'\)/.test(home))
-  ok('文件选择对话框不再列出 webp 扩展名',
+  ok('Home 主入口文件选择对话框不再列出 webp 扩展名',
     /extensions: \['png', 'gif'\]/.test(home) && !/extensions: \[[^\]]*webp/.test(home))
+  // 两个选文件入口（Home 主入口 + 任务列表「打开文件夹」Ctrl+点）必须一致，都不得列 webp。
+  // 上一批去 webp 只改了 Home，projectList 漏改——真机在该入口仍能选到 webp，故锁死。
+  const plist = read('src/components/projectList/projectList.vue')
+  ok('projectList 任务列表入口文件对话框不再列出 webp',
+    /extensions: \['png', 'gif'\]/.test(plist) && !/extensions: \[[^\]]*webp/.test(plist))
+  ok('两个选文件入口过滤器一致（均无 webp）',
+    /extensions: \['png', 'gif'\]/.test(home) && /extensions: \['png', 'gif'\]/.test(plist))
   for (const loc of ['zh-cn', 'zh-tw', 'en-us']) {
     const src = read('src/locales/' + loc + '.js')
     for (const key of ['noticeWebpInputTitle', 'noticeWebpInputTip']) {
