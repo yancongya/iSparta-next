@@ -27,6 +27,7 @@ function run () {
   const host = read('src/util/debugLogHost.js')
   const login = read('src/ui-next/log.js')
   const home = read('src/ui-next/views/Home.vue')
+  const logPanel = read('src/ui-next/components/IsLogPanel.vue')
 
   // ---- B) 端口配置 ----
   ok('常规 tab 有端口输入', /debugLogPort/.test(gs) && /\$t\('debugPort'\)/.test(gs))
@@ -50,6 +51,15 @@ function run () {
   ok('常规 tab 不再分别显示旧两条说明', !/debugAutoStartTip/.test(generalPane) && !/debugPortHint'/.test(generalPane))
   ok('全局设置有复制图标按钮 + copyAgentPrompt', /class="gs-debug-copy"/.test(gs) && /@click="copyAgentPrompt"/.test(gs))
   ok('copyAgentPrompt 用 agentPrompt + copyText', /copyAgentPrompt \(\) \{[\s\S]{0,200}agentPrompt\([\s\S]{0,300}copyText\(/.test(gs))
+
+  // 双提示回归守卫：v-tip（拟态气泡）本就替代原生 title，两者共存会原生/拟态同时弹。
+  // 两处复制按钮只挂 v-tip + aria-label，禁止再出现 :title（原生 tooltip）。
+  const gsCopyBtn = (gs.match(/<button[\s\S]{0,300}class="gs-debug-copy"[\s\S]{0,300}>/) || [''])[0]
+  const lpCopyBtn = (logPanel.match(/<button[\s\S]{0,300}class="log__debug-copy"[\s\S]{0,300}>/) || [''])[0]
+  ok('全局设置复制按钮用拟态 v-tip', /v-tip="\$t\('debugCopyPromptTip'\)"/.test(gsCopyBtn))
+  ok('全局设置复制按钮无原生 title', !/:title=/.test(gsCopyBtn), gsCopyBtn)
+  ok('日志面板复制按钮用拟态 v-tip', /v-tip="\$t\('debugCopyPromptTip'\)"/.test(lpCopyBtn))
+  ok('日志面板复制按钮无原生 title', !/:title=/.test(lpCopyBtn), lpCopyBtn)
 
   // ---- C) 标题栏布局切换 ----
   ok('IsDialog 提供 header-actions slot', /\$slots\['header-actions'\]/.test(dialog))

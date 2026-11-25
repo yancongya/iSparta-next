@@ -61,7 +61,6 @@
               type="button"
               class="gs-debug-copy"
               :aria-label="$t('debugCopyPrompt')"
-              :title="$t('debugCopyPrompt')"
               v-tip="$t('debugCopyPromptTip')"
               @click="copyAgentPrompt"
             >

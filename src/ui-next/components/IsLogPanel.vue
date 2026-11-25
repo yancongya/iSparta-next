@@ -45,7 +45,6 @@
             type="button"
             class="log__debug-copy"
             :aria-label="$t('debugCopyPrompt')"
-            :title="$t('debugCopyPromptTip')"
             v-tip="$t('debugCopyPromptTip')"
             @click="copyAgentPrompt"
           >
