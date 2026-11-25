@@ -303,11 +303,14 @@ check('setting shows suffix toggle in name row with dynamic display binding', ()
   assert(!/tipChangeOutput/.test(list))
   assert(/class="tpl-real is-ellipsis"[\s\S]{0,120}outPathOf\(project\)/.test(list))
   assert(/class="tpl-var is-ellipsis"[\s\S]{0,120}outTplOf\(project\)/.test(list))
-  // 信息已完整显示，整条任务条不再挂详情气泡（CEP 路径 span 上的局部 tip 不受影响）
+  // 信息已完整显示，整条任务条不再挂详情气泡
   assert(!/class="item"[\s\S]{0,220}v-tip="titleTipOf\(project\)"/.test(list))
   assert(!/data-tip-owner/.test(list))
-  assert(/class="outpath outpath--static is-ellipsis"[\s\S]{0,80}v-tip="titleTipOf\(project\)"/.test(list),
-    'CEP path span must keep its local titleTipOf tip')
+  // CEP 首行只显示「合成名 + 大小」：去掉路径胶囊（outpath--static），完整输出路径改由名字胶囊 hover 给出
+  assert(!/outpath--static/.test(list),
+    'CEP first row must NOT show the path capsule (name chip hover carries full path instead)')
+  assert(/if \(!this\.showOutPath\) return this\.titleTipOf\(project\)/.test(list),
+    'CEP name chip hover must reuse titleTipOf (full output path) since the path capsule is gone')
   // 三语文案齐，且值是纯标识（无连字符/空格前缀），前缀由调用方决定是否拼接
   const markValues = {}
   for (const loc of ['zh-cn', 'zh-tw', 'en-us']) {
@@ -378,11 +381,11 @@ check('first-row name & size chips carry hover tips sharing the display value (b
   assert(/class="seq-chip" v-tip="nameTipOf\(project, index\)"/.test(list), 'seq-chip must have name hover tip')
   assert(/class="name-chip" v-tip="nameTipOf\(project, index\)"/.test(list), 'name-chip must have name hover tip')
   assert(/class="src-size" v-tip="srcSizeTipOf\(project\)"/.test(list), 'src-size must have size hover tip')
-  // 名字 hover 与胶囊显示同源：showOutPath 分流后仍走 sourceNameOf / displayTitleOf
-  assert(/nameTipOf \(project, index\) \{[\s\S]{0,200}this\.showOutPath \? this\.sourceNameOf\(project\) : this\.displayTitleOf\(project, index\)/.test(list),
-    'name hover must reuse the same name source as the chip (desktop/CEP split)')
-  assert(/nameTipOf[\s\S]{0,160}tipOf\('sourceFileName', name\)/.test(list),
-    'name hover must use the shared tipOf plain-text bubble')
+  // 名字胶囊 hover 两端分流：桌面纯文本文件名（与胶囊同源 sourceNameOf），CEP 富气泡完整路径（titleTipOf）
+  assert(/nameTipOf \(project, index\) \{[\s\S]{0,120}if \(!this\.showOutPath\) return this\.titleTipOf\(project\)/.test(list),
+    'CEP name hover must return titleTipOf full-path bubble (path capsule removed from first row)')
+  assert(/nameTipOf[\s\S]{0,220}var name = this\.sourceNameOf\(project\)[\s\S]{0,80}tipOf\('sourceFileName', name\)/.test(list),
+    'desktop name hover must still use shared plain-text tipOf bubble with sourceNameOf')
   // 大小 hover 直接复用 sourceSizeOf（同一个 sourceSizeText 变量），不另算数值
   assert(/srcSizeTipOf \(project\) \{[\s\S]{0,200}var size = this\.sourceSizeOf\(project\)/.test(list),
     'size hover must reuse sourceSizeOf value, not recompute')

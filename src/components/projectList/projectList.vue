@@ -90,7 +90,9 @@
             <div class="item-names">
               <!-- 第一行三要素紧凑并排：输入目录 → 文件名 → 源体积（不撑开、不右对齐） -->
               <div class="item-headrow">
-                <!-- 桌面：路径显示输入源，点击仍是改输出目录；CEP：只读输出短路径（勿把 ae-comp/路径当名字） -->
+                <!-- 桌面：路径显示输入源，点击仍是改输出目录。
+                     CEP：首行只留「合成名 + 大小」，不再显示路径胶囊——完整输出路径改由名字胶囊 hover（见 nameTipOf）。
+                     pathLabelOf 仍供桌面 inputLabelOf 的非真实路径回退使用，勿删方法。 -->
                 <button
                   v-if="showOutPath && isRealFsPath(outPathOf(project))"
                   type="button"
@@ -101,14 +103,6 @@
                   <is-icon name="folder" size="xs" />
                   <span class="is-ellipsis">{{ inputLabelOf(project) }}</span>
                 </button>
-                <span
-                  v-else-if="!showOutPath && pathLabelOf(project)"
-                  class="outpath outpath--static is-ellipsis"
-                  v-tip="titleTipOf(project)"
-                >
-                  <is-icon name="folder" size="xs" />
-                  <span class="is-ellipsis">{{ pathLabelOf(project) }}</span>
-                </span>
                 <!-- 文件名胶囊：序列帧=类型胶囊(film)，普通文件=文件名胶囊(image)；CEP 合成名同样胶囊化 -->
                 <div class="item-title">
                   <span v-if="showOutPath && isSeqLike(project)" class="seq-chip" v-tip="nameTipOf(project, index)">
@@ -693,11 +687,14 @@ export default {
       return sourceSizeText(this.estimateOf(project))
     },
     /**
-     * 名字胶囊 hover：与胶囊显示共用同一变量——桌面取 sourceNameOf（序列帧取首帧名），
-     * CEP 取 displayTitleOf（合成名）。两端同一方法、同一 tipOf 纯文本气泡，不另造数据。
+     * 名字胶囊 hover：
+     * · 桌面——与胶囊显示共用 sourceNameOf（序列帧取首帧名），纯文本 tipOf 气泡。
+     * · CEP——首行已去掉路径胶囊，完整输出路径/输出名改由这里给出，复用 titleTipOf 富气泡
+     *   （与桌面区分：桌面路径在首行常显，CEP 路径只在 hover 名字时展开）。
      */
     nameTipOf (project, index) {
-      var name = this.showOutPath ? this.sourceNameOf(project) : this.displayTitleOf(project, index)
+      if (!this.showOutPath) return this.titleTipOf(project)
+      var name = this.sourceNameOf(project)
       return this.tipOf('sourceFileName', name)
     },
     /**
