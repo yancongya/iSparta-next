@@ -92,6 +92,34 @@
     font-size: var(--is-fs-md);
   }
 
+  // 本地调试日志：开关 + 端口 + 复制 prompt 图标同一行
+  .gs-debug-row {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--is-s-2);
+    min-width: 0;
+  }
+
+  // 复制图标按钮，沿用 .gs-layout-toggle 的视觉规格与专有类名（不撞全局类）
+  .gs-debug-copy {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: var(--is-r-sm);
+    background: transparent;
+    color: var(--is-text-3);
+    cursor: pointer;
+    transition: background-color var(--is-dur-fast) var(--is-ease-std),
+      color var(--is-dur-fast) var(--is-ease-std);
+
+    &:hover { background: var(--is-inset); color: var(--is-text); }
+  }
+
   .gs-version {
     color: var(--is-text);
     font-family: var(--is-font-mono, ui-monospace, monospace);

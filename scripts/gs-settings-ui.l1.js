@@ -44,6 +44,13 @@ function run () {
   ok('调试日志开关在常规 tab', /debugToggle/.test(generalPane) && /debugPort/.test(generalPane))
   ok('关于 tab 不再有调试日志开关', !/debugToggle/.test(aboutPane))
 
+  // 开关 + 端口 + 复制图标同一行：同处一个 gs-debug-row 容器内
+  ok('开关/端口/复制图标同一行容器', /class="gs-debug-row"[\s\S]{0,500}is-switch[\s\S]{0,500}debugLogPort[\s\S]{0,500}gs-debug-copy/.test(generalPane))
+  ok('统一一条说明（debugRowHint）', /debugRowHint/.test(generalPane))
+  ok('常规 tab 不再分别显示旧两条说明', !/debugAutoStartTip/.test(generalPane) && !/debugPortHint'/.test(generalPane))
+  ok('全局设置有复制图标按钮 + copyAgentPrompt', /class="gs-debug-copy"/.test(gs) && /@click="copyAgentPrompt"/.test(gs))
+  ok('copyAgentPrompt 用 agentPrompt + copyText', /copyAgentPrompt \(\) \{[\s\S]{0,200}agentPrompt\([\s\S]{0,300}copyText\(/.test(gs))
+
   // ---- C) 标题栏布局切换 ----
   ok('IsDialog 提供 header-actions slot', /\$slots\['header-actions'\]/.test(dialog))
   ok('IsDialog 渲染 header-actions 容器', /is-dialog__header-actions/.test(dialog))

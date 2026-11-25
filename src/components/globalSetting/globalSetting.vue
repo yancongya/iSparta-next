@@ -43,23 +43,32 @@
           <is-segmented v-model="themeMode" :options="themeOptions" size="sm" @change="applyThemeMode" />
         </is-form-item>
 
-        <!-- 本地调试日志：开关与端口同属常规设置，归为一组 -->
+        <!-- 本地调试日志：开关 + 端口 + 复制 prompt 图标同一行，说明统一一条 -->
         <is-form-item :label="$t('debugToggle')">
-          <is-switch v-model="debugLogEnabled" />
-          <em class="hint">{{ $t('debugAutoStartTip') }}</em>
-        </is-form-item>
-
-        <is-form-item :label="$t('debugPort')">
-          <is-input
-            v-model="debugLogPort"
-            type="number"
-            class="w-80"
-            :min="1"
-            :max="65535"
-            number
-            @change="onDebugPortChange"
-          />
-          <em class="hint">{{ $t('debugPortHint', { port: defaultDebugLogPort }) }}</em>
+          <div class="gs-debug-row">
+            <is-switch v-model="debugLogEnabled" />
+            <is-input
+              v-model="debugLogPort"
+              type="number"
+              class="w-80"
+              :min="1"
+              :max="65535"
+              number
+              :aria-label="$t('debugPort')"
+              @change="onDebugPortChange"
+            />
+            <button
+              type="button"
+              class="gs-debug-copy"
+              :aria-label="$t('debugCopyPrompt')"
+              :title="$t('debugCopyPrompt')"
+              v-tip="$t('debugCopyPromptTip')"
+              @click="copyAgentPrompt"
+            >
+              <is-icon name="copy" size="sm" />
+            </button>
+          </div>
+          <em class="hint">{{ $t('debugRowHint', { port: defaultDebugLogPort }) }}</em>
         </is-form-item>
         </div><!-- /常规 -->
 
@@ -404,6 +413,7 @@ import {
 } from '../../util/outputPresets'
 import updateService from '../../util/updateService'
 import notice from '../../ui-next/notice'
+import { agentPrompt, copyText } from '../../util/debugLogFeedback'
 import hostAdapter from '../../util/host-env'
 import log from '../../ui-next/log'
 import {
@@ -997,6 +1007,7 @@ export default {
       }
     },
     // 通用设置开关 → 立即同步全局 controller（日志面板开关同一实例，状态天然一致）
+    // 切换只提示已开启/已关闭，不自动复制剪贴板；主动复制走常规行的复制图标
     syncDebugLogController (enabled) {
       const c = log && log.debugLog
       if (!c) return
@@ -1004,11 +1015,21 @@ export default {
         Promise.resolve(c.enable()).then((state) => {
           if (state && state.status === 'error') {
             notice.error(this.$t('debugStatusError'))
+          } else if (state) {
+            notice.success(this.$t('debugSwitchedOn'))
           }
         })
       } else {
         c.disable()
+        notice.info(this.$t('debugSwitchedOff'))
       }
+    },
+    // 复制给其他 agent 的 prompt：含当前端口对应的日志接口地址与读取方式
+    copyAgentPrompt () {
+      const text = agentPrompt(this.debugLogPort, (key, vars) => this.$t(key, vars))
+      copyText(text).then((ok) => {
+        notice[ok ? 'success' : 'warning'](this.$t(ok ? 'debugPromptCopied' : 'debugPromptCopyFailed'))
+      })
     },
     // 端口改动立即生效：更新宿主层端口；若服务已开着，重启以换端口
     onDebugPortChange () {

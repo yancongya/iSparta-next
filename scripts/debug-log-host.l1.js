@@ -82,11 +82,24 @@ function run () {
   ok('桌面只绑回环', /DEFAULT_HOST/.test(bg))
   ok('服务在主进程（非 renderer require http）', /createDebugLogServer\(http/.test(bg))
 
+  // ---- 开关只提示状态、不自动复制；主动复制走两处图标（复用 agentPrompt）----
+  const feedback = read('src/util/debugLogFeedback.js')
+  ok('agentPrompt 纯函数存在', /export function agentPrompt \(urlOrPort, translate\)/.test(feedback))
+  ok('agentPrompt 支持端口与完整 URL 两种入参', /\^https\?:\\\/\\\//.test(feedback) && /127\.0\.0\.1:/.test(feedback))
+  ok('日志面板有复制图标', /class="log__debug-copy"/.test(panel) && /@click="copyAgentPrompt"/.test(panel))
+  ok('日志面板复制用 agentPrompt', /agentPrompt\(source,/.test(panel))
+  ok('开关切换不再调用 connectionInfo', !/connectionInfo/.test(panel))
+  ok('开关切换提示已开启/已关闭', /debugSwitchedOn/.test(panel) && /debugSwitchedOff/.test(panel))
+  ok('全局设置开关也提示已开启/已关闭', /debugSwitchedOn/.test(setting) && /debugSwitchedOff/.test(setting))
+  ok('debugHint 文案去掉「切换时自动复制」', !/切换时自动复制/.test(zh) && !/copied when toggled/.test(en))
+
   // ---- 三语 key 齐 ----
   const keys = ['debugToggle', 'debugStatusOff', 'debugStatusStarting', 'debugStatusReady',
     'debugStatusUnavailable', 'debugStatusError', 'debugPortBusy', 'debugHint',
     'debugInfoCopied', 'debugInfoCopyFailed', 'debugAutoStartTip',
-    'debugPort', 'debugPortHint', 'debugPortChanged']
+    'debugPort', 'debugPortHint', 'debugPortChanged',
+    'debugRowHint', 'debugCopyPrompt', 'debugCopyPromptTip', 'debugPromptCopied',
+    'debugPromptCopyFailed', 'debugSwitchedOn', 'debugSwitchedOff', 'debugAgentPrompt']
   keys.forEach(function (k) {
     ok('zh-cn 有 ' + k, zh.indexOf('"' + k + '"') >= 0)
     ok('zh-tw 有 ' + k, tw.indexOf('"' + k + '"') >= 0)

@@ -27,6 +27,18 @@ export function connectionInfo (state, translate) {
   return translate('debugToggle') + '：' + statusText + (url ? '\n' + translate('debugHint', { url: url }) : '')
 }
 
+/**
+ * 复制给其他 agent 的 prompt：告诉它本机日志接口的读取方式与返回结构。
+ * urlOrPort 可传端口数字（拼回环地址，默认 48764）或服务返回的完整 URL；
+ * 未开启服务时也能复制备用。
+ */
+export function agentPrompt (urlOrPort, translate) {
+  const url = (typeof urlOrPort === 'string' && /^https?:\/\//.test(urlOrPort))
+    ? urlOrPort
+    : 'http://127.0.0.1:' + (urlOrPort || 48764) + '/logs'
+  return translate('debugAgentPrompt', { url: url })
+}
+
 /** 复制文本（navigator.clipboard + execCommand 兜底），返回 Promise<boolean> */
 export function copyText (text) {
   if (!text) return Promise.resolve(false)

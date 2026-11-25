@@ -1931,6 +1931,24 @@ body.is-scroll-locked {
   &.is-starting { background: var(--is-accent); }
 }
 
+// 日志面板里复用「复制 agent prompt」的图标按钮，视觉与 log__act 一致
+.log__debug-copy {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin-left: 2px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--is-r-sm);
+  background: transparent;
+  color: var(--is-text-3);
+  cursor: pointer;
+
+  &:hover { background: var(--is-inset); color: var(--is-text); }
+}
+
 .log__list {
   display: flex;
   flex-direction: column;

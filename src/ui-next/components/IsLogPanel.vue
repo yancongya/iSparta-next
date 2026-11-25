@@ -41,6 +41,16 @@
             @change="onDebugToggle"
           />
           <i class="log__debug-dot" :class="'is-' + debugStatus" aria-hidden="true"></i>
+          <button
+            type="button"
+            class="log__debug-copy"
+            :aria-label="$t('debugCopyPrompt')"
+            :title="$t('debugCopyPromptTip')"
+            v-tip="$t('debugCopyPromptTip')"
+            @click="copyAgentPrompt"
+          >
+            <is-icon name="copy" size="sm" />
+          </button>
         </span>
         <is-checkbox v-model="follow" class="log__follow">{{ $t('logFollow') }}</is-checkbox>
       </div>
@@ -84,7 +94,8 @@ import IsCheckbox from './ui/IsCheckbox.vue'
 import IsSwitch from './ui/IsSwitch.vue'
 import log from '../log'
 import notice from '../notice'
-import { statusKey, connectionHint, connectionInfo, copyText } from '../../util/debugLogFeedback'
+import { statusKey, connectionHint, agentPrompt, copyText } from '../../util/debugLogFeedback'
+import { currentDebugLogPort } from '../../util/debugLogHost'
 
 const debugLog = log.debugLog
 
@@ -106,6 +117,7 @@ export default {
     debugEnabled () { return !!(this.debugState && this.debugState.enabled) },
     debugBusy () { return !!(this.debugState && this.debugState.status === 'starting') },
     debugStatus () { return (this.debugState && this.debugState.status) || 'off' },
+    debugPort () { return currentDebugLogPort() },
     debugHint () {
       var t = (key, vars) => this.$t(key, vars)
       return connectionHint(this.debugState, t)
@@ -151,25 +163,28 @@ export default {
     async onDebugToggle (enabled) {
       if (!debugLog) return
       var self = this
-      var t = (key, vars) => self.$t(key, vars)
       if (!enabled) {
-        var offState = debugLog.disable()
-        self.debugState = offState
-        var offText = connectionInfo(offState, t)
-        var offCopy = await copyText(offText)
-        notice.info(t(offCopy ? 'debugInfoCopied' : 'debugInfoCopyFailed'))
+        self.debugState = debugLog.disable()
+        notice.info(self.$t('debugSwitchedOff'))
         return
       }
       var result = await debugLog.enable()
       if (!result) return // 被更新的操作取代
       self.debugState = result
       if (result.status === 'ready') {
-        var text = connectionInfo(result, t)
-        var copied = await copyText(text)
-        notice.success(t(copied ? 'debugInfoCopied' : 'debugInfoCopyFailed'))
+        notice.success(self.$t('debugSwitchedOn'))
       } else if (result.status === 'error' || result.status === 'unavailable') {
-        notice.error(t(statusKey(result)))
+        notice.error(self.$t(statusKey(result)))
       }
+    },
+    // 复制给其他 agent 的 prompt；用的是服务真实地址（若已就绪），否则按当前端口拼
+    copyAgentPrompt () {
+      var self = this
+      var source = (self.debugState && self.debugState.url) || self.debugPort
+      var text = agentPrompt(source, (key, vars) => self.$t(key, vars))
+      copyText(text).then((ok) => {
+        notice[ok ? 'success' : 'warning'](self.$t(ok ? 'debugPromptCopied' : 'debugPromptCopyFailed'))
+      })
     },
     // 本仓库字典是扁平键，vue-i18n 会把「logLevel.all」当路径解析，故显式映射
     levelKey (f) {
