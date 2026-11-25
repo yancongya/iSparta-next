@@ -51,6 +51,13 @@ async function main () {
   assert(!/is-tag v-if="showOutPath"/.test(vue), '类型胶囊必须删除')
   assert(/class="item-headrow"/.test(vue) && /class="item-proc is-ellipsis"/.test(vue), '标题+路径同行、状态独立第二行')
   assert(/\$t\('statePending'\)/.test(vue), '状态空态须固定文案占位')
+  // F4 状态行高度稳定性：.item-proc 无 v-if 始终渲染 + min-height 占位，四态切换卡片不跳高度。
+  // mock 实测 5 卡 pending→done 全 105→105、item-proc 恒 15px；锁死 CSS/模板契约防回归。
+  assert(/class="item-proc is-ellipsis"[\s\S]{0,260}>\s*\{\{\s*\(project\.process/.test(vue) &&
+    !/item-proc[^>]*v-if/.test(vue),
+    'F4: 状态行 item-proc 须始终渲染（无 v-if），仅文案随状态切换')
+  assert(/\.item-proc \{[\s\S]*?min-height: 15px/.test(scss),
+    'F4: 状态行须 min-height:15px 占位（空态/进行中/完成/失败切态卡片不跳高度）')
   assert(/<is-icon name="eye" size="sm" \/><\/button>/.test(vue), '预览入口图标须为 eye')
   assert(/isAnimatedSingle\(project\).*thumb__badge--fmt/s.test(vue), '动图封面须显示格式角标')
   assert(/&__badge--fmt \{[\s\S]*?background: rgba\(0, 0, 0, 0\.66\)[\s\S]*?color: #fff/.test(scss), '格式角标须深色底白字、不按格式上强调色')
