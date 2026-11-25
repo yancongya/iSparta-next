@@ -170,12 +170,14 @@ button{font-family:inherit;color:inherit}
 .pop .group > .lbl{font-size:10px}
 
 /* --- 面板窗口 ---
-   overflow:visible —— 右上角设置的下拉需要溢出标题栏；圆角改由
-   titlebar / foot 自行承担，.screen 仍 overflow:hidden 负责步骤裁剪。 */
+   无边框：与真实启动窗一致（src/background.js frame:false，系统按钮由
+   Onboarding.vue 自绘在面板内）。去掉模拟的 macOS 标题栏与外描边/投影，
+   圆角由 frame 自己裁剪；设置按钮改成浮在面板内右上角。 */
 .frame{
-  background:var(--is-elevated);border:1px solid var(--is-border-strong);
-  border-radius:var(--is-r-lg);box-shadow:var(--is-shadow-lg);
-  display:flex;flex-direction:column;overflow:visible;
+  position:relative;
+  background:var(--is-elevated);border:0;
+  border-radius:var(--is-r-lg);box-shadow:none;
+  display:flex;flex-direction:column;overflow:hidden;
   transition:width var(--is-dur-slow) var(--is-ease-out),height var(--is-dur-slow) var(--is-ease-out);
   /* 指导面板里的文案默认不可选 —— 选中高亮会让人以为这是可复制的文档。
      两个 mockup 面板（.gp 输出设置 / .np 命名与路径）是「模拟产品界面」，
@@ -185,15 +187,13 @@ button{font-family:inherit;color:inherit}
 .frame[data-runtime="desktop"]{width:760px;height:500px}
 .frame[data-runtime="cep"]{width:520px;height:560px}
 .frame[hidden]{display:none}
+/* 无边框：不渲染系统标题栏，设置按钮浮在面板内右上角（对应真实窗的自绘按钮） */
 .titlebar{
-  height:34px;flex:0 0 34px;display:flex;align-items:center;gap:var(--is-s-2);
-  padding:0 var(--is-s-3);background:var(--is-panel);border-bottom:1px solid var(--is-border);
-  border-radius:var(--is-r-lg) var(--is-r-lg) 0 0;
+  position:absolute;top:0;right:0;z-index:30;
+  height:34px;display:flex;align-items:center;gap:var(--is-s-2);
+  padding:0 var(--is-s-3);background:transparent;border:0;border-radius:0;
 }
-.tl{display:flex;gap:6px}
-.tl i{width:9px;height:9px;border-radius:var(--is-r-pill);background:var(--is-track);display:block}
-.tl i:first-child{background:rgba(255,92,92,.55)}
-.tb-name{margin-left:var(--is-s-2);font-size:var(--is-fs-xs);color:var(--is-text-3)}
+.tl,.tb-name{display:none}
 
 /* --- 进度点 --- */
 .dots{display:flex;gap:6px;justify-content:center;padding:var(--is-s-5) 0 var(--is-s-2)}
@@ -409,6 +409,8 @@ button{font-family:inherit;color:inherit}
    keyframes 只动 transform（位移/缩放），低开销。关闭动效/reduce 时停住落到静态构图。 */
 .step[data-i="0"]{
   isolation:isolate;
+  /* 欢迎页一屏铺满：光晕 inset:-20% 会撑出滚动条，这里直接裁掉 */
+  overflow:hidden;
   /* 光核是亮色，文字/卡片改为深色系（与参考图"深字压亮光"一致）；
      只在本步覆盖局部变量，不影响进度点/页脚/其他步骤 */
   --is-accent:#3b2f27;--is-on-accent:#fbf6ed;--is-text:#2b2622;--is-text-2:#544a42;--is-text-3:#73675d;
@@ -1912,11 +1914,12 @@ button{font-family:inherit;color:inherit}
 
   /* -------------------------------------------------------------------- 启动 */
   setTheme('dark')
-  setLang('zh-CN')
+  setLang('zh-CN');
 
   /* 深链（dev 便利）：#step=3 直达某步、#rt=cep 预置运行时、#lang=en / #theme=light
-     例：index.html#step=2&rt=cep —— 便于截图与逐页比对，不改任何默认行为。 */
-  (function applyHash () {
+     例：index.html#step=2&rt=cep —— 便于截图与逐页比对，不改任何默认行为。
+     前面必须带分号：否则 IIFE 会被 ASI 接到 setLang(...) 后面当函数调用。 */
+  ;(function applyHash () {
     var h = String(location.hash || '').replace(/^#/, '')
     if (!h) return
     var q = {}
