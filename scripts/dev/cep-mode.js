@@ -1,22 +1,28 @@
 /**
  * CEP 开发/真实版模式切换（仅 Windows，用户明确授权新建——见 AGENTS.md §8 例外）
  *
- * 背景：AE 的 CEP 会在「系统级」与「用户级」两个目录扫描同一 bundle id 的扩展，
- * 同名时按 Adobe 规则决胜：① manifest 版本高者 ② manifest 修改时间新者 ③ 先找到者。
- * 本项目的系统级副本（一体安装）与用户级挂载（开发）都把 ExtensionBundleVersion
- * 固定为 0.1.0，因此实际由「manifest 修改时间」决定加载哪份——这正是切换的杠杆。
+ * ⭐ v2（2026-11-25）：开发版改用独立 bundle id `io.github.isparta-next.dev`，
+ * 与系统级真实安装 `io.github.isparta-next` 彻底分离。两者在 AE 扩展菜单里是
+ * 两个独立条目，各自加载、互不竞争、互不覆盖。这消除了旧方案的三个痛点：
+ *  ① 不再违反「同 ID 双副本不可长期共存」铁律（AGENTS §8.1）；
+ *  ② 不再靠 manifest mtime 抢加载，也不再有「胜出副本加载失败无回退」的风险；
+ *  ③ 源码 targets/cep/CSXS/manifest.xml 永不改写，打包/打包守卫零污染。
+ *
+ * 用户级开发位现在是一个「真实目录」，内部结构：
+ *   io.github.isparta-next.dev/
+ *     CSXS/manifest.xml   ← 脚本生成（独立 ID/菜单名/MainPath），每次 dev 覆盖
+ *     dev-hmr.html        ← 从源码拷贝（跳转 8082 HMR，不可达回退 ./ui/index.html）
+ *     ui, jsx, lib, bin, css, js, index.html 等 ← junction/hardlink 指向源码 targets/cep
  *
  * 用法：
- *   node scripts/dev/cep-mode.js status    # 只读：当前到底会加载哪份（安全，随时可跑）
- *   node scripts/dev/cep-mode.js dev       # 切到开发版：建 junction + 改 MainPath + 起 HMR
- *   node scripts/dev/cep-mode.js restore   # 切回真实版：删 junction + MainPath 复位（不碰系统级）
+ *   node scripts/dev/cep-mode.js status    # 只读：报告两份扩展各自状态（安全，随时可跑）
+ *   node scripts/dev/cep-mode.js dev       # 建/刷新开发位（独立 ID）+ 改 MainPath + 起 HMR
+ *   node scripts/dev/cep-mode.js restore   # 删整个开发位（不动系统级、不动源码 manifest）
  *
- * 关键铁律（详见 docs/CEP-DEV-SWITCH.md）：
- *  - 关闭开发模式必须以「删 junction」为准，不是只跑 npm run dev:cep:off。
- *    只 off 不删 junction → CEP 仍加载用户级，而且可能是 targets/cep/ui 的旧产物。
- *  - 开发挂载存在期间，绝对不要跑一体安装 / 面板内检查更新（NSIS 会因双副本冲突）。
- *  - 判断「当前用哪份」看本脚本 status 或 bug 行为，不要看面板标题的版本号
- *    （标题是编译进 bundle 的 APP_VERSION，不是运行时探测，会漂移）。
+ * 关键约定（详见 docs/CEP-DEV-SWITCH.md）：
+ *  - 开发位 ID 与生产 ID 不同 → 可长期共存；restore = 删开发目录，系统级始终原封不动。
+ *  - 源码 manifest 永不改写；dev manifest 由本脚本从生产 manifest 派生到开发位。
+ *  - 判断加载来源看 status 或 bug 行为，不要看面板标题版本号（APP_VERSION 编译内联、会漂移）。
  */
 'use strict'
 
@@ -25,8 +31,9 @@ const path = require('path')
 const { spawn } = require('child_process')
 
 const ROOT = path.join(__dirname, '..', '..')
-const EXT_ID = 'io.github.isparta-next'
-const USER_EXT = path.join(process.env.APPDATA || '', 'Adobe', 'CEP', 'extensions', EXT_ID)
+const EXT_ID = 'io.github.isparta-next'          // 生产 / 系统级（只读参照）
+const DEV_EXT_ID = 'io.github.isparta-next.dev'  // 开发位（用户级，独立 ID）
+const USER_EXT = path.join(process.env.APPDATA || '', 'Adobe', 'CEP', 'extensions', DEV_EXT_ID)
 const SYSTEM_EXT = path.join(
   process.env['CommonProgramFiles(x86)'] || 'C:\\Program Files (x86)\\Common Files',
   'Adobe', 'CEP', 'extensions', EXT_ID
@@ -34,7 +41,12 @@ const SYSTEM_EXT = path.join(
 const SOURCE = path.join(ROOT, 'targets', 'cep')
 const MANIFEST = path.join(SOURCE, 'CSXS', 'manifest.xml')
 const SYSTEM_MANIFEST = path.join(SYSTEM_EXT, 'CSXS', 'manifest.xml')
+const DEV_MANIFEST = path.join(USER_EXT, 'CSXS', 'manifest.xml')
 const npmCmd = process.platform === 'win32' ? 'npm.cmd' : 'npm'
+
+// 开发位中要做成「指向源码」的项。目录用 junction，散文件用 hardlink（同盘）或 copy。
+const LINK_DIRS = ['ui', 'jsx', 'lib', 'bin', 'css', 'js']
+const LINK_FILES = ['index.html', 'dev-hmr.html']
 
 // Windows 上 Node 不能直接 spawn .cmd（CVE-2024-27980），必须过 shell —— AGENTS §1.1
 function spawnTool (cmd, args, opts) {
@@ -46,17 +58,17 @@ function spawnTool (cmd, args, opts) {
 
 function exists (p) { try { fs.lstatSync(p); return true } catch (e) { return false } }
 
-/** 返回 'junction' | 'dir' | 'missing'；junction 的 target 一并给出 */
+/** 返回 'junction' | 'dir' | 'file' | 'missing'；junction 的 target 一并给出 */
 function linkInfo (p) {
   try {
     const st = fs.lstatSync(p)
-    if (st.isSymbolicLink() || (st.isDirectory() && st.isJunction?.())) {
+    if (st.isSymbolicLink() || (st.isDirectory() && st.isJunction && st.isJunction())) {
       let target = ''
       try { target = fs.readlinkSync(p) } catch (e) { /* 非 symlink 形态的 junction */ }
       return { kind: 'junction', target: target }
     }
     if (st.isDirectory()) { return { kind: 'dir', target: '' } }
-    return { kind: 'other', target: '' }
+    return { kind: 'file', target: '' }
   } catch (e) { return { kind: 'missing', target: '' } }
 }
 
@@ -72,9 +84,11 @@ function readManifest (file) {
   try {
     const xml = fs.readFileSync(file, 'utf8')
     const mainPath = (xml.match(/<MainPath>([^<]*)<\/MainPath>/) || [])[1] || '?'
+    const bundleId = (xml.match(/ExtensionBundleId="([^"]*)"/) || [])[1] || '?'
     const bundleVer = (xml.match(/ExtensionBundleVersion="([^"]*)"/) || [])[1] || '?'
+    const menu = (xml.match(/<Menu>([^<]*)<\/Menu>/) || [])[1] || '?'
     const mtime = fs.statSync(file).mtime
-    return { mainPath: mainPath, bundleVer: bundleVer, mtime: mtime, mtimeStr: mtime.toISOString() }
+    return { mainPath: mainPath, bundleId: bundleId, bundleVer: bundleVer, menu: menu, mtime: mtime, mtimeStr: mtime.toISOString() }
   } catch (e) { return null }
 }
 
@@ -84,85 +98,90 @@ function hr (title) {
 }
 
 /**
- * 判定 CEP 实际会加载哪份。规则对齐 Adobe Cookbook：
- *  同 bundle id → ① manifest 版本高 ② manifest 修改时间新 ③ 查找顺序(system 先于 user)
- * 本仓库两边 bundleVersion 都是 0.1.0，故落到 ②。
+ * 从生产 manifest 派生开发版 manifest：只换 ID / 菜单名 / MainPath，其余结构原样保留。
+ * 这样生产 manifest 的任何改动（Host 版本、CEF 参数等）都能自动继承到开发位。
  */
-function decide (user, system) {
-  if (user.kind === 'missing' && system.kind === 'missing') {
-    return { label: '无扩展', reason: '系统级与用户级都没有该扩展，AE 面板不会出现' }
-  }
-  if (user.kind === 'missing') {
-    return { label: '系统级（真实版）', reason: '用户级无副本，CEP 只会扫描到系统级' }
-  }
-  if (system.kind === 'missing') {
-    return { label: '用户级', reason: '系统级无副本，CEP 只会扫描到用户级（开发/残留）' }
-  }
-  // 两边都在 → 按 Adobe 规则决胜
-  const um = readManifest(path.join(USER_EXT, 'CSXS', 'manifest.xml'))
-  const sm = readManifest(SYSTEM_MANIFEST)
-  if (um && sm) {
-    const uv = String(um.bundleVer)
-    const sv = String(sm.bundleVer)
-    if (uv !== sv) {
-      const cmp = compareVer(uv, sv)
-      if (cmp > 0) { return { label: '用户级', reason: 'manifest 版本 ' + uv + ' > 系统级 ' + sv } }
-      if (cmp < 0) { return { label: '系统级（真实版）', reason: 'manifest 版本 ' + sv + ' > 用户级 ' + uv } }
-    }
-    // 版本相同 → 比修改时间
-    if (um.mtime.getTime() > sm.mtime.getTime()) {
-      return { label: '用户级', reason: 'manifest 版本同为 ' + uv + '，用户级修改时间更新（' + um.mtimeStr + '）' }
-    }
-    if (um.mtime.getTime() < sm.mtime.getTime()) {
-      return { label: '系统级（真实版）', reason: 'manifest 版本同为 ' + uv + '，系统级修改时间更新（' + sm.mtimeStr + '）' }
-    }
-    return { label: '系统级（真实版）', reason: '版本与时间都相同，CEP 取先找到的（system 先于 user）' }
-  }
-  return { label: '无法确定', reason: '有一侧 manifest 读不到，无法套用 Adobe 决胜规则' }
+function buildDevManifest () {
+  const prod = fs.readFileSync(MANIFEST, 'utf8')
+  let out = prod
+  // BundleId 与所有 <Extension Id>（两处）
+  out = out.split(EXT_ID).join(DEV_EXT_ID)
+  // 菜单名：AE 扩展菜单里显示为可区分的条目
+  out = out.replace(/<Menu>[^<]*<\/Menu>/, '<Menu>' + EXT_ID + ' · DEV</Menu>')
+  // 开发位入口：dev-hmr.html（探测 8082，不可达回退 ui/index.html）
+  out = out.replace(/<MainPath>[^<]*<\/MainPath>/, '<MainPath>./dev-hmr.html</MainPath>')
+  return out
 }
 
-function compareVer (a, b) {
-  const pa = String(a).split('.').map(Number)
-  const pb = String(b).split('.').map(Number)
-  const n = Math.max(pa.length, pb.length)
-  for (let i = 0; i < n; i++) {
-    const d = (pa[i] || 0) - (pb[i] || 0)
-    if (d !== 0) { return d > 0 ? 1 : -1 }
+/** 建/刷新开发位的资源链接；manifest 单独写。重复调用幂等。 */
+function stageDevBundle () {
+  fs.mkdirSync(path.join(USER_EXT, 'CSXS'), { recursive: true })
+  // 1) 独立 manifest（每次覆盖，保证与当前源码同步）
+  fs.writeFileSync(DEV_MANIFEST, buildDevManifest())
+  console.log('  ✓ 写入独立开发 manifest: ' + DEV_MANIFEST)
+
+  // 2) 子目录 → junction 到源码（不存在才建；已存在则跳过）
+  for (const name of LINK_DIRS) {
+    const src = path.join(SOURCE, name)
+    const dst = path.join(USER_EXT, name)
+    if (!exists(src)) { console.log('  · 源码无 ' + name + '，跳过'); continue }
+    if (exists(dst)) {
+      const info = linkInfo(dst)
+      if (info.kind === 'junction' && path.resolve(info.target || '').toLowerCase() === path.resolve(src).toLowerCase()) {
+        console.log('  · ' + name + ' junction 已就绪，跳过')
+      } else {
+        console.log('  ! ' + name + ' 已存在且非期望链接，跳过（未覆盖）: ' + info.kind)
+      }
+      continue
+    }
+    fs.symlinkSync(src, dst, 'junction')
+    console.log('  ✓ junction ' + name + ' → ' + src)
   }
-  return 0
+
+  // 3) 散文件 → 从源码拷贝（junction 只能是目录）
+  for (const name of LINK_FILES) {
+    const src = path.join(SOURCE, name)
+    const dst = path.join(USER_EXT, name)
+    if (!exists(src)) { continue }
+    fs.copyFileSync(src, dst)
+    console.log('  ✓ 拷贝 ' + name)
+  }
 }
+
+function hr2 (title) { console.log('\n  ' + title) }
 
 function cmdStatus () {
   const user = linkInfo(USER_EXT)
   const system = linkInfo(SYSTEM_EXT)
-  const verdict = decide(user, system)
-  const uv = user.kind === 'missing' ? null : readVersionJson(USER_EXT)
-  const sv = system.kind === 'missing' ? null : readVersionJson(SYSTEM_EXT)
-  const um = readManifest(MANIFEST)
+  const um = readManifest(DEV_MANIFEST)
   const sm = system.kind === 'missing' ? null : readManifest(SYSTEM_MANIFEST)
+  const srcm = readManifest(MANIFEST)
 
   console.log('')
-  console.log('  iSparta-next · CEP 模式状态')
-  hr('系统级（真实版 / 一体安装）')
+  console.log('  iSparta-next · CEP 模式状态（v2 独立 ID）')
+
+  hr('系统级 · 真实版（一体安装，生产 ID）')
+  console.log('  ID        ' + EXT_ID)
   console.log('  路径      ' + SYSTEM_EXT)
   console.log('  存在      ' + (system.kind !== 'missing'))
-  if (sv) { console.log('  版本      ' + sv.version + (sv.source ? '  (source=' + sv.source + ')' : '')) }
   if (sm) { console.log('  MainPath  ' + sm.mainPath + '   bundleVer=' + sm.bundleVer); console.log('  manifest  ' + sm.mtimeStr) }
 
-  hr('用户级（开发挂载位）')
+  hr('用户级 · 开发位（独立 DEV ID）')
+  console.log('  ID        ' + DEV_EXT_ID)
   console.log('  路径      ' + USER_EXT)
   console.log('  形态      ' + user.kind + (user.target ? '  → ' + user.target : ''))
-  if (uv) { console.log('  版本      ' + uv.version) }
-  if (user.kind !== 'missing' && um) { console.log('  MainPath  ' + um.mainPath + '   bundleVer=' + um.bundleVer); console.log('  manifest  ' + um.mtimeStr) }
+  if (um) { console.log('  Menu      ' + um.menu); console.log('  MainPath  ' + um.mainPath + '   bundleVer=' + um.bundleVer) }
 
-  hr('源码侧 targets/cep')
-  if (um) { console.log('  MainPath  ' + um.mainPath + '   bundleVer=' + um.bundleVer); console.log('  manifest  ' + um.mtimeStr) }
+  hr('源码侧 targets/cep（生产 manifest，永不被 dev 改写）')
+  if (srcm) { console.log('  ID        ' + srcm.bundleId); console.log('  MainPath  ' + srcm.mainPath + '   bundleVer=' + srcm.bundleVer) }
 
-  hr('判定：AE 会加载')
-  console.log('  ⇒ ' + verdict.label)
-  console.log('  ' + verdict.reason)
+  hr('判定：AE 扩展菜单')
+  if (system.kind !== 'missing') console.log('  ⇒ 菜单「' + EXT_ID + '」= 系统级真实版（独立条目）')
+  if (user.kind !== 'missing') console.log('  ⇒ 菜单「io.github.isparta-next · DEV」= 用户级开发位（独立条目）')
+  if (system.kind === 'missing' && user.kind === 'missing') console.log('  ⇒ 两份都不存在，AE 不会出现 iSparta 扩展')
   console.log('')
-  console.log('  提示：判断加载来源请看这里或 bug 行为，不要看面板标题的版本号（会漂移）。')
+  console.log('  两个 ID 各自独立加载、互不竞争；dev 加载失败不影响真实版。')
+  console.log('  判断加载来源看 status 或 bug 行为，不要看面板标题版本号（会漂移）。')
   console.log('')
 }
 
@@ -170,41 +189,20 @@ function fail (msg) { console.error('  ✗ ' + msg); process.exitCode = 1 }
 
 function cmdDev () {
   if (process.platform !== 'win32') { fail('本脚本仅支持 Windows'); return }
-  const user = linkInfo(USER_EXT)
-  const system = linkInfo(SYSTEM_EXT)
 
-  // 守卫 1：用户级若已是 junction 且指向源码 → 幂等，直接进入起服务
+  const user = linkInfo(USER_EXT)
+  // 守卫：开发位若存在但不是「本脚本建的真实目录形态」（如旧的 junction 或残留实体），拒绝盲目覆盖
   if (user.kind === 'junction') {
-    const t = path.resolve(user.target || '')
-    const src = path.resolve(SOURCE)
-    if (t.toLowerCase() === src.toLowerCase()) {
-      console.log('  · 用户级 junction 已指向源码，跳过建链')
-    } else {
-      fail('用户级已存在 junction，但指向别处：' + (user.target || '(未知)') + '\n    请先人工确认后手动删除，本脚本不覆盖。')
-      return
-    }
-  } else if (user.kind === 'dir') {
-    fail('用户级存在实体目录（非 junction），拒绝覆盖：' + USER_EXT + '\n    这通常是要保留的副本，请先人工处理。')
+    fail('开发位路径存在 junction（疑似旧方案残留）：' + USER_EXT +
+      '\n    请先跑 node scripts/dev/cep-mode.js restore，再重试。')
     return
-  } else if (user.kind === 'other') {
-    fail('用户级路径存在但形态异常，拒绝覆盖：' + USER_EXT)
-    return
-  } else {
-    // 守卫 2：系统级如果也在，必须提醒（同 ID 共存期间禁更新 NSIS）
-    if (system.kind !== 'missing') {
-      console.log('  ! 检测到系统级真实版仍在。开发挂载存在期间：')
-      console.log('    · 不要点「检查更新」或跑一体安装（NSIS 会因同 ID 双副本冲突）')
-      console.log('    · 收工务必跑 restore 删 junction 后再更新')
-    }
-    fs.mkdirSync(path.dirname(USER_EXT), { recursive: true })
-    // junction 用 type 'junction'，无需管理员权限
-    fs.symlinkSync(SOURCE, USER_EXT, 'junction')
-    console.log('  ✓ 已建 junction: ' + USER_EXT + ' → ' + SOURCE)
   }
 
-  console.log('  · 现在切 manifest 到 dev-hmr.html 并启动 HMR（8082）…')
+  stageDevBundle()
+  console.log('  · 起 HMR 服务（:8082，serve:cep 不改源码 manifest）…')
   console.log('  · CEP 无 Ctrl+R：改完 src/** 自动热更；刷新面板 = 关面板再开')
-  const child = spawnTool(npmCmd, ['run', 'dev:cep'], { cwd: ROOT, stdio: 'inherit', env: process.env })
+  console.log('  · AE 菜单里新增独立条目「io.github.isparta-next · DEV」，与真实版共存')
+  const child = spawnTool(npmCmd, ['run', 'serve:cep'], { cwd: ROOT, stdio: 'inherit', env: process.env })
   child.on('exit', function (code) { process.exitCode = code || 0 })
 }
 
@@ -212,44 +210,46 @@ function cmdRestore () {
   if (process.platform !== 'win32') { fail('本脚本仅支持 Windows'); return }
   const user = linkInfo(USER_EXT)
 
-  // 1) 先把 manifest 复位（MainPath → ui/index.html）
-  console.log('  · 复位 manifest MainPath → ./ui/index.html')
-  const child = spawnTool(npmCmd, ['run', 'dev:cep:off'], { cwd: ROOT, stdio: 'inherit', env: process.env })
-  child.on('exit', function (code) {
-    if (code) { fail('dev:cep:off 失败，未删 junction，请人工排查'); process.exitCode = code; return }
-
-    // 2) 关键：删 junction —— 只 off 不删等于没切回（CEP 仍读用户级）
-    if (user.kind === 'junction') {
-      try {
-        fs.unlinkSync(USER_EXT)
-        console.log('  ✓ 已删除用户级 junction：' + USER_EXT)
-      } catch (e) { fail('删 junction 失败：' + e.message + '\n    请手动删除：' + USER_EXT); return }
-    } else if (user.kind === 'missing') {
-      console.log('  · 用户级本就无副本，无需删除')
-    } else {
-      fail('用户级形态为 ' + user.kind + '（非 junction），为安全起见未删除，请人工确认：' + USER_EXT)
+  if (user.kind === 'missing') {
+    console.log('  · 开发位本就不存在，无需删除')
+  } else if (user.kind === 'junction') {
+    fail('开发位是 junction（旧方案残留），按铁律不自动删除；请人工确认后删除：' + USER_EXT)
+    return
+  } else {
+    // 删整个开发位真实目录：先删内部 junction，再递归删目录，避免误删 junction 指向的源码
+    try {
+      for (const name of LINK_DIRS) {
+        const p = path.join(USER_EXT, name)
+        const info = linkInfo(p)
+        if (info.kind === 'junction') fs.unlinkSync(p)
+      }
+      fs.rmSync(USER_EXT, { recursive: true, force: true })
+      console.log('  ✓ 已删除开发位目录：' + USER_EXT)
+    } catch (e) {
+      fail('删开发位失败：' + e.message + '\n    请手动删除：' + USER_EXT)
       return
     }
+  }
 
-    hr('完成')
-    console.log('  当前 AE 应回到系统级真实版（3.10.1）。')
-    console.log('  → 请在 AE 里关面板再开一次以生效。')
-    console.log('  → 之后可正常点「检查更新」拉取新版。')
-    console.log('')
-  })
+  hr('完成')
+  console.log('  系统级真实版（' + EXT_ID + '）全程未被触碰，仍是日常版本。')
+  console.log('  源码 targets/cep/CSXS/manifest.xml 也未被改写。')
+  console.log('  → 请在 AE 里关面板再开一次（DEV 菜单项消失）。')
+  console.log('')
 }
 
 function usage () {
   console.log('')
-  console.log('  iSparta-next · CEP 模式切换（仅 Windows）')
+  console.log('  iSparta-next · CEP 模式切换 v2（独立 DEV ID，仅 Windows）')
   console.log('')
   console.log('  用法：node scripts/dev/cep-mode.js <status|dev|restore>')
   console.log('')
-  console.log('    status    只读：报告当前 CEP 会加载哪份（安全，随时可跑）')
-  console.log('    dev       切到开发版：建 junction + 改 MainPath + 起 HMR(:8082)')
-  console.log('    restore   切回真实版：删 junction + MainPath 复位（不动系统级）')
+  console.log('    status    只读：报告真实版 / 开发位两份扩展的状态')
+  console.log('    dev       建/刷新开发位（' + DEV_EXT_ID + '）+ 起 HMR(:8082)')
+  console.log('    restore   删整个开发位（不动系统级、不动源码 manifest）')
   console.log('')
-  console.log('  判断加载来源看 status 或 bug 行为，别看面板标题版本号（会漂移）。')
+  console.log('  真实版 ID: ' + EXT_ID + '    开发位 ID: ' + DEV_EXT_ID)
+  console.log('  两个 ID 各为独立菜单项、互不竞争；源码 manifest 永不改写。')
   console.log('')
 }
 
