@@ -48,6 +48,7 @@
   --is-track:rgba(232,240,230,.10);--is-hover:rgba(232,240,230,.05);
   --is-shadow:0 12px 40px rgba(0,0,0,.45);--is-shadow-lg:0 24px 64px rgba(0,0,0,.6);
   --is-glow-1:252,248,242;--is-glow-2:240,196,160;--is-glow-3:214,168,176;--is-glow-op:1;
+  --is-checker:rgba(255,255,255,.055);
 }
 .theme-light{
   color-scheme:light;
@@ -62,6 +63,7 @@
   --is-track:rgba(28,25,23,.09);--is-hover:rgba(28,25,23,.05);
   --is-shadow:0 10px 30px rgba(28,25,23,.08);--is-shadow-lg:0 22px 56px rgba(28,25,23,.18);
   --is-glow-1:255,253,249;--is-glow-2:248,222,194;--is-glow-3:228,208,220;--is-glow-op:.9;
+  --is-checker:rgba(28,25,23,.045);
   /* 亮色主题：六色取深调，保证浅底可读（与暗色一一对应） */
   --is-var-1:37,99,235;--is-var-2:21,128,61;--is-var-3:194,65,12;
   --is-var-4:109,40,217;--is-var-5:14,116,144;--is-var-6:190,24,93;
@@ -181,7 +183,11 @@ button{font-family:inherit;color:inherit}
 /* --- 右侧舞台 --- */
 .stage{
   position:relative;display:grid;place-items:center;overflow:auto;padding:var(--is-s-8);
+  /* 棋盘格 = 模拟桌面/透明底，让面板的 alpha 通道与光晕透出可见 */
   background:
+    conic-gradient(from 90deg at 50% 50%,
+      var(--is-checker) 0deg 90deg, transparent 90deg 180deg,
+      var(--is-checker) 180deg 270deg, transparent 270deg) 0 0/24px 24px,
     radial-gradient(720px 420px at 50% 8%,rgba(var(--is-accent-rgb),.07),transparent 70%),
     var(--is-bg);
 }
@@ -224,8 +230,10 @@ button{font-family:inherit;color:inherit}
    Onboarding.vue 自绘在面板内）。去掉模拟的 macOS 标题栏与外描边/投影，
    圆角由 frame 自己裁剪；设置按钮改成浮在面板内右上角。 */
 .frame{
-  position:relative;
-  background:var(--is-elevated);border:0;
+  position:relative;isolation:isolate;
+  /* alpha 通道：面板半透明，棋盘格舞台与光晕都能透出（对应真实窗 transparent:true） */
+  background:color-mix(in srgb,var(--is-elevated) 78%,transparent);
+  border:0;
   border-radius:var(--is-r-lg);box-shadow:none;
   display:flex;flex-direction:column;overflow:hidden;
   transition:width var(--is-dur-slow) var(--is-ease-out),height var(--is-dur-slow) var(--is-ease-out);
@@ -246,7 +254,7 @@ button{font-family:inherit;color:inherit}
 .tl,.tb-name{display:none}
 
 /* --- 进度点 --- */
-.dots{display:flex;gap:6px;justify-content:center;padding:var(--is-s-5) 0 var(--is-s-2)}
+.dots{position:relative;z-index:1;display:flex;gap:6px;justify-content:center;padding:var(--is-s-5) 0 var(--is-s-2)}
 .dots i{
   width:6px;height:6px;border-radius:var(--is-r-pill);background:var(--is-track);
   transition:width var(--is-dur-base) var(--is-ease-overshoot),background var(--is-dur-base) var(--is-ease-std);
@@ -289,10 +297,11 @@ button{font-family:inherit;color:inherit}
 .chip:hover{border-color:var(--is-border-hi);color:var(--is-text-2)}
 
 /* --- 页脚 --- */
+/* 底栏不再自成一条深色带：透明融入面板，光晕铺到窗口最下缘 */
 .foot{
+  position:relative;z-index:1;
   flex:0 0 52px;display:flex;align-items:center;justify-content:space-between;
-  padding:0 var(--is-s-5);border-top:1px solid var(--is-border);background:var(--is-panel);
-  border-radius:0 0 var(--is-r-lg) var(--is-r-lg);
+  padding:0 var(--is-s-5);border-top:0;background:transparent;
 }
 .foot .side{display:flex;gap:var(--is-s-2);align-items:center}
 .btn{
@@ -454,19 +463,20 @@ button{font-family:inherit;color:inherit}
    ============================================================================ */
 
 /* --- 全局光晕（mimo 同款：多层 radial-gradient + 大半径 blur + 缓慢漂移） ---
-   光斑挂在 .screen 层，铺满所有步骤；不参与 flex，绝对定位。三个光斑各自用
-   radial-gradient 从中心向外羽化到透明，容器叠 blur 收边，keyframes 只动 transform。
-   亮度分两档：欢迎步 .glow-full 满亮（配深色字压亮光核），其余步骤降档成柔光底
-   （否则裸文字/暗色模拟面板压在亮核上会失去对比）。关闭动效/reduce 时停住。 */
-.screen{isolation:isolate}
+   光斑挂在 .frame 层，铺满整个透明窗口（含顶部进度区与底部导航区）；不参与 flex，
+   绝对定位。三个光斑各自 radial-gradient 羽化到透明，容器叠 blur 收边，
+   keyframes 只动 transform。亮度分两档：欢迎步 .glow-full 满亮（配深色字压亮光核），
+   其余步骤降档成柔光底（否则裸文字/暗色模拟面板压在亮核上会失去对比）。
+   关闭动效/reduce 时停住。 */
 .glow-field{
   position:absolute;inset:-20%;z-index:0;pointer-events:none;
   filter:blur(34px) saturate(115%);
   opacity:var(--is-glow-dim,.42);
   transition:opacity var(--is-dur-slow) var(--is-ease-std);
 }
-.screen.glow-full .glow-field{opacity:1}
-/* 光晕在底层，所有步骤内容压在其上 */
+.frame.glow-full .glow-field{opacity:1}
+/* 光晕在底层，顶栏/内容/底栏都压在其上 */
+.screen{isolation:isolate;position:relative;z-index:1}
 .step{position:absolute;inset:0;z-index:1}
 .step[data-i="0"]{
   /* 欢迎页一屏铺满：光晕 inset:-20% 会撑出滚动条，这里直接裁掉 */
@@ -730,7 +740,7 @@ button{font-family:inherit;color:inherit}
   <!-- ==================== 舞台 ==================== -->
   <main class="stage">
 
-    <div class="frame" id="frame" data-runtime="desktop">
+    <div class="frame glow-full" id="frame" data-runtime="desktop">
 
       <!-- ==================== 控制台 ==================== -->
       <aside class="ctrl">
@@ -834,14 +844,15 @@ button{font-family:inherit;color:inherit}
         <i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i>
       </div>
 
-      <div class="screen glow-full">
+      <!-- 全局光晕：三枚径向渐变光斑 + blur + 缓慢漂移。
+           挂在面板层（而非内容区），铺满整个窗口包括顶部进度区与底部导航区，
+           面板半透明，光晕透出棋盘格舞台即 alpha 通道视觉。只渲染一份，
+           欢迎步 frame 加 glow-full 提亮到深字压亮光档，其余步骤降档成柔光底。 -->
+      <div class="glow-field" aria-hidden="true">
+        <i class="orb orb1"></i><i class="orb orb2"></i><i class="orb orb3"></i>
+      </div>
 
-        <!-- 全局光晕：三枚径向渐变光斑 + blur + 缓慢漂移，铺满所有步骤（明暗各一套色）。
-             放在 screen 层只渲染一份；欢迎步 JS 会加 glow-full 提亮到深字压亮光档，
-             其余步骤降档成柔光底，保证裸文字与深色模拟面板的对比。 -->
-        <div class="glow-field" aria-hidden="true">
-          <i class="orb orb1"></i><i class="orb orb2"></i><i class="orb orb3"></i>
-        </div>
+      <div class="screen">
 
         <!-- ---------- 1 欢迎 ---------- -->
         <section class="step on" data-i="0">
@@ -1547,7 +1558,7 @@ button{font-family:inherit;color:inherit}
   /* ------------------------------------------------------------------ 渲染 */
   function render () {
     /* 光晕亮度分档：欢迎步满亮（深字压亮光核），其余步骤降档成柔光底 */
-    frame.querySelector('.screen').classList.toggle('glow-full', cur === 0)
+    frame.classList.toggle('glow-full', cur === 0)
     steps.forEach(function (s, i) { s.classList.toggle('on', i === cur) })
     stepBtns.forEach(function (b, i) { b.classList.toggle('on', i === cur) })
     Array.prototype.slice.call(dots.children).forEach(function (d, i) {

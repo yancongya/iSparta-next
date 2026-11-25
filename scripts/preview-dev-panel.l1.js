@@ -21,7 +21,7 @@ const ok = (name, cond, extra) => {
 }
 
 /* 1. DOM 位置 */
-const frameAt = raw.indexOf('<div class="frame" id="frame"')
+const frameAt = raw.indexOf('<div class="frame glow-full" id="frame"')
 const ctrlAt = raw.indexOf('<aside class="ctrl">')
 const galleryAt = raw.indexOf('<div class="gallery" id="gallery"')
 const appEnd = raw.indexOf('<script>')
