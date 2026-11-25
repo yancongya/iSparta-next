@@ -47,6 +47,7 @@
   --is-text:#eef3ec;--is-text-2:rgba(238,243,236,.62);--is-text-3:rgba(238,243,236,.36);
   --is-track:rgba(232,240,230,.10);--is-hover:rgba(232,240,230,.05);
   --is-shadow:0 12px 40px rgba(0,0,0,.45);--is-shadow-lg:0 24px 64px rgba(0,0,0,.6);
+  --is-glow-1:252,248,242;--is-glow-2:240,196,160;--is-glow-3:214,168,176;--is-glow-op:1;
 }
 .theme-light{
   color-scheme:light;
@@ -60,6 +61,7 @@
   --is-text:#1c1917;--is-text-2:rgba(28,25,23,.62);--is-text-3:rgba(28,25,23,.38);
   --is-track:rgba(28,25,23,.09);--is-hover:rgba(28,25,23,.05);
   --is-shadow:0 10px 30px rgba(28,25,23,.08);--is-shadow-lg:0 22px 56px rgba(28,25,23,.18);
+  --is-glow-1:255,253,249;--is-glow-2:248,222,194;--is-glow-3:228,208,220;--is-glow-op:.9;
   /* 亮色主题：六色取深调，保证浅底可读（与暗色一一对应） */
   --is-var-1:37,99,235;--is-var-2:21,128,61;--is-var-3:194,65,12;
   --is-var-4:109,40,217;--is-var-5:14,116,144;--is-var-6:190,24,93;
@@ -401,6 +403,54 @@ button{font-family:inherit;color:inherit}
      --ink→--is-text   --muted→--is-text-2 --accent→--is-accent
    ============================================================================ */
 
+/* --- 欢迎页：透明渐变光晕（mimo 同款：多层 radial-gradient + 大半径 blur + 缓慢漂移） ---
+   作用域限定在欢迎步 data-i="0"；光斑铺在内容底层，不参与 flex，绝对定位。
+   三个光斑各自用 radial-gradient 从中心向外羽化到透明，容器再叠一层 blur 收边，
+   keyframes 只动 transform（位移/缩放），低开销。关闭动效/reduce 时停住落到静态构图。 */
+.step[data-i="0"]{
+  isolation:isolate;
+  /* 光核是亮色，文字/卡片改为深色系（与参考图"深字压亮光"一致）；
+     只在本步覆盖局部变量，不影响进度点/页脚/其他步骤 */
+  --is-accent:#3b2f27;--is-on-accent:#fbf6ed;--is-text:#2b2622;--is-text-2:#544a42;--is-text-3:#73675d;
+}
+.step[data-i="0"] .card{
+  background:rgba(255,255,255,.5);border-color:rgba(255,255,255,.65);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+}
+.step[data-i="0"] .card:hover{background:rgba(255,255,255,.68);border-color:rgba(255,255,255,.9)}
+.step[data-i="0"] .brand-name em{color:#7a5236}
+.glow-field{
+  position:absolute;inset:-20%;z-index:0;pointer-events:none;
+  filter:blur(34px) saturate(115%);
+}
+.glow-field .orb{
+  position:absolute;display:block;border-radius:50%;
+  opacity:var(--is-glow-op);will-change:transform;
+}
+.glow-field .orb1{
+  width:58%;height:74%;left:21%;top:2%;
+  background:radial-gradient(ellipse at center,rgba(var(--is-glow-1),1) 0%,rgba(var(--is-glow-1),.85) 30%,rgba(var(--is-glow-1),.34) 58%,transparent 78%);
+  animation:glow-drift1 18s var(--is-ease-std) infinite alternate;
+}
+.glow-field .orb2{
+  width:46%;height:56%;left:0%;top:40%;
+  background:radial-gradient(ellipse at center,rgba(var(--is-glow-2),.6) 0%,rgba(var(--is-glow-2),.24) 50%,transparent 76%);
+  animation:glow-drift2 22s var(--is-ease-std) infinite alternate;
+}
+.glow-field .orb3{
+  width:46%;height:54%;right:0%;top:8%;
+  background:radial-gradient(ellipse at center,rgba(var(--is-glow-3),.42) 0%,rgba(var(--is-glow-3),.16) 48%,transparent 74%);
+  animation:glow-drift3 26s var(--is-ease-std) infinite alternate;
+}
+@keyframes glow-drift1{0%{transform:translate3d(-4%,2%,0) scale(1)}100%{transform:translate3d(6%,-4%,0) scale(1.12)}}
+@keyframes glow-drift2{0%{transform:translate3d(3%,-5%,0) scale(1.06)}100%{transform:translate3d(-5%,4%,0) scale(.92)}}
+@keyframes glow-drift3{0%{transform:translate3d(-3%,3%,0) scale(.95)}100%{transform:translate3d(5%,-6%,0) scale(1.1)}}
+/* 内容层压在光晕之上 */
+.step[data-i="0"] > :not(.glow-field){position:relative;z-index:1}
+/* 关闭动效 / reduce：光斑停住，保留静态柔光构图 */
+.no-motion .glow-field .orb{animation:none!important}
+@media (prefers-reduced-motion:reduce){.glow-field .orb{animation:none!important}}
+
 /* --- 欢迎：项目 logo + 字标 --- */
 .demo--brand{max-width:132px}
 .brand-name{
@@ -729,6 +779,10 @@ button{font-family:inherit;color:inherit}
 
         <!-- ---------- 1 欢迎 ---------- -->
         <section class="step on" data-i="0">
+          <!-- 透明渐变光晕：三枚径向渐变光斑 + blur + 缓慢漂移，明暗各一套色 -->
+          <div class="glow-field" aria-hidden="true">
+            <i class="orb orb1"></i><i class="orb orb2"></i><i class="orb orb3"></i>
+          </div>
           <!-- 项目 logo：与 public/icons/icon-brand.svg 同源几何，色值走 token -->
           <svg class="demo demo--brand" viewBox="0 0 132 132" role="img" aria-label="iSparta-next">
             <circle cx="66" cy="66" r="54" fill="none" stroke="var(--is-border-strong)" stroke-width="1.5" opacity=".5"/>
