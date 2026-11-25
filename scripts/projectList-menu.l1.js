@@ -64,6 +64,22 @@ async function main () {
   assert(/openFolder \(e\)/.test(vue) && /e\.ctrlKey \|\| e\.metaKey/.test(vue) && /@click="openFolder\(\$event\)"/.test(vue),
     '导入按钮须为单按钮 + Ctrl/⌘ 修饰键分流（目录/文件），跨平台一致')
   assert(/\.side__btns \.iconbtn \{[\s\S]*?border-color: transparent[\s\S]*?background: transparent/.test(scss), '任务条按钮须去框')
+
+  // B7 短列表空白交互：单击取消 / 双击全选 / 框选 / 外层兜底转发 + 两层 min-height 契约。
+  // mock 实测 9/9：.mod-list 占满滚动区、按钮下空白命中 .mod-list、单击取消、双击全选、
+  // 框选命中 3/5、样式失效（.mod-list 不占满）时外层 .ib-main__list 转发单击取消仍生效。
+  const home = fs.readFileSync(path.join(__dirname, '../src/ui-next/views/Home.vue'), 'utf8')
+  assert(/onBlankClick \(e\)/.test(vue) && /dispatch\('noneSelect'\)/.test(vue), 'B7: 单击空白须取消全部选中')
+  assert(/onBlankDblclick \(e\)/.test(vue) && /dispatch\('allSelect'\)/.test(vue), 'B7: 双击空白须全选')
+  assert(/onListMouseDown \(e\)/.test(vue) && /dispatch\('setMultiSelected'/.test(vue), 'B7: 空白拖拽框选须按索引集合写选中态')
+  assert(/bindHostBlankEvents \(\)/.test(vue) && /host\.addEventListener\('click', this\._onHostBlankClick\)/.test(vue) &&
+    /host\.addEventListener\('dblclick', this\._onHostBlankDblclick\)/.test(vue),
+    'B7: 外层壳须绑定 click/dblclick 转发兜底（样式失效时仍可取消/全选）')
+  assert(/outOfList[\s\S]{0,120}!t\.closest\('\.mod-list'\)/.test(vue), 'B7: 外层转发须排除列表内事件避免重复触发')
+  assert(/\.mod-list \{[\s\S]{0,120}min-height: 100%/.test(scss), 'B7: .mod-list 基础 min-height:100% 承接短列表空白')
+  assert(/\.ib-main__list > \* \{[\s\S]{0,80}min-height: 0/.test(home) &&
+    /\.ib-main__list > \.mod-list \{[\s\S]{0,80}min-height: 100%/.test(home),
+    'B7: 壳层 min-height:0 后须显式恢复 .mod-list 的 100%（短列表空白不被壳层吞掉）')
   for (const f of ['zh-cn', 'zh-tw', 'en-us']) {
     const loc = fs.readFileSync(path.join(__dirname, '../src/locales/' + f + '.js'), 'utf8')
     assert(/"openFile"/.test(loc) && /"importImageFilter"/.test(loc) && /"statePending"/.test(loc) && /"openFolderHint"/.test(loc), f + ' 缺 UI 文案 key')

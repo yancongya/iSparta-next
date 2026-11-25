@@ -373,7 +373,8 @@ CEP 侧按 A1/A2 挂 junction + PlayerDebugMode，`npm run dev:cep`。
 |----|------|------|
 | 日期 / AE 版本 | 2026-11-25 / 桌面版 | H3 CEP 未验（无 AE 工程） |
 | A3–A5 | ☐ 通过 / ☐ 失败 | |
-| B | ☐ | |
+| B | ☐ | B1–B6 桌面真机待验；B7 已 mock 通过（见下） |
+| **B7 短列表空白交互** | ☑ mock 通过 | 2026-11-25 chromium mock 实测 9/9：5 条短列表 `.mod-list` min-height:100% 占满滚动区（720=720）、按钮下方空白命中 `.mod-list`；单击空白→全取消、双击空白→全选、拖拽框选命中 3/5；模拟样式失效（`.mod-list` 不占满）时外层 `.ib-main__list` click 转发兜底仍能取消选中；Console 无新增报错。`projectList-menu.l1.js` 加 7 条守卫锁死单击/双击/框选/外层转发 + 两层 min-height 契约。真机未单独点，但属桌面纯 UI、mock 已覆盖全部观察点 |
 | C | ☐ | |
 | D | ☐ | |
 | **F1 防覆盖主线** | ☑ 桌面通过 | 2026-11-25 用户确认：H1 章节即「照 F1.1→F1.6 走一遍」，H 行已勾桌面通过——产物名 `cool_apng.png` → 点掉胶囊弹三按钮阻断（取消/直接覆盖/另存 cool_1.png）→ 另存得 `cool_1.png`；源文件 SHA256 全程不变；F1.6「目标已存在」约 8 秒自动消失、不阻断；走 F1.4 时控制台无 `path.extname is not a function`（bridge path 守卫已生效）。F1.5b 破坏性分支（真覆盖源文件）按手册只在副本上做，不纳入日常验收 |
