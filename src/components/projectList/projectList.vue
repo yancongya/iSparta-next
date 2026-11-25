@@ -353,6 +353,9 @@ function estimateStamp (project) {
 
 /* 封面播放的两个常量，放在组件外避免每次实例化都重建 */
 const THUMB_PLAY_MAX = 48
+// 第一行输入目录行内显示的字符上限；超出保留尾部（盘符/中间目录可省，末尾目录最有辨识度），
+// 前缀加 … 提示被截断。完整路径始终由 inputFullPathOf 走 hover 气泡给出。
+const INPUT_LABEL_MAX_CHARS = 28
 // 帧率缺省 / 为 0 / 负数 / 非数时的兜底。setInterval 收到 NaN 或 0
 // 会退化成近乎不停顿地触发，把渲染线程打满。
 const THUMB_PLAY_FALLBACK_FPS = 12
@@ -766,13 +769,22 @@ export default {
       var first = b.sourceFile || (list.length ? list[0] : '') || b.inputPath || ''
       return this.baseNameOf(first) || this.titleOf(project)
     },
-    // 第一行右侧路径：桌面显示输入源短路径；CEP 沿用输出短路径（ae-comp 假路径不当输入展示）
+    // 第一行左侧路径：桌面显示输入源，按字符数截断（超长保留尾部 + 前置 …）。
+    // 不再固定取末两段——之前 C:\isparta-verify\cool 只显示 isparta-verify/cool，
+    // 用户无法判断是不是完整路径。现在短路径完整显示，超长才省头部，hover 永远给全文。
+    // CEP 仍沿用输出短路径（ae-comp 假路径不当输入展示）。
     inputLabelOf (project) {
       if (!this.showOutPath) return this.pathLabelOf(project)
       var b = (project && project.basic) || {}
       var p = b.inputPath || (b.fileList && b.fileList[0]) || ''
       if (!this.isRealFsPath(p)) return this.pathLabelOf(project)
-      return this.shortPathOf(p)
+      return this.clipTailOf(String(p).replace(/\\/g, '/'), INPUT_LABEL_MAX_CHARS)
+    },
+    // 按字符数截断：长度在上限内原样返回；超出则保留尾部 N-1 字符 + 前置 …。
+    clipTailOf (text, max) {
+      var s = String(text || '')
+      if (s.length <= max) return s
+      return '…' + s.slice(s.length - (max - 1))
     },
     // 第一行路径 hover 全文：与 inputLabelOf 取值口径一致，返回未截断的输入源路径。
     // 之前这里误用「修改输出目录 + 输出路径」，与行内显示的输入路径对不上。
@@ -846,6 +858,13 @@ export default {
       return (project && project.basic && project.basic.outputPath) || ''
     },
     outNameOf (project) {
+      // 任务条输出名 = 实际落盘名。落盘保底改名（cool → cool_1）会经
+      // applyNameOverride 写回 basic.outputNameOverride（per-format），这里优先取：
+      // 有任一格式被保底改名就显示该实际名，避免任务条还停在旧名误导用户。
+      // 无改名时回退 displayNameOf（基础名 + 冲突格式后缀），与往常一致。
+      const overrides = (project && project.basic && project.basic.outputNameOverride) || {}
+      const actual = overrides.APNG || overrides.GIF || overrides.WEBP || ''
+      if (actual) return actual
       // 与设置面板输入框同一口径：基础名 +（开关启用且有源冲突时）冲突格式后缀。
       // 之前只读 options.outputName 基础名，导致输入框显示 cool_apng、任务条仍显示 cool。
       return displayNameOf(project)

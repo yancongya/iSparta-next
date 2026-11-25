@@ -80,6 +80,8 @@ build.status
 # 工作区本地临时产物（冒烟 / 预览素材，仅供过目，不入库）
 .workbuddy/tmp/
 .workbuddy/tmp-smoke/
+# Electron 离屏验收等脚本的隔离 userData（避免蹭用户正在运行的实例）
+.tmp/
 # CEP 构建残留：prepare:cep 从 public/bin 复制的新工具产物（不手工提交，CI 自行重建）
 /targets/cep/ui/bin/*/gifsicle*
 # playwright-cli 的截图与快照落点（本地核验用，不入库）

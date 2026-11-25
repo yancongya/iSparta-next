@@ -21,7 +21,7 @@
 3. **平台分支**：macOS 保持单按钮（原生对话框可同时选文件+目录）；Windows/Linux 拆并排两按钮「打开文件…」「打开目录…」。依据 Electron 官方文档：win/linux 下 `openFile + openDirectory` 互斥、静默降级为目录选择器。
 4. **同名警告三层**：
    - 导入时：命中碰撞 → 自动点亮后缀胶囊 + `notice.info` 轻提示（不打断）
-   - 点「开始」预检：目标 === 源文件（用户手动点掉胶囊才可能）→ `await notice.confirm()` 阻断确认「将覆盖源文件」，按钮 [仍要覆盖并开始]/[取消]；目标已存在但非源 → `notice.warning` 气泡（8s，不阻断，落运行日志）
+   - 点「开始」预检：目标 === 源文件（用户手动点掉胶囊才可能）→ `await notice.confirm()` 阻断确认「将覆盖源文件」，**三按钮**：[取消] / [直接覆盖源文件]（破坏性，danger 描边） / [另存为 xxx_1.png]（主按钮，推荐）；用户选「直接覆盖」= 授权产物写回源路径（源文件被替换），选「另存为」= 按 `fallbackRenameForSource` 加后缀另存（源文件不动）；目标已存在但非源 → `notice.warning` 气泡（8s，不阻断，落运行日志）
    - 代码保底：落盘前 `target === source` 强制改名（防未来新入口漏检）
 5. **任务条 UI 微调（用户 2026-11-20 追加）**：① 右侧图标按钮去掉方框；② 打开帧预览的 ▶ 按钮改眼睛图标；③ 封面右下角角标按任务类型区分：序列帧保留 `13F`，动图显示当前输出格式；④ 删除类型胶囊（`APNG`，信息已移到封面角标）；⑤ 标题与 📁 路径合并为一行（状态行安置见第 6 条）。详见 §8。
 6. **状态行安置（用户 2026-11-20 10:58 拍板）**：⑤ 标题+路径合并后，运行状态 `.item-proc` **独立占第二行**（即「标题+路径」行正下方），不并入标题行尾、不移到 summary 行。**空态必须固定行高、始终占位**（空态显示中性文案如「待转换」，或留白但占高度），避免任务开始/结束/失败时卡片高度跳动。状态行建议统一「小图标+文字」：运行中显示进度、成功绿色「转换成功！」、失败红色错误文案，颜色跟状态走（图标细节为附带建议，未单独拍板）。
@@ -212,3 +212,33 @@
 - 三语补 `openFile`/`importImageFilter`/`statePending`；`projectList-menu.l1.js` 增静态守卫（胶囊删除、同行/状态占位、eye、格式角标、拆按钮、去框、三语 key）。
 - 真浏览器 mockup（`:8081`）验收：类型胶囊 0、标题/路径 top 61/63 同行、状态「待转换」min-height 15px、角标 `APNG`、右侧按钮 border/background 均 transparent、两个导入按钮同排 top=611；预览按钮 SVG 为 eye。CEP 构建/lint/全量 L1 绿。
 - **坑**：`editOptionsAt` 原用 `_.extend` 写任务 options，Vue 2 对「原任务不存在的后加字段」不触发依赖更新 → 后缀胶囊点后输出名变了但点亮态不刷。三处 options mutation 统一改 `Vue.set` 逐键写入。
+
+## 13. 覆盖确认改为三选（2026-11-24，用户反馈：不该只有「仍要覆盖」一条路）
+- **反馈**：弹窗写「继续将直接覆盖原文件」+ 按钮「仍要覆盖并开始」/「取消」，但实际落盘走的是保底改名 `cool_1.png`——按钮语义与结果不符；用户要的是**在「直接覆盖」和「加后缀另存」之间选**。
+- **改动**：
+  - `notice.confirm` 扩三按钮：`cancelText`→resolve(false)、`altText`→resolve(altValue)（弹窗里渲染成 danger 描边）、`confirmText`→resolve(true)；`answerConfirm` 不再做 Boolean 归一，备选要回传自己的标识。
+  - `IsConfirmDialog.vue` 按 `state.altText` 条件渲染备选按钮（danger），窄屏（≤$bp-narrow）三按钮时主操作独占一行。
+  - `store.preflightOutputs` 改成三选：`'overwrite'` → 写 `basic.overwriteSource=true`（授权本次直接覆盖）；`true` → 按格式写 `basic.outputNameOverride`（另存为 `cool_1`，目标随之不再是源文件）；`false` → 不启动。
+  - `processor.safeTarget` 见到 `overwriteSource` 放行，不再保底改名。
+  - `outputConflict.classifyOutputConflicts` 的冲突行补 `format`（改名要按格式写槽位，否则 gif/webp 会被一起改名）；新增 `planSourceRename`（与落盘同一函数，保证弹窗承诺的文件名 == 实际落盘名）。
+  - 三语替换 `overwriteConfirm` → `overwriteDirect`/`overwriteRenameOne`/`overwriteRenameMany`，正文改为「请选择直接覆盖或加后缀另存」。
+- **授权只对本次有效**：每次预检先清掉上一轮的 `overwriteSource`，避免旧授权漏到下一次转换。
+- **验证**：新 `scripts/overwrite-choice.l1.js` 35 断言（双平台三选后果 + 三语 key）；`notice.l1.js` 扩到 34；`comp-output-name.l1.js` 69；全量 L1 18 脚本绿、lint 绿、CEP 守卫绿；真浏览器 mockup：宽屏三按钮（取消 text / 直接覆盖源文件 danger / 另存为 cool_1.png primary），窄屏 360 主操作独占一行（258px）不裁切，点 danger 实测回传 `'overwrite'`。
+
+## 14. 桌面真机崩 `path.extname is not a function`（2026-11-24，用户桌面版报错）
+- **现象**：桌面版点「开始」直接抛 `TypeError: path.extname is not a function`（栈：`outputConflict.js:73` → `planSourceRename` → `store/index.js:611`）。浏览器 mock 不复现。
+- **根因**：renderer 侧 `path` 来自 preload / cep-bridge / mock-bridge 三套 bridge，**方法面只有 `join / dirname / basename / sep`**（契约 `docs/BRIDGE.md` §2.3）。§13 新增的 `planSourceRename` 与 `processor.safeTarget` 用了 `path.extname` 取扩展名 → 真机必炸。
+  - **为什么三层都没拦住**：① 浏览器 mock 的 `store.preflightOutputs` 因 `isMockEnv()` 短路了覆盖预检，**根本走不到** `planSourceRename`；② L1 沙箱注入的是真 node `path`（自带 extname），把越界调用**掩盖成绿灯**；③ `path.basename(p, path.extname(p))` 这种写法看起来完全合法。
+- **改动**：
+  - 新增 `src/util/pathUtil.js` 的 `basenameNoExt()`：纯字符串实现（`/` 与 `\` 都认），语义与 node 的 `path.basename(p, path.extname(p))` 一致；**不扩 bridge 契约**（三套 bridge + 文档要同步改，收益远小于成本）。
+  - `outputConflict.planSourceRename` 与 `processor.safeTarget` 改用 `basenameNoExt()`。
+  - 新增 `scripts/bridge-path.js`：把 node path 裁成 bridge 形状，供 L1 沙箱注入 —— 沙箱必须忠实反映 bridge 面，否则会继续掩盖越界调用。
+  - `scripts/overwrite-choice.l1.js` / `scripts/comp-output-name.l1.js` 改注入 bridge 形状 path。
+  - 新增 `scripts/bridge-path-surface.l1.js`（7 断言）：比对 preload / mock-bridge / cep-bridge / node-env 四处 path 面与 `BRIDGE.md` §2.3 表格一致；扫描所有「从 node-env 引 path」的 renderer 文件，禁止调用面外方法（精确报文件+行号）；禁止 `node-env.path` 代理面外方法。
+  - 新增 `scripts/dev/verify-bridge-path.cjs`：真 Electron + 真 preload + 真 ipcMain handler，离屏断言 bridge 面与 `basenameNoExt` 语义（8 断言）。
+- **验证**：
+  - 真 Electron（`unset ELECTRON_RUN_AS_NODE && npx electron scripts/dev/verify-bridge-path.cjs`）：8/8 通过，实测 `hasExtname: false`、keys = `basename/dirname/join/sep`；`basenameNoExt` 8 组用例与 node 语义全一致。
+  - **反向复现**：真 bridge 下调 `p.extname('a.png')` → 抛 `p.extname is not a function`，与用户报错形态一致，确认根因无误。
+  - 守卫回归验证：临时把 `outputConflict.js` 改回 `path.extname`，`bridge-path-surface.l1.js` 立刻 FAIL 并报 `src/util/outputConflict.js:74 extname`；改回即绿。
+  - 全量 L1 18 支绿、lint 绿、CEP 守卫绿；浏览器 mock（:8081）实测 bridge path 同样只有 4 个方法、回写链路正常。
+- **教训（已写入 AGENTS.md §8.6 反例二）**：浏览器 mock 与 L1 沙箱**都不是 renderer 能力的真实替身**；凡涉及 bridge 能力 / 宿主环境 / 真实文件系统行为的逻辑，必须用真 Electron 验一次。

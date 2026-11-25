@@ -4,6 +4,7 @@ const fs = require('fs')
 const path = require('path')
 const vm = require('vm')
 const _ = require('lodash')
+const { bridgePath } = require('./bridge-path')
 const read = (file) => fs.readFileSync(path.join(__dirname, '..', file), 'utf8')
 const moduleBody = (file) => read(file)
   .replace(/^import .*$/gm, '')
@@ -26,9 +27,13 @@ for (const [platform, paths, projectPath] of [
   const saved = {}
   const storage = { getItem: (key) => key === 'globalSetting' ? JSON.stringify(globals) : saved[key] }
   const state = { items: [] }
-  const context = vm.createContext({ _, path: paths, npath: paths, window: { storage }, storage, state,
+  // 注入 bridge 形状的 path（只有 join/dirname/basename/sep），与真机 renderer 一致：
+  // 越界调用（如 path.extname）在沙箱里就会炸出来，而不是等真机才发现。
+  // 详见 scripts/bridge-path.js。
+  const bp = bridgePath(paths)
+  const context = vm.createContext({ _, path: bp, npath: bp, window: { storage }, storage, state,
     hostAdapter: { supportsCompImport: true }, registerHostSource: () => {}, persistItems: () => {}, console })
-  for (const file of ['src/util/tokenizeName.js', 'src/util/outputPath.js', 'src/util/outputName.js', 'src/util/outputConflict.js', 'src/cep/comp-source.js']) {
+  for (const file of ['src/util/tokenizeName.js', 'src/util/outputPath.js', 'src/util/outputName.js', 'src/util/pathUtil.js', 'src/util/outputConflict.js', 'src/cep/comp-source.js']) {
     vm.runInContext(moduleBody(file), context, { filename: file })
   }
   vm.runInContext('this.sync = ({' + storeSource.slice(syncStart, syncEnd) + '}).syncCompTasks', context)
@@ -104,6 +109,38 @@ for (const [platform, paths, projectPath] of [
     const b = context.classifyOutputConflicts(existingHit, () => true)
     assert.strictEqual(b.source.length, 0)
     assert.strictEqual(b.existing.length, 1)
+  })
+  // ---- 冲突行必须带 format：改名要按格式写进对应槽位，否则 gif/webp 会被一起改名 ----
+  check(platform + ' conflict rows carry the format', () => {
+    const hit = [{
+      basic: { outputPath: dir, fileList: [src] },
+      options: { outputName: 'cool', outputFormat: ['APNG', 'GIF', 'WEBP'] }
+    }]
+    const r = context.classifyOutputConflicts(hit, () => false)
+    assert.strictEqual(r.source.length, 1)
+    assert.strictEqual(r.source[0].format, 'APNG')
+  })
+  // ---- 预检的「加后缀另存」计划必须与落盘保底同一结果（cool.png → cool_1.png）----
+  check(platform + ' planSourceRename matches fallback rename', () => {
+    const item = {
+      basic: { outputPath: dir, fileList: [src] },
+      options: { outputName: 'cool', outputFormat: ['APNG'] }
+    }
+    const r = context.classifyOutputConflicts([item], () => false)
+    const plan = context.planSourceRename(r.source)
+    assert.strictEqual(plan.length, 1)
+    assert.strictEqual(plan[0].changed, true)
+    assert.strictEqual(plan[0].renamed, paths.join(dir, 'cool_1.png'))
+    assert.strictEqual(plan[0].name, 'cool_1')
+    assert.strictEqual(plan[0].file, 'cool_1.png')
+    assert.strictEqual(plan[0].format, 'APNG')
+    // 不撞源的目标保持原样（changed=false）
+    const okItem = {
+      basic: { outputPath: dir, fileList: [paths.join(dir, 'other.png')] },
+      options: { outputName: 'cool', outputFormat: ['APNG'] }
+    }
+    const okRows = context.classifyOutputConflicts([okItem], () => false)
+    assert.strictEqual(context.planSourceRename(okRows.source).length, 0)
   })
   // ---- 冲突后缀只作用于撞源的那一个格式，其余格式保持基础名 ----
   check(platform + ' conflict suffix applies only to the conflicting format', () => {
@@ -184,6 +221,31 @@ check('store preflight action uses confirm + warning', () => {
   assert(/notice\.confirm/.test(body) && /notice\.warning/.test(body))
   assert(/classifyOutputConflicts/.test(body))
 })
+// ---- 覆盖源文件必须是三选（覆盖 / 另存 / 取消），不能是「仍要覆盖」一条路 ----
+check('preflight offers overwrite vs rename choice', () => {
+  const store = read('src/store/index.js')
+  const start = store.indexOf('  async preflightOutputs (context, items) {')
+  const body = store.slice(start, store.indexOf('\n  },', start))
+  assert(/altText: i18n\.t\('overwriteDirect'\)/.test(body), '缺少破坏性备选按钮文案')
+  assert(/altValue: 'overwrite'/.test(body), '缺少 overwrite 标识')
+  assert(/choice === 'overwrite'/.test(body), '未处理直接覆盖分支')
+  assert(/choice === true/.test(body), '未处理加后缀另存分支')
+  assert(/dispatch\('setSourceOverwrite'/.test(body), '未写入覆盖授权标记')
+  assert(/dispatch\('applyNameOverride'/.test(body), '未写入另存的实际产物名')
+  assert(!/overwriteConfirm/.test(body), '仍在用旧的「仍要覆盖并开始」单按钮语义')
+})
+check('processor honours the overwrite authorisation', () => {
+  const proc = read('src/util/processor/index.js')
+  const idx = proc.indexOf('const safeTarget = function (target, format) {')
+  assert(idx >= 0)
+  const body = proc.slice(idx, proc.indexOf('return renamed', idx))
+  assert(/overwriteSource/.test(body), '落盘保底未尊重「允许覆盖」标记')
+})
+check('the overwrite flag is per-task and cleared each run', () => {
+  const store = read('src/store/index.js')
+  assert(/ITEMS_SET_SOURCE_OVERWRITE/.test(store))
+  assert(/Vue\.set\(target\.basic, 'overwriteSource', payload\.value !== false\)/.test(store))
+})
 check('both start entries wait for preflight', () => {
   const sortBar = read('src/components/sortBar/sortBar.vue')
   const setting = read('src/components/setting/setting.vue')
@@ -210,7 +272,9 @@ check('setting shows suffix toggle in name row with dynamic display binding', ()
   // 任务条底行输出名必须与输入框同一口径（displayNameOf），否则输入框 cool_apng / 任务条 cool
   const list = read('src/components/projectList/projectList.vue')
   assert(/import \{ displayNameOf \}/.test(list))
-  assert(/outNameOf \(project\)[\s\S]{0,200}displayNameOf\(project\)/.test(list))
+  assert(/outNameOf \(project\)[\s\S]{0,900}displayNameOf\(project\)/.test(list))
+  // 落盘保底改名（cool → cool_1）后，任务条要显示实际产物名：优先取 basic.outputNameOverride
+  assert(/outNameOf \(project\)[\s\S]{0,900}outputNameOverride/.test(list))
   // 任务条显示口径：左侧原文件名/序列帧胶囊、第一行输入路径、第三行真实路径↔变量 hover 切换
   // 序列帧判定抽成 isSeqLike，模板据此渲染胶囊（不能把标识塞进 sourceNameOf 当文件名）
   assert(/isSeqLike \(project\)/.test(list))

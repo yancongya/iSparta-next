@@ -29,6 +29,12 @@ export const ITEMS_EDIT_MULTI_OPTIONS = 'ITEMS_EDIT_MULTI_OPTIONS'
 // 设置压缩的进度
 export const ITEMS_EDIT_PROCESS = 'ITEMS_EDIT_PROCESS'
 
+// 落盘保底改名回写（转换中 locked，绕过锁；按每项 index 写 per-format 的实际产物名）
+export const ITEMS_APPLY_NAME_OVERRIDE = 'ITEMS_APPLY_NAME_OVERRIDE'
+
+// 预检里用户明确选择「直接覆盖源文件」：标记该任务允许覆盖，processor 的保底改名放行
+export const ITEMS_SET_SOURCE_OVERWRITE = 'ITEMS_SET_SOURCE_OVERWRITE'
+
 // 设置多选
 export const MULTI_SELECT = 'MULTI_SELECT'
 

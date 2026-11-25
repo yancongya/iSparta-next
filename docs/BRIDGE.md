@@ -59,6 +59,14 @@ processor/*  →  node-env.js（稳定导出）  →  window.ispartaAPI（preloa
 | basename | `(p: string, ext?: string) => string` |
 | sep | `string`（getter） |
 
+> **renderer 侧只能用上表这 4 个方法。** 三套 bridge（preload / cep-bridge /
+> mock-bridge）方法面完全一致，缺的方法在真机上直接抛
+> `path.xxx is not a function`（如 `extname` / `resolve` / `relative`）。
+> 需要「去扩展名的文件名」用 `src/util/pathUtil.js` 的 `basenameNoExt()`
+> （纯字符串实现，语义与 node 的 `path.basename(p, path.extname(p))` 一致）。
+> 守卫：`node scripts\bridge-path-surface.l1.js` 扫描 renderer 越界调用 + 比对三套
+> bridge 与本表的一致性；越界调用会精确报出文件与行号。
+
 ### 2.4 `os`
 
 | 方法 | 签名 | 说明 |

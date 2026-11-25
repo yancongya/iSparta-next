@@ -8,7 +8,8 @@
  *   notice.error('解析失败', err.message)
  *   const ok = await notice.confirm({ title: '删除全部？', message: '...' })
  *
- * 需要在界面里挂一次 <is-notice-host>（见 Home.vue）。
+ * 需要在界面里挂一次 <is-notice-host>（见 Home.vue）承载短提示；
+ * confirm 询问是独立的模态弹窗 <is-confirm-dialog>，不进 toast 队列（见文件末尾 confirmState）。
  */
 
 import Vue from 'vue'
@@ -21,14 +22,13 @@ const ICONS = {
   // 用已注册图标名（原 check-circle / x-circle 未在 icons.js 注册，图标位一直是空白）
   success: 'check',
   warning: 'alert',
-  error: 'close',
-  confirm: 'question'
+  error: 'close'
+  // confirm 不再走 toast：它是独立模态弹窗，图标由弹窗自己渲染
 }
 
-// toast 是「一行长条」短提示：过长的错误堆栈/路径会撑爆胶囊布局。
-// 源头统一截断，hover 展开看到的也是有限文本；confirm 的路径列表放宽上限。
+// toast 是「一行长条」短提示：过长的错误堆栈/路径会撑爆胶囊布局，源头统一截断。
+// 询问确认走模态弹窗、文本不截断，不受此上限约束。
 const MAX_TEXT = 180
-const MAX_TEXT_CONFIRM = 600
 function clampText (value, limit) {
   const s = String(value == null ? '' : value)
   return s.length > limit ? s.slice(0, limit) + '…' : s
@@ -40,8 +40,7 @@ const DEFAULT_DURATION = {
   // 告警/错误文案多为两行（标题 + 原因），原来 4.6s / 6s 偏短，
   // 用户来不及读完就消失（issue #2）。延长到 8s / 10s；悬停仍可冻结倒计时。
   warning: 8000,
-  error: 10000,
-  confirm: 0
+  error: 10000
 }
 
 let seq = 0
@@ -62,11 +61,10 @@ function push (options) {
     type,
     icon: opts.icon || ICONS[type],
     title: clampText(opts.title || '', 80),
-    text: clampText(opts.text || opts.message || '', type === 'confirm' ? MAX_TEXT_CONFIRM : MAX_TEXT),
+    text: clampText(opts.text || opts.message || '', MAX_TEXT),
     // 0 表示不自动关闭
     duration: opts.duration === undefined ? (DEFAULT_DURATION[type] || 0) : opts.duration,
     closable: opts.closable !== false,
-    action: opts.action || null,
     // 悬停冻结标记，需在创建时声明才能被 Vue 2 观测
     paused: false
   }
@@ -157,34 +155,62 @@ const notice = {
     }
   },
 
-  /** Promise 化的确认框，替代 window.confirm */
+  /**
+   * Promise 化的询问确认，替代 window.confirm。
+   * 走独立的模态弹窗（<is-confirm-dialog> 读 confirmState），不进 toast 队列——
+   * 阻断确认需要遮罩 + 居中面板 + 完整多行路径，长条 toast 承载不了。
+   * 同一时刻只允许一个询问：新 confirm 覆盖旧的（旧 Promise 以 false 收尾，安全方向）。
+   *
+   * 三按钮形态（用于「破坏性操作」类问题，如覆盖源文件）：
+   *   cancelText  → 取消，resolve(false)
+   *   altText     → 破坏性备选（弹窗里渲染成 danger 描边），resolve(altValue)
+   *   confirmText → 推荐主操作，resolve(true)
+   * 只给 confirmText/cancelText 时退化为经典的是/否两按钮。
+   */
   confirm (options) {
     const opts = typeof options === 'string' ? { title: options } : (options || {})
+    // 若上一个 confirm 还没答，先以「取消」收尾，避免悬挂 Promise
+    if (confirmState.resolve) confirmState.resolve(false)
     return new Promise((resolve) => {
-      let settled = false
-      const finish = (val) => {
-        if (settled) return
-        settled = true
-        close(id)
-        resolve(val)
-      }
-      const id = push({
-        type: 'confirm',
-        title: opts.title || '',
-        text: opts.text || opts.message || '',
-        duration: 0,
-        closable: opts.closable !== false,
-        action: {
-          confirmText: opts.confirmText,
-          cancelText: opts.cancelText,
-          onConfirm: () => finish(true),
-          onCancel: () => finish(false)
-        }
-      })
+      confirmState.resolve = resolve
+      confirmState.title = opts.title || ''
+      confirmState.text = opts.text || opts.message || ''
+      confirmState.confirmText = opts.confirmText || ''
+      confirmState.cancelText = opts.cancelText || ''
+      confirmState.altText = opts.altText || ''
+      confirmState.altValue = opts.altValue === undefined ? true : opts.altValue
+      confirmState.visible = true
     })
   },
 
   close
+}
+
+/**
+ * 询问弹窗的响应式状态（Vue.observable 在 main 里已随模块初始化）。
+ * 独立导出供 <is-confirm-dialog> 渲染；答案通过 confirmState.resolve 回填 Promise。
+ */
+export const confirmState = Vue.observable({
+  visible: false,
+  title: '',
+  text: '',
+  confirmText: '',
+  cancelText: '',
+  // 破坏性备选按钮（可选）：altText 有值才渲染，点了 resolve(altValue)
+  altText: '',
+  altValue: true,
+  resolve: null
+})
+
+/** 弹窗按钮/关闭回调：统一走这里，保证 Promise 只 settle 一次 */
+export function answerConfirm (value) {
+  const resolve = confirmState.resolve
+  if (!resolve) return
+  confirmState.resolve = null
+  confirmState.visible = false
+  // 不做 Boolean 归一：备选按钮要回传自己的标识（如 'overwrite'），
+  // 调用方按标识区分「直接覆盖」与「加后缀另存」两种不同后果。
+  resolve(value === undefined ? false : value)
 }
 
 export default notice

@@ -10,7 +10,7 @@ import { resolveOutputPath, SEQ_DIR_DEFAULT_TEMPLATE } from '../util/outputPath'
 import { buildInitialOutputName } from '../util/tokenizeName'
 import { existingOutputFilesOf } from '../util/task-output'
 import { applyGlobalCompressionPatch } from '../util/globalPrefs'
-import { classifyOutputConflicts } from '../util/outputConflict'
+import { classifyOutputConflicts, planSourceRename } from '../util/outputConflict'
 import appLog from '../ui-next/log'
 import notice from '../ui-next/notice'
 import i18n from '../i18n'
@@ -133,6 +133,21 @@ const persistItems = _.debounce(function () {
   var payload = JSON.stringify(state.items)
   storage.setItem('iSparta-item', payload)
 }, 200)
+
+/**
+ * 定位 payload 指向的任务对象：
+ * 优先按对象身份（state.items.indexOf）——预检拿到的就是 store 里的原对象，
+ * 身份定位不受「选中项内序号」口径影响；没有对象时回退到选中项内序号（processor 回写用的口径）。
+ */
+function resolveTargetItem (state, payload) {
+  if (!payload) return null
+  if (payload.item) {
+    const i = state.items.indexOf(payload.item)
+    if (i >= 0) return state.items[i]
+  }
+  const selectedItem = _.filter(state.items, { isSelected: true })
+  return (selectedItem && selectedItem[payload.index]) || null
+}
 
 
 // 旧版第一个输出预设是 {srcPath}/output（总在同级建 output 目录），现已改为直接
@@ -469,6 +484,27 @@ const mutations = {
       target.process.detail = ''
     }
   },
+  // 落盘保底改名回写：转换中 state.locked=true，常规 EDIT_BASIC 会被拒，
+  // 这里必须绕过锁。index 口径同 EDIT_PROCESS（选中项内序号），per-format 写入，
+  // 不污染共享 outputName（否则三个格式又一起变名）。Vue.set 保证任务条响应式刷新。
+  [types.ITEMS_APPLY_NAME_OVERRIDE](state, payload) {
+    const target = resolveTargetItem(state, payload)
+    if (!target) return
+    if (!target.basic) target.basic = {}
+    if (!target.basic.outputNameOverride) Vue.set(target.basic, 'outputNameOverride', {})
+    Vue.set(target.basic.outputNameOverride, payload.format, payload.name)
+    persistItems()
+  },
+  // 预检里用户明确选择「直接覆盖源文件」→ 标记该任务允许覆盖。
+  // processor 的落盘保底（fallbackRenameForSource）见到该标记就放行。
+  // 每次开始转换前 preflight 会先把上一轮的标记清掉，避免旧授权漏到下一次。
+  [types.ITEMS_SET_SOURCE_OVERWRITE](state, payload) {
+    const target = resolveTargetItem(state, payload)
+    if (!target) return
+    if (!target.basic) Vue.set(target, 'basic', {})
+    Vue.set(target.basic, 'overwriteSource', payload.value !== false)
+    persistItems()
+  },
   [types.SINGLE_SELECT](state, index) {
     if (state.locked) {
       return false
@@ -538,7 +574,8 @@ const actions = {
   },
   /**
    * 开始转换前的覆盖预检（桌面/CEP 同一入口）：
-   * 目标 === 源文件 → 阻断确认；目标已存在但非源 → 8s warning，不阻断。
+   * 目标 === 源文件 → 阻断询问（可选「直接覆盖」或「加后缀另存」）；
+   * 目标已存在但非源 → 8s warning，不阻断。
    * 返回 false 时调用方必须放弃本次启动。
    */
   async preflightOutputs (context, items) {
@@ -546,32 +583,71 @@ const actions = {
     // 而 mock 转换写的是内存模拟产物、不碰真实文件，这类覆盖告警是假阳性，直接放行。
     if (isMockEnv()) { return true }
     const list = (items && items.length) ? items : context.rootState.items
+    // 覆盖授权只对本次有效：先清掉上一轮留下的标记，避免用户这次选了「另存为」，
+    // 落盘时却仍被上一轮的「允许覆盖」放行。
+    list.forEach(function (item) {
+      if (item && item.basic && item.basic.overwriteSource) {
+        context.dispatch('setSourceOverwrite', { item: item, value: false })
+      }
+    })
     const conflicts = classifyOutputConflicts(list, function (file) {
       try { return fs.existsSync(file) } catch (e) { return false }
     })
+    const existsFile = function (file) {
+      try { return fs.existsSync(file) } catch (e) { return false }
+    }
+    // 改名另存后可能出现新的「目标已存在」（如上一轮已产出过 cool_1.png），
+    // 这类目标不在原始冲突分类里，要单独收集后一并提示。
+    const extraExisting = []
     const limit = 8
     const fmt = function (rows) {
       const paths = rows.slice(0, limit).map(function (r) { return r.path }).join('\n')
       return paths + (rows.length > limit ? '\n…' : '')
     }
     if (conflicts.source.length) {
-      const ok = await notice.confirm({
+      // 撞源的目标 → 保底改名目标（cool.png → cool_1.png）。
+      // 与落盘时 processor 用的是同一个 fallbackRenameForSource，
+      // 保证弹窗上承诺的文件名 == 真正落盘的文件名。
+      const plan = planSourceRename(conflicts.source)
+      const renamed = plan.filter(function (p) { return p.changed })
+      const renameCount = renamed.length || conflicts.source.length
+      const choice = await notice.confirm({
         title: i18n.t('noticeOverwriteSourceTitle'),
         text: i18n.t('noticeOverwriteSourceBody', {
           count: conflicts.source.length,
           paths: fmt(conflicts.source)
         }),
-        confirmText: i18n.t('overwriteConfirm'),
-        cancelText: i18n.t('cancel')
+        cancelText: i18n.t('cancel'),
+        // 破坏性备选：直接覆盖源文件（原文件就没了）
+        altText: i18n.t('overwriteDirect'),
+        altValue: 'overwrite',
+        // 主操作：加后缀另存（安全方向，保留原文件）
+        confirmText: renamed.length === 1
+          ? i18n.t('overwriteRenameOne', { name: renamed[0].file })
+          : i18n.t('overwriteRenameMany', { count: renameCount })
       })
-      if (!ok) return false
+      if (choice === 'overwrite') {
+        // 用户明确授权覆盖：标记后 processor 的落盘保底对该任务放行
+        conflicts.source.forEach(function (row) {
+          context.dispatch('setSourceOverwrite', { item: row.item, value: true })
+        })
+      } else if (choice === true) {
+        // 用户选择加后缀另存：按格式写入实际产物名，目标随之不再是源文件
+        renamed.forEach(function (p) {
+          context.dispatch('applyNameOverride', { item: p.item, format: p.format, name: p.name })
+          if (existsFile(p.renamed)) extraExisting.push({ item: p.item, path: p.renamed })
+        })
+      } else {
+        return false
+      }
     }
-    if (conflicts.existing.length) {
+    const existingRows = conflicts.existing.concat(extraExisting)
+    if (existingRows.length) {
       notice.warning(
         i18n.t('noticeOverwriteExistingTitle'),
         i18n.t('noticeOverwriteExistingBody', {
-          count: conflicts.existing.length,
-          paths: fmt(conflicts.existing)
+          count: existingRows.length,
+          paths: fmt(existingRows)
         })
       )
     }
@@ -794,6 +870,13 @@ const actions = {
   },
   editProcess(context, keyValue) {
     context.commit('ITEMS_EDIT_PROCESS', keyValue)
+  },
+  // 落盘保底改名（cool → cool_1）写回任务条，供输出名实时显示实际产物名
+  applyNameOverride(context, payload) {
+    context.commit('ITEMS_APPLY_NAME_OVERRIDE', payload)
+  },
+  setSourceOverwrite(context, payload) {
+    context.commit('ITEMS_SET_SOURCE_OVERWRITE', payload)
   },
   setSelected(context, index) {
     context.commit('SET_SELECTED', index)

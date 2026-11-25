@@ -9,6 +9,7 @@
   >
     <globalsetting></globalsetting>
     <is-notice-host></is-notice-host>
+    <is-confirm-dialog></is-confirm-dialog>
 
     <!-- 自绘顶栏（桌面 frameless）：品牌名 + 版本号 + 窗口按钮。
          ⚠ 空态工具按钮**不在这条顶栏里**：整条是 -webkit-app-region: drag 拖拽区，
@@ -334,6 +335,7 @@ import setting from '../../components/setting/setting.vue'
 import sortBar from '../../components/sortBar/sortBar.vue'
 import globalSetting from '../../components/globalSetting/globalSetting.vue'
 import IsNoticeHost from '../components/IsNoticeHost.vue'
+import IsConfirmDialog from '../components/IsConfirmDialog.vue'
 import IsWinBar from '../components/IsWinBar.vue'
 import IsLogPanel from '../components/IsLogPanel.vue'
 import IsUpdateDialog from '../components/IsUpdateDialog.vue'
@@ -393,6 +395,7 @@ export default {
     'sort-bar': sortBar,
     'globalsetting': globalSetting,
     'is-notice-host': IsNoticeHost,
+    'is-confirm-dialog': IsConfirmDialog,
     'is-win-bar': IsWinBar,
     'is-log-panel': IsLogPanel,
     'is-update-dialog': IsUpdateDialog,

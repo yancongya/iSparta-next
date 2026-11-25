@@ -16,14 +16,6 @@
         <div class="is-notice-item__body">
           <strong v-if="item.title" class="is-notice-item__title">{{ item.title }}</strong>
           <span v-if="item.text" class="is-notice-item__text">{{ item.text }}</span>
-          <div v-if="item.action" class="is-notice-item__actions">
-            <is-button size="sm" type="text" @click="item.action.onCancel()">
-              {{ item.action.cancelText || $t('cancel') }}
-            </is-button>
-            <is-button size="sm" type="primary" @click="item.action.onConfirm()">
-              {{ item.action.confirmText || $t('confrim') }}
-            </is-button>
-          </div>
         </div>
 
         <button
@@ -46,12 +38,11 @@
 
 <script>
 import IsIcon from './ui/IsIcon.vue'
-import IsButton from './ui/IsButton.vue'
 import notice from '../notice'
 
 export default {
   name: 'IsNoticeHost',
-  components: { IsIcon, IsButton },
+  components: { IsIcon },
   computed: {
     items () {
       return notice.state.items

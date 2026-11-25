@@ -18,6 +18,7 @@ import i18n from '../../i18n'
 import { sampleTimedFrameIndices } from '../frameRemap'
 import { outputFilesOf } from '../task-output'
 import { fallbackRenameForSource } from '../outputConflict'
+import { basenameNoExt } from '../pathUtil'
 import { outputNameFor } from '../outputName'
 
 function stat (label) {
@@ -357,6 +358,9 @@ function apng2other (item, store, locale) {
   // 后面会把 fileList[0] 换成临时 out.png，先留住真实源文件用于落盘保底比对
   const sourceFiles = ((item.basic && item.basic.fileList) || []).slice()
   const safeTarget = function (target, format) {
+    // 预检弹窗里用户明确选了「直接覆盖源文件」→ 尊重大胆选择，不再保底改名。
+    // 该标记由 store 在本次开始前写入，processor 拿到的是深拷贝，标记随之带过来。
+    if (item.basic && item.basic.overwriteSource) return target
     const renamed = fallbackRenameForSource(target, sourceFiles)
     if (renamed !== target) {
       appLog.warn(i18n.t('noticeFallbackRenameTitle'), i18n.t('noticeFallbackRenameBody', {
@@ -365,7 +369,13 @@ function apng2other (item, store, locale) {
       // 让后续 sizeGate / 产物复制按改名后的名字找文件，避免「落盘成功但找不到产物」。
       // 只记当前格式的覆盖名——不能写共享 outputName，否则三个格式又一起变名。
       if (!item.basic.outputNameOverride) { item.basic.outputNameOverride = {} }
-      item.basic.outputNameOverride[String(format || '').toUpperCase()] = path.basename(renamed, path.extname(renamed))
+      const finalName = basenameNoExt(renamed)
+      const fmt = String(format || '').toUpperCase()
+      item.basic.outputNameOverride[fmt] = finalName
+      // 回写 store：processor 用的是深拷贝，不回写则任务条输出名仍是旧值（cool），
+      // 与实际落盘产物（cool_1）不一致。用专用 action 绕过转换期的 locked。
+      // item.index 口径同 editProcess（选中项内序号），store 侧据此定位原任务。
+      store.dispatch('applyNameOverride', { index: item.index, format: fmt, name: finalName })
     }
     return renamed
   }

@@ -28,6 +28,9 @@ function stripImports (code) {
     .replace(/^import[^\n]*\n/gm, '')
     .replace(/^export default[^\n]*\n?/gm, '')
     .replace(/^export\s*\{[^}]*\}\s*;?\s*$/gm, '')
+    // confirmState / answerConfirm 走具名导出（confirm 弹窗用）；沙箱里只需其定义、不需 export 关键字。
+    // Vue.observable 已由 mockVue 注入，observable(obj) 原样返回对象即可。
+    .replace(/^export\s+(const|function|let|var)\s/gm, '$1 ')
 }
 
 function makeNotice (overrides) {
@@ -47,9 +50,9 @@ function makeNotice (overrides) {
   }
   if (overrides) Object.assign(ctx, overrides)
   vm.createContext(ctx)
-  const code = stripImports(raw) + '\n;this.__notice = notice;'
+  const code = stripImports(raw) + '\n;this.__notice = notice; this.__confirmState = confirmState; this.__answerConfirm = answerConfirm;'
   vm.runInContext(code, ctx, { filename: 'notice.js(l1)' })
-  return { notice: ctx.__notice, timers, cleared, ctx }
+  return { notice: ctx.__notice, confirmState: ctx.__confirmState, answerConfirm: ctx.__answerConfirm, timers, cleared, ctx }
 }
 
 async function main () {
@@ -110,6 +113,72 @@ async function main () {
     notice.resume(id)
     const resumeDelay = timers.length > 1 ? timers[1].delay : 'NO_TIMER'
     ok('resume 重建定时器 delay 在 (0,3200] 区间', typeof resumeDelay === 'number' && resumeDelay > 0 && resumeDelay <= 3200, { resumeDelay })
+  }
+
+  // ---- 6) confirm 走独立模态弹窗状态，不进 toast 队列 ----
+  {
+    // 源码守卫：confirm() 不再 push 到 state.items（长条 toast），而是写 confirmState
+    const confirmFn = raw.match(/confirm \(options\) \{[\s\S]*?\n  \},/)
+    const confirmBody = confirmFn ? confirmFn[0] : ''
+    ok('confirm() 不 push 进 toast 队列', !/push\(\s*\{/.test(confirmBody), { confirmBody: confirmBody.slice(0, 160) })
+    ok('confirm() 写 confirmState.visible=true', /confirmState\.visible = true/.test(confirmBody))
+    ok('confirm() 上一条未答先以 false 收尾', /if \(confirmState\.resolve\) confirmState\.resolve\(false\)/.test(confirmBody))
+    ok('confirmState 用 Vue.observable', /export const confirmState = Vue\.observable\(/.test(raw))
+    ok('answerConfirm 统一收口 Promise 并置 visible=false', /confirmState\.visible = false[\s\S]{0,240}resolve\(value === undefined \? false : value\)/.test(raw))
+    // 源码守卫：toast 样式无 hover 展开变形、无 confirm 变体
+    const scss = require('fs').readFileSync(path.join(__dirname, '..', 'src', 'ui-next', 'styles', 'ui.scss'), 'utf8')
+    const noticeBlock = scss.slice(scss.indexOf('.is-notice-item {'), scss.indexOf('@keyframes is-countdown'))
+    ok('toast 样式无 hover 展开变形', !/&:hover &__body/.test(noticeBlock) && !/white-space: normal/.test(noticeBlock))
+    ok('toast 样式无 --confirm 变体', !/&--confirm/.test(noticeBlock))
+    // 行为守卫：confirm() 不新增 toast item，answerConfirm 回填 true/false 且只 settle 一次
+    const { notice, confirmState, answerConfirm } = makeNotice()
+    const toastCount = notice.state.items.length
+    const p = notice.confirm({ title: '覆盖源文件？', text: 'a\nb' })
+    ok('confirm() 不增加 toast 条数', notice.state.items.length === toastCount)
+    ok('confirm() 置起 confirmState', confirmState.visible === true && confirmState.title === '覆盖源文件？')
+    answerConfirm(true)
+    const settled = await p
+    ok('answerConfirm(true) → Promise resolve(true)', settled === true, { settled })
+    ok('答完 confirmState.visible=false', confirmState.visible === false)
+    answerConfirm(false) // 重复答不应再改变已 settle 的 Promise
+    const again = await p
+    ok('重复 answerConfirm 不再改写结果', again === true, { again })
+  }
+
+  // ---- 7) 三按钮形态（覆盖源文件：直接覆盖 vs 加后缀另存）----
+  {
+    // 源码守卫：confirm() 支持 altText/altValue，answerConfirm 回传原始标识
+    const confirmFn = raw.match(/confirm \(options\) \{[\s\S]*?\n  \},/)
+    const confirmBody = confirmFn ? confirmFn[0] : ''
+    ok('confirm() 写 altText', /confirmState\.altText = opts\.altText/.test(confirmBody))
+    ok('confirm() 写 altValue（缺省 true）', /confirmState\.altValue = opts\.altValue === undefined \? true : opts\.altValue/.test(confirmBody))
+    ok('answerConfirm 不做 Boolean 归一（备选要回传自己的标识）', !/resolve\(Boolean\(/.test(raw))
+    // 行为守卫：alt 按钮回传字符串标识，调用方据此区分两种后果
+    const { notice, confirmState, answerConfirm } = makeNotice()
+    const p = notice.confirm({
+      title: '将覆盖源文件',
+      text: 'C:\\isparta-verify\\cool.png',
+      cancelText: '取消',
+      altText: '直接覆盖源文件',
+      altValue: 'overwrite',
+      confirmText: '另存为 cool_1.png'
+    })
+    ok('confirm() 置起 altText/altValue', confirmState.altText === '直接覆盖源文件' && confirmState.altValue === 'overwrite')
+    answerConfirm('overwrite')
+    const settled = await p
+    ok("answerConfirm('overwrite') → Promise 原样回传标识", settled === 'overwrite', { settled })
+    // 弹窗源码守卫：alt 按钮仅在 altText 有值时渲染，且走 danger 样式
+    const dlg = require('fs').readFileSync(path.join(__dirname, '..', 'src', 'ui-next', 'components', 'IsConfirmDialog.vue'), 'utf8')
+    ok('弹窗按 state.altText 条件渲染备选按钮', /v-if="state\.altText"/.test(dlg))
+    ok('备选按钮走 danger 样式', /type="danger"/.test(dlg))
+    ok('备选按钮回传 altValue', /answerConfirm\(this\.state\.altValue\)/.test(dlg))
+    // 主操作仍 resolve(true)、取消仍 resolve(false)
+    const p2 = notice.confirm({ title: 't', altText: 'a', altValue: 'overwrite' })
+    answerConfirm(true)
+    ok('主按钮仍 resolve(true)', (await p2) === true)
+    const p3 = notice.confirm({ title: 't2' })
+    answerConfirm(false)
+    ok('取消仍 resolve(false)', (await p3) === false)
   }
 
   console.log('\nnotice L1:', passed, 'passed,', failed, 'failed')

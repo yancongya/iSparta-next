@@ -18,6 +18,8 @@
 | 预估角标测试 | `node scripts\estimate-badge.l1.js`；验证角标按格式轮换的纯函数（formatLetter / humanSizeCompact / pickEstDetail）与 estimateOutput 分格式明细、逐格式 over 标记 |
 | 色深压缩测试 | `node scripts\palette-compress.l1.js`；验证 `src\util\paletteConfig.js`（档位吸附 / 旧配置回退 quality / 逐级降色数）、apngCompress 色数参数分发、applyStartPlan 色深规划、apng2gif→gifsicle GIF 色深链路（`--colors N` + 失败兜底） |
 | 体积闸测试 | `node scripts\sizeGate.l1.js`；验证 sizeGate 双路线重试（quality 逐级降 / colors 逐档降色数）、临时产物路径与原始 quality 恢复（沙箱 path 用 posix 形态，与 sizes 键一致） |
+| 覆盖源文件三选测试 | `node scripts\overwrite-choice.l1.js`；验证预检弹窗三选的后果：直接覆盖（写 `overwriteSource` 授权）/ 加后缀另存（按格式写实际产物名）/ 取消（零副作用），双平台 + 三语 key |
+| bridge path 面守卫 | `node scripts\bridge-path-surface.l1.js`；**renderer 侧 path 只有 join/dirname/basename/sep**（bridge 契约，见 `docs/BRIDGE.md` §2.3）。新增代码误用 `path.extname` 等面外方法 → 桌面真机抛 `path.xxx is not a function`，且浏览器 mock 因 `isMockEnv()` 短路预检碰不到、L1 沙箱注入真 node path 又会掩盖成绿灯。守卫会精确报出文件+行号；需「去扩展名文件名」用 `src\util\pathUtil.js` 的 `basenameNoExt()` |
 | CEP 兼容守卫 | `node scripts\dev\check.js cep`；静态检查桌面/CEP 共享源未分叉、关键宿主门控存在、三语 key 齐。**改任何桌面 UI / 交互逻辑后必须跑**（见 §8.6） |
 | 图标再生 | 见 `scripts\build-app-icons.js`、`scripts\make-icons-from-png.py`、`scripts\make-installer-images.py`（勿手改位图当源） |
 
@@ -277,6 +279,17 @@ CEP 下弹窗要铺满时必须三件套同时做，缺一就会被内联样式 
 
 细节与反例见 [`docs/CEP-UPGRADE-SCOPE.md`](docs/CEP-UPGRADE-SCOPE.md) §8。参考：`IsLogPanel.vue`、`globalSetting.vue`。
 
+## 8.3.1 全局统一询问弹窗（强制）
+
+**所有需要用户拍板的阻断式询问，一律走统一模态面板**（`src/ui-next/components/IsConfirmDialog.vue`，桌面 / CEP 共用、Home 里只挂一次），**不得**再自绘弹窗、也不得用 toast 承载询问：
+
+- 状态与 Promise 收口在 `src/ui-next/notice.js` 的 `confirmState` / `answerConfirm`；调用方只用 `await notice.confirm({...})`。
+- 按钮契约：`cancelText` → resolve(false)；`confirmText` → resolve(true)；`altText` → resolve(altValue)，**alt 是破坏性备选项**（弹窗里渲染成 danger 描边），用于「两种后果都成立、必须让用户选」的场景（覆盖源文件 vs 加后缀另存）。
+- 取消 / 遮罩 / ESC / 右上关闭一律 resolve(false)（安全方向）；`answerConfirm` 不做 Boolean 归一，否则备选按钮回传不出自己的标识。
+- toast 只承载 info / success / warning / error 这类**非阻断**短提示，不带操作按钮、不带 hover 变形。
+- 宿主层（AE ScriptUI）的原生询问属于另一层，不在此约束内（如序列帧「重渲 / 复用 / 取消」三选保持原样）。
+- 回归入口：`node scripts\notice.l1.js`（弹窗契约）、`node scripts\overwrite-choice.l1.js`（三选后果）。
+
 ## 8.4 转换核中间产物命名（强制）
 
 `src/util/processor/*` 的中间产物一律用 ASCII 名 `out.*` 落在 `item.basic.tmpOutputDir`，**用户可见的最终文件才用 `options.outputName`**。生产者与消费者必须同一真相源，改一处就得改全：
@@ -345,6 +358,16 @@ CEP 下弹窗要铺满时必须三件套同时做，缺一就会被内联样式 
 **反例（本仓真实踩过）**：给任务条详情 tip 做防劫持归属域时，若只在桌面 mock 验证，
 CEP 的 6 条合成任务虽共用同一 `tip.js`，却无法确认 CEP 下合成名 / 静态路径分支是否被误伤；
 必须按上表在 8082 逐项量过才算完成。细节与可执行步骤见验收手册的"桌面改动 → CEP 兼容回归"章节。
+
+**反例二（浏览器 mock 掩盖桌面真机故障，本仓真实踩过）**：覆盖源文件三选弹窗新增时用了
+`path.extname(...)` 取扩展名，但 renderer 侧 `path` 来自 preload / cep-bridge / mock-bridge
+三套 bridge，方法面只有 `join / dirname / basename / sep`——**桌面真机一点「开始」就抛
+`path.extname is not a function`**，而浏览器 mock 因 `isMockEnv()` 短路了覆盖预检**根本走不到
+那段代码**，L1 沙箱若注入真 node `path`（自带 extname）又会把它掩盖成绿灯。
+**规律：浏览器 mock 与 L1 沙箱都不是 renderer 能力的真实替身**——凡涉及 bridge 能力、
+宿主环境、真实文件系统行为的逻辑，必须用真 Electron 验一次
+（`unset ELECTRON_RUN_AS_NODE && npx electron scripts\dev\verify-bridge-path.cjs`，
+真 preload + 真 ipcMain handler，离屏不弹窗）。
 
 ## 9. 文档索引
 

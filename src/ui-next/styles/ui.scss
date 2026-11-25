@@ -790,8 +790,9 @@ body.is-scroll-locked {
   pointer-events: none;
 }
 
-// 全局统一：一条大圆角胶囊，左侧圆形徽章 + 单行文字 + 右侧操作。
-// 文字默认单行省略，hover 展开完整（文本在 notice.js 已按上限截断，不会无限长）。
+// 全局统一：一条大圆角胶囊，左侧圆形徽章 + 单行文字 + 右侧「知道了」。
+// 文字固定单行省略，hover 只冻结倒计时不展开变形（文本在 notice.js 已按上限截断）。
+// 阻断式询问不走这里，走 <is-confirm-dialog> 模态弹窗。
 .is-notice-item {
   position: relative;
   display: flex;
@@ -824,16 +825,11 @@ body.is-scroll-locked {
     min-width: 0;
     font-size: var(--is-fs-md);
     line-height: 1.45;
-    // 默认单行省略；hover 展开完整文本（见下方 :hover）
+    // 固定单行省略：hover 不再展开成多行（避免胶囊突然变形）。
+    // 长文本已在 notice.js 源头截断，hover 只冻结倒计时供读，不改变形态。
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    transition: white-space 0s;
-  }
-
-  &:hover &__body {
-    white-space: normal;
-    text-overflow: clip;
   }
 
   &__title {
@@ -845,22 +841,6 @@ body.is-scroll-locked {
     color: var(--is-text-2);
 
     &:not(:first-child) { margin-left: var(--is-s-2); }
-  }
-
-  // confirm 的路径列表含 \n，允许换行读取全文，不套单行省略
-  &--confirm &__body {
-    white-space: pre-line;
-    text-overflow: clip;
-    max-height: 220px;
-    overflow-y: auto;
-  }
-
-  &__actions {
-    display: flex;
-    flex: none;
-    justify-content: flex-end;
-    gap: var(--is-s-2);
-    margin-left: var(--is-s-2);
   }
 
   &__ok {
@@ -915,10 +895,6 @@ body.is-scroll-locked {
   &--error {
     color: var(--is-bad-fg);
     .is-notice-item__badge { background: var(--is-bad-bg); color: var(--is-bad); }
-  }
-  &--confirm {
-    color: var(--is-cool-fg);
-    .is-notice-item__badge { background: var(--is-cool-bg); color: var(--is-cool); }
   }
 }
 

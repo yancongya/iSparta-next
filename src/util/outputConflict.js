@@ -6,6 +6,7 @@
  */
 import { path } from './node-env'
 import { outputNameFor } from './outputName'
+import { basenameNoExt } from './pathUtil'
 
 export const EXTENSIONS = { APNG: '.png', GIF: '.gif', WEBP: '.webp' }
 export const SUFFIX_FORMATS = ['APNG', 'GIF', 'WEBP']
@@ -57,6 +58,27 @@ export function fallbackRenameForSource (target, sourceFiles) {
 }
 
 /**
+ * 预检阶段的「加后缀另存」计划：撞源的目标 → 保底改名后的目标（cool.png → cool_1.png）。
+ * 与落盘时 processor 用的 fallbackRenameForSource 是同一个函数，保证弹窗按钮上承诺的
+ * 文件名和真正落盘的文件名一致（不会出现「说是 cool_1，实际落 cool_2」）。
+ */
+export function planSourceRename (rows) {
+  return (rows || []).map(function (row) {
+    const sources = ((row.item && row.item.basic && row.item.basic.fileList) || [])
+    const renamed = fallbackRenameForSource(row.path, sources)
+    return {
+      item: row.item,
+      format: String(row.format || '').toUpperCase(),
+      path: row.path,
+      renamed: renamed,
+      name: basenameNoExt(renamed),
+      file: path.basename(renamed),
+      changed: renamed !== row.path
+    }
+  })
+}
+
+/**
  * 开始转换前的冲突分类：
  *   source  = 目标 === 源文件（必须阻断确认）
  *   existing= 目标已存在但不是源（仅 warning）
@@ -83,8 +105,10 @@ export function classifyOutputConflicts (items, exists) {
       const key = normalizePath(file)
       if (!key || seen[key]) return
       seen[key] = true
-      if (sourceSet[key]) result.source.push({ item: item, path: file })
-      else if (typeof exists === 'function' && exists(file)) result.existing.push({ item: item, path: file })
+      // format 随行返回：调用方要按「格式」决定改名写进哪个 outputNameOverride 槽位，
+      // 缺了它就无法只给撞源的那个格式改名（会连带把 gif/webp 也改掉）。
+      if (sourceSet[key]) result.source.push({ item: item, path: file, format: String(fmt).toUpperCase() })
+      else if (typeof exists === 'function' && exists(file)) result.existing.push({ item: item, path: file, format: String(fmt).toUpperCase() })
     })
   })
   return result
