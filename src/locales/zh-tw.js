@@ -1,6 +1,6 @@
 module.exports = {
     "uploadTips": "將文件拖入或點擊打開",
-    "uploadRule": "點擊選擇目錄，Ctrl + 點擊選擇檔案（支援 PNG 序列、APNG、WEBP、GIF）",
+    "uploadRule": "點擊選擇目錄，Ctrl + 點擊選擇檔案，也可貼上或拖入檔案（支援 PNG 序列、APNG、WEBP、GIF）",
     "uploadCompTips": "拖入或貼上合成，或點「選擇合成」",
     "compRefresh": "點擊刷新合成列表",
     "projectNoOpen": "未打開 AE 工程",
@@ -18,7 +18,7 @@ module.exports = {
     "toTabbed":"還原分類標籤",
     "clearAll":"清除全部",
     "openFolder":"打開目錄…",
-    "openFolderHint":"點擊選擇目錄，Ctrl + 點擊選擇檔案",
+    "openFolderHint":"點擊選擇目錄，Ctrl + 點擊選擇檔案，也可貼上或拖入檔案",
     "openFile":"開啟檔案…",
     "importImageFilter":"圖片檔案",
     "statePending":"待轉換",

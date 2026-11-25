@@ -106,6 +106,31 @@ for (const [platform, paths] of [['macOS', path.posix], ['Windows', path.win32]]
   }
 }
 
+// ---------- 2b) 导入提示补充粘贴/拖拽说明（三语两处） ----------
+// 用户反馈：只讲「点击选择目录/Ctrl+点选文件」不够，应补充也能粘贴/拖入文件。
+// 桌面 supportsFileImport 下 onDrop/onPaste 在任务态同样可用，故这两句文案都该带提示。
+{
+  // 每语两句各自的「粘贴/拖入」特征（简中/繁中/英文）
+  const hintPattern = {
+    'zh-cn': /粘贴|拖入/,
+    'zh-tw': /貼上|拖入/,
+    'en-us': /paste|drop/i
+  }
+  const readLoc = (loc) => {
+    const src = read('src/locales/' + loc + '.js')
+    const grab = (key) => {
+      const m = src.match(new RegExp('"' + key + '"\\s*:\\s*"([^"]*)"'))
+      return m ? m[1] : ''
+    }
+    return { uploadRule: grab('uploadRule'), openFolderHint: grab('openFolderHint') }
+  }
+  for (const loc of ['zh-cn', 'zh-tw', 'en-us']) {
+    const t = readLoc(loc)
+    ok(loc + ' uploadRule 含粘贴/拖入说明', hintPattern[loc].test(t.uploadRule), t.uploadRule)
+    ok(loc + ' openFolderHint 含粘贴/拖入说明', hintPattern[loc].test(t.openFolderHint), t.openFolderHint)
+  }
+}
+
 // ---------- 3) 三格式一视同仁：formatStatic 不再藏 GIF ----------
 {
   const setting = read('src/components/setting/setting.vue')

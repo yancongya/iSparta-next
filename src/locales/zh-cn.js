@@ -1,6 +1,6 @@
 module.exports = {
     "uploadTips": "将文件拖入或点击打开",
-    "uploadRule": "点击选择目录，Ctrl + 点击选择文件（支持 PNG 序列、APNG、WEBP、GIF）",
+    "uploadRule": "点击选择目录，Ctrl + 点击选择文件，也可粘贴或拖入文件（支持 PNG 序列、APNG、WEBP、GIF）",
     "uploadCompTips": "点「刷新 · 合成树」读取合成",
     "compRefresh": "点击刷新合成列表",
     "projectNoOpen": "未打开 AE 工程",
@@ -18,7 +18,7 @@ module.exports = {
     "toTabbed":"恢复分类标签",
     "clearAll":"清除全部",
     "openFolder":"打开目录…",
-    "openFolderHint":"点击选择目录，Ctrl + 点击选择文件",
+    "openFolderHint":"点击选择目录，Ctrl + 点击选择文件，也可粘贴或拖入文件",
     "openFile":"打开文件…",
     "importImageFilter":"图片文件",
     "statePending":"待转换",

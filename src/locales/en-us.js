@@ -1,6 +1,6 @@
 module.exports = {
     "uploadTips": "Drop files here or click to open",
-    "uploadRule": "Click to select a folder, Ctrl + click to select files (PNG sequences, APNG, WEBP, GIF)",
+    "uploadRule": "Click to select a folder, Ctrl + click to select files, or paste / drop files in (PNG sequences, APNG, WEBP, GIF)",
     "uploadCompTips": "Drop or paste comps, or pick compositions",
     "compRefresh": "Click to refresh compositions",
     "projectNoOpen": "No AE project is open",
@@ -18,7 +18,7 @@ module.exports = {
     "toTabbed":"Back to category tabs",
     "clearAll":"Clear all",
     "openFolder":"Open folder…",
-    "openFolderHint":"Click to select a folder, Ctrl + click to select files",
+    "openFolderHint":"Click to select a folder, Ctrl + click to select files, or paste / drop files in",
     "openFile":"Open file…",
     "importImageFilter":"Image files",
     "statePending":"Pending",
