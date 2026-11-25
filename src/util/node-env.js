@@ -100,6 +100,13 @@ export function getChildProcess () {
   throw new Error('ispartaAPI.childProcess missing: preload not loaded?')
 }
 
+/** 本地调试日志桥：桌面 preload / CEP cep-bridge 均提供同形 debugLog 组 */
+export function getDebugLog () {
+  const a = api()
+  if (a && a.debugLog) { return a.debugLog }
+  return null
+}
+
 /** RenderSmith forge（aerender）；懒加载，兼容脚本先后顺序 */
 export function getAerender () {
   try {

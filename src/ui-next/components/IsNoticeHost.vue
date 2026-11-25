@@ -43,6 +43,15 @@ import notice from '../notice'
 export default {
   name: 'IsNoticeHost',
   components: { IsIcon },
+  mounted () {
+    // 必须挂到 body：面板里的 IsDialog 会 teleport 到 body（z-index 2000），
+    // 而本容器若留在 .ib 内，会被 dialog 的层叠上下文压住——toast 明明生成了
+    // 却被弹窗盖住看不见（日志面板打开时点「复制全部」就是这种情况）。
+    // 与 dialog 同级后 z-index 3000 才真正生效，任何弹窗打开时提示都能露出。
+    if (this.$el && this.$el.parentNode !== document.body) {
+      document.body.appendChild(this.$el)
+    }
+  },
   computed: {
     items () {
       return notice.state.items

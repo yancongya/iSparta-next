@@ -24,7 +24,12 @@ export function outputNameFor (item, format) {
   const base = String(options.outputName || '')
   const f = String(format || '').toUpperCase()
   if (!f) return base
-  // 落盘保底改名的精确覆盖（per-format，写进 basic.outputNameOverride，
+  // 一次性覆盖（跨任务同名「另存」）：只服务本次转换，processor 深拷贝带走后落盘，
+  // 下次 preflight 入口清除 → 任务名回基础名 → 跨任务冲突重新识别、重新弹窗。
+  // 优先于持久 override：同一轮里 transient 就是用户刚做的最新选择。
+  const transient = (item && item.basic && item.basic.transientNameOverride) || {}
+  if (transient[f]) return String(transient[f])
+  // 持久化改名（撞源另存 / 落盘保底）：写进 basic.outputNameOverride（per-format，
   // 不污染共享的 outputName，否则又会三个格式一起变名）
   const overrides = (item && item.basic && item.basic.outputNameOverride) || {}
   if (overrides[f]) return String(overrides[f])

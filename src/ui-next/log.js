@@ -7,6 +7,8 @@
  */
 
 import Vue from 'vue'
+import { createDebugLogController } from '../util/debugLogController'
+import { openDebugLogServer, setDebugLogPort, hasConfiguredPort } from '../util/debugLogHost'
 
 const MAX = 400
 const LS_KEY = 'iSparta-logs'
@@ -190,5 +192,34 @@ const log = {
 
 // 启动痕迹（便于 CEP 排查「日志空白 / 按钮无响应」）
 push('info', 'log ready', (typeof location !== 'undefined' ? String(location.href) : ''), 'bridge')
+
+/**
+ * 本地调试日志 HTTP 服务的全局控制器（桌面/CEP 共用同一实例）。
+ * 两处开关（日志面板工具栏、通用设置）都绑定它，状态天然同步。
+ * 桌面侧 open 内部订阅 log.core 变化、节流 feed 快照到主进程；CEP 侧服务直接读 state.entries。
+ */
+/**
+ * 每次 enable(open) 前从持久化设置同步端口，保证三个入口（面板开关 / 通用设置开关 /
+ * 启动自动开启）都使用同一份用户配置；通用设置改端口时也会调 setDebugLogPort 立即生效。
+ */
+function syncPortFromSetting () {
+  // 通用设置刚改过端口（内存值已设）时不要用旧 storage 覆盖——用户可能还没点确定保存
+  if (hasConfiguredPort()) return
+  try {
+    const raw = getStorage() && getStorage().getItem('globalSetting')
+    const dbg = raw && JSON.parse(raw)
+    const port = dbg && dbg.options && dbg.options.debugLog && dbg.options.debugLog.port
+    if (port) { setDebugLogPort(port) }
+  } catch (e) { /* 读取失败用宿主默认端口 */ }
+}
+
+const debugLog = createDebugLogController(
+  {},
+  function () {
+    syncPortFromSetting()
+    return openDebugLogServer(function () { return state.entries }, log.core.subscribe)
+  }
+)
+log.debugLog = debugLog
 
 export default log

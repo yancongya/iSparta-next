@@ -263,7 +263,7 @@ CEP 侧按 A1/A2 挂 junction + PlayerDebugMode，`npm run dev:cep`。
 
 > F1.5 补充观察点：点「另存为 cool_1.png」转换跑完后，任务条末行输出名应同步变成 `cool_1`（另存名会回写 store，任务条读的是实际产物名）。行内若仍是 `cool` 说明回写没生效，属 bug。
 >
-> F1.5 是**破坏性**分支：它会真的把源文件替换掉，所以只在副本上做、且单独记录哈希变化。日常验收只走 F1.5 这一条安全路径即可。
+> F1.5b 是**破坏性**分支：它会真的把源文件替换掉，所以只在副本上做、且单独记录哈希变化。日常验收只走 F1.5 这一条安全路径即可。
 >
 > **F1.4 入口的回归观察点（本仓真实踩过）**：点「开始」触发覆盖预检的那一下，
 > 桌面版曾抛 `TypeError: path.extname is not a function`——renderer 侧的 `path` 来自
@@ -284,6 +284,68 @@ CEP 侧按 A1/A2 挂 junction + PlayerDebugMode，`npm run dev:cep`。
 | H2.3b | 看第一行输入目录路径 | 短路径完整显示（如 `C:/isparta-verify/cool`）；超长（>28 字符）行内保留尾部 + 前置 `…`（如 `…that/exceeds/the/limit/cool`）；**hover 始终显示完整路径** |
 | H2.4 | 开始一个任务看进度条 | 进行中→完成卡片**高度不跳**，进度条不越界 |
 | H2.5 | 勾选两个任务 | 「批量开始」「输出到目录」hover 有说明；只勾一个时 hover「开始」**不弹**提示 |
+| H2.6 | 拖一个 `cool.webp` 进列表 | 弹**专门提示**「WebP 仅支持作为输出格式」，不再是「没有找到可识别的图片」；文件选择对话框的图片过滤器里也不再列 webp |
+| H2.7 | 导入 GIF，看输出格式区 | APNG / GIF / WEBP **三个复选框都在**；撞源时和 APNG 走同一条路（后缀胶囊点亮 → 开始弹三选弹窗），不再出现「看不到 GIF 却提示加了 `_gif`」 |
+| H2.8 | 选「输出到目录」指向新空目录后开始 | 不再提示旧目录里的旧产物「目标文件已存在」；预检查的是新目录，新目录真有同名才提示 |
+| H2.9 | 两个同名任务（`cool`）都勾 APNG/GIF/WEBP，输出到同一新目录，点开始 | 除撞源弹窗外**再弹一款三选弹窗**「多个任务要写入同一文件」：取消 / 直接覆盖同名产物（红）/ 另存为 `cool_1.webp`（主按钮）；选另存后共写出 **6 个**文件、后一任务 WEBP 名实时变 `cool_1`，不再静默覆盖成 5 个 |
+| H2.9b | 同场景选「直接覆盖同名产物」 | 放行且两任务 WEBP 同名（后者覆盖前者），不写改名；这是用户明确授权，不算 bug |
+| H2.9c | 同场景点「取消」 | 不进入转换、任务保持待处理，无任何产物写入 |
+| H2.9d | **紧接 H2.9 再点一次开始**（换不换目录都行） | **跨任务弹窗必须再次弹出**（与第一次同款）；产物名已从 `cool_1` 回到基础名 `cool` 重新参与冲突判断。跨任务「另存」只对本次有效，不再残留 |
+
+> H2.9 / H2.9d 是本轮重点回归：旧实现 `seen` 去重把「不同任务的同名产物」当重复吞掉，
+> 预检完全看不见，后者静默覆盖前者（日志里两个 `cool.webp` 的 sizeBytes 从 103722 变 96348 即为证据）。
+> 现在跨任务同名与撞源共用同一款三选弹窗，且「另存」写一次性 `transientNameOverride`，
+> 下次预检入口清除 → 冲突重新识别 → 再次弹窗。**撞源「另存」仍是持久改名**（用户主动定名），两者互不干扰。
+
+| H2.10 | 打开日志面板点「复制全部」，再关掉面板点顶栏/角标复制产物 | 两种复制都弹 toast「已复制…」且**清晰可见**——尤其在日志面板**打开着**时点复制，toast 必须盖在弹窗之上，不再被弹窗遮住看不见 |
+| H2.10b | 任意弹窗（日志/对比/询问）打开时触发一次操作提示 | toast 均能露出，不因弹窗层叠上下文而消失 |
+| H2.11 | 打开日志面板，点工具栏「本地调试日志」开关 | 状态点变绿（已开启），toast 提示「连接信息已复制」（剪贴板含地址 `http://127.0.0.1:48764/logs`）；hover 开关显示地址与用途 |
+| H2.11b | 开启后本机执行 `curl.exe --noproxy '*' --max-time 5 http://127.0.0.1:48764/logs` | 返回 JSON：`success:true` + `data`（真实日志数组，已脱敏）+ `metadata`（sessionId/capturedAt/count） |
+| H2.11c | 开启状态下重新打开应用 | 接口自动启动（通用设置持久位生效），无需再点开关 |
+| H2.11d | 点开关关闭，再 curl 同一地址 | 连接失败（端口释放）；toast 提示已关闭 |
+| H2.11e | 通用设置 → 常规 Tab 的「本地调试日志」开关（与调试端口归为一组） | 与日志面板开关状态同步；切换同样生效、同样持久化 |
+| H2.12 | 通用设置 → 常规 Tab「调试端口」：桌面默认显示 48764、CEP 面板默认显示 48765 | 各端只保留自己的端口；留空/非法（0、>65535、小数）回退默认 |
+| H2.12b | 端口开启状态下改为 49000 并失焦/回车 | 立即生效：toast「调试接口已切换到端口 49000」，`curl http://127.0.0.1:49000/logs` 可读、旧 48764 不通；重启应用后新端口自动生效 |
+| H2.12c | 改为被占用端口（如另一实例在监听） | toast 报「接口启动失败」，开关回到关闭，不假成功 |
+| H2.13 | 通用设置弹窗标题栏右侧的布局切换图标（列表/网格） | 点击后顶部四个分类标签隐藏，常规/输出/压缩/关于四段在一页纵向排列、段间有分隔；再点恢复分类标签；重开弹窗保持上次布局 |
+| H2.14 | 通用设置 → 关于 Tab「工具链完整性」 | 显示「已校验 10/10 项通过」，不再全工具「文件缺失」（回归 bug：诊断 base 漏平台子目录 bin/&lt;pf&gt;/） |
+| H2.15 | 桌面/CEP 打开全局设置弹窗（默认设置） | 表单行距正常、hint 长文案正常换行不重叠；「当前版本/检查更新」双列对齐、标签列 112px；标题栏布局切换图标为透明底灰图标（与关闭×同款），不再是白底方块；底部「iSparta-next v3.10.2」与说明文字间距正常 |
+| H2.15b | 回归 guard：全局设置样式根选择器 | `gs-settings-ui.l1.js` 校验 `globalSetting.scss` 样式根含 `.gs-dialog`（跟随 teleport 后的弹窗节点），防止样式再次全失效 |
+
+> H2.12 端口为可配置项：`setting.options.debugLog.port`，桌面/CEP 各自 bundle 独立默认值
+> （48764 / 48765），1-65535 整数。模块级 `setDebugLogPort()` 立即改内存端口，服务开着时
+> disable→enable 用新端口重启；`log.js` 每次 enable 从持久设置同步端口（已显式设过则不覆盖）。
+> 端口规范化/两端默认/立即重启链路由 `debug-log-host.l1.js`(83)、`gs-settings-ui.l1.js`(21) 守卫，
+> 真 Electron `verify-debug-log-server.cjs` 14/14 验证注入端口可监听。
+
+> H2.13 全局设置布局切换：IsDialog 新增 `header-actions` slot（标题与关闭按钮之间），
+> 全局设置用专有类 `gs-layout-toggle`（grid/list 双态）切换，独立 key `uiGlobalSettingAllInOne`
+> 持久化，与任务设置的 `uiSettingAllInOne` 互不干扰。CEP 下全局设置弹窗此前同样没有该入口，
+> 本次为两端一并补齐（并非"CEP 有、桌面缺"）。
+
+> H2.14 根因：`diagnoseToolchain()` 用 `bin/<pf>/` 判目录存在，却把 `bin/`（漏 &lt;pf&gt;）传给
+> `verifyToolchain()`，逐个查 `bin/<exe>` 全 missing；而实际工具在 `bin/<pf>/<exe>`（Action.bin
+> 走的正是这条）。已改为传带平台子目录的 base，`toolchain-integrity.l1.js`(9) 用真实 fs 守卫。
+
+> H2.15 根因（此前误判为热启动 HMR 时序，实为真 bug）：`IsDialog` 默认 `toBody=true`，
+> `open()` 时把整个弹窗 `appendChild` 到 `document.body`，`<section class="globalsetting">` 变空壳，
+> 弹窗脱离其后代链；而 `globalSetting.scss` 所有样式都挂在 `.globalsetting .xxx` 后代选择器下，
+> teleport 后全部失配 → 按钮退回浏览器默认白底方块、面板退回文档流挤成一团、标签列/双列/间距全丢。
+> 真机计算样式证据：`.gs-pair` 为 `display:block`（应为 grid）、label 82px（应 112px）、
+> toggle 白底黑字圆角 0（应透明灰图标圆角 8）。已把样式根改为 `.globalsetting, .gs-dialog`
+> （`.gs-dialog` 是 IsDialog root-class，随弹窗一起 teleport，始终命中），CEP 的
+> `html.is-cep .gs-dialog ...` 同步改。`gs-settings-ui.l1.js` 加 4 条守卫锁定该契约。
+> 与热启动无关；修复后计算样式全部命中（grid 251px×251px / label 112px / toggle 透明底）。
+
+> H2.11 是本地调试日志 HTTP 接口（供本机 agent 读取日志，减少手动复制）。桌面端口 48764、
+> CEP 端口 48765，只绑回环、只读 `GET /logs`、日志脱敏、限流 10 req/s、关闭即释放。
+> 布局共享 `debugLogCore.js` + `debugLogController.js` 一份源码，桌面走主进程 IPC、CEP 直连 node http。
+> 浏览器 mock 环境明确报「不可用」，不会伪造启动成功。
+
+> H2.10 回归：旧实现 `<is-notice-host>` 嵌在 `.ib` 容器内，日志等 IsDialog 会 teleport 到 body，
+> 两者不同层叠上下文 → toast 的 `z-index:3000` 失效、被 dialog(2000) 盖住，看起来「复制没反应」。
+> 实测 `elementFromPoint`：修复前命中 dialog header，把容器挂到 body 后命中 toast 自身。
+> 复制代码本身一直有 `notice.success`，无需改文案；仅修挂载位置，全局所有 toast 受益。
 
 ### H3. CEP 侧（有 AE 工程才做）
 

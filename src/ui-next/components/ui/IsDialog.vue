@@ -22,6 +22,11 @@
           <h3 class="is-dialog__title">
             <slot name="title">{{ title }}</slot>
           </h3>
+          <!-- 标题栏操作区（可选）：如设置弹窗的布局切换图标。
+               放在标题与关闭按钮之间，随 header 的 space-between 自动靠右。 -->
+          <div v-if="$slots['header-actions']" class="is-dialog__header-actions">
+            <slot name="header-actions" />
+          </div>
           <button
             v-if="showClose"
             type="button"

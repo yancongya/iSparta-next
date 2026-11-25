@@ -30,6 +30,18 @@
             <span v-if="f !== 'all' && counts[f]" class="log__chip-n mono">{{ counts[f] }}</span>
           </button>
         </div>
+        <span
+          class="log__debug"
+          :title="debugHint"
+        >
+          <span class="log__debug-label">{{ $t('debugToggle') }}</span>
+          <is-switch
+            :value="debugEnabled"
+            :disabled="debugBusy"
+            @change="onDebugToggle"
+          />
+          <i class="log__debug-dot" :class="'is-' + debugStatus" aria-hidden="true"></i>
+        </span>
         <is-checkbox v-model="follow" class="log__follow">{{ $t('logFollow') }}</is-checkbox>
       </div>
 
@@ -69,12 +81,16 @@
 import IsDialog from './ui/IsDialog.vue'
 import IsIcon from './ui/IsIcon.vue'
 import IsCheckbox from './ui/IsCheckbox.vue'
+import IsSwitch from './ui/IsSwitch.vue'
 import log from '../log'
 import notice from '../notice'
+import { statusKey, connectionHint, connectionInfo, copyText } from '../../util/debugLogFeedback'
+
+const debugLog = log.debugLog
 
 export default {
   name: 'IsLogPanel',
-  components: { IsDialog, IsIcon, IsCheckbox },
+  components: { IsDialog, IsIcon, IsCheckbox, IsSwitch },
   props: {
     visible: { type: Boolean, default: false }
   },
@@ -82,10 +98,18 @@ export default {
     return {
       filters: ['all', 'info', 'ok', 'warn', 'error'],
       filter: 'all',
-      follow: true
+      follow: true,
+      debugState: debugLog ? debugLog.getSnapshot() : { enabled: false, status: 'off' }
     }
   },
   computed: {
+    debugEnabled () { return !!(this.debugState && this.debugState.enabled) },
+    debugBusy () { return !!(this.debugState && this.debugState.status === 'starting') },
+    debugStatus () { return (this.debugState && this.debugState.status) || 'off' },
+    debugHint () {
+      var t = (key, vars) => this.$t(key, vars)
+      return connectionHint(this.debugState, t)
+    },
     entries () {
       return log.state.entries
     },
@@ -115,7 +139,38 @@ export default {
       this.$nextTick(this.scrollToEnd)
     }
   },
+  created () {
+    if (debugLog) {
+      this._unsubscribeDebug = debugLog.subscribe((state) => { this.debugState = state })
+    }
+  },
+  beforeDestroy () {
+    if (this._unsubscribeDebug) { this._unsubscribeDebug() }
+  },
   methods: {
+    async onDebugToggle (enabled) {
+      if (!debugLog) return
+      var self = this
+      var t = (key, vars) => self.$t(key, vars)
+      if (!enabled) {
+        var offState = debugLog.disable()
+        self.debugState = offState
+        var offText = connectionInfo(offState, t)
+        var offCopy = await copyText(offText)
+        notice.info(t(offCopy ? 'debugInfoCopied' : 'debugInfoCopyFailed'))
+        return
+      }
+      var result = await debugLog.enable()
+      if (!result) return // 被更新的操作取代
+      self.debugState = result
+      if (result.status === 'ready') {
+        var text = connectionInfo(result, t)
+        var copied = await copyText(text)
+        notice.success(t(copied ? 'debugInfoCopied' : 'debugInfoCopyFailed'))
+      } else if (result.status === 'error' || result.status === 'unavailable') {
+        notice.error(t(statusKey(result)))
+      }
+    },
     // 本仓库字典是扁平键，vue-i18n 会把「logLevel.all」当路径解析，故显式映射
     levelKey (f) {
       return { all: 'logLvAll', info: 'logLvInfo', ok: 'logLvOk', warn: 'logLvWarn', error: 'logLvError' }[f] || 'logLvAll'

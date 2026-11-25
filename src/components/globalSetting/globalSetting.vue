@@ -9,9 +9,22 @@
       :close-on-click-modal="false"
       @open="resetVarible"
     >
+      <!-- 标题栏布局切换（与任务设置同一套：分类标签 ↔ 全部一页），两端通用 -->
+      <template #header-actions>
+        <button
+          type="button"
+          class="gs-layout-toggle"
+          :class="{ 'is-active': gsAllInOne }"
+          :title="gsAllInOne ? $t('toTabbed') : $t('toAllInOne')"
+          :aria-label="gsAllInOne ? $t('toTabbed') : $t('toAllInOne')"
+          @click="toggleGsAllInOne"
+        >
+          <is-icon :name="gsAllInOne ? 'grid' : 'list'" size="sm" />
+        </button>
+      </template>
       <is-form v-if="setting">
-        <!-- 顶部固定分类条：CEP 窄面板自动切成纯图标（样式见 globalSetting.scss） -->
-        <div class="gs-tabs-bar">
+        <!-- 顶部固定分类条：全部设置模式下隐藏；CEP 窄面板自动切成纯图标（样式见 globalSetting.scss） -->
+        <div v-if="!gsAllInOne" class="gs-tabs-bar">
           <is-segmented
             v-model="activeTab"
             class="gs-tabs"
@@ -21,7 +34,7 @@
         </div>
 
         <!-- 常规 -->
-        <div v-show="activeTab === 'general'" class="gs-pane">
+        <div v-show="gsAllInOne || activeTab === 'general'" class="gs-pane">
         <is-form-item :label="$t('language')">
           <is-segmented v-model="setting.language" :options="languages" size="sm" />
         </is-form-item>
@@ -29,10 +42,29 @@
         <is-form-item :label="$t('appearance')">
           <is-segmented v-model="themeMode" :options="themeOptions" size="sm" @change="applyThemeMode" />
         </is-form-item>
+
+        <!-- 本地调试日志：开关与端口同属常规设置，归为一组 -->
+        <is-form-item :label="$t('debugToggle')">
+          <is-switch v-model="debugLogEnabled" />
+          <em class="hint">{{ $t('debugAutoStartTip') }}</em>
+        </is-form-item>
+
+        <is-form-item :label="$t('debugPort')">
+          <is-input
+            v-model="debugLogPort"
+            type="number"
+            class="w-80"
+            :min="1"
+            :max="65535"
+            number
+            @change="onDebugPortChange"
+          />
+          <em class="hint">{{ $t('debugPortHint', { port: defaultDebugLogPort }) }}</em>
+        </is-form-item>
         </div><!-- /常规 -->
 
         <!-- 压缩 -->
-        <div v-show="activeTab === 'compression'" class="gs-pane">
+        <div v-show="gsAllInOne || activeTab === 'compression'" class="gs-pane">
         <is-form-item :label="$t('fps')">
           <is-input v-model="setting.options.frameRate" type="number" class="w-80" :max="100" :min="0" number />
           <em class="hint">0-100</em>
@@ -122,7 +154,7 @@
         </div><!-- /压缩 -->
 
         <!-- 输出 -->
-        <div v-show="activeTab === 'output'" class="gs-pane">
+        <div v-show="gsAllInOne || activeTab === 'output'" class="gs-pane">
         <is-form-item :label="$t('filenameSuffix')">
           <is-input v-model="setting.options.outputSuffix" class="is-input--fluid" :maxlength="10" />
         </is-form-item>
@@ -271,7 +303,7 @@
         </div><!-- /输出 -->
 
         <!-- 关于 -->
-        <div v-show="activeTab === 'about'" class="gs-pane">
+        <div v-show="gsAllInOne || activeTab === 'about'" class="gs-pane">
 
         <!-- 关于 / 更新检查：应用级信息，不放在任务输出设置面板 -->
         <div class="gs-pair">
@@ -373,6 +405,13 @@ import {
 import updateService from '../../util/updateService'
 import notice from '../../ui-next/notice'
 import hostAdapter from '../../util/host-env'
+import log from '../../ui-next/log'
+import {
+  DESKTOP_DEBUG_LOG_PORT,
+  CEP_DEBUG_LOG_PORT,
+  normalizeDebugLogPort,
+  setDebugLogPort
+} from '../../util/debugLogHost'
 import { MODE_SYSTEM, resolveLocale } from '../../util/system-locale'
 import { APP_NAME, LANDING_URL } from '../../brand'
 import { isReallyNewer } from '../../util/updateCheck'
@@ -409,6 +448,10 @@ export default {
     return {
       // 顶部固定分类；重开弹窗不重置（resetVarible 不动它）
       activeTab: 'general',
+      // 标题栏布局切换：分类标签 ↔ 全部一页（与任务设置同体验，独立持久化）
+      gsAllInOne: (function () {
+        try { return storage.getItem('uiGlobalSettingAllInOne') === '1' } catch (e) { return false }
+      })(),
       setting: this.loadSetting(),
       dialogFormVisible: false,
       sizeDraft: null,
@@ -681,6 +724,39 @@ export default {
         this.$set(this.setting.options.sizeLimit, 'maxBytes', bytes)
         this.$set(this.setting.options.sizeLimit, 'maxMB', bytes / (1024 * 1024))
       }
+    },
+    // 本地调试日志：持久位写 setting.options.debugLog，实际开关立即同步 controller
+    debugLogEnabled: {
+      get () {
+        const o = this.setting && this.setting.options
+        return !!(o && o.debugLog && o.debugLog.enabled)
+      },
+      set (value) {
+        const o = this.setting && this.setting.options
+        if (!o) return
+        if (!o.debugLog) { this.$set(o, 'debugLog', { enabled: !!value }) }
+        else { this.$set(o.debugLog, 'enabled', !!value) }
+        this.syncDebugLogController(!!value)
+      }
+    },
+    // 各端只保留自己的端口：默认桌面 48764 / CEP 48765，存 setting.options.debugLog.port
+    defaultDebugLogPort () {
+      return this.isCep ? CEP_DEBUG_LOG_PORT : DESKTOP_DEBUG_LOG_PORT
+    },
+    debugLogPort: {
+      get () {
+        const o = this.setting && this.setting.options
+        const p = o && o.debugLog && normalizeDebugLogPort(o.debugLog.port, 0)
+        return p || this.defaultDebugLogPort
+      },
+      set (value) {
+        const o = this.setting && this.setting.options
+        if (!o) return
+        if (!o.debugLog) { this.$set(o, 'debugLog', { enabled: false }) }
+        // 非法值不写入（保留默认显示），合法值物化进 setting 供保存
+        const valid = normalizeDebugLogPort(value, 0)
+        if (valid) { this.$set(o.debugLog, 'port', valid) }
+      }
     }
   },
   watch: {
@@ -860,6 +936,10 @@ export default {
         }
         // palette 有 normalizePalette 兜底；物化归一值，保存后与出厂默认同构
         setting.options.palette = normalizePalette(setting.options)
+        // 后加字段：本地调试日志开关（缺省关闭，旧配置零破坏）
+        if (!setting.options.debugLog || typeof setting.options.debugLog.enabled !== 'boolean') {
+          setting.options.debugLog = { enabled: false }
+        }
       }
       return setting
     },
@@ -895,6 +975,11 @@ export default {
       if (mode === 'system') ThemeManager.followSystem()
       else ThemeManager.set(mode)
     },
+    // 标题栏布局切换：分类标签 ↔ 全部一页（两端通用，独立 key 持久化）
+    toggleGsAllInOne () {
+      this.gsAllInOne = !this.gsAllInOne
+      try { storage.setItem('uiGlobalSettingAllInOne', this.gsAllInOne ? '1' : '0') } catch (e) { /* ignore */ }
+    },
     showDialog () {
       // 锁定时也允许打开：转换失败若未解锁，按钮会「点了没反应」
       this.dialogFormVisible = true
@@ -910,6 +995,37 @@ export default {
       } finally {
         this.toolchainChecking = false
       }
+    },
+    // 通用设置开关 → 立即同步全局 controller（日志面板开关同一实例，状态天然一致）
+    syncDebugLogController (enabled) {
+      const c = log && log.debugLog
+      if (!c) return
+      if (enabled) {
+        Promise.resolve(c.enable()).then((state) => {
+          if (state && state.status === 'error') {
+            notice.error(this.$t('debugStatusError'))
+          }
+        })
+      } else {
+        c.disable()
+      }
+    },
+    // 端口改动立即生效：更新宿主层端口；若服务已开着，重启以换端口
+    onDebugPortChange () {
+      const value = this.debugLogPort
+      const effective = setDebugLogPort(value)
+      const c = log && log.debugLog
+      if (!c) return
+      const wasEnabled = !!(c.getSnapshot() && c.getSnapshot().enabled)
+      if (!wasEnabled) return
+      c.disable()
+      Promise.resolve(c.enable()).then((state) => {
+        if (state && state.status === 'error') {
+          notice.error(this.$t('debugStatusError'))
+        } else {
+          notice.success(this.$t('debugPortChanged', { port: effective }))
+        }
+      })
     },
     resetVarible () {
       this.setting = this.loadSetting()

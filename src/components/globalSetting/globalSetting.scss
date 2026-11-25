@@ -3,9 +3,18 @@
 // 原文件里 .globalsetting 与 .el-dialog 两个块内容几乎完全重复，且后者是全局
 // 选择器、会泄漏污染「延时配置」弹窗；同时 .el-form-item__content 写死
 // height:36px 会裁掉英文长文案。组件自绘后统一收敛到这里。
+//
+// ⚠ 作用域必须落在 .gs-dialog（IsDialog 的 root-class）上，不能只用 .globalsetting：
+//   IsDialog 默认 toBody=true，open() 会把整个弹窗 append 到 document.body，
+//   于是 <section class="globalsetting"> 变成空壳、弹窗脱离其后代链。
+//   若样式根只有 .globalsetting，teleport 后所有 .globalsetting .xxx 选择器
+//   全部失配 → 按钮退回浏览器默认白底方块、面板退回文档流挤成一团。
+//   .gs-dialog 随弹窗节点一起移动，无论是否 teleport 都能命中。
+//   （保留 .globalsetting 并列仅为未 teleport 场景兜底，两端默认均会 teleport。）
 // ==========================================================================
 
-.globalsetting {
+.globalsetting,
+.gs-dialog {
   // 顶部固定分类条：贴住弹窗 body 顶部滚动（sticky），切 tab 不跳回顶部
   .gs-tabs-bar {
     position: sticky;
@@ -28,6 +37,35 @@
   }
 
   .gs-pane { min-width: 0; }
+
+  // 标题栏布局切换图标（分类标签 ↔ 全部一页）。尺寸/交互对齐 IsDialog 关闭按钮，
+  // 避免误用全局 .is-tag / .is-info 等已被占用的类名（见富气泡命名教训）。
+  .gs-layout-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: var(--is-r-sm);
+    background: transparent;
+    color: var(--is-text-3);
+    cursor: pointer;
+    transition: background-color var(--is-dur-fast) var(--is-ease-std),
+      color var(--is-dur-fast) var(--is-ease-std);
+
+    &:hover { background: var(--is-inset); color: var(--is-text); }
+    &.is-active { background: var(--is-accent-bg, var(--is-inset)); color: var(--is-accent-fg, var(--is-text)); }
+  }
+
+  // 全部一页模式：四段纵向排列，段间加留白分隔（隐藏了 tabs-bar，靠此区分分类）
+  .gs-pane + .gs-pane {
+    margin-top: var(--is-s-5);
+    padding-top: var(--is-s-5);
+    border-top: 1px solid var(--is-divider);
+  }
 
   .gs-split {
     height: 1px;
@@ -279,7 +317,7 @@
 }
 
 // CEP 窄面板：分类条只留图标，标签隐藏（仍在 DOM 供屏幕阅读器使用）
-html.is-cep .globalsetting .gs-tabs-bar .is-segmented__item {
+html.is-cep .gs-dialog .gs-tabs-bar .is-segmented__item {
   gap: 0;
   min-width: 0;
   padding: 0 var(--is-s-2);

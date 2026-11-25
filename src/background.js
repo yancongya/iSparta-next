@@ -10,6 +10,7 @@ import { registerAutoUpdateIpc } from './util/autoUpdate'
 import { ensureCepExtension } from './util/cepSync'
 import { ensurePlayerDebugMode } from './util/cepDebugMode'
 import { markOnboardingDone } from './util/onboarding-replay'
+import { createDebugLogServer, DEFAULT_HOST } from './util/debugLogCore'
 const isDevelopment = process.env.NODE_ENV !== 'production'
 const path = require("path");
 const fsp = require('fs');
@@ -783,6 +784,52 @@ ipcMain.handle('fs:writeFile', async (event, p, data) => {
 ipcMain.handle('fs:remove', async (event, p) => {
   try { fsp.rmSync(p, { recursive: true, force: true }) } catch (e) { /* ignore */ }
 })
+
+// --- 本地调试日志 HTTP 服务（共享 debugLogCore，桌面侧由主进程持有） ---
+// renderer 无 node http，服务只能起在主进程；日志快照由 renderer 节流 feed 过来。
+// 端口 48764（CEP 用 48765，避开其他项目常用端口）。只绑回环，安全边界在 core 内。
+const DEBUG_LOG_DESKTOP_PORT = 48764
+let debugLogServer = null
+let debugLogSnapshot = []
+
+ipcMain.on('debugLog:feed', (event, entries) => {
+  if (Array.isArray(entries)) { debugLogSnapshot = entries }
+})
+
+ipcMain.handle('debugLog:start', async (event, port) => {
+  if (debugLogServer && debugLogServer.getStatus().listening) {
+    return { ok: true, url: debugLogServer.getStatus().url }
+  }
+  const fail = (e) => {
+    const code = e && e.code ? String(e.code) : ''
+    return { ok: false, code: /^[A-Z_]{2,40}$/.test(code) ? code : '', error: String((e && e.message) || e || '') }
+  }
+  try {
+    const server = createDebugLogServer(http, () => debugLogSnapshot, Number(port) || DEBUG_LOG_DESKTOP_PORT, DEFAULT_HOST)
+    const url = await server.start()
+    debugLogServer = server
+    return { ok: true, url: url }
+  } catch (e) {
+    return fail(e)
+  }
+})
+
+ipcMain.handle('debugLog:stop', async () => {
+  if (debugLogServer) { debugLogServer.stop(); debugLogServer = null }
+  return { ok: true }
+})
+
+ipcMain.handle('debugLog:status', async () => {
+  const s = debugLogServer ? debugLogServer.getStatus() : { listening: false, url: '', closed: false }
+  return { listening: !!s.listening, url: s.url || '' }
+})
+
+function stopDebugLogServer () {
+  try { if (debugLogServer) { debugLogServer.stop(); debugLogServer = null } } catch (e) { /* ignore */ }
+}
+app.on('before-quit', stopDebugLogServer)
+app.on('will-quit', stopDebugLogServer)
+
 // 运行中的转换子进程：用于右键「终止任务」
 const runningJobs = new Set()
 

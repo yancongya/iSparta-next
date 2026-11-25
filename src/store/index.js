@@ -10,7 +10,7 @@ import { resolveOutputPath, SEQ_DIR_DEFAULT_TEMPLATE } from '../util/outputPath'
 import { buildInitialOutputName } from '../util/tokenizeName'
 import { existingOutputFilesOf } from '../util/task-output'
 import { applyGlobalCompressionPatch } from '../util/globalPrefs'
-import { classifyOutputConflicts, planSourceRename } from '../util/outputConflict'
+import { classifyOutputConflicts, planSourceRename, allOutputTargets, planCrossItemRename } from '../util/outputConflict'
 import appLog from '../ui-next/log'
 import notice from '../ui-next/notice'
 import i18n from '../i18n'
@@ -102,7 +102,10 @@ const defaultState = {
       template: '{srcPath}'
     },
     // CEP 序列帧目录：出厂默认＝工程旁合成名目录；与产物 outputTo 互不引用
-    'seqDirTemplate': SEQ_DIR_DEFAULT_TEMPLATE
+    'seqDirTemplate': SEQ_DIR_DEFAULT_TEMPLATE,
+    // 本地调试日志 HTTP 服务：重启后自动开启（默认关，用户显式打开才持久化）。
+    // 实际服务与状态由 ui-next/log.js 的全局 controller 持有；此处仅为设置持久位。
+    'debugLog': { enabled: false }
   },
   basic: {
     fileList: [],
@@ -495,6 +498,24 @@ const mutations = {
     Vue.set(target.basic.outputNameOverride, payload.format, payload.name)
     persistItems()
   },
+  // 跨任务同名「另存」的一次性改名：与持久 override 同形（per-format），但独立字段。
+  // 只在本次转换生效——下次 preflight 入口清掉，任务名回到基础名，冲突重新识别。
+  [types.ITEMS_APPLY_TRANSIENT_NAME](state, payload) {
+    const target = resolveTargetItem(state, payload)
+    if (!target) return
+    if (!target.basic) target.basic = {}
+    if (!target.basic.transientNameOverride) Vue.set(target.basic, 'transientNameOverride', {})
+    Vue.set(target.basic.transientNameOverride, payload.format, payload.name)
+    persistItems()
+  },
+  [types.ITEMS_CLEAR_TRANSIENT_NAMES](state) {
+    state.items.forEach(function (item) {
+      if (item && item.basic && item.basic.transientNameOverride) {
+        Vue.set(item.basic, 'transientNameOverride', {})
+      }
+    })
+    persistItems()
+  },
   // 预检里用户明确选择「直接覆盖源文件」→ 标记该任务允许覆盖。
   // processor 的落盘保底（fallbackRenameForSource）见到该标记就放行。
   // 每次开始转换前 preflight 会先把上一轮的标记清掉，避免旧授权漏到下一次。
@@ -582,7 +603,15 @@ const actions = {
     // 纯浏览器 mock：种子预写产物供完成态角标演示，必然命中「目标文件已存在」，
     // 而 mock 转换写的是内存模拟产物、不碰真实文件，这类覆盖告警是假阳性，直接放行。
     if (isMockEnv()) { return true }
-    const list = (items && items.length) ? items : context.rootState.items
+    // items 兼容两种形态（签名不能变，L1 静态断言锁着）：
+    //  - 任务数组（sortBar 与 L1 沙箱）：无目录覆盖，用各 item 的 outputPath；
+    //  - { items, sameOutputPath }：「输出到目录」按钮选的新目录，预检必须与 processor
+    //    的落盘目录一致，否则会拿旧目录的产物误报「已存在」、又漏掉新目录的真同名。
+    const payload = (items && !Array.isArray(items) && items.items) ? items : null
+    const list = payload
+      ? (payload.items && payload.items.length ? payload.items : context.rootState.items)
+      : ((items && items.length) ? items : context.rootState.items)
+    const sameOutputPath = payload && payload.sameOutputPath ? String(payload.sameOutputPath) : ''
     // 覆盖授权只对本次有效：先清掉上一轮留下的标记，避免用户这次选了「另存为」，
     // 落盘时却仍被上一轮的「允许覆盖」放行。
     list.forEach(function (item) {
@@ -590,12 +619,17 @@ const actions = {
         context.dispatch('setSourceOverwrite', { item: item, value: false })
       }
     })
-    const conflicts = classifyOutputConflicts(list, function (file) {
-      try { return fs.existsSync(file) } catch (e) { return false }
-    })
+    // 跨任务「另存」的一次性改名同样只对本次有效：先清掉上一轮的临时名，
+    // 让下面的重分类从基础名出发 → 两个同名任务再次冲突 → 再次弹窗询问。
+    // 必须在 classifyNow 之前清，否则分类看到的是旧临时名、误判为无冲突。
+    context.dispatch('clearTransientNames')
     const existsFile = function (file) {
       try { return fs.existsSync(file) } catch (e) { return false }
     }
+    // 撞源「另存」会改掉实际产物名，跨任务冲突必须在改名后重新分类，
+    // 否则拿到的还是陈旧路径（旧名已让位，新名可能才真正撞车）。
+    const classifyNow = function () { return classifyOutputConflicts(list, existsFile, sameOutputPath) }
+    const conflicts = classifyNow()
     // 改名另存后可能出现新的「目标已存在」（如上一轮已产出过 cool_1.png），
     // 这类目标不在原始冲突分类里，要单独收集后一并提示。
     const extraExisting = []
@@ -641,7 +675,43 @@ const actions = {
         return false
       }
     }
-    const existingRows = conflicts.existing.concat(extraExisting)
+    // ---- 跨任务同名：两个任务写同一个目标，后者会静默覆盖前者（本次 6→5 的根因）----
+    // 必须在上面的撞源改名之后重新分类，确保拿到的是最终产物名。
+    const after = classifyNow()
+    if (after.crossItem.length) {
+      const rows = after.crossItem
+      const occupied = allOutputTargets(list, sameOutputPath).map(function (r) { return r.path })
+      const plan = planCrossItemRename(rows, occupied, existsFile)
+      const renamed = plan.filter(function (p) { return p.changed })
+      const choice = await notice.confirm({
+        title: i18n.t('noticeCrossItemTitle'),
+        text: i18n.t('noticeCrossItemBody', {
+          count: rows.length,
+          paths: fmt(rows)
+        }),
+        cancelText: i18n.t('cancel'),
+        // 破坏性备选：允许后一个任务覆盖前一个任务的同名产物
+        altText: i18n.t('overwriteCrossItem'),
+        altValue: 'overwrite',
+        confirmText: renamed.length === 1
+          ? i18n.t('overwriteRenameOne', { name: renamed[0].file })
+          : i18n.t('overwriteRenameMany', { count: renamed.length || rows.length })
+      })
+      if (choice === 'overwrite') {
+        // 落盘层只防「撞源」，本就不阻止覆盖非源的同名产物 → 无需额外标记
+      } else if (choice === true) {
+        // 给后一个任务写**一次性**实际产物名：本次 processor 深拷贝带走后落盘，
+        // 任务条同步显示；下次预检入口清除 → 任务名回基础名 → 再次询问。
+        // 不能写持久 applyNameOverride，否则改名残留、下次不再冲突也不再弹窗。
+        renamed.forEach(function (p) {
+          context.dispatch('applyTransientName', { item: p.item, format: p.format, name: p.name })
+          if (existsFile(p.renamed)) extraExisting.push({ item: p.item, path: p.renamed })
+        })
+      } else {
+        return false
+      }
+    }
+    const existingRows = after.existing.concat(extraExisting)
     if (existingRows.length) {
       notice.warning(
         i18n.t('noticeOverwriteExistingTitle'),
@@ -874,6 +944,13 @@ const actions = {
   // 落盘保底改名（cool → cool_1）写回任务条，供输出名实时显示实际产物名
   applyNameOverride(context, payload) {
     context.commit('ITEMS_APPLY_NAME_OVERRIDE', payload)
+  },
+  // 跨任务同名「另存」的一次性改名（本次转换有效，下次预检入口清除）
+  applyTransientName(context, payload) {
+    context.commit('ITEMS_APPLY_TRANSIENT_NAME', payload)
+  },
+  clearTransientNames(context) {
+    context.commit('ITEMS_CLEAR_TRANSIENT_NAMES')
   },
   setSourceOverwrite(context, payload) {
     context.commit('ITEMS_SET_SOURCE_OVERWRITE', payload)

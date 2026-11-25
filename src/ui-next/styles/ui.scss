@@ -712,6 +712,14 @@
     color: var(--is-text);
   }
 
+  // 标题栏可选操作区（布局切换等）：把标题推到左、操作与关闭按钮靠右成组
+  &__header-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--is-s-1);
+    margin-left: auto;
+  }
+
   &__close {
     display: inline-flex;
     align-items: center;
@@ -1896,6 +1904,31 @@ body.is-scroll-locked {
 
   .is-check__label { color: var(--is-text-3); }
   .is-check { gap: 6px; }
+}
+
+.log__debug {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  white-space: nowrap;
+  color: var(--is-text-3);
+  font-size: var(--is-fs-xs);
+  cursor: help;
+
+  .is-switchwrap__label { display: none; }
+}
+
+.log__debug-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--is-text-3);
+  flex: none;
+
+  &.is-ready { background: var(--is-ok, #3fb950); }
+  &.is-error { background: var(--is-bad, #f85149); }
+  &.is-starting { background: var(--is-accent); }
 }
 
 .log__list {

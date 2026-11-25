@@ -644,16 +644,11 @@ export default {
       }, 100)
     },
     formatStatic () {
-      if (!this.selectedList.length) {
-        return OUTPUT_FORMATS.slice()
-      }
-      // 源全是 GIF 时不提供 GIF 输出；混合类型保留完整选项
-      var allGif = this.selectedList.every(function (it) {
-        return it.basic && it.basic.type === 'GIF'
-      })
-      if (allGif) {
-        return OUTPUT_FORMATS.filter(function (f) { return f !== 'GIF' })
-      }
+      // 三种输出格式对任意源一视同仁：GIF 源也能选 GIF 输出。
+      // 撞源时不再是「藏掉 GIF 选项」这种特判，而是和 APNG/WEBP 同一条路线：
+      // 导入 detectSourceCollision 点亮后缀胶囊 → 开始 preflightOutputs 弹三选弹窗。
+      // （此前「源全是 GIF 就不给 GIF 输出」是半成品：UI 藏了但 options.outputFormat
+      //  里 GIF 还在，导致「看不到 GIF 却提示加了 _gif 后缀」的自相矛盾。）
       return OUTPUT_FORMATS.slice()
     },
     // ---------- 输出路径：模板是唯一真相源 ----------
@@ -1346,8 +1341,13 @@ export default {
     async start (sameOutputPath) {
       // 开始转换前再次提交输入草稿，避免点击按钮与宿主 blur 顺序差异导致沿用旧阈值。
       this.commitSizeDraft()
-      // 覆盖预检通过才收起设置面板；取消时用户可直接改输出名/后缀再试
-      const allowed = await this.$store.dispatch('preflightOutputs', this.selectedList)
+      // 覆盖预检通过才收起设置面板；取消时用户可直接改输出名/后缀再试。
+      // 「输出到目录」时把目标目录一并传下去：预检必须查真实落盘目录，
+      // 否则会拿每条任务自带的旧 outputPath 误报旧产物已存在。
+      const preflightPayload = sameOutputPath
+        ? { items: this.selectedList, sameOutputPath: sameOutputPath }
+        : this.selectedList
+      const allowed = await this.$store.dispatch('preflightOutputs', preflightPayload)
       if (!allowed) return
       let locale = this.$i18n.messages[this.$i18n.locale]
       for (var i = 0; i < this.selectedList.length; i++) {

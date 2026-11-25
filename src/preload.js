@@ -121,5 +121,13 @@ contextBridge.exposeInMainWorld('ispartaAPI', {
     execFile: (command, args, options) => {
       return ipcRenderer.invoke('job:execFile', command, args, options)
     }
+  },
+  // 本地调试日志 HTTP 服务：服务在主进程，renderer 只做开关控制与日志 feed。
+  // 与 CEP 侧 debugLog 桥同形（start/stop/status/feed），caller 按存在性探测即可。
+  debugLog: {
+    start: (port) => ipcRenderer.invoke('debugLog:start', port),
+    stop: () => ipcRenderer.invoke('debugLog:stop'),
+    status: () => ipcRenderer.invoke('debugLog:status'),
+    feed: (entries) => ipcRenderer.send('debugLog:feed', entries)
   }
 })

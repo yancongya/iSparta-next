@@ -585,6 +585,9 @@ export default {
         updateService.runUpdateCheck({ force: false }).catch(() => {})
       }, 8000)
     }
+    // 本地调试日志：按通用设置的持久位在启动时自动开启（失败静默，写日志）
+    // 防御：HMR 时序下 mounted 可能先于 methods 合并，缺方法时跳过而非抛错
+    if (typeof this.autoStartDebugLog === 'function') { this.autoStartDebugLog() }
   },
   beforeDestroy () {
     window.removeEventListener('paste', this.onPaste)
@@ -599,11 +602,29 @@ export default {
     }
     if (this._updateTimer) { clearTimeout(this._updateTimer); this._updateTimer = null }
     if (this._unsubTheme) this._unsubTheme()
+    // 页面卸载时停掉本地调试日志服务（桌面另有主进程 before-quit 兜底）
+    try { if (appLog && appLog.debugLog) { appLog.debugLog.dispose() } } catch (e) { /* ignore */ }
     if (this._onMove) document.removeEventListener('mousemove', this._onMove)
     if (this._onUp) document.removeEventListener('mouseup', this._onUp)
     if (document.body) document.body.classList.remove('side-narrow')
   },
   methods: {
+    // 从通用设置持久位读取并在启动时自动开启本地调试日志接口（失败静默写日志）
+    autoStartDebugLog () {
+      try {
+        const raw = storage.getItem('globalSetting')
+        const setting = raw ? JSON.parse(raw) : null
+        const enabled = !!(setting && setting.options && setting.options.debugLog && setting.options.debugLog.enabled)
+        const dbg = setting && setting.options && setting.options.debugLog
+        if (!enabled) return
+        const c = appLog && appLog.debugLog
+        if (!c || c.getSnapshot().enabled) return
+        // 端口由 log.js 的 open 适配统一从持久设置同步，无需此处重复注入
+        Promise.resolve(c.enable()).then((state) => {
+          appLog.info('debug log auto-start', state && state.status, 'bridge')
+        }).catch(() => {})
+      } catch (e) { /* 自动开启失败不影响主界面 */ }
+    },
     onCompPollVisibility () {
       if (this.supportsCompImport && document.visibilityState === 'visible' && !this.$store.state.locked) {
         this.loadAllCompsAsTasks()
@@ -1147,7 +1168,7 @@ export default {
       var opts = pickFile
         ? {
             properties: ['openFile', 'multiSelections'],
-            filters: [{ name: this.$t('importImageFilter'), extensions: ['png', 'gif', 'webp'] }]
+            filters: [{ name: this.$t('importImageFilter'), extensions: ['png', 'gif'] }]
           }
         : { properties: ['openDirectory'] }
       ipc.invoke('dialog:openFiles', opts).then((result) => {
@@ -1164,8 +1185,16 @@ export default {
           var srcNames = Array.prototype.map.call(list || [], function (f) {
             return (f && (f.name || f.path)) || String(f)
           })
-          appLog.warn(this.$t('noticeNothingFound'), srcNames.join(', '))
-          notice.warning(this.$t('noticeNothingFound'), this.$t('noticeNothingFoundTip'))
+          // WebP 只是输出格式、不能当源导入：给专门说明，避免误以为「识别不了图片」。
+          // 混入 webp 时也走这条（用户最困惑的就是它），其余不可识别文件维持通用提示。
+          var hasWebp = srcNames.some(function (n) { return /\.webp$/i.test(String(n)) })
+          if (hasWebp) {
+            appLog.warn(this.$t('noticeWebpInputTitle'), srcNames.join(', '))
+            notice.warning(this.$t('noticeWebpInputTitle'), this.$t('noticeWebpInputTip'))
+          } else {
+            appLog.warn(this.$t('noticeNothingFound'), srcNames.join(', '))
+            notice.warning(this.$t('noticeNothingFound'), this.$t('noticeNothingFoundTip'))
+          }
           return
         }
         appLog.info(

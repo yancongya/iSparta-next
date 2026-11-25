@@ -87,11 +87,14 @@ async function main () {
       ok(platform + ' 另存：只改撞源的那个格式', !!ov && ov.payload.format === 'APNG', { ov })
       ok(platform + ' 另存：不给覆盖授权', !calls.find((c) => c.type === 'setSourceOverwrite' && c.payload.value === true), { calls })
     }
-    // ---- 取消 → 放弃启动，一个副作用都不留 ----
+    // ---- 取消 → 放弃启动，除入口清理外一个副作用都不留 ----
     {
       const { allowed, calls } = await runWith(paths, false)
       ok(platform + ' 取消：预检不放行', allowed === false, { allowed })
-      ok(platform + ' 取消：不写任何状态', calls.length === 0, { calls })
+      // clearTransientNames 是预检入口的固定前置清理（保证每次重新判冲突），
+      // 与用户选择无关，不算「取消」的副作用；其余 dispatch 必须为空。
+      const sideEffects = calls.filter((c) => c.type !== 'clearTransientNames')
+      ok(platform + ' 取消：不写任何用户状态', sideEffects.length === 0, { calls })
     }
     // ---- 改名后的目标若已存在，也要纳入「目标已存在」提示（不静默覆盖）----
     {

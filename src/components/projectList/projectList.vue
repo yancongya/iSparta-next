@@ -862,8 +862,13 @@ export default {
       // applyNameOverride 写回 basic.outputNameOverride（per-format），这里优先取：
       // 有任一格式被保底改名就显示该实际名，避免任务条还停在旧名误导用户。
       // 无改名时回退 displayNameOf（基础名 + 冲突格式后缀），与往常一致。
-      const overrides = (project && project.basic && project.basic.outputNameOverride) || {}
-      const actual = overrides.APNG || overrides.GIF || overrides.WEBP || ''
+      // transient（跨任务同名另存）优先：本次转换用它落盘，任务条必须显示同一个名字；
+      // 下次预检入口清除后自然回落到持久名 / 基础名。
+      const b = (project && project.basic) || {}
+      const transient = b.transientNameOverride || {}
+      const overrides = b.outputNameOverride || {}
+      const actual = transient.APNG || transient.GIF || transient.WEBP ||
+        overrides.APNG || overrides.GIF || overrides.WEBP || ''
       if (actual) return actual
       // 与设置面板输入框同一口径：基础名 +（开关启用且有源冲突时）冲突格式后缀。
       // 之前只读 options.outputName 基础名，导致输入框显示 cool_apng、任务条仍显示 cool。

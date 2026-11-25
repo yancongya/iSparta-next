@@ -250,7 +250,8 @@ check('both start entries wait for preflight', () => {
   const sortBar = read('src/components/sortBar/sortBar.vue')
   const setting = read('src/components/setting/setting.vue')
   assert(/dispatch\('preflightOutputs', selected\)/.test(sortBar))
-  assert(/dispatch\('preflightOutputs', this\.selectedList\)/.test(setting))
+  // setting 传数组或 { items, sameOutputPath }（后者用于「输出到目录」）——两种都算等预检
+  assert(/dispatch\('preflightOutputs', (this\.selectedList|preflightPayload)\)/.test(setting))
 })
 check('setting shows suffix toggle in name row with dynamic display binding', () => {
   const setting = read('src/components/setting/setting.vue')

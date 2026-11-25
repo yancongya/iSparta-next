@@ -175,7 +175,10 @@ export function diagnoseToolchain () {
     let exists = false
     try { exists = fs.existsSync(dir) } catch (e) { /* ignore */ }
     if (!exists) { continue }
-    const summary = verifyToolchain(pf, path.join(c.base, 'bin'), { bases, log: false })
+    // ⚠ 校验 base 必须带平台子目录：cand = base/<exe>，工具实际在 bin/<pf>/<exe>。
+    //   旧代码传 `bin`（漏 <pf>）→ 逐个查 bin/<exe> 全部 missing → 环境检查误报 0/N。
+    //   Action.bin 走的是 bin/<pf>/，与本处口径必须一致。
+    const summary = verifyToolchain(pf, dir, { bases, log: false })
     summary.source = c.key
     summary.available = true
     return summary

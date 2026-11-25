@@ -97,6 +97,21 @@ processor/*  →  node-env.js（稳定导出）  →  window.ispartaAPI（preloa
 |------|------|------|
 | execFile | `(command: string, args?: string[], options?: { cwd?: string, maxBuffer?: number }) => Promise<ExecResult>` | 与 `job:execFile` 同义；**processor 实际走 `ipc.invoke('job:execFile')`，不直接用此项** |
 
+### 2.7b `debugLog`（本地调试日志 HTTP 服务，桌面 preload 提供）
+
+| 方法 | 签名 | 说明 |
+|------|------|------|
+| start | `(port?: number) => Promise<{ ok, url?, code?, error? }>` | 主进程用共享 `debugLogCore` + `require('http')` 起服务，默认端口 48764 |
+| stop | `() => Promise<{ ok }>` | 停止监听并回收连接 |
+| status | `() => Promise<{ listening, url }>` | 当前监听态 |
+| feed | `(entries: LogEntry[]) => void` | renderer 节流推送日志快照到主进程缓存（服务读缓存，避免每请求跨进程） |
+
+> CEP 面板不提供此组（其 renderer 有 node，直接用 `require('http')` + 共享 core 起服务，端口 48765）。
+> 两处 UI 开关（日志面板、通用设置）依赖 `ui-next/log.js` 的全局 controller，不直接调桥。
+> 端口可在通用设置 → 常规配（`setting.options.debugLog.port`，1-65535）：`debugLogHost.js` 模块级
+> 单例 `setDebugLogPort()` 注入，桌面经本桥 `start(port)` 传入、CEP 直接传给 `createDebugLogServer`；
+> 两端 bundle 各自独立默认值（48764 / 48765）。服务开着时改端口会 disable→enable 立即重启。
+
 ### 2.8 IPC 通道契约（转换核涉及）
 
 | 通道 | 方向 | 载荷 / 返回 |
@@ -105,6 +120,10 @@ processor/*  →  node-env.js（稳定导出）  →  window.ispartaAPI（preloa
 | `got-app-path` | on | `appPath: string`（生产环境 bin 根：`appPath/bin/<platform>`） |
 | `job:execFile` | invoke | 入参 `(command, args, options)`；返回 `ExecResult` |
 | `job:cancelAll` | invoke | 终止运行中的转换子进程（列表页右键用，非 processor） |
+| `debugLog:start` | invoke | 入参 `(port?)`；返回 `{ ok, url?, code?, error? }`（`code` 如 EADDRINUSE） |
+| `debugLog:stop` | invoke | 停止服务 `{ ok }` |
+| `debugLog:status` | invoke | `{ listening, url }` |
+| `debugLog:feed` | send | `(entries: LogEntry[])`，renderer 节流推日志快照 |
 
 `ExecResult`：
 

@@ -181,6 +181,17 @@ async function main () {
     ok('取消仍 resolve(false)', (await p3) === false)
   }
 
+  // ---- 8) toast 容器必须挂到 body，否则被 teleport 到 body 的 dialog 盖住 ----
+  {
+    // 背景：.is-notice 原来嵌在 .ib 内；日志面板 IsDialog teleport 到 body 后，
+    // 两者不同层叠上下文，toast 的 z-index:3000 失效，被 dialog(2000) 盖住看不见。
+    // 实测 elementFromPoint：修复前命中 dialog header，把容器移到 body 后命中 toast 自身。
+    const host = require('fs').readFileSync(path.join(__dirname, '..', 'src', 'ui-next', 'components', 'IsNoticeHost.vue'), 'utf8')
+    ok('IsNoticeHost 有 mounted 钩子', /mounted \(\) \{/.test(host))
+    ok('IsNoticeHost 把根节点挂到 body', /document\.body\.appendChild\(this\.\$el\)/.test(host))
+    ok('IsNoticeHost 挂载前判重避免重复 append', /parentNode !== document\.body/.test(host))
+  }
+
   console.log('\nnotice L1:', passed, 'passed,', failed, 'failed')
   if (failed) process.exitCode = 1
 }

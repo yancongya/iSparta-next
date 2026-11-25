@@ -32,6 +32,10 @@ export const ITEMS_EDIT_PROCESS = 'ITEMS_EDIT_PROCESS'
 // 落盘保底改名回写（转换中 locked，绕过锁；按每项 index 写 per-format 的实际产物名）
 export const ITEMS_APPLY_NAME_OVERRIDE = 'ITEMS_APPLY_NAME_OVERRIDE'
 
+// 跨任务同名「另存」的一次性改名：只服务本次转换，下次 preflight 入口清除
+export const ITEMS_APPLY_TRANSIENT_NAME = 'ITEMS_APPLY_TRANSIENT_NAME'
+export const ITEMS_CLEAR_TRANSIENT_NAMES = 'ITEMS_CLEAR_TRANSIENT_NAMES'
+
 // 预检里用户明确选择「直接覆盖源文件」：标记该任务允许覆盖，processor 的保底改名放行
 export const ITEMS_SET_SOURCE_OVERWRITE = 'ITEMS_SET_SOURCE_OVERWRITE'
 
