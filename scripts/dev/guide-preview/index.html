@@ -189,9 +189,9 @@ button{font-family:inherit;color:inherit}
 .frame[hidden]{display:none}
 /* 无边框：不渲染系统标题栏，设置按钮浮在面板内右上角（对应真实窗的自绘按钮） */
 .titlebar{
-  position:absolute;top:0;right:0;z-index:30;
+  position:absolute;top:var(--is-s-5);right:var(--is-s-5);z-index:30;
   height:34px;display:flex;align-items:center;gap:var(--is-s-2);
-  padding:0 var(--is-s-3);background:transparent;border:0;border-radius:0;
+  padding:0;background:transparent;border:0;border-radius:0;
 }
 .tl,.tb-name{display:none}
 
@@ -403,12 +403,22 @@ button{font-family:inherit;color:inherit}
      --ink→--is-text   --muted→--is-text-2 --accent→--is-accent
    ============================================================================ */
 
-/* --- 欢迎页：透明渐变光晕（mimo 同款：多层 radial-gradient + 大半径 blur + 缓慢漂移） ---
-   作用域限定在欢迎步 data-i="0"；光斑铺在内容底层，不参与 flex，绝对定位。
-   三个光斑各自用 radial-gradient 从中心向外羽化到透明，容器再叠一层 blur 收边，
-   keyframes 只动 transform（位移/缩放），低开销。关闭动效/reduce 时停住落到静态构图。 */
+/* --- 全局光晕（mimo 同款：多层 radial-gradient + 大半径 blur + 缓慢漂移） ---
+   光斑挂在 .screen 层，铺满所有步骤；不参与 flex，绝对定位。三个光斑各自用
+   radial-gradient 从中心向外羽化到透明，容器叠 blur 收边，keyframes 只动 transform。
+   亮度分两档：欢迎步 .glow-full 满亮（配深色字压亮光核），其余步骤降档成柔光底
+   （否则裸文字/暗色模拟面板压在亮核上会失去对比）。关闭动效/reduce 时停住。 */
+.screen{isolation:isolate}
+.glow-field{
+  position:absolute;inset:-20%;z-index:0;pointer-events:none;
+  filter:blur(34px) saturate(115%);
+  opacity:var(--is-glow-dim,.42);
+  transition:opacity var(--is-dur-slow) var(--is-ease-std);
+}
+.screen.glow-full .glow-field{opacity:1}
+/* 光晕在底层，所有步骤内容压在其上 */
+.step{position:absolute;inset:0;z-index:1}
 .step[data-i="0"]{
-  isolation:isolate;
   /* 欢迎页一屏铺满：光晕 inset:-20% 会撑出滚动条，这里直接裁掉 */
   overflow:hidden;
   /* 光核是亮色，文字/卡片改为深色系（与参考图"深字压亮光"一致）；
@@ -421,10 +431,6 @@ button{font-family:inherit;color:inherit}
 }
 .step[data-i="0"] .card:hover{background:rgba(255,255,255,.68);border-color:rgba(255,255,255,.9)}
 .step[data-i="0"] .brand-name em{color:#7a5236}
-.glow-field{
-  position:absolute;inset:-20%;z-index:0;pointer-events:none;
-  filter:blur(34px) saturate(115%);
-}
 .glow-field .orb{
   position:absolute;display:block;border-radius:50%;
   opacity:var(--is-glow-op);will-change:transform;
@@ -447,8 +453,6 @@ button{font-family:inherit;color:inherit}
 @keyframes glow-drift1{0%{transform:translate3d(-4%,2%,0) scale(1)}100%{transform:translate3d(6%,-4%,0) scale(1.12)}}
 @keyframes glow-drift2{0%{transform:translate3d(3%,-5%,0) scale(1.06)}100%{transform:translate3d(-5%,4%,0) scale(.92)}}
 @keyframes glow-drift3{0%{transform:translate3d(-3%,3%,0) scale(.95)}100%{transform:translate3d(5%,-6%,0) scale(1.1)}}
-/* 内容层压在光晕之上 */
-.step[data-i="0"] > :not(.glow-field){position:relative;z-index:1}
 /* 关闭动效 / reduce：光斑停住，保留静态柔光构图 */
 .no-motion .glow-field .orb{animation:none!important}
 @media (prefers-reduced-motion:reduce){.glow-field .orb{animation:none!important}}
@@ -777,14 +781,17 @@ button{font-family:inherit;color:inherit}
         <i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i>
       </div>
 
-      <div class="screen">
+      <div class="screen glow-full">
+
+        <!-- 全局光晕：三枚径向渐变光斑 + blur + 缓慢漂移，铺满所有步骤（明暗各一套色）。
+             放在 screen 层只渲染一份；欢迎步 JS 会加 glow-full 提亮到深字压亮光档，
+             其余步骤降档成柔光底，保证裸文字与深色模拟面板的对比。 -->
+        <div class="glow-field" aria-hidden="true">
+          <i class="orb orb1"></i><i class="orb orb2"></i><i class="orb orb3"></i>
+        </div>
 
         <!-- ---------- 1 欢迎 ---------- -->
         <section class="step on" data-i="0">
-          <!-- 透明渐变光晕：三枚径向渐变光斑 + blur + 缓慢漂移，明暗各一套色 -->
-          <div class="glow-field" aria-hidden="true">
-            <i class="orb orb1"></i><i class="orb orb2"></i><i class="orb orb3"></i>
-          </div>
           <!-- 项目 logo：与 public/icons/icon-brand.svg 同源几何，色值走 token -->
           <svg class="demo demo--brand" viewBox="0 0 132 132" role="img" aria-label="iSparta-next">
             <circle cx="66" cy="66" r="54" fill="none" stroke="var(--is-border-strong)" stroke-width="1.5" opacity=".5"/>
@@ -1483,6 +1490,8 @@ button{font-family:inherit;color:inherit}
 
   /* ------------------------------------------------------------------ 渲染 */
   function render () {
+    /* 光晕亮度分档：欢迎步满亮（深字压亮光核），其余步骤降档成柔光底 */
+    frame.querySelector('.screen').classList.toggle('glow-full', cur === 0)
     steps.forEach(function (s, i) { s.classList.toggle('on', i === cur) })
     stepBtns.forEach(function (b, i) { b.classList.toggle('on', i === cur) })
     Array.prototype.slice.call(dots.children).forEach(function (d, i) {
