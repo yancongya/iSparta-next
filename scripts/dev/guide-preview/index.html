@@ -458,23 +458,16 @@ button{font-family:inherit;color:inherit}
    其余步骤降档成柔光底（否则裸文字/暗色模拟面板压在亮核上会失去对比）。
    关闭动效/reduce 时停住。 */
 .glow-field{
-  position:absolute;inset:-20%;z-index:0;pointer-events:none;
-  /* mimocode 同款：大半径 blur 收掉规整轮廓，光斑融成柔和 mesh 而非一个白椭圆 */
-  filter:blur(28px) saturate(124%);
-  /* 色温缓慢循环：暖米白 ↔ 淡橙粉，配合三枚 orb 的呼吸让颜色真的在动。
-     blur 28：36 会把 border-radius 削出的 blob 轮廓糊回椭圆，28 保留变形形状又够柔 */
+  /* 收进面板内（inset:0）：光斑只在面板范围内活动，边缘靠自身渐变到透明羽化，
+     不靠静态椭圆遮罩。静态遮罩会把 blob 变形全吃掉（轮廓被锁成大椭圆）——
+     这是「变形不明显」的真正根因。 */
+  position:absolute;inset:0;z-index:0;pointer-events:none;
+  /* blur 18：够柔化 blob 削角成流体感，又不像 28 那样把形状糊回椭圆 */
+  filter:blur(18px) saturate(124%);
+  /* 色温缓慢循环：暖米白 ↔ 淡橙粉，配合三枚 orb 的呼吸让颜色真的在动 */
   animation:glow-hue 14s var(--is-ease-std) infinite;
   opacity:var(--is-glow-dim,.42);
   transition:opacity var(--is-dur-slow) var(--is-ease-std);
-  /* 边缘羽化：光晕层 inset:-20% 比面板大一圈，亮核伸到面板边会被 .frame 的
-     overflow:hidden 切成硬直线（顶部白线 / 左右暖色竖缝）。用椭圆遮罩在面板
-     边缘内侧渐隐到透明，alpha 边缘自然消失。
-     几何：遮罩框 = 面板×1.4，ellipse 72% 半径 = 面板×1.008；面板边缘距中心
-     = 面板×0.5 ÷ 1.008 ≈ 49.6% 半径处。transparent 必须落在 49.6% 之前（这里
-     用 48%），否则边缘仍残留亮度→硬线。38% 前保持实心，保住光核亮度。
-     亮度分档（glow-dim / glow-full）照常叠加，不受影响。 */
-  -webkit-mask-image:radial-gradient(ellipse 72% 72% at 50% 50%,#000 38%,transparent 48%);
-  mask-image:radial-gradient(ellipse 72% 72% at 50% 50%,#000 38%,transparent 48%);
 }
 .frame.glow-full .glow-field{opacity:1}
 /* 光晕在底层，顶栏/内容/底栏都压在其上 */
@@ -525,53 +518,55 @@ button{font-family:inherit;color:inherit}
   opacity:var(--is-glow-op);will-change:transform,border-radius;
 }
 .glow-field .orb1{
-  /* 主光核：暖金白发光——中心提亮到 .95 聚成光核，衰减收紧（26% 还在 .7），
-     暖色成团而非摊成灰雾；blur 36 保留暖色，轮廓仍柔和不规整 */
-  width:60%;height:76%;left:20%;top:0%;
-  /* 渐变推到 96% 才透明（原来 88%）：让填充贴近 div 边界，border-radius 削出的
-     blob 轮廓才显现；blur 36 再把不规则边柔化成流体感而非硬角 */
-  background:radial-gradient(ellipse 58% 62% at 48% 40%,
-    rgba(var(--is-glow-1),.96) 0%,rgba(var(--is-glow-1),.86) 34%,
-    rgba(var(--is-glow-1),.6) 62%,rgba(var(--is-glow-1),.34) 84%,rgba(var(--is-glow-1),.14) 100%);
-  animation:glow-drift1 13s var(--is-ease-std) infinite;
+  /* 主光核：暖金白 blob。收进面板内（left:22% top:6%），渐变到 100% 全透明
+     靠自身羽化收边（不再用静态遮罩）。中心实、边缘 80% 才快速淡出，
+     border-radius 削出的不规则轮廓才带光、看得出流体变形。 */
+  width:52%;height:66%;left:22%;top:6%;
+  background:radial-gradient(ellipse at 46% 42%,
+    rgba(var(--is-glow-1),.96) 0%,rgba(var(--is-glow-1),.9) 30%,
+    rgba(var(--is-glow-1),.6) 58%,rgba(var(--is-glow-1),.2) 80%,rgba(var(--is-glow-1),0) 100%);
+  animation:glow-drift1 7s var(--is-ease-std) infinite;
 }
 .glow-field .orb2{
-  /* 暖橙斑块：提浓并收紧成团，作为主光核下方的暖色晕染 */
-  width:50%;height:58%;left:-2%;top:34%;
+  /* 暖橙斑块：内收位置（left:8% top:36%），位移放大仍不溢出面板成硬边 */
+  width:44%;height:54%;left:8%;top:36%;
   background:radial-gradient(ellipse at center,
-    rgba(var(--is-glow-2),.56) 0%,rgba(var(--is-glow-2),.44) 40%,rgba(var(--is-glow-2),.26) 70%,rgba(var(--is-glow-2),.1) 100%);
-  animation:glow-drift2 16s var(--is-ease-std) infinite;
+    rgba(var(--is-glow-2),.68) 0%,rgba(var(--is-glow-2),.5) 43%,
+    rgba(var(--is-glow-2),.18) 72%,rgba(var(--is-glow-2),0) 100%);
+  animation:glow-drift2 9s var(--is-ease-std) infinite;
 }
 .glow-field .orb3{
-  /* 淡粉斑块：暖粉色，比橙淡一档，右上方晕染增加色温层次 */
-  width:48%;height:54%;right:-2%;top:4%;
+  /* 淡粉斑块：内收（right:8% top:8%），暖粉色增加色温层次 */
+  width:42%;height:52%;right:8%;top:8%;
   background:radial-gradient(ellipse at center,
-    rgba(var(--is-glow-3),.4) 0%,rgba(var(--is-glow-3),.3) 42%,rgba(var(--is-glow-3),.16) 72%,rgba(var(--is-glow-3),.06) 100%);
-  animation:glow-drift3 19s var(--is-ease-std) infinite;
+    rgba(var(--is-glow-3),.5) 0%,rgba(var(--is-glow-3),.38) 43%,
+    rgba(var(--is-glow-3),.15) 72%,rgba(var(--is-glow-3),0) 100%);
+  animation:glow-drift3 11s var(--is-ease-std) infinite;
 }
-/* 去 alternate 改 0→33→66→100 闭环：三个光斑除位移/缩放/旋转/透明度外，
-   还用 8 值 border-radius 做 blob 变形——轮廓本身从椭圆流变成不规则形状，
-   不再只是「一个椭圆在平移」。三枚变形序列各不相同 + 周期 13/16/19s 互质，
-   叠加后整体形态持续变化、不会周期性重复成"死循环"。 */
+/* 0→33→66→100 闭环：三枚光斑用极限 8 值 border-radius（24%↔76%）做真流体
+   blob 变形——轮廓从椭圆大幅扭成不规则形状，配合位移/缩放/旋转/透明度呼吸。
+   变形幅度比上一版翻倍（原来 48%↔62% 只差 14 点，肉眼几乎看不出）。
+   周期 7/9/11s 互质且更快（原来 13/16/19s 太慢），叠加后形态持续流动。
+   位移已内收：光斑收在面板内、渐变到 100% 全透明，变形可见又不露硬切边。 */
 @keyframes glow-drift1{
-  0%,100%{transform:translate3d(-10%,5%,0) scale(.92) rotate(-6deg);border-radius:48% 52% 55% 45% / 50% 46% 54% 50%;opacity:.78}
-  33%{transform:translate3d(2%,-6%,0) scale(1.14) rotate(3deg);border-radius:62% 38% 45% 55% / 62% 58% 42% 38%;opacity:1}
-  66%{transform:translate3d(8%,-7%,0) scale(1.2) rotate(6deg);border-radius:38% 62% 60% 40% / 42% 55% 45% 58%;opacity:.9}
+  0%,100%{transform:translate3d(-5%,3%,0) scale(.9) rotate(-8deg);border-radius:24% 76% 70% 30% / 34% 26% 74% 66%;opacity:.9}
+  33%{transform:translate3d(3%,-5%,0) scale(1.12) rotate(4deg);border-radius:76% 24% 30% 70% / 70% 76% 24% 30%;opacity:1}
+  66%{transform:translate3d(6%,-3%,0) scale(1.18) rotate(9deg);border-radius:30% 70% 26% 74% / 26% 66% 34% 74%;opacity:.94}
 }
 @keyframes glow-drift2{
-  0%,100%{transform:translate3d(7%,-8%,0) scale(1.04) rotate(4deg);border-radius:55% 45% 42% 58% / 48% 55% 45% 52%;opacity:.28}
-  33%{transform:translate3d(-3%,2%,0) scale(1.3) rotate(-4deg);border-radius:40% 60% 58% 42% / 60% 40% 55% 45%;opacity:.95}
-  66%{transform:translate3d(-9%,7%,0) scale(1.18) rotate(-8deg);border-radius:60% 40% 45% 55% / 38% 60% 42% 62%;opacity:.6}
+  0%,100%{transform:translate3d(5%,-5%,0) scale(1) rotate(6deg);border-radius:22% 78% 72% 28% / 30% 26% 74% 70%;opacity:.6}
+  33%{transform:translate3d(-3%,2%,0) scale(1.28) rotate(-6deg);border-radius:78% 22% 28% 72% / 72% 78% 22% 28%;opacity:1}
+  66%{transform:translate3d(-7%,6%,0) scale(1.14) rotate(-10deg);border-radius:28% 72% 24% 76% / 26% 70% 30% 74%;opacity:.7}
 }
 @keyframes glow-drift3{
-  0%,100%{transform:translate3d(-7%,4%,0) scale(1.1) rotate(-5deg);border-radius:50% 50% 60% 40% / 55% 45% 50% 50%;opacity:.85}
-  33%{transform:translate3d(4%,-5%,0) scale(.88) rotate(3deg);border-radius:58% 42% 38% 62% / 42% 58% 60% 40%;opacity:.22}
-  66%{transform:translate3d(9%,-7%,0) scale(1.02) rotate(8deg);border-radius:42% 58% 62% 38% / 60% 42% 45% 55%;opacity:.7}
+  0%,100%{transform:translate3d(-5%,3%,0) scale(1.06) rotate(-6deg);border-radius:26% 74% 76% 24% / 32% 26% 74% 68%;opacity:.9}
+  33%{transform:translate3d(3%,-4%,0) scale(.84) rotate(5deg);border-radius:74% 26% 24% 76% / 74% 74% 26% 24%;opacity:.3}
+  66%{transform:translate3d(7%,-6%,0) scale(1) rotate(10deg);border-radius:24% 76% 28% 72% / 28% 68% 32% 72%;opacity:.8}
 }
 /* 色温循环：blur 不变，只让饱和度与色相缓慢游移（暖米白↔淡橙粉） */
 @keyframes glow-hue{
-  0%,100%{filter:blur(28px) saturate(116%) hue-rotate(0deg)}
-  50%{filter:blur(28px) saturate(142%) hue-rotate(-14deg)}
+  0%,100%{filter:blur(18px) saturate(116%) hue-rotate(0deg)}
+  50%{filter:blur(18px) saturate(142%) hue-rotate(-14deg)}
 }
 /* 关闭动效 / reduce：光斑与色温都停住，保留静态柔光构图 */
 .no-motion .glow-field,.no-motion .glow-field .orb{animation:none!important}

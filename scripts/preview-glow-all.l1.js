@@ -37,9 +37,9 @@ ok('欢迎步内不再有独立 glow-field', raw.indexOf('glow-field', firstStep
 // 2. 三枚 orb + 渐变 + blur + 动画
 ok('三枚 orb', /<i class="orb orb1"><\/i><i class="orb orb2"><\/i><i class="orb orb3"><\/i>/.test(raw))
 ok('radial-gradient 光斑', (raw.match(/radial-gradient\(ellipse/g) || []).length >= 3)
-ok('blur 收边（28px：够柔但保住 border-radius 削出的 blob 轮廓）', /\.glow-field\{[^}]*filter:blur\(28px\)/.test(raw))
-ok('glow-hue 关键帧 blur 与静态值一致 28px（否则动画会把 28 覆盖回旧值）',
-  (hueRaw => hueRaw && (hueRaw.match(/blur\(28px\)/g) || []).length >= 2)(
+ok('blur 18px（够柔又不把流体 blob 轮廓糊回椭圆）', /\.glow-field\{[^}]*filter:blur\(18px\)/.test(raw))
+ok('glow-hue 关键帧 blur 与静态值一致 18px（否则动画会把 18 覆盖回旧值）',
+  (hueRaw => hueRaw && (hueRaw.match(/blur\(18px\)/g) || []).length >= 2)(
     (raw.match(/@keyframes glow-hue\{[\s\S]*?\n\}/) || [''])[0]))
 ok('暗色暖光 token（暖金白主核 + 暖橙 + 暖粉，非灰米白）',
   /--is-glow-1:255,238,210;--is-glow-2:246,186,128;--is-glow-3:240,172,164/.test(raw))
@@ -77,18 +77,21 @@ ok('每枚光斑的 blob 形状在各相位互不相同（真的变形，非固�
     return new Set(vals).size >= 3
   }))
 ok('orb 的 will-change 含 border-radius（变形走合成层）', /\.glow-field \.orb\{[^}]*will-change:transform,border-radius/.test(raw))
-ok('光斑渐变边缘够实（100% 处仍非 transparent，blob 削角才带颜色）',
-  (raw.match(/rgba\(var\(--is-glow-[123]\),\.\d+\) 100%\)/g) || []).length >= 3)
+ok('光斑渐变到 100% 全透明（靠自身羽化收边，不用静态遮罩）',
+  (raw.match(/rgba\(var\(--is-glow-[123]\),0\) 100%\)/g) || []).length >= 3)
+ok('blob 变形幅度够大（24%↔76% 极限值，非旧版 48%↔62%）',
+  driftBlocks.every(blk => /border-radius:2[0-9]% 7[0-9]%/.test(blk) || /border-radius:7[0-9]% 2[0-9]%/.test(blk)))
+ok('光斑周期提速（7/9/11s，旧版 13/16/19s 太慢看着像静态）',
+  ['glow-drift1 7s','glow-drift2 9s','glow-drift3 11s'].every(s => new RegExp('animation:' + s).test(raw)))
 ok('关闭动效同时停光晕场与光斑', /\.no-motion \.glow-field,\.no-motion \.glow-field \.orb\{animation:none!important\}/.test(raw))
 
-// 3. 亮度分档 + 边缘羽化（防光晕被 overflow:hidden 切成硬直线）
+// 3. 亮度分档 + 边缘羽化（光斑自身渐变透明 + 收进面板，不用静态椭圆遮罩）
 ok('默认降档 token', /\.glow-field\{[^}]*opacity:var\(--is-glow-dim,\.?\d+\)/.test(raw))
 ok('glow-full 满亮', /\.frame\.glow-full \.glow-field\{opacity:1\}/.test(raw))
-ok('光晕边缘羽化遮罩（椭圆渐隐到透明，消除硬裁切）',
-  /\.glow-field\{[^}]*mask-image:radial-gradient\(ellipse 72% 72% at 50% 50%,#000 38%,transparent 48%\)/.test(raw))
-ok('遮罩带 webkit 前缀', /-webkit-mask-image:radial-gradient\(ellipse 72%/.test(raw))
-ok('transparent 落点 48% < 面板边缘 49.6%（否则边缘残留亮度成硬线）',
-  /#000 38%,transparent 48%/.test(raw))
+ok('无静态椭圆遮罩（它曾把 blob 变形全吃掉、轮廓锁成固定椭圆）',
+  !/mask-image:radial-gradient/.test(raw) && !/-webkit-mask-image/.test(raw))
+ok('光晕层收进面板内 inset:0（光斑不溢出面板、边缘自身羽化不硬切）',
+  /\.glow-field\{[^}]*position:absolute;inset:0;z-index:0/.test(raw))
 
 // 4. render 切档
 ok('render 按当前步切 glow-full',
@@ -97,7 +100,7 @@ ok('render 按当前步切 glow-full',
 // 5. 层级
 ok('step 内容 z-index 高于光晕', /\.step\{position:absolute;inset:0;z-index:1\}/.test(raw))
 ok('欢迎步裁滚动条', /\.step\[data-i="0"\]\{[^}]*overflow:hidden/.test(raw))
-ok('光晕 absolute 底层 z-index:0', /\.glow-field\{[^}]*position:absolute;inset:-20%;z-index:0/.test(raw))
+ok('光晕 absolute 底层 z-index:0', /\.glow-field\{[^}]*position:absolute;inset:0;z-index:0/.test(raw))
 
 // 6. alpha 通道视觉：面板全透明无边界（mimocode 真透明窗）+ 舞台棋盘格 + 顶/底栏无条带
 ok('面板全透明（无卡片底色）', /\.frame\{[^}]*background:transparent/.test(raw))
