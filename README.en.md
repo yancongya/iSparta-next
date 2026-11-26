@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="public/icons/icon-brand.svg" alt="iSparta-next icon" width="120" height="120">
+<img src="public/isparta-next-media-state-cycle-loop.svg" alt="iSparta-next icon" width="120" height="120">
 
 <h1>iSparta-next</h1>
 
