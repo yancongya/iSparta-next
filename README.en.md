@@ -52,8 +52,10 @@
 - **Onboarding (7 pages):** Welcome → Import → Output → Naming → Path variables → AE → Done, with a fluid glow backdrop, covering import methods, output settings and naming rules in one pass
 - **Unified brand mark:** Desktop, AE CEP panel, and landing page share a unified static-by-default, animated-on-hover brand logo interaction; the welcome screen uses an animated state-cycle mark
 - **Release notes:** the About page gains a changelog entry with concise highlights, expandable details and history browsing; in CEP the update, upgrade and changelog dialogs fill the panel vertically with an internally scrolling content area
-- **Overwrite protection & lossless APNG:** Output name conflict suffixing and a 3-way overwrite prompt (Overwrite / Save with suffix / Cancel); APNG supports lossless 32-bit RGBA output with persistent size-estimate badges
-- **Comparison & debugging:** Refactored before/after comparison dialog, plus a local debug-log toggle and inline port display in global settings
+- **Overwrite protection & lossless APNG:** per-format conflict suffixing (toggle on the output-name row, mirrored on the task card); both source-file and cross-task name collisions use a 3-way prompt (Overwrite / Save with suffix / Cancel) — never a silent overwrite; APNG supports lossless 32-bit RGBA output with persistent size-estimate badges
+- **Task cards & tips:** file name / sequence / source size shown as hoverable chips, redesigned pill progress bar with a shimmer; estimates and long tips unified into mouse-following rich cards with text-only semantic colors
+- **Messages & prompts:** toasts unified into top pills with fixes for "never shown / hidden behind dialogs"; all blocking prompts consolidated into one dialog (Cancel / Confirm / Destructive alternative)
+- **Comparison & debugging:** the before/after dialog supports draggable divider, canvas zoom & pan, switchable backgrounds and one-click animation resync; global settings offer a local debug-log toggle with inline port display and one-click Agent Prompt copy
 
 Full per-version changes: [`docs/CHANGELOG.md`](docs/CHANGELOG.md).
 
