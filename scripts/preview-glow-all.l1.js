@@ -37,7 +37,12 @@ ok('欢迎步内不再有独立 glow-field', raw.indexOf('glow-field', firstStep
 // 2. 三枚 orb + 渐变 + blur + 动画
 ok('三枚 orb', /<i class="orb orb1"><\/i><i class="orb orb2"><\/i><i class="orb orb3"><\/i>/.test(raw))
 ok('radial-gradient 光斑', (raw.match(/radial-gradient\(ellipse/g) || []).length >= 3)
-ok('blur 收边（mimocode 大半径 48px 融掉规整轮廓）', /\.glow-field\{[^}]*filter:blur\(48px\)/.test(raw))
+ok('blur 收边（36px：够柔但不把暖色抹成灰雾）', /\.glow-field\{[^}]*filter:blur\(36px\)/.test(raw))
+ok('glow-hue 关键帧 blur 与静态值一致 36px（否则动画会把 36 覆盖回旧值）',
+  (hueRaw => hueRaw && (hueRaw.match(/blur\(36px\)/g) || []).length >= 2)(
+    (raw.match(/@keyframes glow-hue\{[\s\S]*?\n\}/) || [''])[0]))
+ok('暗色暖光 token（暖金白主核 + 暖橙 + 暖粉，非灰米白）',
+  /--is-glow-1:255,238,210;--is-glow-2:246,186,128;--is-glow-3:240,172,164/.test(raw))
 ok('keyframes 漂移', ['glow-drift1', 'glow-drift2', 'glow-drift3'].every(k => raw.indexOf('@keyframes ' + k) > -1))
 
 // 2b. 动态渐变：形状（位移/缩放/旋转）+ 颜色（色温循环 + 斑块透明度呼吸）都要真的在动
@@ -84,8 +89,20 @@ ok('光晕 absolute 底层 z-index:0', /\.glow-field\{[^}]*position:absolute;ins
 // 6. alpha 通道视觉：面板全透明无边界（mimocode 真透明窗）+ 舞台棋盘格 + 顶/底栏无条带
 ok('面板全透明（无卡片底色）', /\.frame\{[^}]*background:transparent/.test(raw))
 ok('面板无圆角（去掉四周边界，靠光晕羽化）', /\.frame\{[^}]*border-radius:0;/.test(raw))
-ok('光晕色温统一暖米白（暗色主光核非纯白）', /--is-glow-1:238,228,214/.test(raw))
-ok('欢迎副标题加深+亮色描边保对比', /\.step\[data-i="0"\] \.sub\{[^}]*color:#2b2520[^}]*text-shadow/.test(raw))
+ok('欢迎副标题加深+亮色描边（亮色主题基线）', /\.step\[data-i="0"\] \.sub\{[^}]*color:#2b2520[^}]*text-shadow/.test(raw))
+
+// 6b. 暗色主题欢迎页：浅字 + 暗玻璃卡 + 暖色发光（亮色基线保留，暗色整块翻转）
+ok('暗色覆盖块存在（.theme-dark 前缀，特异性高于亮色基线）',
+  /\.theme-dark \.step\[data-i="0"\]\{[^}]*--is-text:#fbf3e8/.test(raw))
+ok('暗色标题/副标题加暗色护底 text-shadow',
+  /\.theme-dark \.step\[data-i="0"\] \.brand-name,\s*\.theme-dark \.step\[data-i="0"\] \.sub\{[^}]*text-shadow:0 1px 3px rgba\(0,0,0/.test(raw))
+ok('暗色副标题转暖亮色', /\.theme-dark \.step\[data-i="0"\] \.sub\{color:#f6ecdf/.test(raw))
+ok('暗色卡片改暗色玻璃（非白底）',
+  /\.theme-dark \.step\[data-i="0"\] \.card\{[^}]*background:rgba\(18,14,11,\.46\)/.test(raw))
+ok('暗色卡片标题/描述转浅色',
+  /\.theme-dark \.step\[data-i="0"\] \.card \.t\{color:#fff6ea\}/.test(raw) &&
+  /\.theme-dark \.step\[data-i="0"\] \.card \.d\{color:rgba\(255,246,234/.test(raw))
+ok('暗色 -next 后缀转暖金（非深棕）', /\.theme-dark \.step\[data-i="0"\] \.brand-name em\{color:#ffd6a0\}/.test(raw))
 ok('舞台棋盘格模拟透明底', /\.stage\{[\s\S]{0,220}conic-gradient\(from 90deg/.test(raw))
 ok('舞台铺满窗口高度', /\.stage\{[\s\S]{0,120}height:100%/.test(raw))
 ok('棋盘格令牌两套主题齐全', (raw.match(/--is-checker:/g) || []).length === 2)
