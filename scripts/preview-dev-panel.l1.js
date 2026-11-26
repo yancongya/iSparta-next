@@ -52,7 +52,7 @@ ok('不再有旧的 .frame.ctrl-collapsed 契约', !/ctrl-collapsed/.test(raw))
 ok('不再有 detached 契约', !/detached/.test(raw))
 
 /* 4. 舞台铺满 + 面板独立居中 */
-ok('舞台铺满窗口高度', /\.stage\{[\s\S]{0,120}height:100%/.test(raw))
+ok('舞台铺满窗口高度', /\.stage\{[\s\S]{0,300}height:100%/.test(raw))
 ok('舞台 place-items:center 让面板居中', /\.stage\{[^}]*place-items:center/.test(raw))
 
 /* 5. 面板内 DEV 入口与交互 */

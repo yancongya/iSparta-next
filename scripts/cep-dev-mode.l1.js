@@ -87,5 +87,49 @@ if (api) {
     /ExtensionBundleId="io\.github\.isparta-next"/.test(fs.readFileSync(SRC_MANIFEST, 'utf8')))
 }
 
+// ---- v1 废弃契约（用户 11-27「真实发版与本地 dev 热更要分开」）----
+// 根因：v1 cep-manifest-dev.js 直接 writeFileSync 改写源码 manifest 的 MainPath，
+// 热更后忘 off 就把生产配置污染成 dev-hmr.html。现把 v1 收敛为转发器，
+// 生产/manifest 与 dev 彻底分开，以下几组断言防止回退。
+const LEGACY = path.join(ROOT, 'scripts', 'cep-manifest-dev.js')
+const legacy = fs.readFileSync(LEGACY, 'utf8')
+const pkg = fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8')
+const devAll = fs.readFileSync(path.join(ROOT, 'scripts', 'dev-all.js'), 'utf8')
+const liveManifest = fs.readFileSync(SRC_MANIFEST, 'utf8')
+
+ok('v1 转发器不再写源码 manifest', !/writeFileSync\s*\(/.test(legacy))
+ok('v1 转发器 on→dev、off→restore',
+  /=== 'on' \? 'dev' : 'restore'/.test(legacy) && /cep-mode\.js/.test(legacy))
+ok('源码 manifest 当前恒为生产值 ./ui/index.html',
+  /<MainPath>\.\/ui\/index\.html<\/MainPath>/.test(liveManifest) &&
+  !/dev-hmr\.html/.test(liveManifest))
+ok('package.json dev:cep/dev:cep:off 走 v2',
+  /"dev:cep":\s*"node scripts\/dev\/cep-mode\.js dev"/.test(pkg) &&
+  /"dev:cep:off":\s*"node scripts\/dev\/cep-mode\.js restore"/.test(pkg))
+ok('package.json build:windows 不再调 v1 off',
+  !/cep-manifest-dev\.js off/.test(pkg))
+ok('dev-all.js 不直接调 v1（dev:cep 经转发到 v2）',
+  !/cep-manifest-dev\.js/.test(devAll) && /restore/.test(devAll))
+// 全仓禁止任何脚本 writeFileSync 源码 manifest（排除守卫自身文本与 node_modules）
+function scanWriters (dir, out) {
+  for (const name of fs.readdirSync(dir)) {
+    if (name === 'node_modules' || name === '.git' || name === 'dist' || name === 'dist_electron' || name === '.tmp') continue
+    const p = path.join(dir, name)
+    let st
+    try { st = fs.statSync(p) } catch (e) { continue }
+    if (st.isDirectory()) { scanWriters(p, out); continue }
+    if (!/\.(js|cjs)$/.test(name) || p === __filename) continue
+    const txt = fs.readFileSync(p, 'utf8')
+    // 只抓写「源码 manifest」：字面 CSXS/manifest.xml 路径，或名为 MANIFEST 的常量。
+    // v2 写用户级 DEV_MANIFEST 是合法的，用否定前缀排除 DEV_/USER_ 前缀常量。
+    const hit = /(?:writeFileSync|appendFileSync)\([^,)]*['"`][^'"`]*(?:CSXS[\/\\]manifest\.xml|CSXS['"`]|manifest\.xml)/.test(txt) ||
+      /(?:^|[^\w])(?:fs\.)?writeFileSync\(MANIFEST\b/.test(txt)
+    if (hit) out.push(path.relative(ROOT, p))
+  }
+}
+const writers = []
+scanWriters(path.join(ROOT, 'scripts'), writers)
+ok('全仓 scripts 无脚本写入源码/任何 manifest', writers.length === 0, writers)
+
 console.log('\n' + passed + ' passed, ' + failed + ' failed')
 process.exitCode = failed ? 1 : 0

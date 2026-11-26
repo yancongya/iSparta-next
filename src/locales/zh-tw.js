@@ -387,6 +387,8 @@ module.exports = {
     // 關於與更新檢查
     "aboutVersion":"目前版本",
     "aboutVersionTip":"更新說明",
+    "aboutReleaseNotes":"更新日誌",
+    "aboutReleaseNotesVersion":"選擇版本",
     "aboutSite":"前往官網",
     "aboutDesc":"PNG 序列 / APNG / WebP / GIF 互轉與壓縮，桌面與 AE 擴充功能雙端可用。",
     "toolchainIntegrity":"工具鏈完整性",

@@ -25,10 +25,13 @@
 ## 开发 / 构建
 
 ```powershell
-npm run dev:cep      # HMR：MainPath=./dev-hmr.html → :8082
-npm run dev:cep:off  # 出包前切回 ./ui/index.html
-npm run build:cep    # 仅出包
-node scripts/dev/preview.js cep --mock   # 浏览器 mockup：:8082/?mock=1（不开 AE）
+node scripts/dev/cep-mode.js dev       # 独立 .dev 位 + HMR(:8082)，不改源码 manifest
+node scripts/dev/cep-mode.js restore   # 收工删开发位（不碰生产、不改源码 manifest）
+npm run build:cep                      # 仅出包（源码 manifest 恒为 ./ui/index.html）
+node scripts/dev/preview.js cep --mock # 浏览器 mockup：:8082/?mock=1（不开 AE）
+
+> 旧 `npm run dev:cep` / `dev:cep:off` 已转为转发到上面两条命令；
+> 生产面板与开发位用不同 ID 共存，源码 manifest 永不改写（守卫 cep-dev-mode.l1.js 锁死）。
 ```
 
 ### CEP 铁律（必读）

@@ -64,5 +64,5 @@ if (wantElectron) {
 }
 
 console.log('[dev-all] landing http://127.0.0.1:8080 | web http://127.0.0.1:8081 | cep HMR http://127.0.0.1:8082')
-console.log('[dev-all] CEP 默认 HMR；收工 npm run dev:cep:off')
+console.log('[dev-all] CEP 走独立 DEV 位（源码 manifest 不改写）；收工 node scripts/dev/cep-mode.js restore')
 

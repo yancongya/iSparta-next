@@ -15,9 +15,9 @@
 |---|------|------|
 | 0.1 | `npm ci`（或已装依赖） | 无报错 |
 | 0.2 | `npm run lint`（或 `node scripts/dev/check.js lint`） | DONE |
-| 0.3 | **开发默认 HMR**：`npm run dev:cep` | MainPath=`./dev-hmr.html`→8082 |
+| 0.3 | **开发默认 HMR**：`node scripts/dev/cep-mode.js dev` | 独立 `.dev` 位→8082，源码 manifest 不改 |
 | 0.4 | 拷编码器到 `targets/cep/bin/win64` | 见 `bin/README.md` |
-| 0.5 | 出包才：`dev:cep:off` + `build:cep` + `prepare:cep` | `build/cep-payload/…` |
+| 0.5 | 出包才：`build:cep` + `prepare:cep`（无需切回 manifest） | `build/cep-payload/…` |
 
 > **CEP 无 Ctrl+R**：刷新=**关面板再开**；改 `src/**` HMR 自动热更。  
 > **MainPath 禁 http://**；**真机验收禁 mock**（浏览器 dev 预览的 `?mock=1` 只在 `serve:cep` 下生效，不能代替本手册的 AE 实机验收）；开发服后台常驻。
@@ -175,7 +175,7 @@ Get-FileHash C:\isparta-verify\cool.png -Algorithm SHA256
 
 ### F3. CEP 面板内（需 AE 宿主）
 
-> 挂 junction + PlayerDebugMode 见本文 §A1/A2；`npm run dev:cep`（HMR 默认开），刷新=关面板再开；收工 `npm run dev:cep:off`。
+> 挂 junction + PlayerDebugMode 见本文 §A1/A2；`node scripts/dev/cep-mode.js dev`（独立 DEV 位、源码 manifest 不改，HMR 默认开），刷新=关面板再开；收工 `node scripts/dev/cep-mode.js restore`。
 
 | # | 操作 | 期望 |
 |---|------|------|
@@ -257,7 +257,7 @@ node scripts\dev\preview.js cep --mock     # :8082/?mock=1，dev server 实时�
 `76550889f12eddf30522644566e8a7b6b6aae22c0ec6f99f552728978c432772`，复制时已校验一致。
 用副本而非 `test/` 入库素材，是因为防覆盖测试会故意往"源目录"写产物，万一防护有 bug 不会污染原文件。
 **F1 每步结束喊我复算哈希**（`sha256sum /c/isparta-verify/cool.png`），一致才算过——不用你记这个值。
-CEP 侧按 A1/A2 挂 junction + PlayerDebugMode，`npm run dev:cep`。
+CEP 侧按 A1/A2 挂 junction + PlayerDebugMode，`node scripts/dev/cep-mode.js dev`。
 
 ### H1. P0 防覆盖——每步重算哈希（必做）
 

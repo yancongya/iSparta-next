@@ -387,6 +387,8 @@ module.exports = {
     // about & update check
     "aboutVersion":"Current version",
     "aboutVersionTip":"Release notes",
+    "aboutReleaseNotes":"Release notes",
+    "aboutReleaseNotesVersion":"Select version",
     "aboutSite":"Visit website",
     "aboutDesc":"Convert and compress PNG sequences, APNG, WebP and GIF — on desktop and in the AE extension.",
     "toolchainIntegrity":"Toolchain integrity",

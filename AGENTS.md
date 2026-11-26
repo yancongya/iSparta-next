@@ -9,7 +9,7 @@
 | Electron 开发 | `npm run dev`，或 `scripts\dev\run-dev.cmd`（日志：`dev.log` / `dev.err` / `dev.status`） |
 | 一键开发预览 | `npm run dev:all`（落地页 8080 + Web 8081 + CEP 8082）；`dev:all:electron` 再加 Electron；或 `scripts\dev\run-all-dev.cmd` |
 | 依赖安装 | `scripts\dev\run-npm-install.cmd` / `run-clean-install.cmd` / `run-electron-install.cmd` |
-| AE CEP 开发（**默认 HMR**） | `npm run dev:cep`（MainPath=`./dev-hmr.html`→8082）；刷新=**关面板再开（无 Ctrl+R）**。收工 `dev:cep:off`。出包才 `build:cep` |
+| AE CEP 开发（**默认 HMR**） | `node scripts/dev/cep-mode.js dev`（独立 `.dev` 位→8082，**源码 manifest 永不改写**）；刷新=**关面板再开（无 Ctrl+R）**。收工 `... restore`。出包才 `build:cep`。旧 `dev:cep` 已转发到此，勿直接改源码 manifest |
 | CEP 铁律 | MainPath **禁 http://**；**真机 / 生产禁 mock**（dev 浏览器预览可显式 `?mock=1`，见下）；桥 `/lib/`|`../lib/`；外链 `cep.util.openURLInDefaultBrowser` |
 | CEP 载荷/扩展 zip | `npm run prepare:cep`（`build/cep-payload/`，含 `install/` 安装辅助）；`npm run pack:cep:win` / `pack:cep:mac`（`dist/*-cep-*-{win,mac}-x64.zip`，**安装辅助按平台取子集**，见下） |
 | 更新逻辑测试 | `node scripts\updateCheck.l1.js`；fixture：`scripts\fixture-github.js` |
@@ -92,7 +92,7 @@ node scripts\dev\check.js all                # lint + pack + version + cep + por
 
 - 清理默认只预览；确认范围后追加 `--apply`。Web/CEP 清理额外删除 `node_modules/electron/dist` 和 `path.txt`；桌面模式保留 Electron 运行时。删除后切回桌面模式必须运行对应 install 命令恢复。
 - Web/CEP install 通过子进程环境跳过 Electron 二进制下载及原生依赖重建，不禁用其他依赖的安装脚本，不修改全局 npm 配置。普通 `npm install` 和 CI 保持完整安装行为，因此 UI 开发应使用上表入口。
-- CEP preview 只在浏览器看界面，不代表 AE 桥接可用；要看示例合成树用 `node scripts/dev/preview.js cep --mock`（dev-only，见 §1.1）；需要 AE 实机时另用 `npm run dev:cep`，关闭面板再打开刷新，收工执行 `npm run dev:cep:off`。
+- CEP preview 只在浏览器看界面，不代表 AE 桥接可用；要看示例合成树用 `node scripts/dev/preview.js cep --mock`（dev-only，见 §1.1）；需要 AE 实机时用 `node scripts/dev/cep-mode.js dev`（独立 DEV 位、不碰源码 manifest），关闭面板再打开刷新，收工执行 `node scripts/dev/cep-mode.js restore`。生产与 dev 彻底分开：源码 `targets/cep/CSXS/manifest.xml` 恒为 `./ui/index.html`，任何脚本不得写入。
 - 浏览器 serve 与 lint 通过 `scripts/dev/ui-service.js` 加载 Vue CLI，排除 Electron 插件，确保删除运行时后仍可启动；桌面和生产构建保持原入口。
 - 日常预览无需 `build:cep`、`prepare:cep` 或 Electron 打包。浏览器预览不能替代合成读取、渲染、安装和更新的宿主验收。
 - 切换模式清理前停止正在使用这些目录的开发服务与桌面进程。脚本不会自动停止用户进程。

@@ -193,8 +193,14 @@ export default {
 .own--cep {
   padding: 6px;
 }
+/* CEP 面板内上下也铺满：卡片撑满可用高度，主按钮沉底；
+   .own 已 inset:0 + padding:6px，所以 height:100% 即 calc(100vh - 12px) */
 .own--cep .own-card {
   max-width: none;
+  height: 100%;
+}
+.own--cep .own-cta {
+  margin-top: auto;
 }
 
 @media (prefers-reduced-motion: reduce) {

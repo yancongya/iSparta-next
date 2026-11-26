@@ -47,7 +47,10 @@
   --is-text:#eef3ec;--is-text-2:rgba(238,243,236,.62);--is-text-3:rgba(238,243,236,.36);
   --is-track:rgba(232,240,230,.10);--is-hover:rgba(232,240,230,.05);
   --is-shadow:0 12px 40px rgba(0,0,0,.45);--is-shadow-lg:0 24px 64px rgba(0,0,0,.6);
-  --is-glow-1:255,238,210;--is-glow-2:246,186,128;--is-glow-3:240,172,164;--is-glow-op:1;
+  /* 欢迎页光云跟随当前主题色（用户 11-26 拍板：不用 mimocode 的暖棕）：
+     暗色主题取 accent 荧光黄绿 + cool 青做冷暖层次。 */
+  --is-glow-1:226,244,186;--is-glow-2:200,245,66;--is-glow-3:107,215,255;--is-glow-op:1;
+  --is-solid-glow-op:.58;
   --is-checker:rgba(255,255,255,.022);
 }
 .theme-light{
@@ -62,7 +65,9 @@
   --is-text:#1c1917;--is-text-2:rgba(28,25,23,.62);--is-text-3:rgba(28,25,23,.38);
   --is-track:rgba(28,25,23,.09);--is-hover:rgba(28,25,23,.05);
   --is-shadow:0 10px 30px rgba(28,25,23,.08);--is-shadow-lg:0 22px 56px rgba(28,25,23,.18);
-  --is-glow-1:252,246,236;--is-glow-2:236,214,190;--is-glow-3:226,208,212;--is-glow-op:.9;
+  /* 亮色主题：跟随 accent 砖橙 + violet 紫（非 mimocode 暖棕米白） */
+  --is-glow-1:248,238,228;--is-glow-2:234,120,60;--is-glow-3:183,155,255;--is-glow-op:.9;
+  --is-solid-glow-op:.44;
   --is-checker:rgba(28,25,23,.02);
   /* 亮色主题：六色取深调，保证浅底可读（与暗色一一对应） */
   --is-var-1:37,99,235;--is-var-2:21,128,61;--is-var-3:194,65,12;
@@ -169,7 +174,9 @@ button{font-family:inherit;color:inherit}
 /* --- 右侧舞台 --- */
 /* 舞台必须铺满窗口：否则被面板内容撑成 ~564px，剩余视口露出 body 纯色 → 上半棋盘格、下半大片黑 */
 .stage{
-  position:relative;display:grid;place-items:center;overflow:auto;padding:var(--is-s-8);
+  /* hidden 而非 auto：光晕画布负 inset 扩出面板后是 absolute 层，
+     用 auto 会凭空撑出滚动条；舞台边缘裁掉属于窗口边缘，用户感知不到。 */
+  position:relative;display:grid;place-items:center;overflow:hidden;padding:var(--is-s-8);
   height:100%;
   /* 棋盘格 = 模拟桌面/透明底，让面板的 alpha 通道与光晕透出可见 */
   background:
@@ -224,16 +231,115 @@ button{font-family:inherit;color:inherit}
   background:transparent;
   border:0;
   border-radius:0;box-shadow:none;
-  display:flex;flex-direction:column;overflow:hidden;
+  /* visible：光晕画布 inset 负值扩出面板，overflow:hidden 会把光团上下切出硬直边。
+     面板自身内容都在 .screen/.step（各自 absolute inset:0）内，不会溢出。 */
+  display:flex;flex-direction:column;overflow:visible;
   transition:width var(--is-dur-slow) var(--is-ease-out),height var(--is-dur-slow) var(--is-ease-out);
   /* 指导面板里的文案默认不可选 —— 选中高亮会让人以为这是可复制的文档。
      两个 mockup 面板（.gp 输出设置 / .np 命名与路径）是「模拟产品界面」，
      里面的名字与路径要能选中复制，由它们自己把 user-select 放回 text。 */
   user-select:none;-webkit-user-select:none;
 }
+/* 面板恒透明：欢迎步不铺任何实色/渐变底。alpha 欢迎页 = 整个面板透明透出桌面，
+   光晕（.glow-field）作为半透明色块浮其上、四边自身渐变到全透明。
+   ⚠ 切忌给 .frame.glow-full 加 background（实色矩形或 radial/linear 遮罩）——
+   那会把面板做成一块不透明方板、四边出现矩形/椭圆硬边界，正是用户说的"边角裁切"。
+   层级 frame 透明底 → glow-field(z0) → screen(z1)。 */
 .frame[data-runtime="desktop"]{width:760px;height:500px}
 .frame[data-runtime="cep"]{width:520px;height:560px}
 .frame[hidden]{display:none}
+/* 非欢迎步骤：不透明方框面板（用户 11-26 拍板「alpha 只用在开始启动，点击进入后用没有
+   alpha 的方框面板」）。光云只在欢迎步的透明窗上出现；一旦点「开始使用」进入后续步骤，
+   切成带底色的实体面板 + 关掉光晕，彻底不参与 alpha / 边缘羽化，也就不会再有"边角裁切"
+   的反复拉扯。用 .solid 类由 render() 按 cur>0 切换，与欢迎步 glow-full 互斥。 */
+.frame.solid{
+  background:var(--is-panel);
+  border:1px solid var(--is-border-strong);
+  border-radius:var(--is-r-lg);
+  box-shadow:var(--is-shadow-lg);
+  overflow:hidden;
+}
+.frame.solid .glow-field{display:none}
+
+/* === 弹窗测试层（静态还原 OnboardingWhatsNew / IsUpdateDialog）===
+   absolute 挂在 .frame 内、z 高于 screen 与 titlebar，等价于生产里 teleport 到
+   body 的弹窗盖住整个应用窗口。默认 hidden；clean 透明窗模式强制隐藏，
+   保证真机四边 alpha / 形变采样绝不被遮罩污染。 */
+/* 弹窗打开时冻结 frame 的宽度过渡：切「运行时」时 frame 有 760→520 的 width transition，
+   若同时开弹窗会跟着一起缩放，视觉上像"CEP 没铺满"（其实是中间态）。冻结后按最终
+   宽度一次性铺满；关闭弹窗恢复过渡，不影响面板自身的运行时切换体验。 */
+.frame.pv-open{transition:none}
+.pv-layer{position:absolute;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:var(--is-s-6);box-sizing:border-box}
+.pv-layer[hidden]{display:none!important}
+.clean .pv-layer{display:none!important}
+.pv-own{background:var(--is-bg);color:var(--is-text)}
+.pv-upd{background:rgba(6,8,7,.56);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
+.pv-own-card,.pv-upd-panel{
+  width:100%;display:flex;flex-direction:column;
+  border:1px solid var(--is-border);border-radius:var(--is-r-lg);
+  background:var(--is-card);box-shadow:var(--is-shadow-lg);color:var(--is-text);
+  user-select:text;-webkit-user-select:text;
+}
+.pv-own-card{max-width:460px;gap:var(--is-s-4);padding:var(--is-s-8)}
+.pv-upd-panel{max-width:440px;gap:0;padding:0;overflow:hidden}
+/* 按钮层级沿用 IsButton：primary 走主题强调色，text 只留文字，hover 只变底色不位移
+   （弹窗按钮不参与欢迎页的进场 backwards 契约，无需 transform 归零验证）。 */
+.pv-btn{
+  appearance:none;border:1px solid var(--is-border-strong);border-radius:var(--is-r-sm);
+  background:var(--is-card-hi);color:var(--is-text);cursor:pointer;
+  padding:7px 14px;font:inherit;font-size:var(--is-fs-sm);font-weight:var(--is-fw-medium);
+  transition:background var(--is-dur-fast) var(--is-ease-std),filter var(--is-dur-fast) var(--is-ease-std);
+}
+.pv-btn:hover{background:var(--is-card)}
+.pv-btn.primary{background:var(--is-accent);color:var(--is-on-accent);border-color:var(--is-accent)}
+.pv-btn.primary:hover{filter:brightness(1.08)}
+.pv-btn.text{background:transparent;border-color:transparent;color:var(--is-text-2)}
+.pv-btn.text:hover{background:var(--is-card-hi);color:var(--is-text)}
+/* --- What's New 单屏（对应 .own / .own-card）--- */
+.pv-own-head{display:flex;align-items:center;gap:var(--is-s-3)}
+.pv-own-ico{width:28px;height:28px;flex:none;color:var(--is-accent)}
+.pv-own-title{margin:0;font-size:var(--is-fs-2xl);font-weight:var(--is-fw-semi);line-height:1.3}
+.pv-own-sub{margin:0;font-size:var(--is-fs-base);line-height:1.6;color:var(--is-text-2)}
+.pv-own-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:var(--is-s-3)}
+.pv-own-list li{display:flex;align-items:flex-start;gap:var(--is-s-3);font-size:var(--is-fs-base);line-height:1.6}
+.pv-own-list svg{width:16px;height:16px;flex:none;margin-top:3px;color:var(--is-accent)}
+.pv-own-cta{display:flex;justify-content:flex-end;padding-top:var(--is-s-2)}
+/* --- 检查更新（对应 .upd / .upd__*）--- */
+.pv-upd-body{display:flex;flex-direction:column;gap:var(--is-s-4);padding:var(--is-s-6) var(--is-s-6) var(--is-s-4)}
+.pv-upd-hero{display:flex;flex-direction:column;align-items:center;gap:var(--is-s-2);text-align:center}
+.pv-upd-icon{display:grid;place-items:center;width:56px;height:56px;color:var(--is-accent)}
+.pv-upd-icon svg{width:56px;height:56px}
+.pv-upd-title{margin:0;font-size:var(--is-fs-xl);font-weight:var(--is-fw-bold);line-height:1.35}
+.pv-upd-sub{margin:0;font-size:var(--is-fs-sm);line-height:1.5;color:var(--is-text-2)}
+.pv-upd-list{margin:0;padding:0 var(--is-s-1) 0 var(--is-s-4);list-style:none;
+  display:flex;flex-direction:column;gap:var(--is-s-2);max-height:190px;overflow:auto}
+/* 展开后底部渐隐（对应真实组件的 is-scroll-fade），避免末行被硬裁成半截 */
+.pv-upd-list.is-expanded{-webkit-mask-image:linear-gradient(to bottom,#000 88%,transparent);mask-image:linear-gradient(to bottom,#000 88%,transparent)}
+.pv-upd-list li{font-size:var(--is-fs-sm);line-height:1.6;color:var(--is-text-2)}
+.pv-upd-list li.grp{font-weight:var(--is-fw-semi);color:var(--is-text)}
+.pv-upd-footnote{margin:0;font-size:var(--is-fs-sm);line-height:1.6;color:var(--is-text-2)}
+.pv-upd-toggle{align-self:flex-start;appearance:none;border:0;background:transparent;cursor:pointer;
+  padding:0;color:var(--is-accent);font:inherit;font-size:var(--is-fs-sm);text-decoration:underline;text-underline-offset:3px}
+.pv-upd-toggle:hover{filter:brightness(1.12)}
+.pv-upd-acts{display:flex;align-items:center;justify-content:space-between;gap:var(--is-s-2);padding:0 var(--is-s-5) var(--is-s-5)}
+.pv-upd-acts-right{display:flex;gap:var(--is-s-2)}
+/* CEP 运行时：与真实组件一致，弹窗铺满面板可用宽度（桌面仍是 460/440 居中卡片） */
+.frame[data-runtime="cep"] .pv-layer{padding:6px}
+.frame[data-runtime="cep"] .pv-own-card,.frame[data-runtime="cep"] .pv-upd-panel{max-width:none}
+.frame[data-runtime="cep"] .pv-upd-panel{max-height:100%}
+/* 进场：遮罩淡入 + 卡片上浮；backwards 播完回落，不给弹窗按钮留下 transform */
+@keyframes pv-fade{from{opacity:0}to{opacity:1}}
+@keyframes pv-card{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
+.pv-layer:not([hidden]){animation:pv-fade .2s var(--is-ease-std) backwards}
+.pv-layer:not([hidden]) .pv-own-card,
+.pv-layer:not([hidden]) .pv-upd-panel{animation:pv-card .28s var(--is-ease-out) backwards}
+.no-motion .pv-layer:not([hidden]),
+.no-motion .pv-layer:not([hidden]) .pv-own-card,
+.no-motion .pv-layer:not([hidden]) .pv-upd-panel{animation:none!important;opacity:1!important;transform:none!important}
+@media (prefers-reduced-motion:reduce){
+  .pv-layer:not([hidden]),.pv-layer:not([hidden]) .pv-own-card,
+  .pv-layer:not([hidden]) .pv-upd-panel{animation:none!important;opacity:1!important;transform:none!important}
+}
 /* 无边框：不渲染系统标题栏，设置按钮浮在面板内右上角（对应真实窗的自绘按钮） */
 .titlebar{
   position:absolute;top:var(--is-s-5);right:var(--is-s-5);z-index:30;
@@ -241,6 +347,22 @@ button{font-family:inherit;color:inherit}
   padding:0;background:transparent;border:0;border-radius:0;
 }
 .tl,.tb-name{display:none}
+
+/* === 真透明窗验证模式（?clean=1，由 scripts/dev/preview-transparent-window.cjs 加载） ===
+   目的：在真 Electron transparent 窗里看光晕透出桌面，而不是棋盘格模拟。
+   - body/stage 背景必须真透明，否则假棋盘格会盖住桌面、看不到 alpha；
+   - dev 控制台与 dev 专用顶栏按钮隐藏，只留欢迎页本身；
+   - 面板铺满窗口；顶部加一条可拖拽区，无边框窗才能拖动换位看透传。 */
+html.clean,html.clean body{background:transparent!important}
+.clean .ctrl,.clean .titlebar{display:none!important}
+.clean *{outline:none!important}
+.clean .stage{padding:0!important;background:transparent!important;overflow:hidden!important}
+.clean .frame,.clean .frame[data-runtime]{width:100vw!important;height:100vh!important}
+.drag-strip{display:none}
+.clean .drag-strip{
+  display:block;position:absolute;left:0;right:0;top:0;height:34px;z-index:40;
+  -webkit-app-region:drag;app-region:drag;
+}
 
 /* --- 进度点 --- */
 .dots{position:relative;z-index:1;display:flex;gap:6px;justify-content:center;padding:var(--is-s-5) 0 var(--is-s-2)}
@@ -458,14 +580,27 @@ button{font-family:inherit;color:inherit}
    其余步骤降档成柔光底（否则裸文字/暗色模拟面板压在亮核上会失去对比）。
    关闭动效/reduce 时停住。 */
 .glow-field{
-  /* 收进面板内（inset:0）：光斑只在面板范围内活动，边缘靠自身渐变到透明羽化，
-     不靠静态椭圆遮罩。静态遮罩会把 blob 变形全吃掉（轮廓被锁成大椭圆）——
-     这是「变形不明显」的真正根因。 */
+  /* 光云形变方案（用户 11-26「他是椭圆没有形变动画」拍板）：
+     ① 主核改纯色暖白 blob + 大幅 8 值 border-radius 变形 + 温和位移/非等比缩放，
+        形变穿过 blur 肉眼可见。旧版是单个径向渐变椭圆 + 削透明四角的 border-radius，
+        blur 32 一糊就成静止椭圆（削角落在渐变已透明的角上，等于没削）；
+     ② 四边用「线性」遮罩把边缘 alpha 锁到 0（只锁边、不锁中央形状）——与旧版被否决的
+        「静态椭圆遮罩」本质不同：椭圆遮罩把整体轮廓锁死成椭圆、吃掉全部形变；
+     ③ inset:0 不越窗口 —— 负 inset 在 clean 模式会超出窗口被裁出硬直边（旧坑）。 */
   position:absolute;inset:0;z-index:0;pointer-events:none;
-  /* blur 18：够柔化 blob 削角成流体感，又不像 28 那样把形状糊回椭圆 */
-  filter:blur(18px) saturate(124%);
-  /* 色温缓慢循环：暖米白 ↔ 淡橙粉，配合三枚 orb 的呼吸让颜色真的在动 */
-  animation:glow-hue 14s var(--is-ease-std) infinite;
+  /* 四边线性淡出：仅边缘 12% 羽化到全透明，中央不遮罩 → 形变可见且不裁切。
+     mask-composite:intersect 取横纵交集，四角自然全透明。 */
+  -webkit-mask-image:linear-gradient(to right,transparent 0,#000 12%,#000 88%,transparent 100%),linear-gradient(to bottom,transparent 0,#000 12%,#000 88%,transparent 100%);
+  -webkit-mask-composite:source-in;
+  mask-image:linear-gradient(to right,transparent 0,#000 12%,#000 88%,transparent 100%),linear-gradient(to bottom,transparent 0,#000 12%,#000 88%,transparent 100%);
+  mask-composite:intersect;
+  /* blur 28：柔化 blob 边缘成「光云」，同时压掉 Electron capturePage 对透明窗
+     + 动画层采样的同心圆条纹伪影（真实屏幕无此条纹，但截图验证会误判）；
+     saturate 循环保持主题色不发灰。 */
+  filter:blur(28px) saturate(124%);
+  /* 色温缓慢循环：主题色相轻微游移（暗色黄绿↔青 / 亮色砖橙↔紫）。
+     关键帧内 blur 与静态值一致 28，否则动画会把 28 覆盖回旧值。 */
+  animation:glow-hue 12s var(--is-ease-std) infinite;
   opacity:var(--is-glow-dim,.42);
   transition:opacity var(--is-dur-slow) var(--is-ease-std);
 }
@@ -476,101 +611,242 @@ button{font-family:inherit;color:inherit}
 .step[data-i="0"]{
   /* 欢迎页一屏铺满：光晕 inset:-20% 会撑出滚动条，这里直接裁掉 */
   overflow:hidden;
-  /* 光核是亮色，文字/卡片改为深色系（与参考图"深字压亮光"一致）；
-     只在本步覆盖局部变量，不影响进度点/页脚/其他步骤 */
-  --is-accent:#3b2f27;--is-on-accent:#fbf6ed;--is-text:#2b2622;--is-text-2:#544a42;--is-text-3:#73675d;
+  /* 光云跟随主题色后，logo/字标/副标题/按钮也统一到主题色系（用户 11-26 拍板：
+     不用 mimocode 深棕）。基线 = 亮色主题砖橙系，暗色主题在下方 .theme-dark
+     覆盖为荧光黄绿系。只用深色调，保证「深字压亮光云」的可读性。 */
+  --is-accent:#c2410c;--is-on-accent:#fffaf5;--is-text:#2a201a;--is-text-2:rgba(42,32,26,.82);--is-text-3:rgba(42,32,26,.62);
 }
 .step[data-i="0"] .card{
   background:rgba(255,255,255,.5);border-color:rgba(255,255,255,.65);
   backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
 }
 .step[data-i="0"] .card:hover{background:rgba(255,255,255,.68);border-color:rgba(255,255,255,.9)}
-.step[data-i="0"] .brand-name em{color:#7a5236}
+.step[data-i="0"] .brand-name em{color:#c2410c}
 /* 副标题落在柔光较暗的下缘：加深墨色 + 极淡亮色描边，压在暗棋盘格上也清晰 */
 .step[data-i="0"] .sub{
-  color:#2b2520;font-weight:var(--is-fw-medium);
+  color:#2a201a;font-weight:var(--is-fw-medium);
   text-shadow:0 1px 1px rgba(255,250,242,.5),0 0 10px rgba(255,250,242,.35);
 }
 
-/* --- 暗色主题欢迎页：暖色发光 + 浅字暗卡 ---
-   上面那套「深字白卡」是给亮色主题（浅棋盘格）用的；暗色主题下深字压暗区看不清，
-   这里用 .theme-dark 前缀整块翻转成浅字 + 暗色玻璃卡 + 暗色护底，特异性更高稳胜。
-   logo 圆保留暖棕、箭头亮色，只有 -next 后缀与文字一起转暖亮色。 */
+/* --- 欢迎步极简还原（参考 mimocode 截图，用户 11-26 拍板）---
+   mimocode 启动页只有：品牌字标 + 一句引导语 + 一颗深色主按钮，浮在大暖白光云上，
+   没有三张功能卡、没有进度点、没有底部导航。欢迎步这三项全部隐藏；
+   点主按钮进第 2 步切 .solid 不透明方框后，导航与卡片所属步骤照常显示。 */
+.step[data-i="0"]{gap:var(--is-s-5)}
+.step[data-i="0"] .demo--brand{max-width:84px;margin-bottom:var(--is-s-1)}
+.step[data-i="0"] .brand-name{font-size:40px;font-weight:var(--is-fw-black);letter-spacing:-.02em}
+.step[data-i="0"] .sub{font-size:var(--is-fs-lg)}
+.step[data-i="0"] .cards{display:none}
+.step[data-i="0"] .welcome-cta{
+  margin-top:var(--is-s-3);
+  display:inline-flex;align-items:center;gap:var(--is-s-3);
+  padding:11px 22px;border:0;border-radius:var(--is-r-sm);
+  background:#c2410c;color:#fffaf5;
+  font-size:var(--is-fs-base);font-weight:var(--is-fw-semi);cursor:pointer;
+  box-shadow:0 6px 20px rgba(194,65,12,.28);
+  transition:transform var(--is-dur-fast) var(--is-ease-std),background var(--is-dur-fast) var(--is-ease-std);
+}
+.step[data-i="0"] .welcome-cta:hover{background:#9a3412;transform:translateY(-2px)}
+.welcome-cta__arrow{font-size:var(--is-fs-lg);line-height:1}
+/* 欢迎步隐藏进度点与底部导航：alpha 欢迎页就是干净一屏 */
+.frame.glow-full .dots,.frame.glow-full .foot{display:none}
+
+/* --- 暗色主题欢迎页：荧光黄绿主题色（用户 11-26 拍板，替换 mimocode 深棕）---
+   光云换成暗色主题的黄绿/青后，logo/字标/副标题/按钮一并从深棕换到荧光黄绿系。
+   光云是亮色，故承载文字/按钮的底用深墨绿（非棕）保证对比，荧光黄绿只做点缀
+   （logo 箭头 / -next 后缀 / 按钮字），避免亮绿压亮绿看不清。 */
 .theme-dark .step[data-i="0"]{
-  --is-accent:#8a5a38;--is-on-accent:#fff8ee;
-  --is-text:#fbf3e8;--is-text-2:rgba(251,243,232,.8);--is-text-3:rgba(251,243,232,.6);
+  --is-accent:#c8f542;--is-on-accent:#0c0f0e;
+  --is-text:#1c2a0e;--is-text-2:rgba(28,42,14,.85);--is-text-3:rgba(28,42,14,.65);
 }
 .theme-dark .step[data-i="0"] .brand-name,
 .theme-dark .step[data-i="0"] .sub{
-  text-shadow:0 1px 3px rgba(0,0,0,.7),0 0 14px rgba(0,0,0,.5);
+  text-shadow:0 1px 1px rgba(238,248,200,.6),0 0 12px rgba(238,248,200,.45);
 }
-.theme-dark .step[data-i="0"] .brand-name em{color:#ffd6a0}
-.theme-dark .step[data-i="0"] .sub{color:#f6ecdf;font-weight:var(--is-fw-medium)}
+.theme-dark .step[data-i="0"] .brand-name em{color:#4a6b12}
+.theme-dark .step[data-i="0"] .sub{color:#1f3010;font-weight:var(--is-fw-medium)}
+/* logo 主圆深墨绿 + 荧光黄绿箭头：圆是承载底必须深，箭头用主题亮色点缀 */
+.theme-dark .step[data-i="0"] .demo--brand .d-pop3 path:first-child{fill:#1c2a0e}
+.theme-dark .step[data-i="0"] .demo--brand .d-pop3 path:last-child{fill:#c8f542}
+.theme-dark .step[data-i="0"] .welcome-cta{background:#1c2a0e;color:#c8f542;box-shadow:0 6px 20px rgba(28,42,14,.3)}
+.theme-dark .step[data-i="0"] .welcome-cta:hover{background:#0f1808}
 .theme-dark .step[data-i="0"] .card{
-  background:rgba(18,14,11,.46);border-color:rgba(255,232,204,.16);
+  background:rgba(255,255,255,.68);border-color:rgba(255,255,255,.86);
   backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
 }
-.theme-dark .step[data-i="0"] .card:hover{background:rgba(18,14,11,.64);border-color:rgba(255,232,204,.3)}
-.theme-dark .step[data-i="0"] .card .t{color:#fff6ea}
-.theme-dark .step[data-i="0"] .card .d{color:rgba(255,246,234,.66)}
+.theme-dark .step[data-i="0"] .card:hover{background:rgba(255,255,255,.86);border-color:#fff}
+.theme-dark .step[data-i="0"] .card .t{color:#1c2a0e}
+.theme-dark .step[data-i="0"] .card .d{color:rgba(28,42,14,.7)}
 .glow-field .orb{
   position:absolute;display:block;border-radius:50%;
-  opacity:var(--is-glow-op);will-change:transform,border-radius;
+  will-change:transform,border-radius,opacity;
 }
 .glow-field .orb1{
-  /* 主光核：暖金白 blob。收进面板内（left:22% top:6%），渐变到 100% 全透明
-     靠自身羽化收边（不再用静态遮罩）。中心实、边缘 80% 才快速淡出，
-     border-radius 削出的不规则轮廓才带光、看得出流体变形。 */
-  width:52%;height:66%;left:22%;top:6%;
-  background:radial-gradient(ellipse at 46% 42%,
-    rgba(var(--is-glow-1),.96) 0%,rgba(var(--is-glow-1),.9) 30%,
-    rgba(var(--is-glow-1),.6) 58%,rgba(var(--is-glow-1),.2) 80%,rgba(var(--is-glow-1),0) 100%);
+  /* 主光云：主题色纯色 blob（暗色淡黄绿 / 亮色淡暖白；不再是径向渐变椭圆），
+     靠 8 值 border-radius 大幅变形让「轮廓本身」持续改变。
+     旧版用 radial-gradient ellipse 44% 42%：
+     渐变等值线恒为椭圆、削角又落在透明区 → blur 后永远是静止椭圆（用户反馈）。
+     内收到 left/top 12~14%、尺寸 72%~76%，四边留足羽化区，形变 + 位移都不会触边；
+     再加 .glow-field 四边线性遮罩兜底，任何相位四边 alpha 恒为 0。 */
+  width:72%;height:76%;left:14%;top:12%;
+  background:rgba(var(--is-glow-1),.94);
   animation:glow-drift1 7s var(--is-ease-std) infinite;
 }
 .glow-field .orb2{
-  /* 暖橙斑块：内收位置（left:8% top:36%），位移放大仍不溢出面板成硬边 */
-  width:44%;height:54%;left:8%;top:36%;
-  background:radial-gradient(ellipse at center,
-    rgba(var(--is-glow-2),.68) 0%,rgba(var(--is-glow-2),.5) 43%,
-    rgba(var(--is-glow-2),.18) 72%,rgba(var(--is-glow-2),0) 100%);
+  /* 主题强调色偏移（右上：暗色荧光黄绿 / 亮色砖橙）：色斑虚化染色，
+     不单独成硬斑，避免盖过主核形变 */
+  width:54%;height:58%;right:16%;top:14%;
+  background:radial-gradient(ellipse 60% 60% at center,
+    rgba(var(--is-glow-2),.3) 0%,rgba(var(--is-glow-2),.14) 62%,rgba(var(--is-glow-2),0) 100%);
   animation:glow-drift2 9s var(--is-ease-std) infinite;
 }
 .glow-field .orb3{
-  /* 淡粉斑块：内收（right:8% top:8%），暖粉色增加色温层次 */
-  width:42%;height:52%;right:8%;top:8%;
-  background:radial-gradient(ellipse at center,
-    rgba(var(--is-glow-3),.5) 0%,rgba(var(--is-glow-3),.38) 43%,
-    rgba(var(--is-glow-3),.15) 72%,rgba(var(--is-glow-3),0) 100%);
+  /* 主题辅色偏移（左下：暗色 cool 青 / 亮色 violet 紫）：色温层次，
+     同样虚化收边 */
+  width:52%;height:56%;left:16%;bottom:14%;
+  background:radial-gradient(ellipse 60% 60% at center,
+    rgba(var(--is-glow-3),.24) 0%,rgba(var(--is-glow-3),.1) 62%,rgba(var(--is-glow-3),0) 100%);
   animation:glow-drift3 11s var(--is-ease-std) infinite;
 }
-/* 0→33→66→100 闭环：三枚光斑用极限 8 值 border-radius（24%↔76%）做真流体
-   blob 变形——轮廓从椭圆大幅扭成不规则形状，配合位移/缩放/旋转/透明度呼吸。
-   变形幅度比上一版翻倍（原来 48%↔62% 只差 14 点，肉眼几乎看不出）。
-   周期 7/9/11s 互质且更快（原来 13/16/19s 太慢），叠加后形态持续流动。
-   位移已内收：光斑收在面板内、渐变到 100% 全透明，变形可见又不露硬切边。 */
+/* 0→33→66→100 闭环，三枚周期 7/9/11s 互质避免同步。
+   ⚠ 形变可见的关键（用户 11-26 多轮实验量化拍板）：blur 会抹平一切细节，
+   只有「主核形状本身的大幅变化」能穿过 blur 被看见。故主核用纯色 + 8 值
+   border-radius 在 34%↔66% 间大幅摆动 + ±5% 位移，实测相位差（alpha 平均绝对差）
+   从旧版 6~16 提升到 19.4，四边 alpha 仍恒为 0（线性遮罩 + 内收双保险）。
+   色斑仍用径向渐变虚化，只做主题色温层次，不抢主核轮廓。 */
 @keyframes glow-drift1{
-  0%,100%{transform:translate3d(-5%,3%,0) scale(.9) rotate(-8deg);border-radius:24% 76% 70% 30% / 34% 26% 74% 66%;opacity:.9}
-  33%{transform:translate3d(3%,-5%,0) scale(1.12) rotate(4deg);border-radius:76% 24% 30% 70% / 70% 76% 24% 30%;opacity:1}
-  66%{transform:translate3d(6%,-3%,0) scale(1.18) rotate(9deg);border-radius:30% 70% 26% 74% / 26% 66% 34% 74%;opacity:.94}
+  0%,100%{transform:translate3d(-5%,3%,0) scale(1);border-radius:34% 66% 62% 38% / 40% 36% 64% 60%;opacity:.96}
+  33%{transform:translate3d(5%,-4%,0) scale(1.06);border-radius:64% 36% 38% 62% / 62% 60% 40% 38%;opacity:1}
+  66%{transform:translate3d(1%,5%,0) scale(.96);border-radius:42% 58% 32% 68% / 56% 42% 58% 44%;opacity:.92}
 }
 @keyframes glow-drift2{
-  0%,100%{transform:translate3d(5%,-5%,0) scale(1) rotate(6deg);border-radius:22% 78% 72% 28% / 30% 26% 74% 70%;opacity:.6}
-  33%{transform:translate3d(-3%,2%,0) scale(1.28) rotate(-6deg);border-radius:78% 22% 28% 72% / 72% 78% 22% 28%;opacity:1}
-  66%{transform:translate3d(-7%,6%,0) scale(1.14) rotate(-10deg);border-radius:28% 72% 24% 76% / 26% 70% 30% 74%;opacity:.7}
+  0%,100%{transform:translate3d(7%,-5%,0) scale(1.05);border-radius:62% 38% 40% 60% / 38% 62% 58% 42%;opacity:.9}
+  33%{transform:translate3d(-6%,6%,0) scale(.94);border-radius:36% 64% 62% 38% / 60% 38% 42% 62%;opacity:1}
+  66%{transform:translate3d(4%,7%,0) scale(1);border-radius:58% 42% 38% 62% / 44% 58% 40% 56%;opacity:.85}
 }
 @keyframes glow-drift3{
-  0%,100%{transform:translate3d(-5%,3%,0) scale(1.06) rotate(-6deg);border-radius:26% 74% 76% 24% / 32% 26% 74% 68%;opacity:.9}
-  33%{transform:translate3d(3%,-4%,0) scale(.84) rotate(5deg);border-radius:74% 26% 24% 76% / 74% 74% 26% 24%;opacity:.3}
-  66%{transform:translate3d(7%,-6%,0) scale(1) rotate(10deg);border-radius:24% 76% 28% 72% / 28% 68% 32% 72%;opacity:.8}
+  0%,100%{transform:translate3d(-4%,5%,0) scale(.97);border-radius:38% 62% 58% 42% / 60% 38% 42% 58%;opacity:.9}
+  33%{transform:translate3d(6%,-6%,0) scale(1.08);border-radius:66% 34% 36% 64% / 36% 62% 64% 38%;opacity:1}
+  66%{transform:translate3d(-5%,-3%,0) scale(1);border-radius:44% 56% 64% 36% / 58% 44% 36% 62%;opacity:.85}
 }
-/* 色温循环：blur 不变，只让饱和度与色相缓慢游移（暖米白↔淡橙粉） */
+/* 色温循环：blur 与静态值一致（28px），否则动画会把静态值覆盖回旧值；
+   只让饱和度与色相缓慢游移（主题色相 ±12deg，暗色黄绿↔青 / 亮色砖橙↔紫）。 */
 @keyframes glow-hue{
-  0%,100%{filter:blur(18px) saturate(116%) hue-rotate(0deg)}
-  50%{filter:blur(18px) saturate(142%) hue-rotate(-14deg)}
+  0%,100%{filter:blur(28px) saturate(116%) hue-rotate(0deg)}
+  50%{filter:blur(28px) saturate(140%) hue-rotate(-12deg)}
 }
 /* 关闭动效 / reduce：光斑与色温都停住，保留静态柔光构图 */
 .no-motion .glow-field,.no-motion .glow-field .orb{animation:none!important}
 @media (prefers-reduced-motion:reduce){.glow-field,.glow-field .orb{animation:none!important}}
+
+/* ============================================================================
+   欢迎页首次进场编排（用户 11-26 拍板：logo 出现 → 停留一会 → 一边缩放位移
+   一边背景渐显 → 文本/按钮出现；经典 splash 节奏）
+   时序（logo 动画总长 1.8s）：
+     0~0.3s    logo 淡入到居中大显示（scale 2.6 + translateY 居中）
+     0.3~0.9s  logo 停留（大显示独角戏，约 0.6s，17%→50% 保持同帧）
+     0.9~1.8s  logo 缩放位移归位，光云 0.9s 同步开始渐显（「一边缩放一边出背景」）
+     1.6s 起   字标/副标题/按钮在 logo 接近归位后依次出现
+   关键：光云 delay 0.9s 必须对齐 logo 停留结束点（1.8s×50%），实现同步；
+         文本/按钮仍等 logo 归位后才出现（用户明确「之后」）。
+   ⚠ 全部用 animation-fill-mode:backwards（而非 both/forwards）：
+     延迟期套用 from 帧（藏起来），播完「不保留」终态 → 回落到元素本来的 CSS。
+     若用 forwards，终态 transform 会被动画锁死，.welcome-cta:hover 的
+     translateY(-2px) 将永久失效；backwards 则 hover 正常。
+     末帧与本来的 CSS 一致（opacity:1/transform:none），回落时无跳变。
+   光云渐显挂包裹层 .glow-reveal，绝不放 .glow-field 上（后者被真机形变验证
+   设 animation-delay 负值 + paused 钉相位，fade 放上去会被重置污染采样）。
+   ========================================================================== */
+/* logo：先放大居中显示（scale 2.6 + 下移居中），停留，再缩放位移回最终位。
+   .demo--brand 在 flex 组顶部，translateY 下移量把放大后的它带到窗口视觉中心。
+   17% 淡入完成 → 50% 保持大状态（停留）→ 100% 归位；光云 delay 0.9s = 50% 时刻。 */
+@keyframes intro-logo{
+  0%   {opacity:0;transform:translateY(90px) scale(2.6)}
+  17%  {opacity:1;transform:translateY(90px) scale(2.6)}
+  50%  {opacity:1;transform:translateY(90px) scale(2.6)}
+  100% {opacity:1;transform:translateY(0) scale(1)}
+}
+/* logo 外圈圆球：与缩放位移（0.9s 起、0.9s 走完）同步快转两圈。
+   套在内层 g 上，外层 d-orbit-brand 的常速旋转互不覆盖；
+   forwards 锁在 720deg（视觉等于 0deg），播完回落外层不会跳位。 */
+@keyframes intro-orbit{
+  from{transform:rotate(0)}
+  to{transform:rotate(720deg)}
+}
+.d-orbit-intro{
+  transform-box:view-box;transform-origin:66px 66px;
+  animation:intro-orbit .9s linear .9s forwards;
+}
+@keyframes intro-rise{from{opacity:0;transform:translateY(14px) scale(.96)}to{opacity:1;transform:none}}
+@keyframes intro-cta{from{opacity:0;transform:translateY(10px) scale(.94)}to{opacity:1;transform:none}}
+@keyframes intro-glow{from{opacity:0}to{opacity:1}}
+/* 光云 0.9s 起 = logo 缩放位移起点，1.2s 渐显与归位（1.8s）基本同期完成 */
+.glow-reveal{animation:intro-glow 1.2s var(--is-ease-std) .9s backwards}
+.step[data-i="0"] .demo--brand{animation:intro-logo 1.8s var(--is-ease-out) 0s backwards}
+.step[data-i="0"] .brand-name{animation:intro-rise .5s var(--is-ease-out) 1.6s backwards}
+.step[data-i="0"] .sub{animation:intro-rise .5s var(--is-ease-out) 1.75s backwards}
+.step[data-i="0"] .welcome-cta{animation:intro-cta .52s var(--is-ease-out) 2s backwards}
+/* 关闭动效/reduce：进场元素直接可见、不位移（backwards 的隐藏起始态也要取消） */
+.no-motion .glow-reveal,.no-motion .step[data-i="0"] .demo--brand,
+.no-motion .step[data-i="0"] .brand-name,.no-motion .step[data-i="0"] .sub,
+.no-motion .step[data-i="0"] .welcome-cta{animation:none!important;opacity:1!important;transform:none!important}
+.no-motion .d-orbit-brand,.no-motion .d-orbit-intro{animation:none!important;transform:none!important}
+@media (prefers-reduced-motion:reduce){
+  .glow-reveal,.step[data-i="0"] .demo--brand,.step[data-i="0"] .brand-name,
+  .step[data-i="0"] .sub,.step[data-i="0"] .welcome-cta{animation:none!important;opacity:1!important;transform:none!important}
+  .d-orbit-brand,.d-orbit-intro{animation:none!important;transform:none!important}
+}
+
+/* --- solid 指导面板动态渐变（用户 11-26 拍板：指导面板配色改欢迎页同款动态渐变）---
+   只在 .frame.solid 显示（欢迎步 display:none，不干扰已验证 18/18 的 alpha 光云）。
+   与欢迎页复用同一套 --is-glow-* token（暗色黄绿+青 / 亮色砖橙+紫），配色天然一致；
+   但压得淡得多 + 大 blur + 内收，且叠在不透明 panel 底之上（z0，screen z1 在其上），
+   保证卡片/正文/按钮可读性。solid 有 border-radius+overflow:hidden，渐变自然被裁进
+   方框内——这是不透明面板，不存在欢迎页那种 alpha 边缘裁切问题。 */
+.solid-glow{
+  position:absolute;inset:0;z-index:0;pointer-events:none;
+  display:none;
+  opacity:var(--is-solid-glow-op,.55);
+  filter:blur(44px) saturate(118%);
+  animation:solid-hue 16s var(--is-ease-std) infinite;
+}
+.frame.solid .solid-glow{display:block}
+.solid-glow .s-orb{
+  position:absolute;display:block;border-radius:50%;
+  will-change:transform,border-radius,opacity;
+}
+/* 主色斑：暗色 accent 黄绿 / 亮色砖橙，内收到左上，虚化染温不压字 */
+.solid-glow .s-orb1{
+  width:72%;height:78%;left:6%;top:4%;
+  background:radial-gradient(ellipse 58% 58% at center,
+    rgba(var(--is-glow-2),.34) 0%,rgba(var(--is-glow-2),.16) 52%,rgba(var(--is-glow-2),0) 100%);
+  animation:solid-drift1 15s var(--is-ease-std) infinite;
+}
+/* 辅色斑：暗色 cool 青 / 亮色 violet 紫，右下对冲，冷暖层次 */
+.solid-glow .s-orb2{
+  width:68%;height:72%;right:6%;bottom:4%;
+  background:radial-gradient(ellipse 58% 58% at center,
+    rgba(var(--is-glow-3),.28) 0%,rgba(var(--is-glow-3),.13) 52%,rgba(var(--is-glow-3),0) 100%);
+  animation:solid-drift2 19s var(--is-ease-std) infinite;
+}
+/* 形变穿过 blur 可见：8 值 blob 摆动 + 温和位移，周期比欢迎页慢（面板是阅读场景，不喧宾夺主） */
+@keyframes solid-drift1{
+  0%,100%{transform:translate3d(-3%,2%,0) scale(1);border-radius:40% 60% 56% 44% / 46% 42% 58% 54%;opacity:.9}
+  33%{transform:translate3d(4%,-3%,0) scale(1.05);border-radius:60% 40% 44% 56% / 56% 58% 42% 44%;opacity:1}
+  66%{transform:translate3d(1%,4%,0) scale(.96);border-radius:46% 54% 38% 62% / 52% 46% 54% 48%;opacity:.85}
+}
+@keyframes solid-drift2{
+  0%,100%{transform:translate3d(3%,-2%,0) scale(1.04);border-radius:56% 44% 46% 54% / 42% 56% 54% 44%;opacity:.88}
+  33%{transform:translate3d(-4%,3%,0) scale(.95);border-radius:42% 58% 60% 40% / 56% 44% 46% 54%;opacity:1}
+  66%{transform:translate3d(-1%,-3%,0) scale(1);border-radius:52% 48% 42% 58% / 48% 52% 44% 56%;opacity:.86}
+}
+/* 色温循环：filter blur 与静态值一致 44px；只让饱和度/色相缓慢游移（同欢迎页主题色相） */
+@keyframes solid-hue{
+  0%,100%{filter:blur(44px) saturate(112%) hue-rotate(0deg)}
+  50%{filter:blur(44px) saturate(132%) hue-rotate(-10deg)}
+}
+.no-motion .solid-glow,.no-motion .solid-glow .s-orb{animation:none!important}
+@media (prefers-reduced-motion:reduce){.solid-glow,.solid-glow .s-orb{animation:none!important}}
 
 /* --- 欢迎：项目 logo + 字标 --- */
 .demo--brand{max-width:132px}
@@ -579,7 +855,7 @@ button{font-family:inherit;color:inherit}
   letter-spacing:-.01em;line-height:1.2;text-align:center;color:var(--is-text);
 }
 .brand-name em{font-style:normal;color:var(--is-accent)}
-.d-orbit-brand{transform-box:view-box;transform-origin:66px 66px;animation:k-spin 9s linear infinite}
+.d-orbit-brand{transform-box:view-box;transform-origin:66px 66px;animation:k-spin 2.4s linear infinite}
 .d-orbit-brand circle{animation:k-pulse 2.6s var(--is-ease-std) infinite}
 
 /* --- 导入：图在卡内，标题与说明落在卡外 --- */
@@ -849,6 +1125,14 @@ button{font-family:inherit;color:inherit}
       </div>
     </div>
 
+    <div class="group">
+      <span class="lbl" data-dt="lblDialog">弹窗测试</span>
+      <div class="steps" id="dlgList">
+        <button data-d="own"><span class="n">◈</span><span data-dt="dlgOwn">更新说明</span></button>
+        <button data-d="upd"><span class="n">◈</span><span data-dt="dlgUpd">检查更新</span></button>
+      </div>
+    </div>
+
     <div class="note" data-t="note"></div>
   </aside>
 
@@ -902,8 +1186,23 @@ button{font-family:inherit;color:inherit}
            挂在面板层（而非内容区），铺满整个窗口包括顶部进度区与底部导航区，
            面板半透明，光晕透出棋盘格舞台即 alpha 通道视觉。只渲染一份，
            欢迎步 frame 加 glow-full 提亮到深字压亮光档，其余步骤降档成柔光底。 -->
-      <div class="glow-field" aria-hidden="true">
-        <i class="orb orb1"></i><i class="orb orb2"></i><i class="orb orb3"></i>
+      <!-- 进场渐显层（用户 11-26「logo 进来后动态渐变渐显和按钮出现」拍板）：
+           包裹 .glow-field，只在首次进场时把整片光云从 opacity:0 渐显到满。
+           ⚠ 关键的隔离设计：渐显动画必须挂在这层包裹上，不能挂在 .glow-field 本身——
+           真机形变验证（verify-transparent-preview.cjs）会给 .glow-field 设
+           animation-delay 负值 + paused 钉相位做形变对比，若 fade 也在 .glow-field 上，
+           opacity 会被重置到 0% 导致 alpha 采样/形变 diff 全乱。包裹层不在选择器内，
+           fade 播完（fill forwards 停 opacity:1）后稳定，不干扰任何验证。 -->
+      <div class="glow-reveal" aria-hidden="true">
+        <div class="glow-field" aria-hidden="true">
+          <i class="orb orb1"></i><i class="orb orb2"></i><i class="orb orb3"></i>
+        </div>
+      </div>
+
+      <!-- 指导面板动态渐变底：只在 solid 步骤显示（.frame.solid），与欢迎页光云
+           复用同一套 --is-glow-* token 保证配色一致；压得淡 + blur，不抢面板内容 -->
+      <div class="solid-glow" aria-hidden="true">
+        <i class="s-orb s-orb1"></i><i class="s-orb s-orb2"></i>
       </div>
 
       <div class="screen">
@@ -912,14 +1211,7 @@ button{font-family:inherit;color:inherit}
         <section class="step on" data-i="0">
           <!-- 项目 logo：与 public/icons/icon-brand.svg 同源几何，色值走 token -->
           <svg class="demo demo--brand" viewBox="0 0 132 132" role="img" aria-label="iSparta-next">
-            <circle cx="66" cy="66" r="54" fill="none" stroke="var(--is-border-strong)" stroke-width="1.5" opacity=".5"/>
-            <g class="anim d-orbit-brand"><circle cx="66" cy="12" r="4.5" fill="var(--is-accent)"/></g>
-            <g class="anim d-pop3">
-              <g transform="translate(66 66) scale(0.1375) translate(-512 -395.636364)">
-                <path d="M512 395.636364m-232.727273 0a232.727273 232.727273 0 1 0 465.454546 0 232.727273 232.727273 0 1 0-465.454546 0Z" fill="var(--is-accent)"/>
-                <path d="M453.806545 289.764848a7.214545 7.214545 0 0 1 8.168728-6.112969l77.548606 11.155394c1.881212 0.271515 3.580121 1.272242 4.728242 2.788848l70.943031 93.796849a7.214545 7.214545 0 0 1 0.100848 8.564363L544.267636 498.722909a7.214545 7.214545 0 0 1-4.871757 2.936243L461.459394 512.391758a7.214545 7.214545 0 0 1-6.997333-11.132122l67.285333-101.558303a7.214545 7.214545 0 0 0-0.077576-8.079515L455.00897 294.888727a7.214545 7.214545 0 0 1-1.202425-5.12z m-6.729697 37.783273a3.607273 3.607273 0 0 1 5.054061 0.702061l47.736243 63.146666a7.214545 7.214545 0 0 1 0.104727 8.556607L452.189091 466.540606a3.607273 3.607273 0 0 1-6.543515-2.102303V330.426182a3.607273 3.607273 0 0 1 1.435151-2.878061z" fill="var(--is-on-accent)"/>
-              </g>
-            </g>
+            <image class="anim d-pop3" href="isparta-next-media-state-cycle-loop.svg" x="6" y="6" width="120" height="120"/>
           </svg>
           <h2 class="brand-name">iSparta<em>-next</em></h2>
           <p class="sub" data-t="s0sub">PNG 序列 / APNG / WebP / GIF 互转与压缩</p>
@@ -928,6 +1220,11 @@ button{font-family:inherit;color:inherit}
             <div class="card"><div class="t" data-t="c0Theme">双主题</div><div class="d" data-t="c0ThemeD">亮色暗色双主题切换</div></div>
             <div class="card"><div class="t" data-t="c0Multi">多端兼容支持</div><div class="d" data-t="c0MultiD">Windows / MAC，After Effects</div></div>
           </div>
+          <!-- mimocode 式唯一主按钮：点击进第 2 步（切 .solid 不透明方框，光云关闭）。
+               复用已有 start 三语文案，不新增 i18n key。 -->
+          <button class="welcome-cta" id="btnStart" type="button">
+            <span data-t="start">开始使用</span><span class="welcome-cta__arrow" aria-hidden="true">↗</span>
+          </button>
         </section>
 
         <!-- ---------- 2 导入方式（图在卡内，标题与说明落在卡外） ---------- -->
@@ -1142,6 +1439,70 @@ button{font-family:inherit;color:inherit}
           <span class="counter" id="counter">1 / 5</span>
           <button class="btn" id="btnPrev" data-t="prev">上一步</button>
           <button class="btn primary" id="btnNext" data-t="next">下一步</button>
+        </div>
+      </div>
+
+      <!-- ==================== 弹窗测试层 ====================
+           静态还原生产组件（OnboardingWhatsNew.vue / IsUpdateDialog.vue）的结构与文案，
+           用于预览外观、层级、三语与 CEP 铺满行为；不是真实组件、不含任何业务逻辑。
+           默认 hidden —— clean 透明窗验证模式绝不会被它污染。 -->
+      <div class="pv-layer pv-own" id="dlgOwn" hidden>
+        <div class="pv-own-card" role="dialog" aria-modal="true" aria-labelledby="pvOwnTitle">
+          <div class="pv-own-head">
+            <svg class="pv-own-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3z"/>
+              <path d="M18.5 15.5l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7.7-1.8z"/>
+            </svg>
+            <h2 class="pv-own-title" id="pvOwnTitle" data-dt="ownTitle"></h2>
+          </div>
+          <p class="pv-own-sub" data-dt="ownSub"></p>
+          <!-- 真实逻辑：briefLines(lastResult.notes, 6) 取【分组】之前的要点，最多 6 条 -->
+          <ul class="pv-own-list">
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8.5 12.5l2.3 2.3 4.7-5"/></svg><span data-dt="ownH1"></span></li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8.5 12.5l2.3 2.3 4.7-5"/></svg><span data-dt="ownH2"></span></li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8.5 12.5l2.3 2.3 4.7-5"/></svg><span data-dt="ownH3"></span></li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8.5 12.5l2.3 2.3 4.7-5"/></svg><span data-dt="ownH4"></span></li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8.5 12.5l2.3 2.3 4.7-5"/></svg><span data-dt="ownH5"></span></li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8.5 12.5l2.3 2.3 4.7-5"/></svg><span data-dt="ownH6"></span></li>
+          </ul>
+          <div class="pv-own-cta"><button type="button" class="pv-btn primary" data-close data-dt="ownStart"></button></div>
+        </div>
+      </div>
+
+      <div class="pv-layer pv-upd" id="dlgUpd" hidden>
+        <div class="pv-upd-panel" role="dialog" aria-modal="true" aria-labelledby="pvUpdTitle">
+          <div class="pv-upd-body">
+            <div class="pv-upd-hero">
+              <span class="pv-upd-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v10m0 0-4-4m4 4 4-4"/></svg>
+              </span>
+              <h2 class="pv-upd-title" id="pvUpdTitle" data-dt="updTitle"></h2>
+              <p class="pv-upd-sub" data-dt="updSub"></p>
+            </div>
+            <!-- 真实组件：默认 noteBrief（首个【分组】前的要点），展开后 noteItems 全文 -->
+            <ul class="pv-upd-list" id="updList">
+              <li data-dt="updI1"></li>
+              <li data-dt="updI2"></li>
+              <li data-dt="updI3"></li>
+              <li data-dt="updI4"></li>
+              <li data-dt="updI5"></li>
+              <li data-dt="updI6"></li>
+              <li class="grp pv-upd-more" data-dt="updF1" hidden></li>
+              <li class="pv-upd-more" data-dt="updF2" hidden></li>
+              <li class="pv-upd-more" data-dt="updF3" hidden></li>
+              <li class="grp pv-upd-more" data-dt="updF4" hidden></li>
+              <li class="pv-upd-more" data-dt="updF5" hidden></li>
+            </ul>
+            <button type="button" class="pv-upd-toggle" id="updToggle" aria-expanded="false" data-dt="updExpand"></button>
+            <p class="pv-upd-footnote" data-dt="updFoot"></p>
+          </div>
+          <div class="pv-upd-acts">
+            <button type="button" class="pv-btn text" data-close data-dt="updSkip"></button>
+            <div class="pv-upd-acts-right">
+              <button type="button" class="pv-btn" data-close data-dt="updLater"></button>
+              <button type="button" class="pv-btn primary" data-close data-dt="updDownload"></button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -1507,6 +1868,99 @@ button{font-family:inherit;color:inherit}
     }
   }
 
+  /* 弹窗测试文案：独立于 I18N（不污染引导页字典），三语必须齐。
+     文案镜像生产 locales 的 obWhatsNew* / update* key；版本号是静态演示值。 */
+  var DLG = {
+    'zh-CN': {
+      lblDialog: '弹窗测试', dlgOwn: '更新说明', dlgUpd: '检查更新',
+      // 内容取真实 .github/release-notes/v3.9.0.md 经 formatReleaseNotes 后的要点（最多 6 条）
+      ownTitle: 'iSparta v3.9.0 已就绪', ownSub: '感谢更新！本次版本带来了这些变化：',
+      ownH1: 'AE 扩展新增独立的「序列帧目录」设置，可预设、可选目录、可用变量模板',
+      ownH2: '修复 APNG 有损压缩的质量设置不生效，质量值现在真正影响最终产物',
+      ownH3: '设置面板标题栏新增布局切换按钮，可在「分类标签」与「全部设置一页」间切换',
+      ownH4: '路径变量胶囊悬停提示改为两行：首行变量作用、次行当前取值',
+      ownH5: '项目 README 重做首屏，补齐各平台安装指导与常见问题排查',
+      ownH6: '打开设置面板时不再露出底部开始任务与状态栏，按钮固定底部对齐',
+      ownStart: '开始使用',
+      updTitle: '新版 v3.9.0 已就绪', updSub: '发现新版本 v3.9.0（当前 v3.8.1）',
+      updI1: '· AE 扩展新增独立的「序列帧目录」设置，与产物输出路径完全分开',
+      updI2: '· 修复 APNG 有损压缩的质量设置不生效，质量值真正影响最终产物',
+      updI3: '· 设置面板标题栏新增布局切换按钮，桌面版和 AE 扩展都支持并记住选择',
+      updI4: '· 路径变量胶囊悬停提示改为两行：变量作用 / 当前取值',
+      updI5: '· 项目 README 重做首屏并补齐安装指导与常见问题',
+      updI6: '· 打开设置面板时不再露出底部开始任务与状态栏',
+      updF1: '【新增】', updF2: '· 序列帧目录面板：预设、路径选择、变量模板，默认在工程旁合成名目录',
+      updF3: '· 桌面全局设置中可分别设置序列帧目录与产物路径（仅 AE 扩展下生效）',
+      updF4: '· 输出设置与全局设置标题栏新增布局切换，偏好跨端共用',
+      updF5: '· APNG 有损压缩：量化结果现参与最终编码，质量值真正生效；内存不足跳过量化等边界一并处理',
+      updExpand: '查看详细更新说明', updCollapse: '收起详细更新说明',
+      updFoot: '安装更新需前往 Release 页下载；此处仅预览弹窗外观。',
+      updSkip: '不再提示此版本', updLater: '稍后', updDownload: '前往下载'
+    },
+    'zh-TW': {
+      lblDialog: '彈窗測試', dlgOwn: '更新說明', dlgUpd: '檢查更新',
+      ownTitle: 'iSparta v3.9.0 已就緒', ownSub: '感謝更新！本次版本帶來了這些變化：',
+      ownH1: 'AE 擴充新增獨立的「序列幀目錄」設定，可預設、可選目錄、可用變數範本',
+      ownH2: '修正 APNG 有損壓縮的品質設定不生效，品質值現在真正影響最終產物',
+      ownH3: '設定面板標題列新增版面切換按鈕，可在「分類標籤」與「全部設定一頁」間切換',
+      ownH4: '路徑變數膠囊懸停提示改為兩行：首行變數作用、次行目前取值',
+      ownH5: '專案 README 重做首屏，補齊各平台安裝指導與常見問題排查',
+      ownH6: '開啟設定面板時不再露出底部開始任務與狀態列，按鈕固定底部對齊',
+      ownStart: '開始使用',
+      updTitle: '新版 v3.9.0 已就緒', updSub: '發現新版本 v3.9.0（當前 v3.8.1）',
+      updI1: '· AE 擴充新增獨立的「序列幀目錄」設定，與產物輸出路徑完全分開',
+      updI2: '· 修正 APNG 有損壓縮的品質設定不生效，品質值真正影響最終產物',
+      updI3: '· 設定面板標題列新增版面切換按鈕，桌面版與 AE 擴充都支援並記住選擇',
+      updI4: '· 路徑變數膠囊懸停提示改為兩行：變數作用 / 目前取值',
+      updI5: '· 專案 README 重做首屏並補齊安裝指導與常見問題',
+      updI6: '· 開啟設定面板時不再露出底部開始任務與狀態列',
+      updF1: '【新增】', updF2: '· 序列幀目錄面板：預設、路徑選擇、變數範本，預設在工程旁合成名目錄',
+      updF3: '· 桌面全域設定中可分別設定序列幀目錄與產物路徑（僅 AE 擴充下生效）',
+      updF4: '· 輸出設定與全域設定標題列新增版面切換，偏好跨端共用',
+      updF5: '· APNG 有損壓縮：量化結果現參與最終編碼，品質值真正生效；記憶體不足跳過量化等邊界一併處理',
+      updExpand: '查看詳細更新說明', updCollapse: '收起詳細更新說明',
+      updFoot: '安裝更新需前往 Release 頁下載；此處僅預覽彈窗外觀。',
+      updSkip: '不再提示此版本', updLater: '稍後', updDownload: '前往下載'
+    },
+    'en': {
+      lblDialog: 'Dialogs', dlgOwn: "What's New", dlgUpd: 'Check for updates',
+      ownTitle: 'iSparta v3.9.0 is ready', ownSub: 'Thanks for updating! This release brings these changes:',
+      ownH1: 'AE panel gains a separate “Sequence Frames Directory” setting with presets and variable templates',
+      ownH2: 'Fixed APNG lossy quality setting having no effect — quality now truly changes output size',
+      ownH3: 'Settings header gains a layout switch between tabbed and all-in-one views',
+      ownH4: 'Path variable tooltip now shows purpose on the first line and current value on the second',
+      ownH5: 'README redesigned with install guides and FAQ for every platform',
+      ownH6: 'Opening settings no longer exposes the task bar and status bar underneath',
+      ownStart: 'Get started',
+      updTitle: 'Version v3.9.0 is ready', updSub: 'New version v3.9.0 available (current v3.8.1)',
+      updI1: '· AE panel gains a separate “Sequence Frames Directory” setting, kept apart from output paths',
+      updI2: '· Fixed APNG lossy quality setting having no effect — quality now truly changes output',
+      updI3: '· Settings header gains a layout switch, remembered across desktop and AE panel',
+      updI4: '· Path variable tooltip shows purpose / current value on two lines',
+      updI5: '· README redesigned with install guides and common questions',
+      updI6: '· Opening settings no longer exposes the task bar and status bar',
+      updF1: '[New]', updF2: '· Sequence Frames Directory panel: presets, path picker, variable templates',
+      updF3: '· Desktop global settings can set frames directory and output path separately',
+      updF4: '· Layout switch added to both output and global settings, preference shared',
+      updF5: '· APNG lossy: quantizer result now feeds final encoding; quality value truly applies',
+      updExpand: 'View detailed release notes', updCollapse: 'Collapse release notes',
+      updFoot: 'Download from the Release page in production; this is only a dialog preview.',
+      updSkip: "Don't show again", updLater: 'Later', updDownload: 'Download'
+    }
+  }
+  function TD (key) {
+    var pack = DLG[lang] || DLG['zh-CN']
+    return pack[key] != null ? pack[key] : (DLG['zh-CN'][key] || key)
+  }
+  function renderDialogI18n () {
+    Array.prototype.slice.call(document.querySelectorAll('[data-dt]')).forEach(function (el) {
+      // 展开态下 toggle 显示「收起」而非字典默认 key（真实组件 notesExpanded 的同口径）
+      var key = (el.id === 'updToggle' && el.getAttribute('aria-expanded') === 'true')
+        ? 'updCollapse' : el.dataset.dt
+      el.textContent = TD(key)
+    })
+  }
+
   function T (key) {
     var pack = I18N[lang] || I18N['zh-CN']
     return pack[key] != null ? pack[key] : (I18N['zh-CN'][key] || key)
@@ -1522,6 +1976,7 @@ button{font-family:inherit;color:inherit}
     updateSetBtn()
     renderEnv()
     render()
+    renderDialogI18n()
     gpI18nRefresh()
   }
 
@@ -1611,8 +2066,11 @@ button{font-family:inherit;color:inherit}
 
   /* ------------------------------------------------------------------ 渲染 */
   function render () {
-    /* 光晕亮度分档：欢迎步满亮（深字压亮光核），其余步骤降档成柔光底 */
+    /* alpha 只用在欢迎步（cur===0）：透明面板 + 满亮光云，参考 mimocode 启动页。
+       点击进入后（cur>0）切 .solid 不透明方框面板并关闭光晕——后续步骤根本不参与
+       alpha / 边缘羽化，从架构上根除反复出现的"边角裁切"拉扯。 */
     frame.classList.toggle('glow-full', cur === 0)
+    frame.classList.toggle('solid', cur > 0)
     steps.forEach(function (s, i) { s.classList.toggle('on', i === cur) })
     stepBtns.forEach(function (b, i) { b.classList.toggle('on', i === cur) })
     Array.prototype.slice.call(dots.children).forEach(function (d, i) {
@@ -1669,14 +2127,66 @@ button{font-family:inherit;color:inherit}
 
   btnPrev.addEventListener('click', function () { go(cur - 1) })
   btnNext.addEventListener('click', function () { go(cur + 1) })
+  /* 欢迎页主按钮：点「开始使用」进第 2 步（切 .solid 不透明方框，光云关闭） */
+  var btnStart = document.getElementById('btnStart')
+  if (btnStart) btnStart.addEventListener('click', function () { go(1) })
   document.getElementById('btnSkip').addEventListener('click', function () { go(steps.length - 1) })
   stepBtns.forEach(function (b) {
     b.addEventListener('click', function () { go(Number(b.dataset.i)) })
   })
+
+  /* 弹窗测试：控制台按钮 → 面板内叠加还原弹窗（非真实组件、不打包）。
+     关闭方式对齐真实弹窗：按钮 / 点遮罩 / ESC；打开时先收起右上设置弹层避免两个浮层叠加。 */
+  var dlgBtns = Array.prototype.slice.call(document.querySelectorAll('#dlgList button'))
+  var dlgLayers = { own: document.getElementById('dlgOwn'), upd: document.getElementById('dlgUpd') }
+  var openDlg = null
+  function closeDialog () {
+    if (!openDlg || !dlgLayers[openDlg]) { return }
+    dlgLayers[openDlg].hidden = true
+    dlgBtns.forEach(function (b) { b.classList.remove('on') })
+    frame.classList.remove('pv-open')
+    openDlg = null
+  }
+  function openDialog (k) {
+    if (!dlgLayers[k]) { return }
+    closeDialog()
+    closePop()
+    openDlg = k
+    // 冻结 frame 宽度过渡：切运行时后立刻开弹窗也能按最终宽度铺满（CEP 不再出现"没铺满"的中间态）
+    frame.classList.add('pv-open')
+    dlgLayers[k].hidden = false
+    dlgBtns.forEach(function (b) { b.classList.toggle('on', b.dataset.d === k) })
+  }
+  dlgBtns.forEach(function (b) {
+    b.addEventListener('click', function () { openDialog(b.dataset.d) })
+  })
+
+  /* 检查更新弹窗的更新说明展开/收起：对应真实组件的 noteBrief / noteItems 切换 */
+  var updToggle = document.getElementById('updToggle')
+  var updList = document.getElementById('updList')
+  var updMore = Array.prototype.slice.call(document.querySelectorAll('.pv-upd-more'))
+  if (updToggle) {
+    updToggle.addEventListener('click', function (e) {
+      e.stopPropagation()
+      var expanded = updToggle.getAttribute('aria-expanded') === 'true'
+      updToggle.setAttribute('aria-expanded', expanded ? 'false' : 'true')
+      updToggle.textContent = TD(expanded ? 'updExpand' : 'updCollapse')
+      updMore.forEach(function (li) { li.hidden = expanded })
+      if (updList) { updList.classList.toggle('is-expanded', !expanded) }
+    })
+  }
+  Object.keys(dlgLayers).forEach(function (k) {
+    var layer = dlgLayers[k]
+    layer.addEventListener('click', function (e) {
+      if (e.target === layer || (e.target.closest && e.target.closest('[data-close]'))) { closeDialog() }
+    })
+  })
+
   document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') { closeDialog(); closePop(); return }
+    if (openDlg) { return }
     if (e.key === 'ArrowRight') { go(cur + 1) }
     if (e.key === 'ArrowLeft') { go(cur - 1) }
-    if (e.key === 'Escape') { closePop() }
   })
 
   /* ------------------------------------------------- 面板右上角设置弹层 */
@@ -2060,6 +2570,11 @@ button{font-family:inherit;color:inherit}
      例：index.html#step=2&rt=cep —— 便于截图与逐页比对，不改任何默认行为。
      前面必须带分号：否则 IIFE 会被 ASI 接到 setLang(...) 后面当函数调用。 */
   ;(function applyHash () {
+    // 真透明窗干净模式：?clean=1（query，不受 hash 深链影响）。
+    // 只加 class，样式全在 CSS 里锁；浏览器普通访问 :8090 看不到任何变化。
+    var isClean = /(^|[?&])clean=1(?:&|$)/.test(location.search)
+    if (isClean) { document.documentElement.classList.add('clean') }
+
     var h = String(location.hash || '').replace(/^#/, '')
     if (!h) return
     var q = {}

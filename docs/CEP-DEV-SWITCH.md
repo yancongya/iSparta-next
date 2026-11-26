@@ -134,5 +134,26 @@ node scripts/dev/cep-mode.js status      # 确认 DEV 条目消失
 
 ## 7. 守卫
 
-`scripts/cep-dev-mode.l1.js`（16 条）锁死：开发 ID 独立、dev manifest 仅换预期字段、
-源码 manifest 零写入、dev 用 `serve:cep`、restore 不碰系统级。改脚本时必跑。
+`scripts/cep-dev-mode.l1.js`（23 条）锁死：开发 ID 独立、dev manifest 仅换预期字段、
+源码 manifest 零写入、dev 用 `serve:cep`、restore 不碰系统级；以及 v1 废弃契约（见下）。改脚本时必跑。
+
+## 8. v1 已废弃（2026-11-27：生产与 dev 彻底分开）
+
+**问题**：旧入口 `npm run dev:cep` → `scripts/cep-manifest-dev.js` 会 `writeFileSync`
+改写源码 `targets/cep/CSXS/manifest.xml` 的 MainPath 为 `./dev-hmr.html`。热更后忘记
+`dev:cep:off` 就把生产配置污染成热更页——发版事故隐患。两套机制并存时，守卫只盯
+v2 脚本自身，拦不住「别处写源码 manifest」。
+
+**现在**：源码 manifest 恒为生产值 `./ui/index.html`，**任何脚本都不得写入**；
+dev 只在用户级独立目录派生 manifest（独立 ID `.dev`），生产与 dev 彻底分开。
+
+| 旧入口 | 现在 |
+|--------|------|
+| `npm run dev:cep` | 转发 → `node scripts/dev/cep-mode.js dev` |
+| `npm run dev:cep:off` | 转发 → `node scripts/dev/cep-mode.js restore` |
+| `build:windows` 开头的 `... off &&` | 已移除（源码 manifest 恒为生产值，无需切回） |
+| `scripts/cep-manifest-dev.js` | 收敛为兼容转发器，**不再写任何 manifest** |
+
+守卫新增 7 条断言锁死：v1 转发器无写操作、on→dev / off→restore、源码 manifest 当前恒为
+生产值、两个 npm script 走 v2、build:windows 不调 v1 off、dev-all.js 不直调 v1、
+全仓 `scripts/**` 无脚本写入源码/任何 manifest（v2 写用户级 `DEV_MANIFEST` 合法放行）。

@@ -314,11 +314,12 @@
         <div v-show="gsAllInOne || activeTab === 'about'" class="gs-pane">
 
         <!-- 关于 / 更新检查：应用级信息，不放在任务输出设置面板 -->
-        <div class="gs-pair">
+        <div class="gs-pair gs-pair--about">
           <div class="gs-pair__cell">
             <span class="gs-pair__label">{{ $t('aboutVersion') }}</span>
             <div class="gs-pair__ctrl">
               <span class="gs-version">v{{ appVersion || '—' }}</span>
+              <is-button size="sm" @click="openReleaseNotes()">{{ $t('aboutReleaseNotes') }}</is-button>
             </div>
           </div>
           <div class="gs-pair__cell">
@@ -429,6 +430,7 @@ import {
   OUTPUT_FORMATS, normalizeOutputFormats, invalidateDefaultOutputFormats
 } from '../../util/outputFormats'
 import QualityRetrySliders from '../../ui-next/components/QualityRetrySliders.vue'
+import { openReleaseNotes } from '../../ui-next/releaseNotesDialog'
 
 const DEFAULT_SIZE_LIMIT = {
   enabled: true,
@@ -792,6 +794,8 @@ export default {
     if (this._unsubTheme) this._unsubTheme()
   },
   methods: {
+    /** 更新日志：只读弹窗，桌面/CEP 共用全局实例，不检查更新、不联网 */
+    openReleaseNotes,
     /** 打开产品官网。走 hostAdapter 是硬要求：CEP 下必须用系统浏览器打开 */
     openSite () {
       hostAdapter.openExternal(LANDING_URL)

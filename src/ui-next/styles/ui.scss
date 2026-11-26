@@ -2129,6 +2129,8 @@ body.is-scroll-locked {
 
 .is-dialog__panel.upd-panel--full {
   width: 100%;
+  // CEP 面板内上下也铺满：与 log-panel 同口径（body flex:1 可滚、footer 沉底）
+  height: calc(100vh - 12px);
   max-height: calc(100vh - 12px);
 }
 
