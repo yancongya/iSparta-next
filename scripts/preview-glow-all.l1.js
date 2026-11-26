@@ -37,9 +37,9 @@ ok('欢迎步内不再有独立 glow-field', raw.indexOf('glow-field', firstStep
 // 2. 三枚 orb + 渐变 + blur + 动画
 ok('三枚 orb', /<i class="orb orb1"><\/i><i class="orb orb2"><\/i><i class="orb orb3"><\/i>/.test(raw))
 ok('radial-gradient 光斑', (raw.match(/radial-gradient\(ellipse/g) || []).length >= 3)
-ok('blur 收边（36px：够柔但不把暖色抹成灰雾）', /\.glow-field\{[^}]*filter:blur\(36px\)/.test(raw))
-ok('glow-hue 关键帧 blur 与静态值一致 36px（否则动画会把 36 覆盖回旧值）',
-  (hueRaw => hueRaw && (hueRaw.match(/blur\(36px\)/g) || []).length >= 2)(
+ok('blur 收边（28px：够柔但保住 border-radius 削出的 blob 轮廓）', /\.glow-field\{[^}]*filter:blur\(28px\)/.test(raw))
+ok('glow-hue 关键帧 blur 与静态值一致 28px（否则动画会把 28 覆盖回旧值）',
+  (hueRaw => hueRaw && (hueRaw.match(/blur\(28px\)/g) || []).length >= 2)(
     (raw.match(/@keyframes glow-hue\{[\s\S]*?\n\}/) || [''])[0]))
 ok('暗色暖光 token（暖金白主核 + 暖橙 + 暖粉，非灰米白）',
   /--is-glow-1:255,238,210;--is-glow-2:246,186,128;--is-glow-3:240,172,164/.test(raw))
@@ -64,8 +64,21 @@ ok('shape 漂移含透明度呼吸（颜色进出）',
     const m = raw.match(new RegExp('@keyframes ' + k + '\\{[\\s\\S]*?\\}(?![\\s\\S]*?@keyframes ' + k + ')'))
     return m && /opacity:/.test(m[0])
   }))
-ok('shape 漂移去 alternate（0→50→100 闭环）',
+ok('shape 漂移去 alternate（0→33→66→100 闭环）',
   ['glow-drift1','glow-drift2','glow-drift3'].every(k => !new RegExp('animation:' + k + '[^;]*alternate').test(raw)))
+// blob 变形：轮廓本身在变（8 值 border-radius），不只是整块椭圆平移/缩放
+const driftBlocks = ['glow-drift1','glow-drift2','glow-drift3'].map(k =>
+  (raw.match(new RegExp('@keyframes ' + k + '\\{[\\s\\S]*?\\n\\}')) || [''])[0])
+ok('三枚光斑关键帧都含 border-radius 变形（8 值 blob）',
+  driftBlocks.every(blk => (blk.match(/border-radius:\d+% \d+% \d+% \d+% \/ \d+% \d+% \d+% \d+%/g) || []).length >= 3))
+ok('每枚光斑的 blob 形状在各相位互不相同（真的变形，非固定椭圆）',
+  driftBlocks.every(blk => {
+    const vals = (blk.match(/border-radius:([^;]+)/g) || []).map(x => x.replace(/^border-radius:/, ''))
+    return new Set(vals).size >= 3
+  }))
+ok('orb 的 will-change 含 border-radius（变形走合成层）', /\.glow-field \.orb\{[^}]*will-change:transform,border-radius/.test(raw))
+ok('光斑渐变边缘够实（100% 处仍非 transparent，blob 削角才带颜色）',
+  (raw.match(/rgba\(var\(--is-glow-[123]\),\.\d+\) 100%\)/g) || []).length >= 3)
 ok('关闭动效同时停光晕场与光斑', /\.no-motion \.glow-field,\.no-motion \.glow-field \.orb\{animation:none!important\}/.test(raw))
 
 // 3. 亮度分档 + 边缘羽化（防光晕被 overflow:hidden 切成硬直线）
