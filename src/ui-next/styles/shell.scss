@@ -1008,6 +1008,13 @@ html.is-cep {
     margin-right: auto;
   }
 
+  .ib-rail__brand-mark img { display: block; }
+  .ib-rail__logo-anim { display: none !important; }
+  .ib-rail__brand:hover .ib-rail__logo-static,
+  .ib-rail__brand:focus-visible .ib-rail__logo-static { display: none !important; }
+  .ib-rail__brand:hover .ib-rail__logo-anim,
+  .ib-rail__brand:focus-visible .ib-rail__logo-anim { display: block !important; }
+
   // 第二行：列表 + 侧栏 吃掉剩余高度（wrap 后需显式给高，否则两行平分）
   .ib-main,
   .ib-side {

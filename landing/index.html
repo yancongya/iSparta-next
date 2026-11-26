@@ -28,7 +28,9 @@
 
   <link rel="icon" href="assets/icon.png" />
   <link rel="apple-touch-icon" href="assets/icon.png" />
-  <link rel="stylesheet" href="styles.css?v=20261119-narrow-layout" />
+  <link rel="preload" as="image" href="assets/isparta-next-media-state-cycle-loop.svg" fetchpriority="high" />
+  <link rel="prefetch" as="document" href="demo/index.html" />
+  <link rel="stylesheet" href="styles.css?v=20261126-splash-perf" />
 
   <!-- Structured data -->
   <script type="application/ld+json">
@@ -52,7 +54,7 @@
   }
   </script>
   <script>
-    // 消除首帧主题闪烁（对齐应用 theme.init 习惯）
+    // 消除首帧主题与开屏闪烁（对齐应用 theme.init 习惯）
     (function () {
       try {
         var m = localStorage.getItem("uiTheme") || "system";
@@ -67,23 +69,32 @@
       } catch (e) {
         document.documentElement.setAttribute("data-theme", "light");
       }
+      try {
+        if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+          document.documentElement.style.setProperty("--hero-reveal", "1");
+        } else {
+          document.documentElement.classList.add("is-splashing");
+        }
+      } catch (e) {}
     })();
   </script>
 </head>
 <body>
+  <div class="splash" id="splash" aria-hidden="true">
+    <div class="splash__inner">
+      <img class="splash__logo" id="splash-logo" src="assets/isparta-next-media-state-cycle-loop.svg" alt="" width="112" height="112" decoding="async" fetchpriority="high" onload="window.__splashLogoAt=performance.now()" />
+      <p class="splash__brand mono">ISPARTA<span>-next</span></p>
+      <div class="splash__bar" aria-hidden="true"><span class="splash__fill" id="splash-fill"></span></div>
+    </div>
+  </div>
   <div class="noise" aria-hidden="true"></div>
   <div class="scroll-rail" id="scroll-rail" aria-hidden="true"></div>
 
   <header class="top">
     <a class="brand" href="https://yancongya.github.io/iSparta-next/">
       <span class="brand-mark" aria-hidden="true">
-        <!-- 与 public/icons/icon-brand.svg 同源：品牌色 #c8f542 圆形播放标，无文字 -->
-        <svg width="28" height="28" viewBox="0 0 1024 1024" fill="none">
-          <g transform="translate(512 512) scale(2.05) translate(-512 -395.636364)">
-            <path d="M512 395.636364m-232.727273 0a232.727273 232.727273 0 1 0 465.454546 0 232.727273 232.727273 0 1 0-465.454546 0Z" fill="#c8f542"/>
-            <path d="M453.806545 289.764848a7.214545 7.214545 0 0 1 8.168728-6.112969l77.548606 11.155394c1.881212 0.271515 3.580121 1.272242 4.728242 2.788848l70.943031 93.796849a7.214545 7.214545 0 0 1 0.100848 8.564363L544.267636 498.722909a7.214545 7.214545 0 0 1-4.871757 2.936243L461.459394 512.391758a7.214545 7.214545 0 0 1-6.997333-11.132122l67.285333-101.558303a7.214545 7.214545 0 0 0-0.077576-8.079515L455.00897 294.888727a7.214545 7.214545 0 0 1-1.202425-5.12z m-6.729697 37.783273a3.607273 3.607273 0 0 1 5.054061 0.702061l47.736243 63.146666a7.214545 7.214545 0 0 1 0.104727 8.556607L452.189091 466.540606a3.607273 3.607273 0 0 1-6.543515-2.102303V330.426182a3.607273 3.607273 0 0 1 1.435151-2.878061z" fill="#0c0f0e"/>
-          </g>
-        </svg>
+        <img class="brand-mark__anim" src="assets/isparta-next-media-state-cycle-loop.svg" alt="" width="28" height="28" decoding="async" />
+        <img class="brand-mark__static" src="assets/icon-brand.svg" alt="" width="28" height="28" decoding="async" />
       </span>
       <span class="brand-text">ISPARTA<span class="brand-next">-next</span></span>
     </a>
@@ -232,7 +243,10 @@
     <!-- 产品舞台：无边框大图，底部用渐隐遮罩融进页面（参考站观感） -->
     <figure class="hero-stage" id="hero-stage"  data-i18n-aria="a11y.heroFig"aria-label="iSparta-next 工作台界面">
       <div class="hero-shot">
-        <img src="assets/shots/desktop-workspace-hd.webp"  data-i18n-alt="a11y.shot.workbench"alt="iSparta-next 工作台：任务列表与输出设置" width="1200" height="900" fetchpriority="high" />
+        <!-- 占位图与 iframe mock 同宽高比 1440/900：此前用 1200x900 截图，
+             object-fit:contain 在 16:10 舞台里两侧各空 8%，mock 就绪切换时左右空白突然消失。
+             新图左右各补 120px 边缘像素（scripts/bake-landing 不会覆盖此文件名）。 -->
+        <img src="assets/shots/desktop-workspace-hd-wide.webp"  data-i18n-alt="a11y.shot.workbench"alt="iSparta-next 工作台：任务列表与输出设置" width="1440" height="900" fetchpriority="high" />
         <div class="hero-demo" id="hero-demo"></div>
         <!-- 渐隐遮罩：只盖住底部一段，让截图「沉」进背景而不是硬边收口。
              两端色都取自当前主题的 paper，暗色下改用深色，亮色下用纸色。 -->
@@ -1030,19 +1044,19 @@
         <div class="shots-grid">
           <figure class="shot" tabindex="0">
             <div class="shot__frame">
-              <img src="assets/shots/desktop-workspace-hd.webp"  data-i18n-alt="a11y.shot.workbench"alt="iSparta-next 桌面工作台：任务列表与输出设置" width="1200" height="900" loading="lazy" />
+              <img src="assets/shots/desktop-workspace-hd.webp"  data-i18n-alt="a11y.shot.workbench"alt="iSparta-next 桌面工作台：任务列表与输出设置" width="1200" height="900" loading="lazy" decoding="async" />
             </div>
             <figcaption class="mono" data-i18n="shots.capMain">桌面工作台 · 任务列表 + 逐项输出设置</figcaption>
           </figure>
           <figure class="shot" tabindex="0">
             <div class="shot__frame">
-              <img src="assets/shots/desktop-empty.webp"  data-i18n-alt="a11y.shot.empty"alt="空状态：拖放、粘贴或点击打开目录" width="984" height="741" loading="lazy" />
+              <img src="assets/shots/desktop-empty.webp"  data-i18n-alt="a11y.shot.empty"alt="空状态：拖放、粘贴或点击打开目录" width="984" height="741" loading="lazy" decoding="async" />
             </div>
             <figcaption class="mono" data-i18n="shots.capEmpty">空状态 · 拖入 / 粘贴 / 点开</figcaption>
           </figure>
           <figure class="shot" tabindex="0">
             <div class="shot__frame">
-              <img src="assets/shots/desktop-settings-general.webp"  data-i18n-alt="a11y.shot.settings"alt="默认设置：输出路径与变量模板" width="984" height="741" loading="lazy" />
+              <img src="assets/shots/desktop-settings-general.webp"  data-i18n-alt="a11y.shot.settings"alt="默认设置：输出路径与变量模板" width="984" height="741" loading="lazy" decoding="async" />
             </div>
             <figcaption class="mono" data-i18n="shots.capSet">默认设置 · 输出路径与变量模板</figcaption>
           </figure>
@@ -1060,19 +1074,19 @@
         <div class="shots-grid">
           <figure class="shot" tabindex="0">
             <div class="shot__frame">
-              <img src="assets/shots/cep-comp-tree.webp"  data-i18n-alt="a11y.shot.tree"alt="AE 扩展：合成树与尺寸信息" width="600" height="800" loading="lazy" />
+              <img src="assets/shots/cep-comp-tree.webp"  data-i18n-alt="a11y.shot.tree"alt="AE 扩展：合成树与尺寸信息" width="600" height="800" loading="lazy" decoding="async" />
             </div>
             <figcaption class="mono" data-i18n="shots.capCepTree">合成树 · 尺寸 / 帧率 / 运行状态</figcaption>
           </figure>
           <figure class="shot" tabindex="0">
             <div class="shot__frame">
-              <img src="assets/shots/cep-task-list.webp"  data-i18n-alt="a11y.shot.tasks"alt="AE 扩展：合成任务列表" width="600" height="800" loading="lazy" />
+              <img src="assets/shots/cep-task-list.webp"  data-i18n-alt="a11y.shot.tasks"alt="AE 扩展：合成任务列表" width="600" height="800" loading="lazy" decoding="async" />
             </div>
             <figcaption class="mono" data-i18n="shots.capCepList">合成任务 · 格式 / 帧率 / 预估大小</figcaption>
           </figure>
           <figure class="shot" tabindex="0">
             <div class="shot__frame">
-              <img src="assets/shots/cep-output-settings.webp"  data-i18n-alt="a11y.shot.output"alt="AE 扩展：序列帧目录与成品输出路径" width="600" height="800" loading="lazy" />
+              <img src="assets/shots/cep-output-settings.webp"  data-i18n-alt="a11y.shot.output"alt="AE 扩展：序列帧目录与成品输出路径" width="600" height="800" loading="lazy" decoding="async" />
             </div>
             <figcaption class="mono" data-i18n="shots.capCepSet">输出设置 · 序列帧目录 / 成品路径</figcaption>
           </figure>
@@ -1374,6 +1388,6 @@
   <script src="assets/vendor/gsap.min.js"></script>
   <script src="assets/vendor/ScrollTrigger.min.js"></script>
   <script src="i18n.js?v=20261119-ae-six"></script>
-  <script src="main.js?v=20261119-narrow-layout"></script>
+  <script src="main.js?v=20261126-splash-perf"></script>
 </body>
 </html>

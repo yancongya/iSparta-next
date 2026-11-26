@@ -15,7 +15,8 @@
         显示 16px 用 64px 源，留足高分屏余量。
       -->
       <span class="wbar__mark" aria-hidden="true">
-        <img src="icons/icon-64.png" width="16" height="16" alt="" decoding="async" />
+        <img class="wbar__logo-anim" src="isparta-next-media-state-cycle-loop.svg" width="16" height="16" alt="" decoding="async" />
+        <img class="wbar__logo-static" src="icons/icon-brand.svg" width="16" height="16" alt="" decoding="async" />
       </span>
       <span class="wbar__name">{{ appName }}</span>
       <span class="wbar__ver mono">{{ appVersion }}</span>
@@ -219,6 +220,9 @@ export default {
 }
 
 .wbar__mark img { display: block; }
+.wbar__mark .wbar__logo-anim { display: none; }
+.wbar__brand:hover .wbar__logo-static { display: none; }
+.wbar__brand:hover .wbar__logo-anim { display: block; }
 
 .wbar__name {
   color: var(--is-text);

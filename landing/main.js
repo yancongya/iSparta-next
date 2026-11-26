@@ -765,24 +765,31 @@
     return "";
   }
 
-  function setupScroll() {
+  function playHeroEntrance() {
     if (!hasGsap || reduceMotion) return;
-    if (window.ScrollTrigger) window.gsap.registerPlugin(window.ScrollTrigger);
-
     window.gsap.from(".hero-copy > *", {
       opacity: 0,
       y: 24,
       duration: 0.7,
       stagger: 0.08,
       ease: "power2.out",
-      delay: 0.1,
+      delay: 0.05,
     });
     window.gsap.from(".hero-stage", {
       opacity: 0,
       duration: 0.9,
       ease: "power2.out",
-      delay: 0.25,
+      delay: 0.18,
     });
+  }
+
+  function setupScroll() {
+    if (!hasGsap || reduceMotion) return;
+    if (window.ScrollTrigger) window.gsap.registerPlugin(window.ScrollTrigger);
+
+    if (!document.documentElement.classList.contains("is-splashing")) {
+      playHeroEntrance();
+    }
     gsap.utils.toArray(".why-card").forEach(function (card, idx) {
       gsap.from(card, {
         scrollTrigger: { trigger: card, start: "top 90%" },
@@ -2285,6 +2292,9 @@
 
   function setupHeroDemo() {
     const panel = document.getElementById("hero-demo");
+    if (!panel) {
+      return { sendProgress: function () {}, whenReady: Promise.resolve() };
+    }
     const screenshot = panel.previousElementSibling;
     const frame = document.createElement("iframe");
     frame.width = screenshot.getAttribute("width");
@@ -2294,6 +2304,8 @@
     frame.src = "demo/index.html?lang=" + encodeURIComponent(document.documentElement.lang);
     let ready = false;
     let progress = 0;
+    let resolveReady;
+    const whenReady = new Promise(function (resolve) { resolveReady = resolve; });
 
     const fit = new ResizeObserver(function () {
       const wideWidth = getComputedStyle(panel).getPropertyValue("--hero-demo-width").trim();
@@ -2305,11 +2317,14 @@
 
     window.addEventListener("message", function onReady(event) {
       if (event.source !== frame.contentWindow || event.data !== "isparta-demo-ready") return;
-      panel.classList.add("hero-demo--ready");
       ready = true;
       sendProgress(progress);
       sendAppearance();
-      screenshot.setAttribute("aria-hidden", "true");
+      window.requestAnimationFrame(function () {
+        panel.classList.add("hero-demo--ready");
+        screenshot.setAttribute("aria-hidden", "true");
+        resolveReady();
+      });
       window.removeEventListener("message", onReady);
     });
     panel.appendChild(frame);
@@ -2328,7 +2343,7 @@
       progress = value;
       if (ready) frame.contentWindow.postMessage({ type: "isparta-demo-scroll", progress }, "*");
     }
-    return sendProgress;
+    return { sendProgress, whenReady };
   }
 
   function setupHeroPresentation(updateDemo) {
@@ -2445,10 +2460,103 @@
     layout.observe(stage);
   }
 
-  setupHeroPresentation(setupHeroDemo());
+  var triggerHeroScramble = function () {};
+
+  function setupSplash(demoReadyPromise, onReveal) {
+    var root = document.documentElement;
+    var splash = document.getElementById("splash");
+    if (!splash || !root.classList.contains("is-splashing")) {
+      root.classList.remove("is-splashing");
+      if (splash) splash.hidden = true;
+      onReveal();
+      return;
+    }
+
+    var MIN_CYCLE_MS = 3200;
+    var MAX_WAIT_MS = 9600;
+    var logo = document.getElementById("splash-logo");
+    var fill = document.getElementById("splash-fill");
+    var cycleStart = window.__splashLogoAt || 0;
+    var resourcesDone = false;
+    var targetExitMs = 0;
+    var dismissed = false;
+
+    function startClock() {
+      if (!cycleStart) cycleStart = window.__splashLogoAt || performance.now();
+    }
+
+    if (logo && logo.complete) {
+      startClock();
+    } else if (logo) {
+      logo.addEventListener("load", startClock, { once: true });
+      logo.addEventListener("error", startClock, { once: true });
+      window.setTimeout(startClock, 200);
+    } else {
+      startClock();
+    }
+
+    var pageLoadPromise = document.readyState === "complete"
+      ? Promise.resolve()
+      : new Promise(function (resolve) {
+          window.addEventListener("load", resolve, { once: true });
+        });
+
+    Promise.all([pageLoadPromise, demoReadyPromise]).then(function () {
+      resourcesDone = true;
+      if (cycleStart) {
+        var elapsed = performance.now() - cycleStart;
+        var LOGO_OFFSET_MS = 1680;
+        var k = Math.max(1, Math.ceil((elapsed - LOGO_OFFSET_MS) / MIN_CYCLE_MS));
+        targetExitMs = k * MIN_CYCLE_MS + LOGO_OFFSET_MS;
+      }
+    });
+
+    function dismiss() {
+      if (dismissed) return;
+      dismissed = true;
+      if (fill) fill.style.setProperty("--splash-progress", "1");
+      splash.classList.add("is-leaving");
+      onReveal();
+      window.setTimeout(function () {
+        root.classList.remove("is-splashing");
+        splash.hidden = true;
+      }, 440);
+    }
+
+    function tick(now) {
+      if (dismissed) return;
+      if (!cycleStart) {
+        window.requestAnimationFrame(tick);
+        return;
+      }
+      var elapsed = now - cycleStart;
+      if (resourcesDone && !targetExitMs) {
+        targetExitMs = Math.max(MIN_CYCLE_MS, Math.ceil(elapsed / MIN_CYCLE_MS) * MIN_CYCLE_MS);
+      }
+      var goalMs = targetExitMs || MIN_CYCLE_MS;
+      var timeRatio = Math.min(1, elapsed / goalMs);
+      var progress = Math.min(0.96, timeRatio * 0.72 + (resourcesDone ? 0.24 : 0.08));
+      if (fill) fill.style.setProperty("--splash-progress", progress.toFixed(3));
+
+      if ((resourcesDone && elapsed >= targetExitMs) || elapsed >= MAX_WAIT_MS) {
+        dismiss();
+        return;
+      }
+      window.requestAnimationFrame(tick);
+    }
+
+    window.requestAnimationFrame(tick);
+  }
+
+  var heroDemo = setupHeroDemo();
+  setupHeroPresentation(heroDemo.sendProgress);
   setupAeStage();
   setupScroll();
   setupCurrentDevice();
+  setupSplash(heroDemo.whenReady, function () {
+    playHeroEntrance();
+    triggerHeroScramble();
+  });
 
   // 语言切换后重挂「当前设备」徽标（它是 JS 生成的，不走 data-i18n）
   document.addEventListener("is:lang-applied", function () {
@@ -2545,7 +2653,10 @@
     }
 
     splitChars();
-    schedulePlay();
+    triggerHeroScramble = schedulePlay;
+    if (!document.documentElement.classList.contains("is-splashing")) {
+      schedulePlay();
+    }
 
     /**
      * hover 重播，上锁防连击。
