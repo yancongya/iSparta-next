@@ -51,6 +51,8 @@
 - **Bundled install:** system-wide installation (UAC prompt, CEP under Common Files, a single copy per machine); auto-detects the AE version; version shown in both the desktop title bar and the AE panel
 - **Onboarding (7 pages):** Welcome → Import → Output → Naming → Path variables → AE → Done, with a fluid glow backdrop, covering import methods, output settings and naming rules in one pass
 - **Unified brand mark:** Desktop, AE CEP panel, and landing page share a unified static-by-default, animated-on-hover brand logo interaction
+- **Overwrite protection & lossless APNG:** Output name conflict suffixing and a 3-way overwrite prompt (Overwrite / Save with suffix / Cancel); APNG supports lossless 32-bit RGBA output with persistent size-estimate badges
+- **Comparison & debugging:** Refactored before/after comparison dialog, plus a local debug-log toggle and inline port display in global settings
 
 Full per-version changes: [`docs/CHANGELOG.md`](docs/CHANGELOG.md).
 
