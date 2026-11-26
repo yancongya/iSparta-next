@@ -37,7 +37,7 @@ ok('欢迎步内不再有独立 glow-field', raw.indexOf('glow-field', firstStep
 // 2. 三枚 orb + 渐变 + blur + 动画
 ok('三枚 orb', /<i class="orb orb1"><\/i><i class="orb orb2"><\/i><i class="orb orb3"><\/i>/.test(raw))
 ok('radial-gradient 光斑', (raw.match(/radial-gradient\(ellipse/g) || []).length >= 3)
-ok('blur 收边', /\.glow-field\{[^}]*filter:blur\(34px\)/.test(raw))
+ok('blur 收边（mimocode 大半径 48px 融掉规整轮廓）', /\.glow-field\{[^}]*filter:blur\(48px\)/.test(raw))
 ok('keyframes 漂移', ['glow-drift1', 'glow-drift2', 'glow-drift3'].every(k => raw.indexOf('@keyframes ' + k) > -1))
 
 // 3. 亮度分档 + 边缘羽化（防光晕被 overflow:hidden 切成硬直线）
@@ -58,8 +58,11 @@ ok('step 内容 z-index 高于光晕', /\.step\{position:absolute;inset:0;z-inde
 ok('欢迎步裁滚动条', /\.step\[data-i="0"\]\{[^}]*overflow:hidden/.test(raw))
 ok('光晕 absolute 底层 z-index:0', /\.glow-field\{[^}]*position:absolute;inset:-20%;z-index:0/.test(raw))
 
-// 6. alpha 通道视觉：面板半透明 + 舞台棋盘格 + 顶/底栏无条带
-ok('面板半透明 color-mix', /\.frame\{[^}]*background:color-mix\(in srgb,var\(--is-elevated\) 78%,transparent\)/.test(raw))
+// 6. alpha 通道视觉：面板全透明无边界（mimocode 真透明窗）+ 舞台棋盘格 + 顶/底栏无条带
+ok('面板全透明（无卡片底色）', /\.frame\{[^}]*background:transparent/.test(raw))
+ok('面板无圆角（去掉四周边界，靠光晕羽化）', /\.frame\{[^}]*border-radius:0;/.test(raw))
+ok('光晕色温统一暖米白（暗色主光核非纯白）', /--is-glow-1:238,228,214/.test(raw))
+ok('欢迎副标题加深+亮色描边保对比', /\.step\[data-i="0"\] \.sub\{[^}]*color:#2b2520[^}]*text-shadow/.test(raw))
 ok('舞台棋盘格模拟透明底', /\.stage\{[\s\S]{0,220}conic-gradient\(from 90deg/.test(raw))
 ok('舞台铺满窗口高度', /\.stage\{[\s\S]{0,120}height:100%/.test(raw))
 ok('棋盘格令牌两套主题齐全', (raw.match(/--is-checker:/g) || []).length === 2)
