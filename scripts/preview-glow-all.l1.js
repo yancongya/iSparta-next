@@ -61,6 +61,7 @@ ok('光晕 absolute 底层 z-index:0', /\.glow-field\{[^}]*position:absolute;ins
 // 6. alpha 通道视觉：面板半透明 + 舞台棋盘格 + 顶/底栏无条带
 ok('面板半透明 color-mix', /\.frame\{[^}]*background:color-mix\(in srgb,var\(--is-elevated\) 78%,transparent\)/.test(raw))
 ok('舞台棋盘格模拟透明底', /\.stage\{[\s\S]{0,220}conic-gradient\(from 90deg/.test(raw))
+ok('舞台铺满窗口高度', /\.stage\{[\s\S]{0,120}height:100%/.test(raw))
 ok('棋盘格令牌两套主题齐全', (raw.match(/--is-checker:/g) || []).length === 2)
 ok('棋盘格用主题令牌而非硬编码', /conic-gradient\(from 90deg[\s\S]{0,120}var\(--is-checker\)/.test(raw))
 ok('底栏透明无上边框', /\.foot\{[\s\S]{0,180}border-top:0;background:transparent/.test(raw))

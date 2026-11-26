@@ -188,8 +188,10 @@ button{font-family:inherit;color:inherit}
 .envbox .hint{font-family:var(--is-font);font-size:10px;color:var(--is-text-3);opacity:.85;margin-top:2px}
 
 /* --- 右侧舞台 --- */
+/* 舞台必须铺满窗口：否则被面板内容撑成 ~564px，剩余视口露出 body 纯色 → 上半棋盘格、下半大片黑 */
 .stage{
   position:relative;display:grid;place-items:center;overflow:auto;padding:var(--is-s-8);
+  height:100%;
   /* 棋盘格 = 模拟桌面/透明底，让面板的 alpha 通道与光晕透出可见 */
   background:
     conic-gradient(from 90deg at 50% 50%,
