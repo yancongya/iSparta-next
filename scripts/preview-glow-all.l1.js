@@ -40,9 +40,12 @@ ok('radial-gradient 光斑', (raw.match(/radial-gradient\(ellipse/g) || []).leng
 ok('blur 收边', /\.glow-field\{[^}]*filter:blur\(34px\)/.test(raw))
 ok('keyframes 漂移', ['glow-drift1', 'glow-drift2', 'glow-drift3'].every(k => raw.indexOf('@keyframes ' + k) > -1))
 
-// 3. 亮度分档
+// 3. 亮度分档 + 边缘羽化（防光晕被 overflow:hidden 切成硬直线）
 ok('默认降档 token', /\.glow-field\{[^}]*opacity:var\(--is-glow-dim,\.?\d+\)/.test(raw))
 ok('glow-full 满亮', /\.frame\.glow-full \.glow-field\{opacity:1\}/.test(raw))
+ok('光晕边缘羽化遮罩（椭圆渐隐到透明，消除硬裁切）',
+  /\.glow-field\{[^}]*mask-image:radial-gradient\(ellipse 72% 72% at 50% 48%,#000 40%,transparent 56%\)/.test(raw))
+ok('遮罩带 webkit 前缀', /-webkit-mask-image:radial-gradient\(ellipse 72%/.test(raw))
 
 // 4. render 切档
 ok('render 按当前步切 glow-full',

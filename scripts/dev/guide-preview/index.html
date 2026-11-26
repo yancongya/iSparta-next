@@ -485,6 +485,12 @@ button{font-family:inherit;color:inherit}
   filter:blur(34px) saturate(115%);
   opacity:var(--is-glow-dim,.42);
   transition:opacity var(--is-dur-slow) var(--is-ease-std);
+  /* 边缘羽化：光晕层 inset:-20% 比面板大一圈，亮核伸到面板边会被 .frame 的
+     overflow:hidden 切成硬直线（顶部白线 / 左右暖色竖缝）。用椭圆遮罩在面板
+     边缘附近（ellipse 72% × 1.4 ≈ 面板宽）渐隐到透明，alpha 边缘自然消失。
+     亮度分档（glow-dim / glow-full）照常叠加，不受影响。 */
+  -webkit-mask-image:radial-gradient(ellipse 72% 72% at 50% 48%,#000 40%,transparent 56%);
+  mask-image:radial-gradient(ellipse 72% 72% at 50% 48%,#000 40%,transparent 56%);
 }
 .frame.glow-full .glow-field{opacity:1}
 /* 光晕在底层，顶栏/内容/底栏都压在其上 */
