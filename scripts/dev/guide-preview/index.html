@@ -83,13 +83,14 @@ button{font-family:inherit;color:inherit}
 /* ============================ 外壳 ============================ */
 .app{height:100vh;position:relative}
 
-/* --- dev 控制台：面板内左侧停靠栏（默认展开，内容区向右让位，互不遮挡） ---
+/* --- dev 控制台：面板内左侧浮层（默认展开可见，内容铺满整个面板） ---
    定位在 .frame 内部，不再作为面板外的独立框架。
-   默认常驻可见：用户上次反馈"控制台没了"，正是默认收起抽屉所致。
-   半透明背景 + backdrop blur 保留 alpha 观感（棋盘格/光晕从栏下透出）。 */
+   默认展开：用户反馈过"控制台没了/被收缩"，故不默认收起、也不挤占内容宽度。
+   浮层代价：展开时左侧内容被半透明栏盖住一部分，点 DEV 按钮可收起看纯净面板。
+   宽度 min(214px,44%) 自适应：CEP 窄面板下按 44% 收敛，不写死 176px。 */
 .ctrl{
   position:absolute;left:0;top:0;bottom:0;z-index:35;
-  width:var(--ctrl-w,214px);
+  width:min(214px,44%);
   background:color-mix(in srgb,var(--is-panel) 88%,transparent);
   backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
   border-right:1px solid var(--is-border);
@@ -98,14 +99,9 @@ button{font-family:inherit;color:inherit}
   display:flex;flex-direction:column;gap:var(--is-s-4);
   transition:transform var(--is-dur-base) var(--is-ease-out),opacity var(--is-dur-fast) var(--is-ease-std);
 }
-/* 手动收起（面板右上 DEV 按钮切换）：滑出左缘 + 内容回铺 */
+/* 手动收起（面板右上 DEV 按钮切换）：滑出左缘，内容本就铺满无需回铺 */
 .frame.ctrl-collapsed .ctrl{transform:translateX(-102%);opacity:0;pointer-events:none}
-/* 控制台停靠展开时，进度/内容/页脚整体右让 var(--ctrl-w)，不再被浮层盖住 */
-.frame .dots,.frame .screen,.frame .foot{
-  margin-left:var(--ctrl-w,214px);
-  transition:margin-left var(--is-dur-base) var(--is-ease-out);
-}
-.frame.ctrl-collapsed .dots,.frame.ctrl-collapsed .screen,.frame.ctrl-collapsed .foot{margin-left:0}
+/* 内容始终铺满面板：控制台是浮层，不占布局宽度、不挤压欢迎页 */
 /* 「落地页复用」视图：面板隐藏，控制台脱离为独立侧栏，保证 dev 主题切换可用 */
 .ctrl.detached{
   position:fixed;left:0;top:0;bottom:0;width:264px;z-index:60;
@@ -242,7 +238,6 @@ button{font-family:inherit;color:inherit}
    圆角由 frame 自己裁剪；设置按钮改成浮在面板内右上角。 */
 .frame{
   position:relative;isolation:isolate;
-  --ctrl-w:214px; /* 控制台停靠宽度；让位与栏宽同源，改一处即可 */
   /* alpha 通道：面板半透明，棋盘格舞台与光晕都能透出（对应真实窗 transparent:true） */
   background:color-mix(in srgb,var(--is-elevated) 78%,transparent);
   border:0;
@@ -255,7 +250,7 @@ button{font-family:inherit;color:inherit}
   user-select:none;-webkit-user-select:none;
 }
 .frame[data-runtime="desktop"]{width:760px;height:500px}
-.frame[data-runtime="cep"]{width:520px;height:560px;--ctrl-w:176px}
+.frame[data-runtime="cep"]{width:520px;height:560px}
 .frame[hidden]{display:none}
 /* 无边框：不渲染系统标题栏，设置按钮浮在面板内右上角（对应真实窗的自绘按钮） */
 .titlebar{
@@ -487,10 +482,13 @@ button{font-family:inherit;color:inherit}
   transition:opacity var(--is-dur-slow) var(--is-ease-std);
   /* 边缘羽化：光晕层 inset:-20% 比面板大一圈，亮核伸到面板边会被 .frame 的
      overflow:hidden 切成硬直线（顶部白线 / 左右暖色竖缝）。用椭圆遮罩在面板
-     边缘附近（ellipse 72% × 1.4 ≈ 面板宽）渐隐到透明，alpha 边缘自然消失。
+     边缘内侧渐隐到透明，alpha 边缘自然消失。
+     几何：遮罩框 = 面板×1.4，ellipse 72% 半径 = 面板×1.008；面板边缘距中心
+     = 面板×0.5 ÷ 1.008 ≈ 49.6% 半径处。transparent 必须落在 49.6% 之前（这里
+     用 48%），否则边缘仍残留亮度→硬线。38% 前保持实心，保住光核亮度。
      亮度分档（glow-dim / glow-full）照常叠加，不受影响。 */
-  -webkit-mask-image:radial-gradient(ellipse 72% 72% at 50% 48%,#000 40%,transparent 56%);
-  mask-image:radial-gradient(ellipse 72% 72% at 50% 48%,#000 40%,transparent 56%);
+  -webkit-mask-image:radial-gradient(ellipse 72% 72% at 50% 50%,#000 38%,transparent 48%);
+  mask-image:radial-gradient(ellipse 72% 72% at 50% 50%,#000 38%,transparent 48%);
 }
 .frame.glow-full .glow-field{opacity:1}
 /* 光晕在底层，顶栏/内容/底栏都压在其上 */
