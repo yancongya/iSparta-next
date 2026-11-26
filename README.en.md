@@ -49,7 +49,8 @@
 - **Size estimate & self-check:** the starting setting is estimated from the target size before conversion, and the estimated output size (≈xx KB/MB, click a badge to cycle formats, hover for the full breakdown) stays visible on task cards and in the comp-tree status column even with the limit off; sequences count every frame's source size; encoder binaries are hash-checked with automatic fallback to a healthy copy, with results viewable under "About"
 - **Output actions:** copy completed files; hold Alt while hovering the toolbar button to open the output folder
 - **Bundled install:** system-wide installation (UAC prompt, CEP under Common Files, a single copy per machine); auto-detects the AE version; version shown in both the desktop title bar and the AE panel
-- **Onboarding (7 pages):** Welcome → Import → Output → Naming → Path variables → AE → Done, covering import methods, output settings and naming rules in one pass
+- **Onboarding (7 pages):** Welcome → Import → Output → Naming → Path variables → AE → Done, with a fluid glow backdrop, covering import methods, output settings and naming rules in one pass
+- **Unified brand mark:** Desktop, AE CEP panel, and landing page share a unified static-by-default, animated-on-hover brand logo interaction
 
 Full per-version changes: [`docs/CHANGELOG.md`](docs/CHANGELOG.md).
 
