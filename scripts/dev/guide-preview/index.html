@@ -461,6 +461,8 @@ button{font-family:inherit;color:inherit}
   position:absolute;inset:-20%;z-index:0;pointer-events:none;
   /* mimocode 同款：大半径 blur 收掉规整轮廓，光斑融成柔和 mesh 而非一个白椭圆 */
   filter:blur(48px) saturate(108%);
+  /* 色温缓慢循环：暖米白 ↔ 淡橙粉，配合三枚 orb 的呼吸让颜色真的在动 */
+  animation:glow-hue 14s var(--is-ease-std) infinite;
   opacity:var(--is-glow-dim,.42);
   transition:opacity var(--is-dur-slow) var(--is-ease-std);
   /* 边缘羽化：光晕层 inset:-20% 比面板大一圈，亮核伸到面板边会被 .frame 的
@@ -506,28 +508,45 @@ button{font-family:inherit;color:inherit}
   background:radial-gradient(ellipse 58% 62% at 46% 42%,
     rgba(var(--is-glow-1),.82) 0%,rgba(var(--is-glow-1),.62) 26%,
     rgba(var(--is-glow-1),.3) 52%,rgba(var(--is-glow-1),.08) 74%,transparent 90%);
-  animation:glow-drift1 18s var(--is-ease-std) infinite alternate;
+  animation:glow-drift1 13s var(--is-ease-std) infinite;
 }
 .glow-field .orb2{
   /* 淡橙斑块：更淡更散，只作为暖色层次，不再是一坨明显橙光 */
   width:52%;height:60%;left:-2%;top:38%;
   background:radial-gradient(ellipse at center,
     rgba(var(--is-glow-2),.34) 0%,rgba(var(--is-glow-2),.14) 48%,transparent 78%);
-  animation:glow-drift2 22s var(--is-ease-std) infinite alternate;
+  animation:glow-drift2 16s var(--is-ease-std) infinite;
 }
 .glow-field .orb3{
   /* 淡粉斑块：压到很淡，避免粉橙感破坏米白统一色温 */
   width:50%;height:56%;right:-2%;top:6%;
   background:radial-gradient(ellipse at center,
     rgba(var(--is-glow-3),.22) 0%,rgba(var(--is-glow-3),.09) 50%,transparent 78%);
-  animation:glow-drift3 26s var(--is-ease-std) infinite alternate;
+  animation:glow-drift3 19s var(--is-ease-std) infinite;
 }
-@keyframes glow-drift1{0%{transform:translate3d(-4%,2%,0) scale(1)}100%{transform:translate3d(6%,-4%,0) scale(1.12)}}
-@keyframes glow-drift2{0%{transform:translate3d(3%,-5%,0) scale(1.06)}100%{transform:translate3d(-5%,4%,0) scale(.92)}}
-@keyframes glow-drift3{0%{transform:translate3d(-3%,3%,0) scale(.95)}100%{transform:translate3d(5%,-6%,0) scale(1.1)}}
-/* 关闭动效 / reduce：光斑停住，保留静态柔光构图 */
-.no-motion .glow-field .orb{animation:none!important}
-@media (prefers-reduced-motion:reduce){.glow-field .orb{animation:none!important}}
+/* 去 alternate 改 0→50→100 闭环：三个光斑错峰呼吸，形状（位移/缩放/旋转）与
+   透明度都在动；blur 48px 后位移仍可察觉，橙/粉色块随透明度明显进出 = 颜色在变。
+   周期 13/16/19s 互质，合成运动不会周期性重复成"死循环"。 */
+@keyframes glow-drift1{
+  0%,100%{transform:translate3d(-10%,5%,0) scale(.92) rotate(-6deg);opacity:.78}
+  50%{transform:translate3d(8%,-7%,0) scale(1.2) rotate(5deg);opacity:1}
+}
+@keyframes glow-drift2{
+  0%,100%{transform:translate3d(7%,-8%,0) scale(1.04) rotate(4deg);opacity:.28}
+  50%{transform:translate3d(-9%,7%,0) scale(1.3) rotate(-7deg);opacity:.95}
+}
+@keyframes glow-drift3{
+  0%,100%{transform:translate3d(-7%,4%,0) scale(1.1) rotate(-5deg);opacity:.85}
+  50%{transform:translate3d(9%,-7%,0) scale(.88) rotate(8deg);opacity:.22}
+}
+/* 色温循环：blur 不变，只让饱和度与色相缓慢游移（暖米白↔淡橙粉） */
+@keyframes glow-hue{
+  0%,100%{filter:blur(48px) saturate(104%) hue-rotate(0deg)}
+  50%{filter:blur(48px) saturate(132%) hue-rotate(-14deg)}
+}
+/* 关闭动效 / reduce：光斑与色温都停住，保留静态柔光构图 */
+.no-motion .glow-field,.no-motion .glow-field .orb{animation:none!important}
+@media (prefers-reduced-motion:reduce){.glow-field,.glow-field .orb{animation:none!important}}
 
 /* --- 欢迎：项目 logo + 字标 --- */
 .demo--brand{max-width:132px}

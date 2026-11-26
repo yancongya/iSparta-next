@@ -40,6 +40,29 @@ ok('radial-gradient 光斑', (raw.match(/radial-gradient\(ellipse/g) || []).leng
 ok('blur 收边（mimocode 大半径 48px 融掉规整轮廓）', /\.glow-field\{[^}]*filter:blur\(48px\)/.test(raw))
 ok('keyframes 漂移', ['glow-drift1', 'glow-drift2', 'glow-drift3'].every(k => raw.indexOf('@keyframes ' + k) > -1))
 
+// 2b. 动态渐变：形状（位移/缩放/旋转）+ 颜色（色温循环 + 斑块透明度呼吸）都要真的在动
+ok('色温循环 keyframes glow-hue 存在', raw.indexOf('@keyframes glow-hue') > -1)
+ok('glow-field 挂 glow-hue 动画', /\.glow-field\{[^}]*animation:glow-hue/.test(raw))
+const hueBlock = (raw.match(/@keyframes glow-hue\{[\s\S]*?\n\}/) || [''])[0]
+ok('色温循环含 hue-rotate', /hue-rotate\(-?\d+deg\)/.test(hueBlock))
+ok('色温循环含 saturate 呼吸（两档不同）', (() => {
+  const vals = (hueBlock.match(/saturate\((\d+)%\)/g) || []).map(x => parseInt(x.match(/\d+/)[0], 10))
+  return vals.length >= 2 && vals[0] !== vals[1]
+})())
+ok('shape 漂移含 rotate（非单纯位移）',
+  ['glow-drift1','glow-drift2','glow-drift3'].every(k => {
+    const m = raw.match(new RegExp('@keyframes ' + k + '\\{[\\s\\S]*?\\}'))
+    return m && /rotate\(-?\d+deg\)/.test(m[0])
+  }))
+ok('shape 漂移含透明度呼吸（颜色进出）',
+  ['glow-drift1','glow-drift2','glow-drift3'].every(k => {
+    const m = raw.match(new RegExp('@keyframes ' + k + '\\{[\\s\\S]*?\\}(?![\\s\\S]*?@keyframes ' + k + ')'))
+    return m && /opacity:/.test(m[0])
+  }))
+ok('shape 漂移去 alternate（0→50→100 闭环）',
+  ['glow-drift1','glow-drift2','glow-drift3'].every(k => !new RegExp('animation:' + k + '[^;]*alternate').test(raw)))
+ok('关闭动效同时停光晕场与光斑', /\.no-motion \.glow-field,\.no-motion \.glow-field \.orb\{animation:none!important\}/.test(raw))
+
 // 3. 亮度分档 + 边缘羽化（防光晕被 overflow:hidden 切成硬直线）
 ok('默认降档 token', /\.glow-field\{[^}]*opacity:var\(--is-glow-dim,\.?\d+\)/.test(raw))
 ok('glow-full 满亮', /\.frame\.glow-full \.glow-field\{opacity:1\}/.test(raw))
