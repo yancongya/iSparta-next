@@ -139,6 +139,8 @@ Release 正文与 commit 文案分开维护，每个版本在 `.github/release-n
 
 版本文案源文件结构见 [Release Notes 模板](.github/release-notes/TEMPLATE.md)。必须在提交代码前分别写清 commit 实现内容与 Release 用户收益；不要从 commit 列表复制 Release 正文。
 
+**防遗漏门禁（强制，v3.10.3 事故复盘）**：写文案前**先跑** `node scripts/release-notes-scope.js vX.Y.Z` 列出「上一版 tag..本版」全部用户可见提交，逐条确认每项都已在文案体现，再把提交总数写进 details 内 `<!-- RELEASE_SCOPE: N -->` 声明。Commit 与 Release 文案刻意分离，CI 只校验结构/条数发现不了「漏写某功能」，故用这个独立可复算的数字做硬门禁——`release.yml` 在 bump 前调用 `--check`，声明数与实际不符即中止发版。详见 `docs/RELEASE.md` §2「防遗漏门禁」；守卫 `scripts/release-notes-scope.l1.js`。
+
 发版入口（**用现成脚本，不要另写一套**）：
 
 ```powershell

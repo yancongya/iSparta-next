@@ -104,8 +104,35 @@ Commit 与 Release 各自服务不同读者：commit 主题按 Conventional Comm
 1. 首屏 `## 更新到 {{TAG}}` 和 **3–6 条用户收益摘要**，避免内部模块名、commit 前缀和开发过程描述。
 2. `<details><summary>详细说明</summary>` 折叠区，按「新增 / 修复 / 体验优化」解释具体行为；不适用的类别可删。
 3. `<!-- RELEASE_INSTALLERS -->` 和 `<!-- RELEASE_CHANGELOG -->` 两个占位符。CI 会在折叠区自动补安装资产表与比较链接。
+4. `<!-- RELEASE_SCOPE: N -->`：本版**用户可见提交数**，写在折叠区内（见下方「防遗漏门禁」）。这是发布前必须通过机检的硬声明。
 
-工作流会在改写版本号、提交 bump、创建 tag 之前校验对应 Release 文案文件、固定结构和摘要数量。缺少文案时会提前失败，不再退回由 commit 标题自动生成。新版本发布后，编辑源与 GitHub Release 正文保持一致；更正文案时应同时更新两处。
+工作流会在改写版本号、提交 bump、创建 tag 之前校验对应 Release 文案文件、固定结构、摘要数量和_scope 覆盖数_。缺少文案时会提前失败，不再退回由 commit 标题自动生成。新版本发布后，编辑源与 GitHub Release 正文保持一致；更正文案时应同时更新两处。
+
+### 防遗漏门禁：先列全清单，再写文案（强制）
+
+**背景（v3.10.3 真实事故）**：该版文案最初只写了最近几天（更新日志入口 / CEP 铺满 / 欢迎页 logo），漏掉整周 47 个提交里的防覆盖三选、toast 统一、任务条 / 对比弹窗重做、调试日志接口、路径越界崩溃等一大批用户可见改动。Commit 与 Release 文案刻意分离，CI 此前只校验结构和摘要条数，**发现不了「文案漏写了某个功能」**。根因是「只看最近几条 commit 写文案」，没有逐条回溯本版全部提交。
+
+写每个版本的文案前，**先跑清单脚本，别凭记忆**：
+
+```powershell
+node scripts/release-notes-scope.js vX.Y.Z        # 列出「上一版 tag..本版」全部用户可见提交（按 feat/fix/... 分组）
+```
+
+逐条对照清单，确认每一项都已体现在文案的摘要或详细说明里；遗漏的补上，然后**把清单列出的提交总数写进折叠区的声明**：
+
+```text
+<!-- RELEASE_SCOPE: 31 -->
+```
+
+口径：只数**用户可见**提交；`feat/fix/refactor(preview|guard|mockup|mock)` 这类本地预览台 / 守卫 / mock 内部提交、以及 `chore(release)` bump 与 merge 不计入（脚本会自动排除并在清单里单列）。声明是 HTML 注释：GitHub 网页渲染隐藏、App 更新弹窗由 `formatReleaseNotes` 清掉标签，不污染用户可见正文，但 CI 与守卫能读原始文本。
+
+CI 在 `release.yml` 的 **Check release notes scope coverage** 步骤（bump / commit / tag **之前**）跑：
+
+```powershell
+node scripts/release-notes-scope.js vX.Y.Z --prev vX.Y.Z-prev --check
+```
+
+它用与清单同一口径独立复算 `prev..本版` 的提交数，与文案声明不符即 `exit 1` 中止发版，并打印完整清单提示漏了哪些。首版无上一版 tag 时打印 SKIP 跳过。本地自查同样用 `--check`。校验逻辑由 `node scripts/release-notes-scope.l1.js` 守卫。
 
 ### 版本一致性守卫
 

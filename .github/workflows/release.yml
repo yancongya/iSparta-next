@@ -155,6 +155,17 @@ jobs:
           echo "prev_tag=${PREV}" >> "$GITHUB_OUTPUT"
           echo "Previous tag: ${PREV:-none}"
 
+      # 防遗漏门禁（v3.10.3 事故：文案只写最近几天，漏掉整周 47 个提交）：
+      # 文案 details 内的 <!-- RELEASE_SCOPE: N --> 必须等于 prev..本版 的用户可见提交数。
+      # 写文案的人被要求先跑 `node scripts/release-notes-scope.js <tag>` 逐条核对清单，
+      # 数字是独立可复算的，无法靠「只看最近 commit」蒙混。本步在 bump/commit/tag 之前，
+      # 失败即中止发版，避免带残缺说明发布。
+      - name: Check release notes scope coverage
+        env:
+          NEW_TAG: ${{ steps.bump.outputs.tag }}
+          PREV_TAG: ${{ steps.prev.outputs.prev_tag }}
+        run: node scripts/release-notes-scope.js "$NEW_TAG" --prev "$PREV_TAG" --check
+
       - name: Commit & tag
         if: ${{ inputs.dry_run != true && inputs.resume_version == '' }}
         env:

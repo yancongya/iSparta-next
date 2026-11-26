@@ -16,6 +16,11 @@
 ### 体验优化
 - 写清交互或兼容性变化；没有优化时删除此节
 
+<!-- RELEASE_SCOPE: 0 -->
+<!-- 写文案前先跑 node scripts/release-notes-scope.js vX.Y.Z，列出上一版 tag..本版的全部
+     用户可见提交；逐条确认每项都已在文案体现后，把上面声明里的 0 改成实际数字。
+     preview/guard/mock 内部提交与 chore(release) bump 不计入；CI 会独立复算，对不上即中止发版。 -->
+
 <!-- RELEASE_INSTALLERS -->
 
 <!-- RELEASE_CHANGELOG -->
