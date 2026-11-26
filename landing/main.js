@@ -901,7 +901,13 @@
     let target = 0;
     let direction = 1;
     let frame = 0;
-    let coverFrame = 0; // 汇聚定格后封面停留的那一帧
+    let coverFrame = 0; // 封面当前显示的帧；汇聚完成后循环播放，不再定格
+    // 汇聚完成后封面按固定帧率持续播放序列帧，避免出现「合成完就静止」。
+    const COVER_FPS = 12;
+    const FRAME_MS = 1000 / COVER_FPS;
+    let coverTime = 0;
+    let coverPlaying = false;
+    let coverLock = 0; // 汇聚完成时锁定的那一帧，作为循环播放的起点
     let last = 0;
     let active = false;
     let loaded = false;
@@ -1033,6 +1039,19 @@
       const previewSize = Math.min(coverSize.width, coverSize.height);
       const jump = ease((time - jumpStartedAt) / 360);
       const lift = jump < 1 ? Math.sin(Math.PI * jump) * 8 * coverSize.scale : 0;
+      // 汇聚完成后让封面按帧率循环播放，而不是定格在锁定帧变成静止图。
+      if (merge >= 0.999) {
+        if (!coverPlaying) {
+          coverPlaying = true;
+          coverLock = coverFrame;
+          coverTime = 0;
+        }
+        coverTime += delta;
+        const advance = Math.floor(coverTime / FRAME_MS);
+        coverFrame = (coverLock + advance) % SHEET.count;
+      } else {
+        coverPlaying = false;
+      }
       drawFrame(coverCtx, coverFrame, (coverSize.width - previewSize) / 2, (coverSize.height - previewSize) / 2 - lift, previewSize);
       if (!inView && Math.abs(progress - target) < 0.001) {
         active = false;
