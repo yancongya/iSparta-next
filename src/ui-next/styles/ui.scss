@@ -1451,6 +1451,14 @@ body.is-scroll-locked {
     font-family: var(--is-font-mono, monospace);
     color: var(--is-text-2);
   }
+  // 产物实测色深列：位于文件名与大小之间，等宽小字、不换行
+  &__filedepth {
+    flex: none;
+    color: var(--is-text-3);
+    font-family: var(--is-font-mono, monospace);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
   &__filesize {
     flex: none;
     color: var(--is-text-3);

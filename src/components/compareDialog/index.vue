@@ -13,8 +13,11 @@
       :before="beforeSrc"
       :after="afterSrc"
       :label-before="$t('compareBefore')"
-      :label-after="$t('compareAfter')"
+      :label-after="afterLabel"
+      :after-clickable="existingFiles.length > 1"
+      :after-tip="afterTip"
       :aria-label="$t('compareTitle')"
+      @after-click="cycleAfterFormat"
       @view-state="onViewState"
     />
     <div v-else class="cmp-empty">
@@ -70,7 +73,10 @@
 -->
 <script>
 import IsCompareSlider from '../../ui-next/components/IsCompareSlider.vue'
-import { outputFilesOf } from '../../util/task-output'
+import { outputFilesOf, sizeTextOfFiles } from '../../util/task-output'
+import { outputFormatOf, readOutputDepth } from '../../util/outputBitDepth'
+import { buildBadgeTipBlocks } from '../../util/detailTipBlocks'
+import { path } from '../../util/node-env'
 
 export default {
   name: 'CompareDialog',
@@ -82,6 +88,7 @@ export default {
     return {
       beforeSrc: '',
       afterSrc: '',
+      activeIndex: 0,
       // footer 工具条状态由画布通过 view-state 事件回抛，外壳只负责渲染
       view: { zoomPercent: '100%', bgIcon: 'image' }
     }
@@ -89,20 +96,55 @@ export default {
   computed: {
     // 输出侧必须走统一产物口径 outputFilesOf（已含冲突后缀解析）：
     // basic.outputPath 只是**目录**，readDataUrl(目录) 会读失败 → 对比永远空。
-    // 多格式时取第一个真实存在的产物；都缺失则保持空态提示。
-    outFile () {
+    existingFiles () {
       var files = outputFilesOf(this.project)
-      if (!files.length) return ''
+      if (!files.length) return []
       try {
         var api = window.ispartaAPI && window.ispartaAPI.fs
         if (api && api.existsSync) {
-          for (var i = 0; i < files.length; i++) {
-            if (api.existsSync(files[i])) return files[i]
-          }
-          return ''
+          return files.filter(function (f) { return api.existsSync(f) })
         }
       } catch (e) { /* fallthrough */ }
-      return files[0]
+      return files
+    },
+    outFile () {
+      if (!this.existingFiles.length) return ''
+      return this.existingFiles[this.activeIndex % this.existingFiles.length] || ''
+    },
+    afterLabel () {
+      var fmt = outputFormatOf(this.outFile)
+      return fmt || this.$t('compareAfter')
+    },
+    afterTip () {
+      if (!this.outFile) return ''
+      var fmt = outputFormatOf(this.outFile) || ''
+      var info = readOutputDepth(this.outFile)
+      var depthText = ''
+      if (info) {
+        if (info.format === 'GIF') {
+          depthText = this.$t('outputDepthGif', { colors: info.colors })
+        } else if (info.format === 'WEBP') {
+          depthText = info.lossless
+            ? this.$t('outputDepthWebpLossless')
+            : this.$t('outputDepthWebpLossy')
+        } else {
+          depthText = info.indexed
+            ? this.$t('outputDepthIndexed', { bits: info.bits })
+            : this.$t('outputDepthTrue', { bits: info.bits })
+        }
+      }
+      return {
+        blocks: buildBadgeTipBlocks({
+          label: fmt,
+          total: sizeTextOfFiles([this.outFile]),
+          files: [{
+            name: path.basename(this.outFile),
+            size: sizeTextOfFiles([this.outFile]) || '—',
+            depthText: depthText
+          }],
+          copyText: this.$t('outputBadgeCopy', { format: fmt })
+        })
+      }
     },
     firstInput () {
       var p = this.project && this.project.basic
@@ -131,6 +173,15 @@ export default {
     replay () {
       var s = this.$refs.slider
       if (s && s.replay) s.replay()
+    },
+    cycleAfterFormat () {
+      if (this.existingFiles.length <= 1) return
+      this.activeIndex = (this.activeIndex + 1) % this.existingFiles.length
+      this.afterSrc = this.readUrl(this.outFile)
+      var vm = this
+      this.$nextTick(function () {
+        vm.replay()
+      })
     },
     readUrl (p) {
       if (!p) { return '' }

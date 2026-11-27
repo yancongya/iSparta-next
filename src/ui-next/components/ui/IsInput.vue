@@ -18,6 +18,8 @@
       :step="step"
       :autocomplete="autocomplete"
       @input="onInput"
+      @compositionstart="onCompositionStart"
+      @compositionend="onCompositionEnd"
       @focus="onFocus"
       @blur="onBlur"
       @keyup="onKeyup"
@@ -52,7 +54,7 @@ export default {
     number: { type: Boolean, default: false }
   },
   data () {
-    return { focused: false }
+    return { focused: false, composing: false }
   },
   computed: {
     rootClass () {
@@ -72,6 +74,19 @@ export default {
       return isNaN(n) ? raw : n
     },
     onInput (e) {
+      // IME 组合期间（中文/日文输入法逐键预编辑）不逐字 emit：
+      // 否则每次拼音按键都会触发 v-model setter，配合「自动补后缀」类计算属性
+      // 会把中间态固化，造成后缀级联重复（输出名 fencer_apngce_apngce…）。
+      // 组合结束后由 onCompositionEnd 一次性提交最终值。
+      if (this.composing) return
+      this.$emit('input', this.cast(e.target.value))
+    },
+    onCompositionStart () {
+      this.composing = true
+    },
+    onCompositionEnd (e) {
+      this.composing = false
+      // 部分浏览器 compositionend 在最后一次 input 之后触发，需补发最终值
       this.$emit('input', this.cast(e.target.value))
     },
     onFocus (e) {

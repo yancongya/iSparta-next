@@ -155,16 +155,17 @@ function run () {
     const newTask = deriveNewTaskOptions(gsAfter)
     assert.strictEqual(newTask.preserveBitDepth, true, '新导入任务必须继承关压缩')
 
-    // 分流：派生出的 preserveBitDepth 决定走无损 apngopt（关压缩）还是量化 apngquant（开压缩）
+    // 分流：关压缩（preserveBitDepth）直接用 apngasm 母版，不再过 apngopt
+    // （apngopt 会按 alpha 形态自动转索引，统一 alpha 必降 8-bit；见 preserve-bitdepth.smoke.js）
     const lossless = path.join(tmp, 'newtask-preserved.png')
     if (newTask.preserveBitDepth) {
-      execFileSync(APNGOPT, [master, lossless, '-z2'], { stdio: 'ignore' })
+      fs.copyFileSync(master, lossless)
     } else {
       execFileSync(APNGQUANT, [master, '--output', lossless, '--force'], { stdio: 'ignore' })
     }
     const outA = ihdr(lossless)
     assert.strictEqual(outA.colorType, 6, '场景 A：关压缩派生的新任务必须产 RGBA32，实测 colorType=' + outA.colorType)
-    console.log('ok - 场景A：关压缩→globalSetting→新任务派生→无损链→colorType=6 RGBA32')
+    console.log('ok - 场景A：关压缩→globalSetting→新任务派生→直接用母版→colorType=6 RGBA32')
 
     // ---- 场景 B：反向——重新开压缩 → 新任务派生 → 走量化 → 8-bit（现状不变） ----
     const onPatch = { preserveBitDepth: false, quality: { checked: true } }

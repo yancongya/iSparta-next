@@ -42,6 +42,14 @@ test/**
 !test/pngs/cool_[0-9][0-9].png
 !test/webp/
 !test/webp/cool.webp
+# 色深回归素材（覆盖统一 alpha 等 apngopt 降级触发档，勿再只看高彩 cool 图）
+!test/bitdepth/
+!test/bitdepth/*/
+!test/bitdepth/*/*.png
+# 公开真实 APNG 回归素材（Wikimedia Commons，见 test/real-apng/SOURCES.md）
+!test/real-apng/
+!test/real-apng/*.png
+!test/real-apng/SOURCES.md
 
 # local dev helpers (worktree)
 .dev-pid

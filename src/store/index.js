@@ -516,6 +516,15 @@ const mutations = {
     })
     persistItems()
   },
+  // 「重置输出名」：清掉指定任务的持久改名(outputNameOverride)与一次性改名(transientNameOverride)，
+  // 让落盘名回到 options.outputName 基础名。index 为 items 全列表下标（与 editOutputNameAt 同口径）。
+  [types.ITEMS_CLEAR_NAME_OVERRIDES_AT](state, payload) {
+    const item = state.items[payload && payload.index]
+    if (!item || !item.basic) return
+    if (item.basic.outputNameOverride) Vue.set(item.basic, 'outputNameOverride', {})
+    if (item.basic.transientNameOverride) Vue.set(item.basic, 'transientNameOverride', {})
+    persistItems()
+  },
   // 预检里用户明确选择「直接覆盖源文件」→ 标记该任务允许覆盖。
   // processor 的落盘保底（fallbackRenameForSource）见到该标记就放行。
   // 每次开始转换前 preflight 会先把上一轮的标记清掉，避免旧授权漏到下一次。
@@ -798,6 +807,11 @@ const actions = {
     if (!item.options) { item.options = {} }
     item.options.outputName = payload.name
     persistItems()
+  },
+  /** 重置输出名：清掉单项的持久/一次性改名，回到基础名（按 items 全列表 index） */
+  clearNameOverridesAt(context, payload) {
+    if (!payload || context.rootState.locked) { return }
+    context.commit(types.ITEMS_CLEAR_NAME_OVERRIDES_AT, payload)
   },
   /** 单项写入 options（按 items 全列表 index）：单任务设置只命中该项 */
   editOptionsAt(context, payload) {

@@ -98,15 +98,14 @@ async function run () {
     assert.strictEqual(item.basic.fileList[0], OUT, 'tail must point back to out.png')
   })
 
-  // 2) quality 关闭：不跑 apngquant，apngopt 直接读母版 out.png
-  await check('quality off -> apngopt reads master out.png', async () => {
+  // 2) quality 关闭（保真路线）：apngquant 与 apngopt 都不跑，直接用 apngasm 母版
+  //    apngopt 会按 alpha 形态自动把 colorType 6→3（统一 alpha 必降 8-bit），故保真不再过它
+  await check('quality off -> no quant/opt, master used directly', async () => {
     const ctx = makeCtx()
     const item = makeItem(false, 50)
     await ctx.apngCompress(item, 0, ctx.store, ctx.locale)
     assert(!calls.some((c) => c.bin === 'apngquant'), 'apngquant should be skipped')
-    const o = calls.find((c) => c.bin === 'apngopt')
-    assert(o, 'apngopt not invoked')
-    assert.strictEqual(o.args[0], OUT, 'apngopt must read master out.png, got ' + o.args[0])
+    assert(!calls.some((c) => c.bin === 'apngopt'), 'apngopt must be skipped on preserve path (auto-indexes unified-alpha)')
   })
 
   // 3) 内存不足跳过量化：即便残留 out-quant.png 存在，也不能误用

@@ -70,22 +70,30 @@
                 placeholder="output"
                 @input="onMultiNameInput(i, $event)"
               />
-              <button
-                v-if="tokensOf(i).length"
-                type="button"
-                class="name-row__filter"
-                :class="{ 'is-on': multiWordsOnly(i) }"
-                v-tip="multiWordsOnly(i) ? $t('restoreAll') : $t('keepWordsOnly')"
-                @click.stop="toggleMultiWordsOnly(i)"
-              ><is-icon name="filter" size="sm" /></button>
-              <button
-                type="button"
-                class="name-row__filter name-row__suffix"
-                :class="{ 'is-on': multiSuffixEnabled(i) }"
-                :disabled="!multiConflictFormat(i)"
-                v-tip="suffixTipOf(i)"
-                @click.stop="toggleMultiSuffix(i)"
-              ><is-icon name="edit" size="sm" /></button>
+              <span class="name-row__actions">
+                <button
+                  v-if="tokensOf(i).length"
+                  type="button"
+                  class="name-row__filter"
+                  :class="{ 'is-on': multiWordsOnly(i) }"
+                  v-tip="multiWordsOnly(i) ? $t('restoreAll') : $t('keepWordsOnly')"
+                  @click.stop="toggleMultiWordsOnly(i)"
+                ><is-icon name="filter" size="sm" /></button>
+                <button
+                  type="button"
+                  class="name-row__filter name-row__suffix"
+                  :class="{ 'is-on': multiSuffixEnabled(i) }"
+                  :disabled="!multiConflictFormat(i)"
+                  v-tip="suffixTipOf(i)"
+                  @click.stop="toggleMultiSuffix(i)"
+                ><is-icon name="edit" size="sm" /></button>
+                <button
+                  type="button"
+                  class="name-row__filter name-row__reset"
+                  v-tip="$t('resetOutputName')"
+                  @click.stop="resetMultiName(i)"
+                ><is-icon name="refresh" size="sm" /></button>
+              </span>
             </div>
             <div v-if="tokensOf(i).length" class="name-tokens">
               <button
@@ -104,22 +112,30 @@
         <div v-else>
           <div class="name-row">
             <is-input v-model="displayName" class="is-input--fluid" placeholder="output" />
-            <button
-              v-if="nameTokens.length"
-              type="button"
-              class="name-row__filter"
-              :class="{ 'is-on': wordsOnly }"
-              v-tip="wordsOnly ? $t('restoreAll') : $t('keepWordsOnly')"
-              @click.stop="toggleWordsOnly"
-            ><is-icon name="filter" size="sm" /></button>
-            <button
-              type="button"
-              class="name-row__filter name-row__suffix"
-              :class="{ 'is-on': autoSuffix }"
-              :disabled="!conflictFormat"
-              v-tip="suffixTip"
-              @click.stop="toggleAutoSuffix"
-            ><is-icon name="edit" size="sm" /></button>
+            <span class="name-row__actions">
+              <button
+                v-if="nameTokens.length"
+                type="button"
+                class="name-row__filter"
+                :class="{ 'is-on': wordsOnly }"
+                v-tip="wordsOnly ? $t('restoreAll') : $t('keepWordsOnly')"
+                @click.stop="toggleWordsOnly"
+              ><is-icon name="filter" size="sm" /></button>
+              <button
+                type="button"
+                class="name-row__filter name-row__suffix"
+                :class="{ 'is-on': autoSuffix }"
+                :disabled="!conflictFormat"
+                v-tip="suffixTip"
+                @click.stop="toggleAutoSuffix"
+              ><is-icon name="edit" size="sm" /></button>
+              <button
+                type="button"
+                class="name-row__filter name-row__reset"
+                v-tip="$t('resetOutputName')"
+                @click.stop="resetName"
+              ><is-icon name="refresh" size="sm" /></button>
+            </span>
           </div>
           <div v-if="nameTokens.length" class="name-tokens">
             <button
@@ -500,7 +516,8 @@ import {
   upsertCustomPreset,
   removeCustomPreset
 } from '../../util/outputPresets'
-import { tokenizeName, joinTokens } from '../../util/tokenizeName'
+import { tokenizeName, joinTokens, buildInitialOutputName } from '../../util/tokenizeName'
+import { basenameNoExt } from '../../util/pathUtil'
 import { displayNameOf, stripConflictSuffix, suffixEnabledOf } from '../../util/outputName'
 import { PALETTE_COLOR_PRESETS, normalizePalette, isPreserveBitDepth } from '../../util/paletteConfig'
 import PathVars from '../../ui-next/components/PathVars.vue'
@@ -1006,6 +1023,49 @@ export default {
     toggleAutoSuffix () {
       if (!this.conflictFormat) return
       this.writeOptions({ suffixEnabled: !this.autoSuffix })
+    },
+    // ---------- 重置为原始名字 ----------
+    // 源基名：CEP 合成用 compName，桌面导入用 inputPath 末段（可能是文件名或帧目录名）。
+    // 与 file.js / comp-source.js 建任务时的 buildInitialOutputName 入参同口径。
+    sourceBaseOf (item) {
+      var basic = (item && item.basic) || {}
+      if (basic.compName) return String(basic.compName)
+      if (basic.inputPath) return basenameNoExt(String(basic.inputPath))
+      return ''
+    },
+    // 原始输出名 = 导入时那个名字（源基名 + 可选的 outputSuffix），与 store 换 comp 重建同函数
+    originalNameOf (item) {
+      return buildInitialOutputName(this.sourceBaseOf(item), (item && item.options) || {})
+    },
+    // 写回单项：基础名 + 清掉持久/一次性改名（否则落盘仍用旧 override），再重建胶囊
+    applyResetName (item, allIndex, key) {
+      if (!item) return
+      var name = this.originalNameOf(item)
+      this.$store.dispatch('editOutputNameAt', { index: allIndex, name: name })
+      this.$store.dispatch('clearNameOverridesAt', { index: allIndex })
+      var tokens = tokenizeName(name).map(function (t) { return { text: t.text, sep: t.sep, on: true } })
+      if (key == null) {
+        this.nameTokens = tokens
+      } else {
+        this.$set(this.nameTokenMap, key, tokens)
+      }
+    },
+    resetName () {
+      var item = this.selectedList[0]
+      if (!item) return
+      var all = this.$store.getters.getterItems
+      var index = all.indexOf(item)
+      if (index < 0) return
+      this.applyResetName(item, index, null)
+    },
+    resetMultiName (i) {
+      var item = this.selectedList[i]
+      if (!item) return
+      var all = this.$store.getters.getterItems
+      var index = all.indexOf(item)
+      if (index < 0) return
+      var key = this.itemKeyOf(item, i)
+      this.applyResetName(item, index, key)
     },
     // 空格本身看不见，用可见符号代替
     tokText (t) {

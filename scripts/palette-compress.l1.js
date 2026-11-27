@@ -208,13 +208,12 @@ async function run () {
     assert(!q.args.some((a) => typeof a === 'number'), 'no positional color count allowed: ' + q.args)
   })
 
-  await assertChain('质量路线关闭压缩：不跑 apngquant（现状不变）', async () => {
+  await assertChain('质量路线关闭压缩：apngquant / apngopt 都不跑，直接用母版', async () => {
     const ctx = makeCtx()
     const item = makeItem({ quality: { checked: false, value: 80 } })
     await ctx.apngCompress(item, 0, ctx.store, ctx.locale)
     assert(!calls.some((c) => c.bin === 'apngquant'))
-    const o = calls.find((c) => c.bin === 'apngopt')
-    assert.strictEqual(o.args[0], OUT)
+    assert(!calls.some((c) => c.bin === 'apngopt'), '保真路线不得过 apngopt（它按 alpha 形态自动转索引）')
   })
 
   await assertChain('色深路线 OOM fallback：退回无损 apngopt 且不误用残留量化文件', async () => {

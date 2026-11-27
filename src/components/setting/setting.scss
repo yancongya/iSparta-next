@@ -792,6 +792,15 @@ body.side-narrow .mod-setting .mod-tabs-bar .is-segmented__item {
     min-width: 0;
   }
 
+  // 三个操作按钮成组放输入框右侧：组内紧凑(2px)、与输入框留出间距
+  &__actions {
+    display: inline-flex;
+    align-items: center;
+    flex: none;
+    gap: 2px;
+    margin-left: calc(var(--is-s-1) + 2px);
+  }
+
   &__filter {
     display: inline-flex;
     align-items: center;
@@ -819,6 +828,11 @@ body.side-narrow .mod-setting .mod-tabs-bar .is-segmented__item {
       border-color: var(--is-accent);
       background: var(--is-accent-dim);
       color: var(--is-accent);
+    }
+
+    // 重置名字：操作型按钮（非开关态），hover 时用中性强调色，与右侧开关区分
+    &.name-row__reset {
+      color: var(--is-text-2);
     }
 
     // 防覆盖后缀开关：无源冲突时不可用，弱化但保留 hover 提示可读

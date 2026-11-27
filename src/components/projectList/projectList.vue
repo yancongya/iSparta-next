@@ -298,6 +298,7 @@ import {
 import { buildEstimateTipBlocks } from '../../util/estimateTipBlocks'
 import { createLazyEstimate } from '../../util/lazyEstimate'
 import { readPngBitDepth, formatCanPreserveBitDepth } from '../../util/pngBitDepth'
+import { readOutputDepth } from '../../util/outputBitDepth'
 import { isPreserveBitDepth } from '../../util/paletteConfig'
 
 /**
@@ -928,15 +929,19 @@ export default {
       return { blocks: buildOutputSizeTipBlocks({ label: this.$t('outputSizeTipLabel'), files: rows }) }
     },
     /**
-     * 角标 hover：格式 + 该格式总大小，逐文件列「产物名 — 大小」（重试版本也列出），
+     * 角标 hover：格式 + 该格式总大小，逐文件列「产物名 — 大小 — 实测色深」（重试版本也列出），
      * 末行说明点击行为。只显示 basename——要看全路径用 hover 卡片的产物大小。
+     *
+     * 色深是**产物实测值**：回读已落盘文件的文件头字节（IHDR / GIF 全局色表 / WebP chunk），
+     * 不是按选项预测——压缩路线的真实产物位深取决于 apngquant/apngopt 的实际行为。
      */
     badgeTipOf (badge) {
       const files = (badge && badge.files) || []
       const total = sizeTextOfFiles(files)
       const rows = files.map((file) => ({
         name: this.baseNameOf(file),
-        size: sizeTextOfFiles([file]) || '—'
+        size: sizeTextOfFiles([file]) || '—',
+        depthText: this.outputDepthText(file)
       }))
       return {
         blocks: buildBadgeTipBlocks({
@@ -946,6 +951,27 @@ export default {
           copyText: this.$t('outputBadgeCopy', { format: (badge && badge.format) || '' })
         })
       }
+    },
+    /**
+     * 产物实测色深文案（读产物文件头；读不到返回空串 → 该列不显示）。
+     * @param {string} file 产物路径
+     * @returns {string}
+     */
+    outputDepthText (file) {
+      const info = readOutputDepth(file)
+      if (!info) return ''
+      if (info.format === 'GIF') {
+        // GIF89a 硬上限 256 色索引 → 永远是 8-bit 索引，如实说明是格式上限
+        return this.$t('outputDepthGif', { colors: info.colors })
+      }
+      if (info.format === 'WEBP') {
+        return info.lossless
+          ? this.$t('outputDepthWebpLossless')
+          : this.$t('outputDepthWebpLossy')
+      }
+      return info.indexed
+        ? this.$t('outputDepthIndexed', { bits: info.bits })
+        : this.$t('outputDepthTrue', { bits: info.bits })
     },
     /** 点击角标：只复制该格式（含阈值重试版本）的产物，与顶栏复制同一套接口与 toast */
     async copyFormatOutput (badge) {

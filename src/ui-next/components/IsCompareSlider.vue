@@ -36,7 +36,19 @@
     <span v-if="labelBefore" class="is-cmp__tag is-cmp__tag--before">
       <is-icon name="image" size="xs" />{{ labelBefore }}
     </span>
-    <span v-if="labelAfter" class="is-cmp__tag is-cmp__tag--after">
+    <button
+      v-if="labelAfter && afterClickable"
+      v-tip="afterTip"
+      type="button"
+      class="is-cmp__tag is-cmp__tag--after is-cmp__tag--clickable"
+      :title="afterTitle"
+      @pointerdown.stop
+      @dblclick.stop
+      @click.stop="$emit('after-click')"
+    >
+      <is-icon name="sparkles" size="xs" />{{ labelAfter }}
+    </button>
+    <span v-else-if="labelAfter" v-tip="afterTip" class="is-cmp__tag is-cmp__tag--after">
       <is-icon name="sparkles" size="xs" />{{ labelAfter }}
     </span>
   </div>
@@ -67,6 +79,9 @@ export default {
     after: { type: String, default: '' },
     labelBefore: { type: String, default: '' },
     labelAfter: { type: String, default: '' },
+    afterClickable: { type: Boolean, default: false },
+    afterTip: { type: [String, Object], default: '' },
+    afterTitle: { type: String, default: '' },
     ariaLabel: { type: String, default: 'compare' }
   },
   data () {
@@ -289,6 +304,20 @@ export default {
     transform: translate(-50%, -50%);
   }
 
+  &__after-group {
+    position: absolute;
+    top: var(--is-s-3);
+    right: var(--is-s-3);
+    display: inline-flex;
+    align-items: center;
+    gap: var(--is-s-1);
+    pointer-events: none;
+
+    .is-cmp__tag {
+      position: static;
+    }
+  }
+
   &__tag {
     position: absolute;
     top: var(--is-s-3);
@@ -310,6 +339,17 @@ export default {
     .is-icon { opacity: 0.85; }
     &--before { left: var(--is-s-3); }
     &--after { right: var(--is-s-3); }
+    &--icon { padding: 5px 8px; }
+    &--clickable {
+      pointer-events: auto;
+      cursor: pointer;
+      transition: border-color var(--is-dur-fast) var(--is-ease-std), color var(--is-dur-fast) var(--is-ease-std);
+
+      &:hover {
+        border-color: var(--is-accent);
+        color: var(--is-accent);
+      }
+    }
   }
 
   &.is-dragging { cursor: grabbing; }
@@ -317,9 +357,9 @@ export default {
   &.is-splitting { cursor: ew-resize; }
   &.is-splitting.is-dragging { cursor: ew-resize; }
 
+  &:focus,
   &:focus-visible {
-    outline: 2px solid var(--is-accent);
-    outline-offset: 2px;
+    outline: none;
   }
 }
 </style>

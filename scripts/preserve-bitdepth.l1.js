@@ -1,7 +1,8 @@
 // L1 回归：APNG 保真输出（preserveBitDepth = true，关压缩保留 32-bit）。
 // 覆盖——
 // 1) isPreserveBitDepth 兜底：缺省/旧配置为 false，只有显式 true 生效；
-// 2) apngCompress：保真时无论质量/色深路线都跳过 apngquant，仅走 apngopt 无损；
+// 2) apngCompress：保真时无论质量/色深路线都不调用 apngquant/apngopt，直接用 apngasm 母版
+//    （apngopt 会按 alpha 形态自动转索引，统一 alpha 必降级 8-bit——旧"仅走 apngopt"结论已废止）；
 // 3) sizeGate.enforceSizeLimit：保真时整段跳过（preserved），不重压、不改 quality.checked；
 // 4) applyStartPlan：保真时源码级守卫存在（前置质量/色数规划跳过）；
 // 5) readPngBitDepth：真机虚拟键抛错不得吞掉真实 IHDR 读取（位深角标不显示的根因）；
@@ -99,9 +100,10 @@ async function run () {
     await ctx.apngCompress(makeItem({ preserveBitDepth: true }), 0, ctx.store, { compressing: 'compressing' })
     const bins = ctx._calls.map((c) => c.bin)
     assert(!bins.includes('apngquant'), '保真时不得调用 apngquant（量化必出 8-bit）')
-    assert(bins.includes('apngopt'), '保真时必须走 apngopt 无损')
+    assert(!bins.includes('apngopt'), '保真时不得调用 apngopt（它会按 alpha 形态自动转索引，统一 alpha 必降级 8-bit）')
+    assert.strictEqual(bins.length, 0, '保真时不得调用任何可能降色的工具，直接用 apngasm 母版')
     passed++
-    console.log('ok - apngCompress 质量路线保真：跳过 apngquant，仅 apngopt')
+    console.log('ok - apngCompress 质量路线保真：apngquant / apngopt 全跳过，直接用母版')
   }
   {
     const ctx = makeApngCtx()
@@ -109,9 +111,10 @@ async function run () {
     await ctx.apngCompress(item, 0, ctx.store, { compressing: 'compressing' })
     const bins = ctx._calls.map((c) => c.bin)
     assert(!bins.includes('apngquant'), '色深路线保真也不得量化')
-    assert(bins.includes('apngopt'), '色深路线保真走 apngopt')
+    assert(!bins.includes('apngopt'), '色深路线保真同样不得过 apngopt')
+    assert.strictEqual(bins.length, 0, '色深路线保真不调用任何工具')
     passed++
-    console.log('ok - apngCompress 色深路线保真：同样跳过量化')
+    console.log('ok - apngCompress 色深路线保真：apngquant / apngopt 全跳过')
   }
   {
     const ctx = makeApngCtx()

@@ -32,11 +32,16 @@ export default function (item, isLossless, store, locale, opts) {
 	var pal = normalizePalette(item.options)
 	var isColors = pal.mode === 'colors'
   // 量化开关：色深路线始终量化（用户选 C 档即是选减色，C256 也是索引化）；
-  // 质量路线沿用 quality.checked 开关——关掉则纯无损 apngopt。
-  // 保真输出（preserveBitDepth）优先级最高：无论哪条路线都跳过 apngquant，
-  // 仅走 apngopt 无损，保住源 32-bit RGBA（apngquant 本质是量化器，必出 8-bit 索引）。
+  // 质量路线沿用 quality.checked 开关——关掉则走无损路线。
+  // 保真输出（preserveBitDepth）优先级最高：无论哪条路线都不量化、也不再跑 apngopt。
+  // 【为什么不跑 apngopt】apngopt -z2 会按「能否无损塞进索引调色板」自动把
+  // colorType 6→3：只要 alpha 是统一值（全不透明 / 固定半透明 / 二值透明）就降级成
+  // 8-bit 索引——AE 里极常见的纯色/固定透明图层必中招。apngopt 1.4 无任何参数能保住
+  // colorType=6。apngasm -kc 生成的母版 out.png 本身已是 32-bit RGBA 且帧完整，
+  // 保真时直接用它即可（体积差异极小），不再经过任何可能降色的优化器。
   if (isPreserveBitDepth(item.options) || (!isColors && !item.options.quality.checked)) {
-    return apngopt(item, store, locale, gateOpts)
+    item.basic.apngQuantSkipped = false
+    return Promise.resolve(item)
   } else {
     var quantArgs = [
       item.basic.fileList[0],

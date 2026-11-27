@@ -35,6 +35,8 @@ export const ITEMS_APPLY_NAME_OVERRIDE = 'ITEMS_APPLY_NAME_OVERRIDE'
 // 跨任务同名「另存」的一次性改名：只服务本次转换，下次 preflight 入口清除
 export const ITEMS_APPLY_TRANSIENT_NAME = 'ITEMS_APPLY_TRANSIENT_NAME'
 export const ITEMS_CLEAR_TRANSIENT_NAMES = 'ITEMS_CLEAR_TRANSIENT_NAMES'
+// 「重置输出名」：清掉单项的持久/一次性改名，让它回到基础名（按全列表 index 定位）
+export const ITEMS_CLEAR_NAME_OVERRIDES_AT = 'ITEMS_CLEAR_NAME_OVERRIDES_AT'
 
 // 预检里用户明确选择「直接覆盖源文件」：标记该任务允许覆盖，processor 的保底改名放行
 export const ITEMS_SET_SOURCE_OVERWRITE = 'ITEMS_SET_SOURCE_OVERWRITE'

@@ -59,7 +59,7 @@ function normalize (value) {
  *   { type:'note',   text, tone?:'info'|'warn' }     说明行（info 蓝 / warn 黄底）
  *   { type:'foot',   text }                          免责声明（三级灰小字）
  *   { type:'kvlist', items:[{label,value,mono?}] }   键值对列表（标签列固定宽 + 值，值可等宽/换行）
- *   { type:'filelist', items:[{name,size}] }         文件列表（文件名 + 大小两列，长名省略号）
+ *   { type:'filelist', items:[{name,size,depthText}] } 文件列表（文件名 + 实测色深 + 大小，长名省略号）
  *   { type:'stderr', text }                          多行原文块（等宽字体 + 红底，保留全文换行）
  * 所有字符串一律 textContent 写入，绝不 innerHTML。
  */
@@ -229,6 +229,14 @@ function renderBlocks (tip, blocks) {
         n.textContent = it.name || ''
         n.title = it.name || '' // 悬停可见完整名（气泡内已省略）
         row.appendChild(n)
+        // 实测色深列：为空则整列不渲染（读不到色深的产物不占位）
+        if (it.depthText) {
+          var dp = document.createElement('span')
+          dp.className = 'is-tip-r__filedepth'
+          dp.textContent = it.depthText
+          dp.title = it.depthText
+          row.appendChild(dp)
+        }
         var s = document.createElement('span')
         s.className = 'is-tip-r__filesize'
         s.textContent = it.size || ''

@@ -32,8 +32,12 @@ export function buildTitleTipBlocks (d) {
 }
 
 /**
- * 格式角标提示：格式 + 该格式总大小 + 逐文件列表 + 复制提示
- * @param {object} d  { label, total, tone?, files:[{name,size}], copyText }
+ * 格式角标提示：格式 + 该格式总大小 + 逐文件列表（含实测色深）+ 复制提示
+ *
+ * 色深行是**产物实测值**（读已落盘文件的文件头字节），不是按选项预测：
+ * 压缩路线的真实产物位深取决于 apngquant/apngopt 的实际行为，选项只能预测。
+ * depthText 由调用方（组件）用 i18n 拼好后传入，本函数只搬运纯数据。
+ * @param {object} d  { label, total, tone?, files:[{name,size,depthText}], copyText }
  */
 export function buildBadgeTipBlocks (d) {
   if (!d) return []
@@ -43,7 +47,13 @@ export function buildBadgeTipBlocks (d) {
     blocks.push({
       type: 'filelist',
       items: d.files.map(function (f) {
-        return { name: f.name || '', size: f.size || '', tone: f.tone || d.tone || 'accent' }
+        return {
+          name: f.name || '',
+          size: f.size || '',
+          // depthText 为空表示该产物读不到色深（文件已删/格式未知）→ 整行不显示
+          depthText: f.depthText || '',
+          tone: f.tone || d.tone || 'accent'
+        }
       })
     })
   }
