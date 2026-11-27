@@ -120,7 +120,17 @@
     &:hover { background: var(--is-inset); color: var(--is-text); }
   }
 
-  .gs-version {
+  .gs-pair--about {
+  .gs-pair__ctrl {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--is-s-2);
+    flex-wrap: nowrap;
+    white-space: nowrap;
+  }
+}
+
+.gs-version {
     color: var(--is-text);
     font-family: var(--is-font-mono, ui-monospace, monospace);
     font-size: var(--is-fs-md);
@@ -286,6 +296,8 @@
   }
 
   .gs-pair__ctrl {
+    flex-wrap: nowrap;
+    white-space: nowrap;
     flex: 1;
     min-width: 0;
     display: flex;

@@ -9,7 +9,6 @@
   >
     <div class="rn">
       <div class="rn__head">
-        <span class="rn__version">v{{ activeVersion }}</span>
         <is-select
           v-model="activeVersion"
           :options="versionOptions"
@@ -149,6 +148,11 @@ export default {
 /* 兜底：即使 HMR 残留旧的 footer slot（CEP 面板不会自动重载），也不留底部条/按钮 */
 .rn-panel .is-dialog__footer {
   display: none;
+}
+
+.is-dialog__panel.rn-panel:focus,
+.is-dialog__panel.rn-panel:focus-visible {
+  outline: none;
 }
 
 .rn {

@@ -380,3 +380,9 @@ CEP 的 6 条合成任务虽共用同一 `tip.js`，却无法确认 CEP 下合�
 
 - **拿文件字节数必须用 `sizeBytesOfFiles`**：`preload.js` 的 `fs.lstatSync` 只返回 `{ isDirectory, isFile }`（无 `.size`），且 bridge 未暴露 `fs.statSync`。renderer 侧需要字节数时一律复用 `src/util/task-output.js` 的 `sizeBytesOfFiles(files)`。
 - **产物角标缓存键不能只用 `process.schedule`**：改名重跑后 `schedule` 仍为 `1`，`outputBadges` 缓存 `stamp` 必须包含 `outputNameOverride || outputName` 与 `outputPath`。
+
+
+### 发版双语与便携版约定（v3.10.3+）
+
+- **双语 Release 文案**：`.github/release-notes/vX.Y.Z.md` 末尾需附带 `<!-- RELEASE_EN_START -->...<!-- RELEASE_EN_END -->` 英文段，`scripts/bake-release-notes.js` 会同步烘焙 `RELEASE_NOTES_EN`，供 App 内更新弹窗与落地页自动识别当前语言。
+- **Windows 便携双包**：`release.yml` 同时产出 NSIS 安装版、免安装便携 zip（`win-portable-x64.zip`）与单文件便携版（`win-portable-x64.exe`），下载表格使用双语表头并附带真实下载链接。

@@ -1640,9 +1640,19 @@
   }
 
   /* 组件：右栏详情 */
+  function pickLangNotes(raw) {
+    var s = String(raw || "");
+    var isEn = (document.documentElement.getAttribute("lang") || "").toLowerCase().indexOf("en") === 0;
+    if (isEn) {
+      var m = s.match(/<!--\s*RELEASE_EN_START\s*-->([\s\S]*?)<!--\s*RELEASE_EN_END\s*-->/);
+      if (m && m[1].trim()) return m[1].trim();
+    }
+    return s;
+  }
+
   function RelPane(rel) {
     var pane = document.createElement("div");
-    var sections = parseNotesSections(rel.notes);
+    var sections = parseNotesSections(pickLangNotes(rel.notes));
 
     var head = document.createElement("header");
     head.className = "rel-pane__head";
@@ -1689,8 +1699,9 @@
       pillsData.forEach(function (p) {
         var li = document.createElement("li");
         li.className = "rel-pills__" + p.mod;
-        li.textContent = p.text;
-        li.title = p.text;
+        var clean = String(p.text || "").replace(/\*\*(.*?)\*\*/g, "$1").replace(/`([^`]*)`/g, "$1");
+        li.textContent = clean;
+        li.title = clean;
         ul.appendChild(li);
       });
       pane.appendChild(ul);

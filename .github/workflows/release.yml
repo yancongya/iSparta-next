@@ -205,17 +205,18 @@ jobs:
           const previousTag = process.env.PREV_TAG
           const sourcePath = `.github/release-notes/${tag}.md`
           let notes = fs.readFileSync(sourcePath, 'utf8')
+          const dl = (f) => `[\`${f}\`](https://github.com/${repo}/releases/download/${tag}/${f})`
           const installers = [
-            '### 安装包', '',
-            '| 平台 | 文件 | 说明 |', '| --- | --- | --- |',
-            `| Windows x64（安装版） | \`isparta-next-${version}-win-x64.exe\` | 系统级安装，检测到 AE 时同步安装 CEP 扩展，支持应用内更新 |`,
-            `| Windows x64（便携 zip） | \`isparta-next-${version}-win-portable-x64.zip\` | 免安装，解压到任意目录双击即用（不含 CEP） |`,
-            `| Windows x64（单文件便携） | \`isparta-next-${version}-win-portable-x64.exe\` | 单文件免安装，启动时自解压运行（不含 CEP） |`,
-            `| Linux x64 | \`isparta-next-${version}-linux-x64.AppImage\` | AppImage 便携运行，支持应用内更新 |`,
-            `| macOS arm64（zip / pkg） | \`isparta-next-${version}-mac-arm64.zip\` / \`isparta-next-${version}-mac-arm64.pkg\` | pkg 安装时检测到 AE 同步安装 CEP |`,
-            `| macOS x64（zip / pkg） | \`isparta-next-${version}-mac-x64.zip\` / \`isparta-next-${version}-mac-x64.pkg\` | pkg 安装时检测到 AE 同步安装 CEP |`,
-            `| AE CEP Windows | \`isparta-next-${version}-cep-win.zip\` | 独立 AE 扩展包，含安装说明与调试脚本 |`,
-            `| AE CEP macOS | \`isparta-next-${version}-cep-mac.zip\` | 独立 AE 扩展包，含安装说明与调试脚本 |`, '',
+            '### Downloads / 安装包', '',
+            '| Platform / 平台 | File / 文件 | Notes / 说明 |', '| --- | --- | --- |',
+            `| Windows x64 (Installer / 安装版) | ${dl(`isparta-next-${version}-win-x64.exe`)} | System install + AE CEP + auto-update / 系统级安装，含 AE 扩展与内更新 |`,
+            `| Windows x64 (Portable zip / 便携版) | ${dl(`isparta-next-${version}-win-portable-x64.zip`)} | Extract & run, no CEP / 解压即用，不含 CEP |`,
+            `| Windows x64 (Single exe / 单文件便携) | ${dl(`isparta-next-${version}-win-portable-x64.exe`)} | Single executable, no CEP / 单文件免安装，不含 CEP |`,
+            `| Linux x64 | ${dl(`isparta-next-${version}-linux-x64.AppImage`)} | AppImage portable + auto-update / 便携运行，支持内更新 |`,
+            `| macOS arm64 (zip / pkg) | ${dl(`isparta-next-${version}-mac-arm64.zip`)} / ${dl(`isparta-next-${version}-mac-arm64.pkg`)} | pkg installs AE CEP / pkg 安装时同步部署 CEP |`,
+            `| macOS x64 (zip / pkg) | ${dl(`isparta-next-${version}-mac-x64.zip`)} / ${dl(`isparta-next-${version}-mac-x64.pkg`)} | pkg 安装时同步部署 CEP / pkg installs AE CEP |`,
+            `| AE CEP Windows | ${dl(`isparta-next-${version}-cep-win.zip`)} | Standalone AE extension / 独立 AE 扩展包 |`,
+            `| AE CEP macOS | ${dl(`isparta-next-${version}-cep-mac.zip`)} | Standalone AE extension / 独立 AE 扩展包 |`, '',
             '- Windows / Linux 安装版支持应用内更新；macOS 通过 pkg 安装，检测到 After Effects 时同步安装 CEP。',
             '- macOS 构建尚未签名，首次打开时可能需要在「系统设置 → 隐私与安全性」允许。',
             '- CEP zip 内含对应平台的安装说明与调试模式脚本。'

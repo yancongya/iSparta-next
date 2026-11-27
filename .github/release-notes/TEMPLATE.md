@@ -26,3 +26,12 @@
 <!-- RELEASE_CHANGELOG -->
 
 </details>
+
+
+<!-- RELEASE_EN_START -->
+## Update to {{TAG}}
+
+- Highlight 1 (English)
+- Highlight 2 (English)
+- Highlight 3 (English)
+<!-- RELEASE_EN_END -->
