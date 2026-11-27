@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="public/isparta-next-media-state-cycle-loop.svg" alt="iSparta-next 图标" width="120" height="120">
+<img src="public/readme-banner.svg" alt="iSparta-next 图标" width="100%">
 
 <h1>iSparta-next</h1>
 
