@@ -73,8 +73,8 @@
 -->
 <script>
 import IsCompareSlider from '../../ui-next/components/IsCompareSlider.vue'
-import { outputFilesOf, sizeTextOfFiles } from '../../util/task-output'
-import { outputFormatOf, readOutputDepth } from '../../util/outputBitDepth'
+import { outputFilesOf, sizeTextOfFiles, sizeBytesOfFiles } from '../../util/task-output'
+import { outputFormatOf, readOutputDepth, formatOutputDepthText, calcCompressionRatio } from '../../util/outputBitDepth'
 import { buildBadgeTipBlocks } from '../../util/detailTipBlocks'
 import { path } from '../../util/node-env'
 
@@ -118,21 +118,10 @@ export default {
     afterTip () {
       if (!this.outFile) return ''
       var fmt = outputFormatOf(this.outFile) || ''
-      var info = readOutputDepth(this.outFile)
-      var depthText = ''
-      if (info) {
-        if (info.format === 'GIF') {
-          depthText = this.$t('outputDepthGif', { colors: info.colors })
-        } else if (info.format === 'WEBP') {
-          depthText = info.lossless
-            ? this.$t('outputDepthWebpLossless')
-            : this.$t('outputDepthWebpLossy')
-        } else {
-          depthText = info.indexed
-            ? this.$t('outputDepthIndexed', { bits: info.bits })
-            : this.$t('outputDepthTrue', { bits: info.bits })
-        }
-      }
+      var depthText = formatOutputDepthText(readOutputDepth(this.outFile), this.$t.bind(this))
+      var fileList = (this.project && this.project.basic && this.project.basic.fileList) || []
+      var srcBytes = sizeBytesOfFiles(fileList)
+      var outBytes = sizeBytesOfFiles([this.outFile])
       return {
         blocks: buildBadgeTipBlocks({
           label: fmt,
@@ -140,7 +129,8 @@ export default {
           files: [{
             name: path.basename(this.outFile),
             size: sizeTextOfFiles([this.outFile]) || '—',
-            depthText: depthText
+            depthText: depthText,
+            ratio: calcCompressionRatio(outBytes, srcBytes)
           }],
           copyText: this.$t('outputBadgeCopy', { format: fmt })
         })

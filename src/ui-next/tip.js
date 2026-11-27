@@ -241,6 +241,22 @@ function renderBlocks (tip, blocks) {
         s.className = 'is-tip-r__filesize'
         s.textContent = it.size || ''
         row.appendChild(s)
+        if (it.ratio && it.ratio.text) {
+          var rt = document.createElement('div')
+          rt.className = 'is-tip-r__ratio' + (it.ratio.over ? ' is-over' : '')
+          var bar = document.createElement('span')
+          bar.className = 'is-tip-r__ratio-bar'
+          var fill = document.createElement('span')
+          fill.className = 'is-tip-r__ratio-fill'
+          fill.style.width = it.ratio.pct + '%'
+          bar.appendChild(fill)
+          var txt = document.createElement('span')
+          txt.className = 'is-tip-r__ratio-txt'
+          txt.textContent = it.ratio.text
+          rt.appendChild(bar)
+          rt.appendChild(txt)
+          row.appendChild(rt)
+        }
         fl.appendChild(row)
       })
       tip.appendChild(fl)

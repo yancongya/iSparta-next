@@ -52,6 +52,7 @@ export function buildBadgeTipBlocks (d) {
           size: f.size || '',
           // depthText 为空表示该产物读不到色深（文件已删/格式未知）→ 整行不显示
           depthText: f.depthText || '',
+          ratio: f.ratio || null,
           tone: f.tone || d.tone || 'accent'
         }
       })

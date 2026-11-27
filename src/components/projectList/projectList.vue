@@ -190,7 +190,7 @@
               type="button"
               class="fmt-badge"
               :class="'is-' + badge.format.toLowerCase()"
-              v-tip="badgeTipOf(badge)"
+              v-tip="badgeTipOf(badge, project)"
               :aria-label="$t('outputBadgeCopy', { format: badge.format })"
               @click.stop="copyFormatOutput(badge)"
             >
@@ -298,7 +298,7 @@ import {
 import { buildEstimateTipBlocks } from '../../util/estimateTipBlocks'
 import { createLazyEstimate } from '../../util/lazyEstimate'
 import { readPngBitDepth, formatCanPreserveBitDepth } from '../../util/pngBitDepth'
-import { readOutputDepth } from '../../util/outputBitDepth'
+import { readOutputDepth, formatOutputDepthText, calcCompressionRatio } from '../../util/outputBitDepth'
 import { isPreserveBitDepth } from '../../util/paletteConfig'
 
 /**
@@ -469,7 +469,13 @@ export default {
       const list = this.projectList.map((project) => {
         alive.add(project)
         if (this.stateOf(project.process) !== 'done') return []
-        const stamp = project.process && project.process.schedule
+        const basic = project.basic || {}
+        const outName = basic.outputNameOverride || basic.outputName || ''
+        const stamp = [
+          project.process && project.process.schedule,
+          outName,
+          basic.outputPath || ''
+        ].join('|')
         const hit = cache && cache.get(project)
         if (hit && hit.stamp === stamp) return hit.groups
         const groups = outputGroupsOf(project)
@@ -935,14 +941,20 @@ export default {
      * 色深是**产物实测值**：回读已落盘文件的文件头字节（IHDR / GIF 全局色表 / WebP chunk），
      * 不是按选项预测——压缩路线的真实产物位深取决于 apngquant/apngopt 的实际行为。
      */
-    badgeTipOf (badge) {
+    badgeTipOf (badge, project) {
       const files = (badge && badge.files) || []
       const total = sizeTextOfFiles(files)
-      const rows = files.map((file) => ({
-        name: this.baseNameOf(file),
-        size: sizeTextOfFiles([file]) || '—',
-        depthText: this.outputDepthText(file)
-      }))
+      const fileList = (project && project.basic && project.basic.fileList) || []
+      const srcBytes = sizeBytesOfFiles(fileList)
+      const rows = files.map((file) => {
+        const outBytes = sizeBytesOfFiles([file])
+        return {
+          name: this.baseNameOf(file),
+          size: sizeTextOfFiles([file]) || '—',
+          depthText: this.outputDepthText(file),
+          ratio: calcCompressionRatio(outBytes, srcBytes)
+        }
+      })
       return {
         blocks: buildBadgeTipBlocks({
           label: (badge && badge.format) || '',
@@ -958,20 +970,7 @@ export default {
      * @returns {string}
      */
     outputDepthText (file) {
-      const info = readOutputDepth(file)
-      if (!info) return ''
-      if (info.format === 'GIF') {
-        // GIF89a 硬上限 256 色索引 → 永远是 8-bit 索引，如实说明是格式上限
-        return this.$t('outputDepthGif', { colors: info.colors })
-      }
-      if (info.format === 'WEBP') {
-        return info.lossless
-          ? this.$t('outputDepthWebpLossless')
-          : this.$t('outputDepthWebpLossy')
-      }
-      return info.indexed
-        ? this.$t('outputDepthIndexed', { bits: info.bits })
-        : this.$t('outputDepthTrue', { bits: info.bits })
+      return formatOutputDepthText(readOutputDepth(file), this.$t.bind(this))
     },
     /** 点击角标：只复制该格式（含阈值重试版本）的产物，与顶栏复制同一套接口与 toast */
     async copyFormatOutput (badge) {

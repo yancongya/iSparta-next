@@ -1431,9 +1431,11 @@ body.is-scroll-locked {
   }
   &__filerow {
     display: flex;
+    flex-wrap: wrap;
     align-items: baseline;
-    gap: 8px;
-    margin-bottom: 3px;
+    justify-content: space-between;
+    gap: 2px 8px;
+    margin-bottom: 4px;
     font-size: var(--is-fs-xs);
     line-height: 1.4;
     &.is-tone-accent .is-tip-r__filename { color: var(--is-accent-fg); }
@@ -1443,7 +1445,7 @@ body.is-scroll-locked {
     &.is-tone-bad .is-tip-r__filename { color: var(--is-bad-fg); }
   }
   &__filename {
-    flex: 1;
+    flex: 1 1 100%;
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -1458,6 +1460,39 @@ body.is-scroll-locked {
     font-family: var(--is-font-mono, monospace);
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
+  }
+  &__ratio {
+    flex: 1 1 100%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 2px;
+    &-bar {
+      flex: 1;
+      height: 4px;
+      border-radius: 999px;
+      background: var(--is-inset);
+      overflow: hidden;
+    }
+    &-fill {
+      display: block;
+      height: 100%;
+      border-radius: 999px;
+      background: var(--is-ok, #34d399);
+    }
+    &-txt {
+      flex: none;
+      font-family: var(--is-font-mono, monospace);
+      font-size: 11px;
+      font-variant-numeric: tabular-nums;
+      color: var(--is-ok-fg, #34d399);
+    }
+    &.is-over &-fill {
+      background: var(--is-warn, #f59e0b);
+    }
+    &.is-over &-txt {
+      color: var(--is-warn-fg, #f59e0b);
+    }
   }
   &__filesize {
     flex: none;

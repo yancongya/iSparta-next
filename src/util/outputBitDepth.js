@@ -40,6 +40,19 @@ function asciiAt (buf, offset, length) {
   return out
 }
 
+function u32be (buf, offset) {
+  return ((byteAt(buf, offset) << 24) | (byteAt(buf, offset + 1) << 16) |
+    (byteAt(buf, offset + 2) << 8) | byteAt(buf, offset + 3)) >>> 0
+}
+
+function u16le (buf, offset) {
+  return byteAt(buf, offset) | (byteAt(buf, offset + 1) << 8)
+}
+
+function u24le (buf, offset) {
+  return byteAt(buf, offset) | (byteAt(buf, offset + 1) << 8) | (byteAt(buf, offset + 2) << 16)
+}
+
 function isPng (buf) {
   if (!buf || buf.length < 8) return false
   for (let i = 0; i < 8; i++) {
@@ -59,6 +72,12 @@ export function parsePngOutputDepth (data) {
   if (asciiAt(data, 12, 4) !== 'IHDR') return null
   const bitDepth = byteAt(data, 24)
   const colorType = byteAt(data, 25)
+  const width = u32be(data, 16)
+  const height = u32be(data, 20)
+  let frames = 0
+  if (data.length >= 41 && asciiAt(data, 37, 4) === 'acTL') {
+    frames = u32be(data, 41)
+  }
   const channels = colorType === 6 ? 4 : colorType === 2 ? 3 : colorType === 4 ? 2 : 1
   // colorType 3 是调色板索引：位深就是每通道位数（1/2/4/8），呈现为 8-bit 索引
   const indexed = colorType === 3
@@ -69,6 +88,9 @@ export function parsePngOutputDepth (data) {
     bitDepth: bitDepth,
     colorType: colorType,
     indexed: indexed,
+    width: width,
+    height: height,
+    frames: frames,
     // PNG 全程无损（量化是「降色」不是「有损压缩」；这里 lossless 指是否保留源位深）
     lossless: !indexed
   }
@@ -82,6 +104,8 @@ export function parsePngOutputDepth (data) {
 export function parseGifOutputDepth (data) {
   if (!data || data.length < 13) return null
   if (asciiAt(data, 0, 3) !== 'GIF') return null
+  const width = u16le(data, 6)
+  const height = u16le(data, 8)
   const flags = byteAt(data, 10)
   const hasGct = (flags & 0x80) !== 0
   // 色表大小 = 2^(N+1)，N 取 packed 字段低 3 位
@@ -91,6 +115,8 @@ export function parseGifOutputDepth (data) {
     format: 'GIF',
     bits: 8,
     colors: Math.min(256, colors),
+    width: width,
+    height: height,
     indexed: true,
     lossless: false
   }
@@ -107,6 +133,8 @@ export function parseWebpOutputDepth (data) {
   const chunk = asciiAt(data, 12, 4)
   let lossless = false
   let alpha = false
+  let width = 0
+  let height = 0
   if (chunk === 'VP8L') {
     lossless = true
     alpha = true // VP8L 支持 alpha 通道
@@ -117,6 +145,10 @@ export function parseWebpOutputDepth (data) {
     // 扩展容器：flags 的 0x10=ALPHA、0x02=ANIMATION；再扫 ANMF 帧看子块编码
     const flags = byteAt(data, 20)
     alpha = (flags & 0x10) !== 0
+    if (data.length >= 30) {
+      width = u24le(data, 24) + 1
+      height = u24le(data, 27) + 1
+    }
     // 逐 chunk 扫描找第一个 ANMF，其子块类型决定编码。
     // 注意：必须跳过 ANIM（它是动画控制块，不代表编码方式），
     // 也不能在这里 break——ANIM 之后才是真正的 ANMF 帧数据。
@@ -147,7 +179,9 @@ export function parseWebpOutputDepth (data) {
     format: 'WEBP',
     bits: lossless ? 32 : 8,
     lossless: lossless,
-    alpha: alpha
+    alpha: alpha,
+    width: width,
+    height: height
   }
 }
 
@@ -184,6 +218,46 @@ export function readOutputDepth (file) {
   } catch (e) {
     return null
   }
+}
+
+/**
+ * 将 readOutputDepth 结果格式化为 hover 气泡展示文本（含色深/编码、分辨率、APNG 帧数）。
+ * @param {object|null} info
+ * @param {Function} t i18n 翻译函数
+ * @returns {string}
+ */
+export function formatOutputDepthText (info, t) {
+  if (!info || typeof t !== 'function') return ''
+  const parts = []
+  if (info.format === 'GIF') {
+    parts.push(t('outputDepthGif', { colors: info.colors }))
+  } else if (info.format === 'WEBP') {
+    parts.push(info.lossless ? t('outputDepthWebpLossless') : t('outputDepthWebpLossy'))
+    if (info.alpha) parts.push('Alpha')
+  } else {
+    parts.push(info.indexed
+      ? t('outputDepthIndexed', { bits: info.bits })
+      : t('outputDepthTrue', { bits: info.bits }))
+  }
+  if (info.width > 0 && info.height > 0) {
+    parts.push(`${info.width}×${info.height}`)
+  }
+  return parts.join(' · ')
+}
+
+/**
+ * 计算产物相对源文件的压缩比（纯函数）。
+ * @param {number} outBytes 产物字节数
+ * @param {number} srcBytes 源文件字节数
+ * @returns {{pct:number, text:string, over:boolean}|null}
+ */
+export function calcCompressionRatio (outBytes, srcBytes) {
+  if (!(outBytes > 0) || !(srcBytes > 0)) return null
+  const diffPct = Math.round(((outBytes - srcBytes) / srcBytes) * 100)
+  const over = outBytes > srcBytes
+  const pct = over ? 100 : Math.max(4, Math.min(100, Math.round((outBytes / srcBytes) * 100)))
+  const text = diffPct > 0 ? `+${diffPct}%` : `${diffPct}%`
+  return { pct: pct, text: text, over: over }
 }
 
 export default readOutputDepth
