@@ -120,7 +120,11 @@ export const hostAdapter = {
     }
     if (isElectron) {
       const ip = ipc()
-      return ip ? ip.invoke('clipboard:copyFiles', paths).then(function (r) { return !!(r && r.ok) }).catch(() => false) : Promise.resolve(false)
+      return ip ? ip.invoke('clipboard:copyFiles', paths).then(function (r) {
+        if (r && r.ok) return true
+        try { console.warn('[clipboard:copyFiles] failed:', r && r.error, paths) } catch (e) { /* ignore */ }
+        return false
+      }).catch(() => false) : Promise.resolve(false)
     }
     // copyFilesFromCep 取宿主桥时可能同步抛错；折成 false 让调用方照常出 toast
     if (isCep) {

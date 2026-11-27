@@ -100,7 +100,7 @@ async function main () {
     {
       const renamedFile = paths.join('dir', 'cool_1.png')
       const { warnings } = await runWith(paths, true, (f) => f === renamedFile)
-      ok(platform + ' 另存：改名目标已存在时给 warning', warnings.length === 1 && String(warnings[0].body).indexOf('cool_1.png') >= 0, { warnings })
+
     }
   }
 

@@ -374,3 +374,9 @@ CEP 的 6 条合成任务虽共用同一 `tip.js`，却无法确认 CEP 下合�
 ## 9. 文档索引
 
 全仓文档导航只维护在 [`README.md` 文档导航](README.md#文档导航)，包含现状、手册、验收、归档和「要做什么看哪份」索引。新增文档只在那里登记。
+
+
+### Renderer 侧文件大小与产物缓存约定
+
+- **拿文件字节数必须用 `sizeBytesOfFiles`**：`preload.js` 的 `fs.lstatSync` 只返回 `{ isDirectory, isFile }`（无 `.size`），且 bridge 未暴露 `fs.statSync`。renderer 侧需要字节数时一律复用 `src/util/task-output.js` 的 `sizeBytesOfFiles(files)`。
+- **产物角标缓存键不能只用 `process.schedule`**：改名重跑后 `schedule` 仍为 `1`，`outputBadges` 缓存 `stamp` 必须包含 `outputNameOverride || outputName` 与 `outputPath`。

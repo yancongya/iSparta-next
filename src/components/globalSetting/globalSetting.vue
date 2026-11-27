@@ -43,6 +43,11 @@
           <is-segmented v-model="themeMode" :options="themeOptions" size="sm" @change="applyThemeMode" />
         </is-form-item>
 
+        <is-form-item :label="$t('autoCopyOutput')">
+          <is-switch v-model="setting.autoCopyOutput" />
+          <em class="hint">{{ $t('autoCopyOutputHint') }}</em>
+        </is-form-item>
+
         <!-- 本地调试日志：开关 + 端口 + 复制 prompt 图标同一行，说明统一一条 -->
         <is-form-item :label="$t('debugToggle')">
           <div class="gs-debug-row">
@@ -68,6 +73,22 @@
             </button>
           </div>
           <em class="hint">{{ $t('debugRowHint', { port: defaultDebugLogPort }) }}</em>
+        </is-form-item>
+
+        <is-form-item :label="$t('configStoragePath')">
+          <div class="gs-debug-row">
+            <span v-tip="configFilePath" class="gs-config-path">{{ configFilePath }}</span>
+            <button
+              type="button"
+              class="gs-debug-copy"
+              :aria-label="$t('openConfigDir')"
+              v-tip="$t('openConfigDir')"
+              @click="openConfigDir"
+            >
+              <is-icon name="folder" size="sm" />
+            </button>
+          </div>
+          <em class="hint">{{ $t('configStorageHint') }}</em>
         </is-form-item>
         </div><!-- /常规 -->
 
@@ -390,7 +411,7 @@
 </template>
 
 <script>
-import { storage } from '../../util/node-env'
+import { storage, os, path } from '../../util/node-env'
 import { PALETTE_COLOR_PRESETS, normalizePalette, isPreserveBitDepth } from '../../util/paletteConfig'
 import { diagnoseToolchain } from '../../util/processor/toolIntegrity'
 import ThemeManager from '../../ui-next/theme'
@@ -647,6 +668,11 @@ export default {
         return { tone: 'info', text: this.$t('updateSkipVersion') }
       }
       return { tone: 'bad', text: this.$t('updateFailed') }
+    },
+    configFilePath () {
+      const dev = process.env.NODE_ENV === 'development'
+      const homeDir = (typeof os.homedir === 'function' && os.homedir()) || os.tmpdir()
+      return path.join(homeDir, '.isparta-next', dev ? 'localstorage-dev.json' : 'localstorage.json')
     },
     languages () {
       // 首项「跟随系统」= 'system' 哨兵：写入存储的是哨兵，实际 locale 由
@@ -998,6 +1024,16 @@ export default {
       this.dialogFormVisible = true
       // 进入「关于」相关设置时跑一次工具链只读诊断（失败静默，不阻断）
       if (!this.toolchain) { this.refreshToolchain() }
+    },
+    openConfigDir () {
+      try {
+        const dir = path.dirname(this.configFilePath)
+        if (hostAdapter && typeof hostAdapter.openPath === 'function') {
+          hostAdapter.openPath(dir)
+        } else if (hostAdapter && typeof hostAdapter.openExternal === 'function') {
+          hostAdapter.openExternal(dir)
+        }
+      } catch (e) { /* ignore */ }
     },
     refreshToolchain () {
       this.toolchainChecking = true

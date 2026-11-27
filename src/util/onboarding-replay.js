@@ -28,7 +28,8 @@ export const ONBOARDING_VERSION = 1
 
 function storagePath () {
   const dev = process.env.NODE_ENV === 'development'
-  return path.join(os.tmpdir(), 'iSparta', dev ? 'localstorage-dev.json' : 'localstorage.json')
+  const homeDir = (typeof os.homedir === 'function' && os.homedir()) || os.tmpdir()
+  return path.join(homeDir, '.isparta-next', dev ? 'localstorage-dev.json' : 'localstorage.json')
 }
 
 /**

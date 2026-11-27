@@ -68,6 +68,7 @@ contextBridge.exposeInMainWorld('ispartaAPI', {
   },
   os: {
     tmpdir: () => sync('os:tmpdir'),
+    homedir: () => sync('os:homedir'),
     cpus: () => {
       const r = sync('os:cpus')
       return new Array(r && r.length ? r.length : 1).fill({})

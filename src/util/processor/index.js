@@ -274,11 +274,51 @@ export default function (store, sameOutputPath, locale) {
       fs.remove(action.items[i].basic.tmpDir);
     }
     store.dispatch('setLock', false)
+    try {
+      const rawGs = storage.getItem('globalSetting')
+      const gs = rawGs ? JSON.parse(rawGs) : null
+      if (gs && gs.autoCopyOutput) {
+        const files = []
+        action.items.forEach((it) => {
+          outputFilesOf(it).forEach((f) => {
+            try { if (fs.existsSync(f)) files.push(f) } catch (e) { /* ignore */ }
+          })
+        })
+        if (files.length && hostAdapter && typeof hostAdapter.copyFilesToClipboard === 'function') {
+          hostAdapter.copyFilesToClipboard(files).then((ok) => {
+            if (ok) appLog.info('自动复制产物', files.length + ' 个文件')
+            else appLog.warn('自动复制产物失败', 'copyFilesToClipboard 返回 false')
+          }).catch((e) => {
+            appLog.warn('自动复制产物失败', (e && e.message) || String(e))
+          })
+        }
+      }
+    } catch (eCopy) { /* ignore */ }
   }).catch((err) => {
     for (var i = 0; i < action.items.length; i++) {
       fs.remove(action.items[i].basic.tmpDir);
     }
     store.dispatch('setLock', false)
+    try {
+      const rawGs = storage.getItem('globalSetting')
+      const gs = rawGs ? JSON.parse(rawGs) : null
+      if (gs && gs.autoCopyOutput) {
+        const files = []
+        action.items.forEach((it) => {
+          outputFilesOf(it).forEach((f) => {
+            try { if (fs.existsSync(f)) files.push(f) } catch (e) { /* ignore */ }
+          })
+        })
+        if (files.length && hostAdapter && typeof hostAdapter.copyFilesToClipboard === 'function') {
+          hostAdapter.copyFilesToClipboard(files).then((ok) => {
+            if (ok) appLog.info('自动复制产物', files.length + ' 个文件')
+            else appLog.warn('自动复制产物失败', 'copyFilesToClipboard 返回 false')
+          }).catch((e) => {
+            appLog.warn('自动复制产物失败', (e && e.message) || String(e))
+          })
+        }
+      }
+    } catch (eCopy) { /* ignore */ }
     // 必须打出真实 err：否则日志只有「转换中断」没有原因
     try {
       var msg = (err && (err.err || err.message || err.error || err.command)) || String(err)

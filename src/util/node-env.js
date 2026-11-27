@@ -80,6 +80,7 @@ export const path = {
 }
 export const os = {
   tmpdir: (...a) => getOs().tmpdir(...a),
+  homedir: (...a) => getOs().homedir(...a),
   cpus: (...a) => getOs().cpus(...a)
 }
 export const storage = {

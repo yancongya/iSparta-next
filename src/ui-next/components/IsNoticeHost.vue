@@ -15,7 +15,7 @@
 
         <div class="is-notice-item__body">
           <strong v-if="item.title" class="is-notice-item__title">{{ item.title }}</strong>
-          <span v-if="item.text" class="is-notice-item__text">{{ item.text }}</span>
+          <span v-if="item.text" :title="item.text" class="is-notice-item__text">{{ item.text }}</span>
         </div>
 
         <button

@@ -580,6 +580,7 @@
   }
 
   &__body {
+    min-width: 0;
     display: flex;
     align-items: center;
     flex: 1;
@@ -752,6 +753,7 @@
   }
 
   &__body {
+    min-width: 0;
     flex: 1;
     min-height: 0;
     padding: var(--is-s-5);
@@ -784,6 +786,7 @@ body.is-scroll-locked {
 // 通知
 // --------------------------------------------------------------------------
 .is-notice {
+  max-width: min(560px, calc(100vw - 32px));
   position: fixed;
   top: var(--is-s-5);
   left: 50%;
@@ -829,6 +832,7 @@ body.is-scroll-locked {
   }
 
   &__body {
+    min-width: 0;
     flex: 1;
     min-width: 0;
     font-size: var(--is-fs-md);
@@ -846,6 +850,11 @@ body.is-scroll-locked {
   }
 
   &__text {
+    display: block;
+    max-width: 420px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     color: var(--is-text-2);
 
     &:not(:first-child) { margin-left: var(--is-s-2); }
@@ -1024,7 +1033,8 @@ body.is-scroll-locked {
 // 小屏（含 CEP 面板）：胶囊收窄、字号/内边距降档，位置仍顶部居中（统一全局）。
 // CEP 面板高度有限，顶部居中且留出安全距离即可，不再单独挪到底部。
 @media (max-width: $bp-compact) {
-  .is-notice { width: calc(100vw - var(--is-s-4)); }
+  .is-notice {
+  max-width: min(560px, calc(100vw - 32px)); width: calc(100vw - var(--is-s-4)); }
 }
 
 @media (max-width: $bp-narrow) {
@@ -2402,6 +2412,7 @@ body.is-scroll-locked {
   }
 
   &__body {
+    min-width: 0;
     min-width: 0;
     flex: 1;
     display: flex;

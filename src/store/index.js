@@ -18,13 +18,18 @@ const _ = require("lodash");
 // 【bug fix】修复初次使用时读取缓存错误的问题
 let storagePath = "";
 try {
-  if (getProcessBridge().env.NODE_ENV == "development") {
-    storagePath = path.join(os.tmpdir(), 'iSparta/localstorage-dev.json');
-  } else {
-    storagePath = path.join(os.tmpdir(), 'iSparta/localstorage.json');
-  }
+  const isDevEnv = getProcessBridge().env.NODE_ENV == "development";
+  const storageFile = isDevEnv ? 'localstorage-dev.json' : 'localstorage.json';
+  const homeDir = (typeof os.homedir === 'function' && os.homedir()) || os.tmpdir();
+  storagePath = path.join(homeDir, '.isparta-next', storageFile);
+  const legacyPath = path.join(os.tmpdir(), 'iSparta', storageFile);
   if (!fs.existsSync(storagePath)) {
-    fs.ensureFileSync(storagePath)
+    fs.ensureFileSync(storagePath);
+    if (legacyPath !== storagePath && fs.existsSync(legacyPath)) {
+      try {
+        fs.writeFileSync(storagePath, fs.readFileSync(legacyPath, "utf-8"), "utf-8");
+      } catch (eMig) { /* ignore */ }
+    }
   }
   // 【bug fix】仅当内容非合法 JSON 时才重置为 "{}"，避免每次启动清空已持久化数据
   let __rawStorage = fs.readFileSync(storagePath, "utf-8").trim()
@@ -722,13 +727,31 @@ const actions = {
     }
     const existingRows = after.existing.concat(extraExisting)
     if (existingRows.length) {
-      notice.warning(
-        i18n.t('noticeOverwriteExistingTitle'),
-        i18n.t('noticeOverwriteExistingBody', {
+      const occupied = allOutputTargets(list, sameOutputPath).map(function (r) { return r.path })
+      const plan = planCrossItemRename(existingRows, occupied, existsFile)
+      const renamed = plan.filter(function (p) { return p.changed })
+      const choice = await notice.confirm({
+        title: i18n.t('noticeOverwriteExistingTitle'),
+        text: i18n.t('noticeOverwriteExistingBody', {
           count: existingRows.length,
           paths: fmt(existingRows)
+        }),
+        cancelText: i18n.t('cancel'),
+        altText: i18n.t('overwriteCrossItem'),
+        altValue: 'overwrite',
+        confirmText: renamed.length === 1
+          ? i18n.t('overwriteRenameOne', { name: renamed[0].file })
+          : i18n.t('overwriteRenameMany', { count: renamed.length || existingRows.length })
+      })
+      if (choice === 'overwrite') {
+        // 放行覆盖已有产物
+      } else if (choice === true) {
+        renamed.forEach(function (p) {
+          context.dispatch('applyTransientName', { item: p.item, format: p.format, name: p.name })
         })
-      )
+      } else {
+        return false
+      }
     }
     return true
   },

@@ -489,7 +489,7 @@ ipcMain.handle('clipboard:copyFiles', async (event, inputPaths) => {
   let args
   if (process.platform === 'win32') {
     const json = Buffer.from(JSON.stringify(files), 'utf8').toString('base64')
-    const script = 'Add-Type -AssemblyName System.Windows.Forms; $paths = @([Text.Encoding]::UTF8.GetString([Convert]::FromBase64String("' + json + '") ) | ConvertFrom-Json); $list = New-Object System.Collections.Specialized.StringCollection; foreach ($p in $paths) { [void]$list.Add([string]$p) }; [Windows.Forms.Clipboard]::SetFileDropList($list)'
+    const script = 'Add-Type -AssemblyName System.Windows.Forms; $paths = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String("' + json + '")) | ConvertFrom-Json; $list = New-Object System.Collections.Specialized.StringCollection; foreach ($p in @($paths)) { [void]$list.Add([string]$p) }; [Windows.Forms.Clipboard]::SetFileDropList($list)'
     command = 'powershell.exe'
     args = ['-NoProfile', '-STA', '-EncodedCommand', Buffer.from(script, 'utf16le').toString('base64')]
   } else if (process.platform === 'darwin') {
@@ -748,6 +748,9 @@ ipcMain.on('path:sep', (event) => {
 })
 ipcMain.on('os:tmpdir', (event) => {
   event.returnValue = os.tmpdir()
+})
+ipcMain.on('os:homedir', (event) => {
+  event.returnValue = os.homedir()
 })
 ipcMain.on('os:cpus', (event) => {
   const cpus = os.cpus()

@@ -477,6 +477,7 @@ function installMockBridge () {
     path: path,
     os: {
       tmpdir: function () { return '/isparta-mock-tmp' },
+      homedir: function () { return '/isparta-mock-home' },
       cpus: function () { return [{}, {}, {}, {}] }
     },
     storage: storage,
