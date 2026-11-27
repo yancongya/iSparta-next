@@ -25,6 +25,36 @@ import i18n, { syncLocaleFromStorage } from '../i18n'
 import store from '../store'
 import RootGate from '../ui-next/views/RootGate.vue'
 import './comp-source'
+import appLog from '../util/appLog'
+
+if (typeof window !== 'undefined' && !window.__cepLogHooked) {
+  window.__cepLogHooked = true
+  let inHook = false
+  const forward = (level, args) => {
+    if (inHook) return
+    inHook = true
+    try {
+      const msg = Array.prototype.map.call(args, (a) => {
+        if (a instanceof Error) return a.stack || a.message
+        if (typeof a === 'object' && a !== null) {
+          try { return JSON.stringify(a) } catch (e) { return String(a) }
+        }
+        return String(a)
+      }).join(' ')
+      if (msg) appLog[level]('[CEP Console]', msg)
+    } catch (e) { /* ignore */ } finally { inHook = false }
+  }
+  const origErr = console.error
+  const origWarn = console.warn
+  console.error = function () { forward('error', arguments); return origErr.apply(console, arguments) }
+  console.warn = function () { forward('warn', arguments); return origWarn.apply(console, arguments) }
+  window.addEventListener('error', (ev) => {
+    forward('error', [ev && (ev.error || ev.message || 'Unknown error')])
+  })
+  window.addEventListener('unhandledrejection', (ev) => {
+    forward('error', [ev && ev.reason ? ev.reason : 'Unhandled rejection'])
+  })
+}
 
 Vue.config.productionTip = false
 

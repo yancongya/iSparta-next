@@ -80,7 +80,11 @@ export const path = {
 }
 export const os = {
   tmpdir: (...a) => getOs().tmpdir(...a),
-  homedir: (...a) => getOs().homedir(...a),
+  homedir: (...a) => {
+    const o = getOs()
+    if (o && typeof o.homedir === 'function') return o.homedir(...a)
+    return (o && typeof o.tmpdir === 'function') ? o.tmpdir() : ''
+  },
   cpus: (...a) => getOs().cpus(...a)
 }
 export const storage = {

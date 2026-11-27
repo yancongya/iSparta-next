@@ -1876,7 +1876,14 @@ body.is-scroll-locked {
   box-sizing: border-box;
 }
 
+@media (max-width: 520px) {
+  .log__debug-label {
+    display: none;
+  }
+}
+
 .log__bar {
+  flex-wrap: wrap;
   display: flex;
   align-items: center;
   flex-wrap: nowrap;
