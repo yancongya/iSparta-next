@@ -31,6 +31,9 @@ win:
     - target: nsis
       arch:
         - x64
+    - target: portable
+      arch:
+        - x64
   icon: ./public/icons/icon.ico
 nsis:
   # 固定全机安装桌面版；仅在检测到 AE 时同步安装 CEP。

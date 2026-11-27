@@ -5,9 +5,10 @@
  * 格式化复用 updateCheck.js 的 formatReleaseNotes —— 与「检查更新」弹窗同一套纯文本口径
  * （`· 条目` 摘要 + `【新增】/【修复】/【文档】` 分组），不在 UI 层再写一份解析。
  */
-import { RELEASE_NOTES, RELEASE_VERSIONS } from '../generated/releaseNotes'
+import { RELEASE_NOTES, RELEASE_NOTES_EN, RELEASE_VERSIONS } from '../generated/releaseNotes'
 import { formatReleaseNotes } from './updateCheck'
 import { APP_VERSION } from '../brand'
+import i18n from '../i18n'
 
 const cache = Object.create(null)
 
@@ -15,16 +16,23 @@ function cleanVersion (version) {
   return String(version || '').trim().replace(/^v/i, '')
 }
 
+function isEnLocale () {
+  var loc = (i18n && i18n.locale) ? String(i18n.locale).toLowerCase() : ''
+  return loc.indexOf('en') === 0
+}
+
 /** 取指定版本的可读日志；无编辑源或格式化后为空时返回 null */
 export function notesForVersion (version) {
   var v = cleanVersion(version)
-  var raw = RELEASE_NOTES[v]
+  var en = isEnLocale()
+  var raw = (en && RELEASE_NOTES_EN && RELEASE_NOTES_EN[v]) || RELEASE_NOTES[v]
   if (!raw) { return null }
-  if (cache[v] === undefined) {
+  var key = v + ':' + (en ? 'en' : 'zh')
+  if (cache[key] === undefined) {
     var text = formatReleaseNotes(String(raw).replace(/\{\{TAG\}\}/g, 'v' + v))
-    cache[v] = text || ''
+    cache[key] = text || ''
   }
-  return cache[v] || null
+  return cache[key] || null
 }
 
 /** 当前安装包版本由 package.json 单一来源决定（见 brand.js） */

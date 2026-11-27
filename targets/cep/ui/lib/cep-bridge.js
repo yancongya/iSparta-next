@@ -305,6 +305,10 @@
       if (hasNode && nodeOs) { return nodeOs.tmpdir() }
       return path.join('/tmp')
     },
+    homedir: function () {
+      if (hasNode && nodeOs && nodeOs.homedir) { return nodeOs.homedir() }
+      return ''
+    },
     cpus: function () {
       if (hasNode && nodeOs && nodeOs.cpus) {
         var list = nodeOs.cpus()

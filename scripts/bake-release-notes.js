@@ -44,8 +44,13 @@ function main () {
   versions.sort(compareVersion).reverse()
 
   var notes = {}
+  var notesEn = {}
+  var enRe = /<!--\s*RELEASE_EN_START\s*-->([\s\S]*?)<!--\s*RELEASE_EN_END\s*-->/
   versions.forEach(function (v) {
-    notes[v] = fs.readFileSync(path.join(SRC_DIR, 'v' + v + '.md'), 'utf8')
+    var raw = fs.readFileSync(path.join(SRC_DIR, 'v' + v + '.md'), 'utf8')
+    var m = raw.match(enRe)
+    notes[v] = raw
+    notesEn[v] = m ? m[1].trim() : raw
   })
 
   var body = [
@@ -53,6 +58,8 @@ function main () {
     '// 编辑源：.github/release-notes/v<版本>.md；改完重跑 node scripts/bake-release-notes.js',
     '',
     'export const RELEASE_NOTES = ' + JSON.stringify(notes, null, 2),
+    '',
+    'export const RELEASE_NOTES_EN = ' + JSON.stringify(notesEn, null, 2),
     '',
     'export const RELEASE_VERSIONS = ' + JSON.stringify(versions),
     ''

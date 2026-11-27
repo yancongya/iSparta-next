@@ -158,8 +158,9 @@ export function diagnoseToolchain () {
   const pf = detectPlatform()
   let cwd = ''
   try { cwd = (getProcessBridge() && getProcessBridge().cwd && getProcessBridge().cwd()) || '' } catch (e) { /* ignore */ }
-  // 探测顺序：桌面 resources/bin（生产）→ public/bin（开发）→ static/bin → CEP 扩展目录 → .
+  // 探测顺序：桌面 resources/app/bin（生产）→ resources/bin → public/bin（开发）→ static/bin → CEP 扩展目录 → .
   const candidates = [
+    { key: 'desktop', base: path.join(cwd || '.', 'resources', 'app') },
     { key: 'desktop', base: path.join(cwd || '.', 'resources') },
     { key: 'desktop', base: path.join(cwd || '.', 'public') },
     { key: 'static', base: path.join(cwd || '.', 'static') }
